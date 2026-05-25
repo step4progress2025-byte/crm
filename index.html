@@ -6,133 +6,120 @@
 <title>Step4Progress · CRM</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;1,300&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --ink:#1C1917;--ink2:#44403C;--ink3:#78716C;
   --cream:#FAFAF8;--paper:#FFFFFF;--line:#E7E5E4;--line2:#D6D3D1;
   --pine:#0D4A3C;--pine2:#1A6B57;--pine3:#2D9E7F;--pine4:#A7F3D0;
-  --ember:#C2410C;--ember-l:#FEF3C7;--ember-lx:#FFF7ED;
+  --ember:#C2410C;--rose:#9F1239;--rose-l:#FFE4E6;
   --sky:#1E40AF;--sky-l:#DBEAFE;
   --sage:#15803D;--sage-l:#DCFCE7;
-  --rose:#9F1239;--rose-l:#FFE4E6;
-  --slate:#475569;--slate-l:#F1F5F9;
   --gold:#92400E;--gold-l:#FEF3C7;
-  --font-head:'Fraunces',Georgia,serif;
-  --font-body:'Plus Jakarta Sans',system-ui,sans-serif;
+  --font-h:'Fraunces',Georgia,serif;
+  --font-b:'Plus Jakarta Sans',system-ui,sans-serif;
   --r:8px;--rl:12px;--rxl:16px;
-  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
-  --shadow-md:0 4px 12px rgba(0,0,0,.08),0 2px 4px rgba(0,0,0,.04);
+  --sh:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shm:0 4px 12px rgba(0,0,0,.08),0 2px 4px rgba(0,0,0,.04);
 }
-
 html,body{height:100%;overflow:hidden;background:var(--cream)}
-body{font-family:var(--font-body);color:var(--ink);font-size:14px}
+body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
-/* ═══ ONBOARDING ══════════════════════════════════════════════════ */
-#onboarding{position:fixed;inset:0;background:var(--pine);z-index:500;display:flex;align-items:center;justify-content:center;transition:opacity .4s}
-#onboarding.hidden{opacity:0;pointer-events:none}
-.ob-box{width:480px;max-width:95vw}
-.ob-logo{display:flex;align-items:center;gap:12px;margin-bottom:36px}
-.ob-icon{width:44px;height:44px;background:var(--pine3);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:18px;font-weight:500;color:#fff}
-.ob-brand{font-family:var(--font-head);font-size:22px;font-weight:300;color:#fff;letter-spacing:-.01em}
-.ob-brand span{font-style:italic;color:var(--pine4)}
-.ob-step{display:none}
-.ob-step.active{display:block}
-.ob-h{font-family:var(--font-head);font-size:32px;font-weight:300;color:#fff;margin-bottom:8px;line-height:1.2;letter-spacing:-.02em}
-.ob-h em{font-style:italic;color:var(--pine4)}
-.ob-p{font-size:14px;color:rgba(255,255,255,.55);margin-bottom:28px;line-height:1.65}
-.ob-field{margin-bottom:14px}
-.ob-field label{display:block;font-size:11px;font-weight:600;color:rgba(255,255,255,.45);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px}
-.ob-field input,.ob-field select{width:100%;padding:11px 14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:var(--r);color:#fff;font-size:14px;font-family:var(--font-body);transition:border .15s}
-.ob-field input::placeholder{color:rgba(255,255,255,.3)}
-.ob-field input:focus,.ob-field select:focus{outline:none;border-color:var(--pine3);background:rgba(255,255,255,.12)}
-.ob-field select option{background:var(--pine);color:#fff}
-.ob-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.ob-btn{width:100%;padding:12px;background:var(--pine3);border:none;border-radius:var(--r);color:#fff;font-size:14px;font-weight:600;font-family:var(--font-body);cursor:pointer;margin-top:6px;transition:background .15s}
-.ob-btn:hover{background:var(--pine2)}
-.ob-skip{text-align:center;margin-top:14px}
-.ob-skip button{background:none;border:none;color:rgba(255,255,255,.35);font-size:12px;cursor:pointer;font-family:var(--font-body)}
-.ob-skip button:hover{color:rgba(255,255,255,.6)}
-.ob-dots{display:flex;gap:6px;margin-bottom:24px}
-.ob-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2);transition:background .2s}
-.ob-dot.on{background:var(--pine3);width:20px;border-radius:99px}
-.ob-import{border:1px dashed rgba(255,255,255,.2);border-radius:var(--rl);padding:20px;text-align:center;cursor:pointer;transition:border .15s,background .15s}
-.ob-import:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.04)}
-.ob-import i{font-size:28px;color:rgba(255,255,255,.3);display:block;margin-bottom:8px}
-.ob-import p{font-size:13px;color:rgba(255,255,255,.45)}
-.ob-import span{font-size:11px;color:rgba(255,255,255,.25)}
-.ob-team-list{margin-top:10px;display:flex;flex-direction:column;gap:6px}
-.ob-team-item{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.07);border-radius:var(--r);padding:8px 12px;font-size:13px;color:rgba(255,255,255,.7)}
-.ob-team-del{background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:16px;line-height:1}
-.ob-team-del:hover{color:rgba(255,255,255,.6)}
+/* ── AUTH SCREEN ─────────────────────────────────────────────── */
+#auth-screen{position:fixed;inset:0;background:var(--pine);z-index:500;display:flex;align-items:center;justify-content:center}
+#auth-screen.hidden{display:none}
+.auth-box{width:420px;max-width:95vw}
+.auth-logo{display:flex;align-items:center;gap:12px;margin-bottom:40px}
+.auth-icon{width:44px;height:44px;background:var(--pine3);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-size:18px;font-weight:500;color:#fff}
+.auth-brand{font-family:var(--font-h);font-size:24px;font-weight:300;color:#fff}
+.auth-brand em{font-style:italic;color:var(--pine4)}
+.auth-card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:var(--rxl);padding:32px}
+.auth-title{font-family:var(--font-h);font-size:26px;font-weight:300;color:#fff;margin-bottom:6px;letter-spacing:-.02em}
+.auth-sub{font-size:13px;color:rgba(255,255,255,.45);margin-bottom:28px;line-height:1.6}
+.auth-field{margin-bottom:16px}
+.auth-field label{display:block;font-size:11px;font-weight:600;color:rgba(255,255,255,.4);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px}
+.auth-field input{width:100%;padding:12px 14px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);border-radius:var(--r);color:#fff;font-size:14px;font-family:var(--font-b);transition:border .15s,background .15s}
+.auth-field input::placeholder{color:rgba(255,255,255,.25)}
+.auth-field input:focus{outline:none;border-color:var(--pine3);background:rgba(255,255,255,.13)}
+.auth-btn{width:100%;padding:13px;background:var(--pine3);border:none;border-radius:var(--r);color:#fff;font-size:14px;font-weight:600;font-family:var(--font-b);cursor:pointer;margin-top:6px;transition:background .15s}
+.auth-btn:hover{background:var(--pine2)}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed}
+.auth-err{font-size:12px;color:#FCA5A5;margin-top:10px;text-align:center;min-height:18px}
+.auth-toggle{text-align:center;margin-top:18px;font-size:13px;color:rgba(255,255,255,.4)}
+.auth-toggle button{background:none;border:none;color:var(--pine4);cursor:pointer;font-size:13px;font-family:var(--font-b);text-decoration:underline}
+.auth-toggle button:hover{color:#fff}
 
-/* ═══ APP SHELL ═══════════════════════════════════════════════════ */
-.app{display:flex;height:100vh;opacity:0;transition:opacity .4s}
+/* ── APP ─────────────────────────────────────────────────────── */
+.app{display:flex;height:100vh;opacity:0;transition:opacity .3s}
 .app.visible{opacity:1}
 
 /* Sidebar */
-.sb{width:230px;background:var(--pine);display:flex;flex-direction:column;flex-shrink:0}
-.sb-logo{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
-.sb-logorow{display:flex;align-items:center;gap:10px}
-.sb-icon{width:34px;height:34px;background:var(--pine3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:14px;color:#fff;font-weight:500}
-.sb-name{font-family:var(--font-head);font-size:15px;font-weight:400;color:#fff;letter-spacing:-.01em}
+.sb{width:225px;background:var(--pine);display:flex;flex-direction:column;flex-shrink:0}
+.sb-logo{padding:20px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-row{display:flex;align-items:center;gap:10px}
+.sb-icon{width:34px;height:34px;background:var(--pine3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-size:14px;color:#fff;font-weight:500}
+.sb-name{font-family:var(--font-h);font-size:15px;font-weight:400;color:#fff;letter-spacing:-.01em}
 .sb-sub{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px;font-style:italic}
 .sb-nav{flex:1;padding:12px 10px;overflow-y:auto}
 .sng{font-size:9px;font-weight:600;color:rgba(255,255,255,.25);letter-spacing:.1em;text-transform:uppercase;padding:12px 10px 5px}
-.ni{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);cursor:pointer;color:rgba(255,255,255,.5);font-size:13px;transition:all .14s;border:none;background:none;width:100%;text-align:left;position:relative;font-family:var(--font-body)}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);cursor:pointer;color:rgba(255,255,255,.5);font-size:13px;transition:all .14s;border:none;background:none;width:100%;text-align:left;position:relative;font-family:var(--font-b)}
 .ni:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.85)}
 .ni.active{background:rgba(255,255,255,.1);color:#fff}
 .ni.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:18px;background:var(--pine3);border-radius:0 3px 3px 0}
 .ni i{font-size:17px;flex-shrink:0;width:20px;text-align:center}
 .nbadge{margin-left:auto;font-size:10px;font-weight:600;background:rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:1px 7px;border-radius:99px}
 .nbadge.hot{background:var(--ember);color:#fff}
-.sb-foot{padding:14px 10px;border-top:1px solid rgba(255,255,255,.07)}
+.sb-foot{padding:12px 10px;border-top:1px solid rgba(255,255,255,.08)}
 .sb-user{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--r)}
 .sb-av{width:30px;height:30px;border-radius:50%;background:var(--pine3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0}
 .sb-uname{font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
 .sb-urole{font-size:10px;color:rgba(255,255,255,.3);font-style:italic}
-.sb-orgname{font-size:11px;color:rgba(255,255,255,.4);padding:6px 12px 10px;font-style:italic}
+.sb-logout{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:var(--r);cursor:pointer;color:rgba(255,255,255,.35);font-size:12px;border:none;background:none;width:100%;font-family:var(--font-b);margin-top:2px;transition:all .14s}
+.sb-logout:hover{background:rgba(255,0,0,.1);color:#FCA5A5}
 
-/* Topbar */
+/* Main */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 .topbar{padding:0 24px;height:56px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:var(--paper);flex-shrink:0}
-.tb-left{display:flex;align-items:center;gap:10px}
-.tb-title{font-family:var(--font-head);font-size:20px;font-weight:300;color:var(--ink);letter-spacing:-.02em}
+.tb-title{font-family:var(--font-h);font-size:20px;font-weight:300;color:var(--ink);letter-spacing:-.02em}
 .tb-right{display:flex;align-items:center;gap:8px}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--line2);background:var(--paper);color:var(--ink2);transition:all .14s;font-family:var(--font-body)}
-.btn:hover{background:var(--cream);border-color:var(--line2)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--line2);background:var(--paper);color:var(--ink2);transition:all .14s;font-family:var(--font-b)}
+.btn:hover{background:var(--cream)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
 .btn i{font-size:15px}
 .btn-p{background:var(--pine);color:#fff;border-color:var(--pine)}.btn-p:hover{background:var(--pine2)}
 .btn-ai{background:var(--pine3);color:#fff;border-color:var(--pine3)}.btn-ai:hover{background:var(--pine2)}
 .btn-del{background:var(--rose-l);color:var(--rose);border-color:#fecdd3}.btn-del:hover{background:#ffe4e6}
-.btn-ghost{border-color:transparent;background:transparent}.btn-ghost:hover{background:var(--cream)}
 
-/* Content */
 .content{flex:1;overflow-y:auto;background:var(--cream)}
 .screen{display:none;padding:24px;min-height:100%}
 .screen.active{display:block}
 
-/* ── EMPTY STATE ── */
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:380px;text-align:center;padding:40px}
-.es-icon{width:64px;height:64px;border-radius:var(--rxl);background:var(--line);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;color:var(--ink3)}
-.es-title{font-family:var(--font-head);font-size:22px;font-weight:300;color:var(--ink);margin-bottom:8px;letter-spacing:-.02em}
-.es-sub{font-size:14px;color:var(--ink3);line-height:1.6;max-width:340px;margin:0 auto 20px}
+/* Loading */
+.loading{display:flex;align-items:center;justify-content:center;min-height:300px;flex-direction:column;gap:12px;color:var(--ink3)}
+.loading i{font-size:28px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── KPI ── */
+/* Empty state */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:340px;text-align:center;padding:40px}
+.es-icon{width:60px;height:60px;border-radius:var(--rxl);background:var(--line);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:26px;color:var(--ink3)}
+.es-title{font-family:var(--font-h);font-size:22px;font-weight:300;color:var(--ink);margin-bottom:8px;letter-spacing:-.02em}
+.es-sub{font-size:14px;color:var(--ink3);line-height:1.6;max-width:320px;margin:0 auto 20px}
+
+/* KPI */
 .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px}
-.kpi{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:16px 18px;box-shadow:var(--shadow)}
+.kpi{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:16px 18px;box-shadow:var(--sh)}
 .kpi-l{font-size:10px;color:var(--ink3);font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px}
-.kpi-v{font-family:var(--font-head);font-size:32px;font-weight:300;line-height:1;letter-spacing:-.03em}
-.kpi-sub{font-size:11px;color:var(--ink3);margin-top:4px}
+.kpi-v{font-family:var(--font-h);font-size:32px;font-weight:300;line-height:1;letter-spacing:-.03em}
 .kv-p{color:var(--pine)}.kv-t{color:var(--pine3)}.kv-g{color:var(--sage)}.kv-o{color:var(--ember)}.kv-r{color:var(--rose)}
 
-/* ── Cards ── */
-.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+/* Cards */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
 .card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .card-t{font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 
-/* ── Pipeline bars ── */
+/* Pipeline */
 .prow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
 .prow:last-child{border-bottom:none}
 .pill{font-size:10px;font-weight:600;padding:3px 9px;border-radius:99px;white-space:nowrap;letter-spacing:.01em}
@@ -140,203 +127,189 @@ body{font-family:var(--font-body);color:var(--ink);font-size:14px}
 .bar-f{height:100%;border-radius:99px;transition:width .5s cubic-bezier(.4,0,.2,1)}
 .pn{font-size:12px;font-weight:600;min-width:22px;text-align:right}
 
-/* ── Activity ── */
+/* Activity */
 .aitem{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
 .aitem:last-child{border-bottom:none}
 .adot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
 .atext{font-size:13px;color:var(--ink)}
 .atime{font-size:11px;color:var(--ink3);margin-top:2px}
 
-/* ── Table ── */
-.tw{overflow-x:auto;border-radius:var(--rl);border:1px solid var(--line);background:var(--paper);box-shadow:var(--shadow)}
+/* Table */
+.tw{overflow-x:auto;border-radius:var(--rl);border:1px solid var(--line);background:var(--paper);box-shadow:var(--sh)}
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
 .tbl th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--cream);white-space:nowrap}
 .tbl td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle;color:var(--ink)}
 .tbl tr:last-child td{border-bottom:none}
 .tbl tbody tr{cursor:pointer;transition:background .1s}
 .tbl tbody tr:hover td{background:#F0FDF4}
-.av{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;font-family:var(--font-head)}
+.av{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
 .nc{display:flex;align-items:center;gap:10px}
-.ln{font-weight:600;font-size:13px;color:var(--ink)}
+.ln{font-weight:600;font-size:13px}
 .lc{font-size:11px;color:var(--ink3)}
 
-/* ── Filters ── */
+/* Filters */
 .fbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-.fbar input,.fbar select{font-size:13px;padding:8px 12px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-body);box-shadow:var(--shadow)}
+.fbar input,.fbar select{font-size:13px;padding:8px 12px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);box-shadow:var(--sh)}
 .fbar input{flex:1;min-width:180px}
 .fbar input:focus,.fbar select:focus{outline:none;border-color:var(--pine3);box-shadow:0 0 0 3px rgba(45,158,127,.12)}
 .clabel{font-size:12px;color:var(--ink3);margin-bottom:10px}
 
-/* ── Coaching cards ── */
-.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:20px}
-.cc{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:18px;box-shadow:var(--shadow);transition:box-shadow .15s}
-.cc:hover{box-shadow:var(--shadow-md)}
-.ccn{font-size:14px;font-weight:600;margin-bottom:2px;color:var(--ink)}
+/* Coaching */
+.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-bottom:20px}
+.cc{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:18px;box-shadow:var(--sh)}
+.ccn{font-size:14px;font-weight:600;margin-bottom:2px}
 .ccp{font-size:11px;color:var(--ink3);margin-bottom:12px;font-style:italic}
 .pt{background:var(--cream);border-radius:99px;height:6px;margin-bottom:8px;overflow:hidden;border:1px solid var(--line)}
-.pb{height:100%;border-radius:99px;transition:width .5s}
+.pb{height:100%;border-radius:99px}
 .csr{display:flex;justify-content:space-between}
 .cst{text-align:center}
 .csl{font-size:10px;color:var(--ink3);margin-bottom:2px;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
-.csv{font-size:13px;font-weight:600;font-family:var(--font-head)}
+.csv{font-size:13px;font-weight:600}
 
-/* ── Follow-up cards ── */
-.fcard{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:14px 18px;margin-bottom:10px;display:flex;gap:14px;border-left-width:4px;border-left-style:solid;cursor:pointer;transition:box-shadow .14s,background .14s;box-shadow:var(--shadow)}
-.fcard:hover{box-shadow:var(--shadow-md);background:var(--cream)}
-.fcard.high{border-left-color:var(--ember)}
-.fcard.medium{border-left-color:var(--gold)}
-.fcard.low{border-left-color:var(--sage)}
+/* Follow-up */
+.fcard{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:14px 18px;margin-bottom:10px;display:flex;gap:14px;border-left-width:4px;border-left-style:solid;cursor:pointer;transition:box-shadow .14s;box-shadow:var(--sh)}
+.fcard:hover{box-shadow:var(--shm)}
+.fcard.high{border-left-color:var(--ember)}.fcard.medium{border-left-color:var(--gold)}.fcard.low{border-left-color:var(--sage)}
 .fmeta{flex:1;min-width:0}
 .fid{font-size:10px;font-weight:600;color:var(--pine);font-style:italic;margin-bottom:3px}
-.fname{font-size:14px;font-weight:600;color:var(--ink);font-family:var(--font-head);letter-spacing:-.01em}
-.fmob{font-size:12px;color:var(--ink3);margin-bottom:5px}
+.fname{font-size:14px;font-weight:600;font-family:var(--font-h);letter-spacing:-.01em}
 .fright{text-align:right;flex-shrink:0}
-.fdate{font-size:12px;font-weight:600;color:var(--ink2)}
+.fdate{font-size:12px;font-weight:600}
 .fcounsel{font-size:11px;color:var(--pine3);margin-top:3px;font-style:italic}
 
-/* ── AI Screen ── */
+/* Team */
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.tcard{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:18px;box-shadow:var(--sh);display:flex;align-items:center;gap:14px}
+.tcard-av{width:42px;height:42px;border-radius:50%;background:var(--pine3);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff;flex-shrink:0}
+.tcard-name{font-size:14px;font-weight:600}
+.tcard-role{font-size:12px;color:var(--ink3);font-style:italic;margin-top:2px}
+.tcard-email{font-size:11px;color:var(--ink3);margin-top:3px}
+
+/* AI */
 .ai-wrap{display:flex;flex-direction:column;height:calc(100vh - 56px - 48px);min-height:400px}
 .ai-msgs{flex:1;overflow-y:auto;padding-bottom:14px}
 .ai-msg{margin-bottom:16px}
-.ai-role{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink3);margin-bottom:5px;font-family:var(--font-body)}
-.ai-bub{font-size:13px;line-height:1.7;color:var(--ink);background:var(--cream);border:1px solid var(--line);border-radius:var(--rl);padding:12px 16px;max-width:88%;white-space:pre-wrap;word-break:break-word;box-shadow:var(--shadow)}
+.ai-role{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink3);margin-bottom:5px}
+.ai-bub{font-size:13px;line-height:1.7;color:var(--ink);background:var(--cream);border:1px solid var(--line);border-radius:var(--rl);padding:12px 16px;max-width:88%;white-space:pre-wrap;word-break:break-word;box-shadow:var(--sh)}
 .ai-msg.user .ai-bub{background:var(--pine);color:#fff;border-color:var(--pine);margin-left:auto}
 .ai-msg.user .ai-role{text-align:right}
 .ai-irow{display:flex;gap:10px;padding-top:14px;border-top:1px solid var(--line);flex-shrink:0}
-.ai-irow input{flex:1;font-size:13px;padding:10px 14px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-body);box-shadow:var(--shadow)}
+.ai-irow input{flex:1;font-size:13px;padding:10px 14px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b)}
 .ai-irow input:focus{outline:none;border-color:var(--pine3);box-shadow:0 0 0 3px rgba(45,158,127,.1)}
 .qpills{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
-.qp{font-size:11px;padding:5px 12px;border:1px solid var(--line2);border-radius:99px;background:var(--paper);cursor:pointer;color:var(--ink3);transition:all .14s;font-family:var(--font-body);box-shadow:var(--shadow)}
+.qp{font-size:11px;padding:5px 12px;border:1px solid var(--line2);border-radius:99px;background:var(--paper);cursor:pointer;color:var(--ink3);transition:all .14s;font-family:var(--font-b);box-shadow:var(--sh)}
 .qp:hover{background:var(--pine);color:#fff;border-color:var(--pine)}
 .ai-think{font-size:12px;color:var(--ink3);padding:4px 0;display:none;font-style:italic}
 
-/* ── Modal ── */
+/* Modal */
 .mover{display:none;position:fixed;inset:0;background:rgba(28,25,23,.5);z-index:200;align-items:center;justify-content:center}
 .mover.open{display:flex}
-.modal{background:var(--paper);border-radius:var(--rxl);border:1px solid var(--line);width:580px;max-width:96vw;max-height:92vh;overflow-y:auto;padding:28px;box-shadow:var(--shadow-md)}
+.modal{background:var(--paper);border-radius:var(--rxl);border:1px solid var(--line);width:580px;max-width:96vw;max-height:92vh;overflow-y:auto;padding:28px;box-shadow:var(--shm)}
 .mhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
-.mtitle{font-family:var(--font-head);font-size:22px;font-weight:300;letter-spacing:-.02em;color:var(--ink)}
+.mtitle{font-family:var(--font-h);font-size:22px;font-weight:300;letter-spacing:-.02em}
 .mclose{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:22px;line-height:1;padding:3px 5px;border-radius:6px}
-.mclose:hover{background:var(--cream);color:var(--ink)}
+.mclose:hover{background:var(--cream)}
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .ff{display:flex;flex-direction:column;gap:5px}
 .ff.full{grid-column:1/-1}
 .ff label{font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em}
-.ff input,.ff select,.ff textarea{font-size:13px;padding:9px 13px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-body);width:100%;transition:border .14s,box-shadow .14s}
+.ff input,.ff select,.ff textarea{font-size:13px;padding:9px 13px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);width:100%;transition:border .14s}
 .ff input:focus,.ff select:focus,.ff textarea:focus{outline:none;border-color:var(--pine3);box-shadow:0 0 0 3px rgba(45,158,127,.1)}
-.ff textarea{resize:vertical;min-height:72px;line-height:1.55}
+.ff textarea{resize:vertical;min-height:72px}
 .mfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
-.section-divider{grid-column:1/-1;font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;padding-top:8px;border-top:1px solid var(--line);margin-top:4px}
+.sdiv{grid-column:1/-1;font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;padding-top:8px;border-top:1px solid var(--line);margin-top:4px}
 
-/* ── Detail panel ── */
+/* Detail panel */
 .dover{display:none;position:fixed;inset:0;background:rgba(28,25,23,.4);z-index:150;justify-content:flex-end}
 .dover.open{display:flex}
 .dpanel{width:440px;background:var(--paper);height:100%;overflow-y:auto;box-shadow:-4px 0 24px rgba(0,0,0,.1);display:flex;flex-direction:column;border-left:1px solid var(--line)}
 .dhead{padding:22px 24px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;background:var(--pine)}
-.d-id{font-size:10px;font-weight:600;color:rgba(255,255,255,.45);letter-spacing:.06em;margin-bottom:5px;font-style:italic}
-.d-name{font-family:var(--font-head);font-size:22px;font-weight:300;color:#fff;letter-spacing:-.02em}
+.d-id{font-size:10px;font-weight:600;color:rgba(255,255,255,.4);margin-bottom:5px;font-style:italic}
+.d-name{font-family:var(--font-h);font-size:22px;font-weight:300;color:#fff;letter-spacing:-.02em}
 .d-sub{font-size:12px;color:rgba(255,255,255,.5);margin-top:4px;font-style:italic}
 .dbody{flex:1;padding:20px 24px;overflow-y:auto}
 .dfield{margin-bottom:14px}
 .dlabel{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:5px}
-.dvalue{font-size:14px;color:var(--ink);line-height:1.5}
+.dvalue{font-size:14px;color:var(--ink)}
 .dsec{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--pine);margin:20px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--pine4)}
-.ssel{font-size:13px;padding:9px 13px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-body);width:100%}
+.ssel{font-size:13px;padding:9px 13px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);width:100%}
 .dfoot{padding:16px 24px;border-top:1px solid var(--line);display:flex;gap:8px;flex-shrink:0}
 
-/* ── Import panel ── */
+/* Import */
 .import-zone{border:2px dashed var(--line2);border-radius:var(--rl);padding:32px;text-align:center;cursor:pointer;transition:all .15s;background:var(--cream)}
-.import-zone:hover,.import-zone.drag{border-color:var(--pine3);background:rgba(45,158,127,.04)}
+.import-zone:hover{border-color:var(--pine3);background:rgba(45,158,127,.04)}
 .import-zone i{font-size:36px;color:var(--ink3);display:block;margin-bottom:12px}
 
-/* ── Toast ── */
-.toast{position:fixed;bottom:24px;right:24px;background:var(--pine);color:#fff;font-size:13px;padding:10px 18px;border-radius:var(--r);z-index:400;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;font-family:var(--font-body);box-shadow:var(--shadow-md)}
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--pine);color:#fff;font-size:13px;padding:10px 18px;border-radius:var(--r);z-index:400;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;box-shadow:var(--shm)}
 .toast.show{opacity:1;transform:translateY(0)}
 
-/* Scrollbar */
+/* Sync indicator */
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#94a3b8;display:inline-block;margin-right:6px;transition:background .3s}
+.sync-dot.syncing{background:var(--gold);animation:pulse 1s infinite}
+.sync-dot.synced{background:var(--pine3)}
+.sync-dot.error{background:var(--rose)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:99px}
-
-/* Import CSV hint */
-.csv-preview{margin-top:14px;font-size:12px;color:var(--ink3);background:var(--cream);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;max-height:120px;overflow-y:auto}
-.csv-preview div{padding:3px 0;border-bottom:1px solid var(--line)}
-.csv-preview div:last-child{border-bottom:none}
 </style>
 </head>
 <body>
 
-<!-- ═══ ONBOARDING ═══════════════════════════════════════════════ -->
-<div id="onboarding">
-  <div class="ob-box">
-    <div class="ob-logo">
-      <div class="ob-icon">S4</div>
-      <div><div class="ob-brand">Step4<em>Progress</em></div><div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:1px;font-family:var(--font-body)">CRM Setup</div></div>
+<!-- ── AUTH ───────────────────────────────────────────────────── -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-icon">S4</div>
+      <div>
+        <div class="auth-brand">Step4<em>Progress</em></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:1px;font-family:var(--font-b)">Team CRM</div>
+      </div>
     </div>
-
-    <!-- Step 1: Org -->
-    <div class="ob-step active" id="ob1">
-      <div class="ob-dots"><div class="ob-dot on"></div><div class="ob-dot"></div><div class="ob-dot"></div></div>
-      <div class="ob-h">Welcome to your<br><em>fresh CRM</em></div>
-      <div class="ob-p">Let's set up your workspace. This takes about 60 seconds.</div>
-      <div class="ob-field"><label>Organisation name</label><input id="ob-org" placeholder="Step4Progress" value="Step4Progress"></div>
-      <div class="ob-row">
-        <div class="ob-field"><label>Your name</label><input id="ob-yourname" placeholder="Your full name"></div>
-        <div class="ob-field"><label>Your role</label>
-          <select id="ob-yourrole">
-            <option>Admin</option><option>Counsellor</option><option>Manager</option><option>Owner</option>
+    <div class="auth-card">
+      <div id="auth-login-view">
+        <div class="auth-title">Welcome back</div>
+        <div class="auth-sub">Sign in to access your shared CRM workspace.</div>
+        <div class="auth-field"><label>Email address</label><input type="email" id="login-email" placeholder="you@step4progress.com" autocomplete="email"></div>
+        <div class="auth-field"><label>Password</label><input type="password" id="login-pass" placeholder="Your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <button class="auth-btn" id="login-btn" onclick="doLogin()">Sign in →</button>
+        <div class="auth-err" id="login-err"></div>
+      </div>
+      <div id="auth-signup-view" style="display:none">
+        <div class="auth-title">Create account</div>
+        <div class="auth-sub">Join your Step4Progress CRM workspace.</div>
+        <div class="auth-field"><label>Full name</label><input type="text" id="signup-name" placeholder="Your full name"></div>
+        <div class="auth-field"><label>Role</label>
+          <select id="signup-role" style="width:100%;padding:12px 14px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);border-radius:var(--r);color:#fff;font-size:14px;font-family:var(--font-b)">
+            <option style="background:#0D4A3C">Counsellor</option>
+            <option style="background:#0D4A3C">Admin</option>
+            <option style="background:#0D4A3C">Manager</option>
           </select>
         </div>
+        <div class="auth-field"><label>Email address</label><input type="email" id="signup-email" placeholder="you@step4progress.com"></div>
+        <div class="auth-field"><label>Password</label><input type="password" id="signup-pass" placeholder="Min. 6 characters" onkeydown="if(event.key==='Enter')doSignup()"></div>
+        <button class="auth-btn" id="signup-btn" onclick="doSignup()">Create account →</button>
+        <div class="auth-err" id="signup-err"></div>
       </div>
-      <div class="ob-field"><label>Location (city)</label><input id="ob-city" placeholder="Madurai, Tamil Nadu"></div>
-      <button class="ob-btn" onclick="obNext(1)">Continue →</button>
-    </div>
-
-    <!-- Step 2: Team -->
-    <div class="ob-step" id="ob2">
-      <div class="ob-dots"><div class="ob-dot"></div><div class="ob-dot on"></div><div class="ob-dot"></div></div>
-      <div class="ob-h">Add your <em>team</em></div>
-      <div class="ob-p">Add counsellors who will use the CRM. You can skip this and add them later.</div>
-      <div class="ob-row">
-        <div class="ob-field"><label>Name</label><input id="ob-tmname" placeholder="Counsellor name"></div>
-        <div class="ob-field"><label>Role</label>
-          <select id="ob-tmrole"><option>Counsellor</option><option>Admin</option><option>Manager</option></select>
-        </div>
+      <div class="auth-toggle">
+        <span id="auth-toggle-text">Don't have an account?</span>
+        <button onclick="toggleAuth()" id="auth-toggle-btn">Sign up</button>
       </div>
-      <button class="ob-btn" style="background:rgba(255,255,255,.1);margin-bottom:8px" onclick="addTeamMember()">+ Add team member</button>
-      <div class="ob-team-list" id="ob-team-list"></div>
-      <button class="ob-btn" style="margin-top:16px" onclick="obNext(2)">Continue →</button>
-      <div class="ob-skip"><button onclick="obNext(2)">Skip for now</button></div>
-    </div>
-
-    <!-- Step 3: Data -->
-    <div class="ob-step" id="ob3">
-      <div class="ob-dots"><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot on"></div></div>
-      <div class="ob-h">Import your <em>leads</em></div>
-      <div class="ob-p">Upload a CSV file to import existing leads, or start completely fresh. CSV should have columns: Name, Mobile, Email, City, Program, Destination, Status, Source, Priority, Notes.</div>
-      <div class="ob-import" id="ob-dropzone" onclick="document.getElementById('csv-file').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropCSV(event)">
-        <i class="ti ti-file-spreadsheet"></i>
-        <p>Click to upload CSV / Excel export</p>
-        <span>or drag and drop here</span>
-      </div>
-      <input type="file" id="csv-file" accept=".csv,.txt" style="display:none" onchange="handleCSV(event)">
-      <div class="csv-preview" id="csv-preview" style="display:none"></div>
-      <button class="ob-btn" style="margin-top:16px" onclick="finishOnboarding()">Start fresh →</button>
-      <div class="ob-skip"><button onclick="finishOnboarding()">Skip import, start empty</button></div>
     </div>
   </div>
 </div>
 
-<!-- ═══ APP ═══════════════════════════════════════════════════════ -->
+<!-- ── APP ────────────────────────────────────────────────────── -->
 <div class="app" id="app">
   <nav class="sb">
     <div class="sb-logo">
-      <div class="sb-logorow">
+      <div class="sb-row">
         <div class="sb-icon">S4</div>
-        <div><div class="sb-name" id="sb-orgname">Step4Progress</div><div class="sb-sub">Student CRM</div></div>
+        <div><div class="sb-name">Step4Progress</div><div class="sb-sub">Team CRM</div></div>
       </div>
     </div>
-    <div style="padding:6px 18px 0;font-size:11px;color:rgba(255,255,255,.3);font-style:italic" id="sb-location"></div>
     <div class="sb-nav">
       <div class="sng">Main</div>
       <button class="ni active" onclick="nav('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
@@ -344,7 +317,8 @@ body{font-family:var(--font-body);color:var(--ink);font-size:14px}
       <div class="sng">Programs</div>
       <button class="ni" onclick="nav('coaching',this)"><i class="ti ti-school"></i>Coaching</button>
       <button class="ni" onclick="nav('followup',this)"><i class="ti ti-calendar-event"></i>Follow-ups<span class="nbadge" id="nb-fu">0</span></button>
-      <div class="sng">Tools</div>
+      <div class="sng">Workspace</div>
+      <button class="ni" onclick="nav('team',this)"><i class="ti ti-id-badge"></i>Team</button>
       <button class="ni" onclick="nav('import',this)"><i class="ti ti-file-import"></i>Import data</button>
       <button class="ni" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
     </div>
@@ -353,16 +327,18 @@ body{font-family:var(--font-body);color:var(--ink);font-size:14px}
         <div class="sb-av" id="sb-av">?</div>
         <div><div class="sb-uname" id="sb-uname">—</div><div class="sb-urole" id="sb-urole">—</div></div>
       </div>
+      <button class="sb-logout" onclick="doLogout()"><i class="ti ti-logout" style="font-size:15px"></i>Sign out</button>
     </div>
   </nav>
 
   <div class="main">
     <header class="topbar">
-      <div class="tb-left">
+      <div style="display:flex;align-items:center;gap:10px">
         <span class="tb-title" id="topbar-title">Dashboard</span>
+        <span><span class="sync-dot" id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--ink3)"></span></span>
       </div>
       <div class="tb-right">
-        <button class="btn btn-ai" onclick="nav('ai',document.querySelectorAll('.ni')[6])"><i class="ti ti-robot"></i>AI</button>
+        <button class="btn btn-ai" onclick="nav('ai',document.querySelectorAll('.ni')[7])"><i class="ti ti-robot"></i>AI</button>
         <button class="btn btn-p" onclick="openAddLead()"><i class="ti ti-plus"></i>Add lead</button>
       </div>
     </header>
@@ -371,24 +347,24 @@ body{font-family:var(--font-body);color:var(--ink);font-size:14px}
       <!-- Dashboard -->
       <section id="sc-dashboard" class="screen active">
         <div class="kpi-row">
-          <div class="kpi"><div class="kpi-l">Total leads</div><div class="kpi-v kv-p" id="k-tot">0</div></div>
-          <div class="kpi"><div class="kpi-l">Enrolled</div><div class="kpi-v kv-t" id="k-enr">0</div></div>
-          <div class="kpi"><div class="kpi-l">Fees paid</div><div class="kpi-v kv-g" id="k-fee">0</div></div>
-          <div class="kpi"><div class="kpi-l">Active pipeline</div><div class="kpi-v kv-o" id="k-act">0</div></div>
-          <div class="kpi"><div class="kpi-l">This month</div><div class="kpi-v kv-p" id="k-mon">0</div></div>
+          <div class="kpi"><div class="kpi-l">Total leads</div><div class="kpi-v kv-p" id="k-tot">—</div></div>
+          <div class="kpi"><div class="kpi-l">Enrolled</div><div class="kpi-v kv-t" id="k-enr">—</div></div>
+          <div class="kpi"><div class="kpi-l">Fees paid</div><div class="kpi-v kv-g" id="k-fee">—</div></div>
+          <div class="kpi"><div class="kpi-l">Active pipeline</div><div class="kpi-v kv-o" id="k-act">—</div></div>
+          <div class="kpi"><div class="kpi-l">This month</div><div class="kpi-v kv-p" id="k-mon">—</div></div>
         </div>
         <div id="dash-empty" class="empty-state" style="display:none">
           <div class="es-icon"><i class="ti ti-rocket"></i></div>
           <div class="es-title">Your CRM is ready</div>
-          <div class="es-sub">Add your first lead or import existing data to get started. Your pipeline will appear here.</div>
+          <div class="es-sub">Add your first lead or import existing data. All changes sync instantly across your team.</div>
           <div style="display:flex;gap:10px;justify-content:center">
             <button class="btn btn-p" onclick="openAddLead()"><i class="ti ti-plus"></i>Add first lead</button>
-            <button class="btn" onclick="nav('import',document.querySelectorAll('.ni')[5])"><i class="ti ti-file-import"></i>Import data</button>
+            <button class="btn" onclick="nav('import',document.querySelectorAll('.ni')[6])"><i class="ti ti-file-import"></i>Import CSV</button>
           </div>
         </div>
-        <div id="dash-content">
+        <div id="dash-content" style="display:none">
           <div class="two-col">
-            <div class="card"><div class="card-h"><span class="card-t">Pipeline</span></div><div id="pipe-list"></div></div>
+            <div class="card"><div class="card-h"><span class="card-t">Pipeline status</span></div><div id="pipe-list"></div></div>
             <div class="card"><div class="card-h"><span class="card-t">Recent activity</span></div><div id="act-list"></div></div>
           </div>
         </div>
@@ -396,16 +372,14 @@ body{font-family:var(--font-body);color:var(--ink);font-size:14px}
 
       <!-- Leads -->
       <section id="sc-leads" class="screen">
+        <div id="leads-loading" class="loading"><i class="ti ti-loader-2"></i><span>Loading leads…</span></div>
         <div id="leads-empty" class="empty-state" style="display:none">
           <div class="es-icon"><i class="ti ti-users"></i></div>
           <div class="es-title">No leads yet</div>
-          <div class="es-sub">Add your first student enquiry or import existing leads from a CSV file.</div>
-          <div style="display:flex;gap:10px;justify-content:center">
-            <button class="btn btn-p" onclick="openAddLead()"><i class="ti ti-plus"></i>Add lead</button>
-            <button class="btn" onclick="nav('import',document.querySelectorAll('.ni')[5])"><i class="ti ti-file-import"></i>Import CSV</button>
-          </div>
+          <div class="es-sub">Add your first student enquiry or import from CSV. All leads are shared with your team in real time.</div>
+          <button class="btn btn-p" onclick="openAddLead()"><i class="ti ti-plus"></i>Add lead</button>
         </div>
-        <div id="leads-content">
+        <div id="leads-content" style="display:none">
           <div class="fbar">
             <input type="text" id="ls-q" placeholder="Search by name, mobile, program, city…" oninput="renderLeads()">
             <select id="ls-st" onchange="renderLeads()">
@@ -440,17 +414,19 @@ body{font-family:var(--font-body);color:var(--ink);font-size:14px}
       <section id="sc-coaching" class="screen">
         <div id="coaching-empty" class="empty-state" style="display:none">
           <div class="es-icon"><i class="ti ti-school"></i></div>
-          <div class="es-title">No coaching students yet</div>
-          <div class="es-sub">When a lead is enrolled in a coaching program, they'll appear here. Add a lead and set their status to Enrolled.</div>
-          <button class="btn btn-p" onclick="openAddLead()"><i class="ti ti-plus"></i>Add enrolled student</button>
+          <div class="es-title">No coaching records yet</div>
+          <div class="es-sub">Enrol a student and add their coaching details here.</div>
         </div>
-        <div id="coaching-content">
+        <div id="coaching-content" style="display:none">
           <div class="cg" id="cg"></div>
           <div class="card">
-            <div class="card-h"><span class="card-t">All coaching students</span></div>
+            <div class="card-h">
+              <span class="card-t">All coaching students</span>
+              <button class="btn btn-p" style="font-size:12px;padding:5px 10px" onclick="openCoachingModal()"><i class="ti ti-plus"></i>Add record</button>
+            </div>
             <div class="tw" style="border:none;border-radius:0;box-shadow:none">
               <table class="tbl"><thead><tr>
-                <th>Student</th><th>Program</th><th>Sessions</th><th>Mock</th><th>Target</th><th>Progress</th>
+                <th>Student</th><th>Program</th><th>Batch</th><th>Sessions</th><th>Mock</th><th>Target</th><th>Progress</th>
               </tr></thead><tbody id="ct"></tbody></table>
             </div>
           </div>
@@ -462,9 +438,9 @@ body{font-family:var(--font-body);color:var(--ink);font-size:14px}
         <div id="fu-empty" class="empty-state" style="display:none">
           <div class="es-icon"><i class="ti ti-calendar-check"></i></div>
           <div class="es-title">No follow-ups pending</div>
-          <div class="es-sub">Leads with active statuses (New Enquiry, Contacted, Counselling Done, Deferred) and a follow-up date will appear here.</div>
+          <div class="es-sub">Active leads with a follow-up date will appear here.</div>
         </div>
-        <div id="fu-content">
+        <div id="fu-content" style="display:none">
           <div class="fbar" style="margin-bottom:10px">
             <select id="fp-pr" onchange="renderFU()"><option value="">All priorities</option><option>High</option><option>Medium</option><option>Low</option></select>
             <select id="fp-co" onchange="renderFU()"><option value="">All counsellors</option></select>
@@ -474,24 +450,34 @@ body{font-family:var(--font-body);color:var(--ink);font-size:14px}
         </div>
       </section>
 
+      <!-- Team -->
+      <section id="sc-team" class="screen">
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-h"><span class="card-t">Team members</span></div>
+          <div class="team-grid" id="team-grid">
+            <div class="loading"><i class="ti ti-loader-2"></i></div>
+          </div>
+        </div>
+      </section>
+
       <!-- Import -->
       <section id="sc-import" class="screen">
-        <div class="card" style="max-width:640px">
+        <div class="card" style="max-width:620px">
           <div class="card-h"><span class="card-t">Import leads from CSV</span></div>
-          <p style="font-size:13px;color:var(--ink3);margin-bottom:16px;line-height:1.65">Upload a CSV file to bulk-import leads. Columns supported: <strong>Name, Mobile, Email, City, Program, Destination, Status, Source, Priority, Notes</strong>. Column headers must be on the first row. Extra columns are ignored.</p>
-          <div class="import-zone" id="main-dropzone" onclick="document.getElementById('main-csv').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="mainDrop(event)">
+          <p style="font-size:13px;color:var(--ink3);margin-bottom:16px;line-height:1.65">Supported columns: <strong>Name, Mobile, Email, City, Program, Destination, Status, Source, Priority, Notes</strong>. Headers on row 1. All imported leads are immediately shared with your team.</p>
+          <div class="import-zone" onclick="document.getElementById('imp-csv').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropCSV(event)">
             <i class="ti ti-upload"></i>
             <p style="font-size:14px;font-weight:500;color:var(--ink2);margin-bottom:4px">Drop your CSV here</p>
             <span style="font-size:12px;color:var(--ink3)">or click to browse</span>
           </div>
-          <input type="file" id="main-csv" accept=".csv,.txt" style="display:none" onchange="mainCSV(event)">
-          <div id="main-preview" class="csv-preview" style="display:none;margin-top:14px"></div>
-          <div id="main-import-btn" style="display:none;margin-top:14px">
-            <button class="btn btn-p" onclick="doMainImport()"><i class="ti ti-database-import"></i>Import <span id="imp-count">0</span> leads</button>
+          <input type="file" id="imp-csv" accept=".csv,.txt" style="display:none" onchange="handleCSV(event)">
+          <div id="imp-preview" style="display:none;margin-top:14px;font-size:12px;color:var(--ink3);background:var(--cream);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;max-height:120px;overflow-y:auto"></div>
+          <div id="imp-btn" style="display:none;margin-top:14px">
+            <button class="btn btn-p" onclick="doImport()"><i class="ti ti-database-import"></i>Import <span id="imp-count">0</span> leads to shared database</button>
           </div>
           <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--line)">
-            <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Export current leads</div>
-            <button class="btn" onclick="exportCSV()"><i class="ti ti-download"></i>Download as CSV</button>
+            <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Export</div>
+            <button class="btn" onclick="exportCSV()"><i class="ti ti-download"></i>Download all leads as CSV</button>
           </div>
         </div>
       </section>
@@ -500,24 +486,23 @@ body{font-family:var(--font-body);color:var(--ink);font-size:14px}
       <section id="sc-ai" class="screen">
         <div class="ai-wrap">
           <div class="qpills">
-            <button class="qp" onclick="aiQ('Summarise my current pipeline and flag what needs immediate attention.')">Pipeline summary</button>
+            <button class="qp" onclick="aiQ('Summarise the current pipeline and flag what needs immediate attention.')">Pipeline summary</button>
             <button class="qp" onclick="aiQ('Which leads need follow-up today? List them with suggested actions.')">Today\'s follow-ups</button>
             <button class="qp" onclick="aiQ('Draft a warm WhatsApp message for a new student enquiry about Study Abroad - PG to UK.')">WhatsApp template</button>
-            <button class="qp" onclick="aiQ('How do I convert a Counselling Done lead to Enrolled? Give me a practical approach.')">Conversion tips</button>
+            <button class="qp" onclick="aiQ('How do I convert a Counselling Done lead to Enrolled? Practical approach.')">Conversion tips</button>
             <button class="qp" onclick="aiQ('Write a re-engagement message for a student who hasn\'t responded in a week.')">Re-engagement</button>
-            <button class="qp" onclick="aiQ('What are the top 5 things a student needs for a UK PG application?')">UK PG checklist</button>
+            <button class="qp" onclick="aiQ('What documents does a student need for a UK PG university application?')">UK PG checklist</button>
           </div>
           <div class="ai-msgs" id="ai-msgs">
             <div class="ai-msg assistant">
               <div class="ai-role">AI Counsellor</div>
               <div class="ai-bub">Hello! I am your Step4Progress AI Counsellor.
 
-I can help you with:
-• Drafting WhatsApp messages, follow-up emails, and SOP guidance
-• Summarising your pipeline and spotting urgent leads
+I can help with:
+• Drafting WhatsApp messages, follow-up emails, SOP guidance
+• Summarising your shared pipeline and spotting urgent leads
 • Conversion strategies for each pipeline stage
 • Country-specific application checklists and visa tips
-• Re-engagement templates for unresponsive students
 
 What would you like help with today?</div>
             </div>
@@ -529,7 +514,6 @@ What would you like help with today?</div>
           </div>
         </div>
       </section>
-
     </div>
   </div>
 </div>
@@ -537,16 +521,16 @@ What would you like help with today?</div>
 <!-- Lead Modal -->
 <div class="mover" id="modal-lead">
   <div class="modal">
-    <div class="mhead"><span class="mtitle" id="modal-title">Add new lead</span><button class="mclose" onclick="closeModal()">×</button></div>
+    <div class="mhead"><span class="mtitle" id="modal-title">Add new lead</span><button class="mclose" onclick="closeModal('modal-lead')">×</button></div>
     <div class="fg">
-      <div class="section-divider">Contact details</div>
+      <div class="sdiv">Contact details</div>
       <div class="ff"><label>Full name *</label><input id="f-name" placeholder="Student's full name"></div>
       <div class="ff"><label>Mobile *</label><input id="f-mobile" placeholder="9876543210"></div>
       <div class="ff"><label>Email</label><input type="email" id="f-email" placeholder="email@example.com"></div>
       <div class="ff"><label>City / Native</label><input id="f-city" placeholder="Chennai"></div>
       <div class="ff"><label>Date of birth</label><input type="date" id="f-dob"></div>
       <div class="ff"><label>Qualification</label><input id="f-qual" placeholder="B.Tech CSE"></div>
-      <div class="section-divider">Program details</div>
+      <div class="sdiv">Program details</div>
       <div class="ff"><label>Program interest</label>
         <select id="f-prog">
           <option>Study Abroad - UG</option><option>Study Abroad - PG</option><option>Study Abroad - PhD</option>
@@ -562,7 +546,7 @@ What would you like help with today?</div>
           <option>USA</option><option>Europe - Other</option><option>India</option><option>Other</option>
         </select>
       </div>
-      <div class="section-divider">Pipeline</div>
+      <div class="sdiv">Pipeline</div>
       <div class="ff"><label>Lead source</label>
         <select id="f-src">
           <option>Meta Ads</option><option>Google Ads</option><option>Instagram</option><option>WhatsApp</option>
@@ -580,13 +564,13 @@ What would you like help with today?</div>
       <div class="ff"><label>Priority</label>
         <select id="f-prio"><option>High</option><option selected>Medium</option><option>Low</option></select>
       </div>
-      <div class="ff"><label>Counsellor</label><select id="f-counsel"></select></div>
+      <div class="ff"><label>Counsellor</label><input id="f-counsel" placeholder="Assigned counsellor name"></div>
       <div class="ff"><label>Next follow-up</label><input type="date" id="f-fu"></div>
-      <div class="ff full"><label>Notes / remarks</label><textarea id="f-notes" placeholder="Call notes, student context, documents shared…"></textarea></div>
+      <div class="ff full"><label>Notes / remarks</label><textarea id="f-notes" placeholder="Call notes, documents shared, student context…"></textarea></div>
     </div>
     <div class="mfoot">
-      <button class="btn" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-p" onclick="saveLead()"><i class="ti ti-check"></i>Save lead</button>
+      <button class="btn" onclick="closeModal('modal-lead')">Cancel</button>
+      <button class="btn btn-p" id="save-lead-btn" onclick="saveLead()"><i class="ti ti-check"></i>Save lead</button>
     </div>
   </div>
 </div>
@@ -594,11 +578,11 @@ What would you like help with today?</div>
 <!-- Coaching Modal -->
 <div class="mover" id="modal-coaching">
   <div class="modal" style="width:460px">
-    <div class="mhead"><span class="mtitle">Add coaching record</span><button class="mclose" onclick="document.getElementById('modal-coaching').classList.remove('open')">×</button></div>
+    <div class="mhead"><span class="mtitle">Add coaching record</span><button class="mclose" onclick="closeModal('modal-coaching')">×</button></div>
     <div class="fg">
-      <div class="ff full"><label>Select enrolled student</label><select id="co-sid" style="width:100%;font-size:13px;padding:9px 13px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-body)"></select></div>
-      <div class="ff"><label>Batch name</label><input id="co-batch" placeholder="Batch A Jan 2026"></div>
+      <div class="ff full"><label>Student (enrolled leads)</label><select id="co-sid" style="width:100%;font-size:13px;padding:9px 13px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)"></select></div>
       <div class="ff"><label>Program</label><input id="co-prog" placeholder="IELTS Coaching"></div>
+      <div class="ff"><label>Batch name</label><input id="co-batch" placeholder="Batch A Jan 2026"></div>
       <div class="ff"><label>Start date</label><input type="date" id="co-start"></div>
       <div class="ff"><label>End date</label><input type="date" id="co-end"></div>
       <div class="ff"><label>Total sessions</label><input type="number" id="co-total" placeholder="24" min="1"></div>
@@ -607,7 +591,7 @@ What would you like help with today?</div>
       <div class="ff"><label>Target score</label><input id="co-target" placeholder="7.0"></div>
     </div>
     <div class="mfoot">
-      <button class="btn" onclick="document.getElementById('modal-coaching').classList.remove('open')">Cancel</button>
+      <button class="btn" onclick="closeModal('modal-coaching')">Cancel</button>
       <button class="btn btn-p" onclick="saveCoaching()"><i class="ti ti-check"></i>Save</button>
     </div>
   </div>
@@ -654,6 +638,11 @@ What would you like help with today?</div>
 <div class="toast" id="toast"></div>
 
 <script>
+// ── SUPABASE INIT ────────────────────────────────────────────────
+const SUPABASE_URL = 'https://aheyolumsyuipdneiefm.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoZXlvbHVtc3l1aXBkbmVpZWZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3MDc3MDMsImV4cCI6MjA5NTI4MzcwM30.71ho16xsRk2GbwVGI1R3_YI_M6PI5LmXpB-t3oyhQ4o';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 // ── Constants ────────────────────────────────────────────────────
 const SS={
   "New Enquiry":     {bg:"#DBEAFE",tx:"#1E40AF"},
@@ -665,72 +654,413 @@ const SS={
   "Not Interested":  {bg:"#FFE4E6",tx:"#9F1239"},
   "Dropped":         {bg:"#F1F5F9",tx:"#475569"},
 };
-const PS={
-  "High":  {bg:"#FFE4E6",tx:"#9F1239"},
-  "Medium":{bg:"#FEF9C3",tx:"#854D0E"},
-  "Low":   {bg:"#DCFCE7",tx:"#166534"},
-};
-const AVC=[
-  ["#DBEAFE","#1E3A8A"],["#D1FAE5","#064E3B"],["#FEF3C7","#78350F"],
-  ["#EDE9FE","#3B0764"],["#FCE7F3","#831843"],["#E0F2FE","#0C4A6E"],
-];
+const PS={High:{bg:"#FFE4E6",tx:"#9F1239"},Medium:{bg:"#FEF9C3",tx:"#854D0E"},Low:{bg:"#DCFCE7",tx:"#166534"}};
+const AVC=[["#DBEAFE","#1E3A8A"],["#D1FAE5","#064E3B"],["#FEF3C7","#78350F"],["#EDE9FE","#3B0764"],["#FCE7F3","#831843"],["#E0F2FE","#0C4A6E"]];
 const STATUSES=["New Enquiry","Contacted","Counselling Done","Enrolled","Fees Paid","Deferred","Not Interested","Dropped"];
 function ini(n){const p=(n||'?').trim().split(' ');return(p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function ago(ts){const d=Date.now()-ts;if(d<3600000)return Math.round(d/60000)+'m ago';if(d<86400000)return Math.round(d/3600000)+'h ago';return Math.round(d/86400000)+'d ago';}
+function ago(ts){if(!ts)return'';const d=Date.now()-new Date(ts).getTime();if(d<3600000)return Math.round(d/60000)+'m ago';if(d<86400000)return Math.round(d/3600000)+'h ago';return Math.round(d/86400000)+'d ago';}
 
-// ── Storage ──────────────────────────────────────────────────────
-const KEY='s4p_fresh_v1';
-function load(){try{const d=localStorage.getItem(KEY);return d?JSON.parse(d):null;}catch(e){return null;}}
-function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
+// ── State ────────────────────────────────────────────────────────
+let leads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[];
 
-let DB={
-  setup:false,org:'Step4Progress',userName:'',userRole:'Admin',city:'',
-  team:[],leads:[],coaching:[],nextId:1
-};
+// ── SYNC indicator ───────────────────────────────────────────────
+function setSyncing(){document.getElementById('sync-dot').className='sync-dot syncing';document.getElementById('sync-label').textContent='Saving…';}
+function setSynced(){document.getElementById('sync-dot').className='sync-dot synced';document.getElementById('sync-label').textContent='Saved';}
+function setSyncErr(){document.getElementById('sync-dot').className='sync-dot error';document.getElementById('sync-label').textContent='Sync error';}
 
-// ── Onboarding ────────────────────────────────────────────────────
-let obStep=1,importedRows=[];
+// ── AUTH ─────────────────────────────────────────────────────────
+let authMode='login';
+function toggleAuth(){
+  authMode=authMode==='login'?'signup':'login';
+  document.getElementById('auth-login-view').style.display=authMode==='login'?'block':'none';
+  document.getElementById('auth-signup-view').style.display=authMode==='signup'?'block':'none';
+  document.getElementById('auth-toggle-text').textContent=authMode==='login'?'Don\'t have an account?':'Already have an account?';
+  document.getElementById('auth-toggle-btn').textContent=authMode==='login'?'Sign up':'Sign in';
+}
 
-function obNext(step){
-  if(step===1){
-    const org=document.getElementById('ob-org').value.trim()||'Step4Progress';
-    const name=document.getElementById('ob-yourname').value.trim();
-    if(!name){document.getElementById('ob-yourname').focus();return;}
-    DB.org=org;DB.userName=name;DB.userRole=document.getElementById('ob-yourrole').value;
-    DB.city=document.getElementById('ob-city').value.trim();
+async function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  const btn=document.getElementById('login-btn');
+  const err=document.getElementById('login-err');
+  if(!email||!pass){err.textContent='Please enter email and password.';return;}
+  btn.disabled=true;btn.textContent='Signing in…';err.textContent='';
+  const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){err.textContent=error.message;btn.disabled=false;btn.textContent='Sign in →';return;}
+  await onLogin(data.user);
+}
+
+async function doSignup(){
+  const name=document.getElementById('signup-name').value.trim();
+  const role=document.getElementById('signup-role').value;
+  const email=document.getElementById('signup-email').value.trim();
+  const pass=document.getElementById('signup-pass').value;
+  const btn=document.getElementById('signup-btn');
+  const err=document.getElementById('signup-err');
+  if(!name||!email||!pass){err.textContent='Please fill all fields.';return;}
+  if(pass.length<6){err.textContent='Password must be at least 6 characters.';return;}
+  btn.disabled=true;btn.textContent='Creating account…';err.textContent='';
+  const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,role}}});
+  if(error){err.textContent=error.message;btn.disabled=false;btn.textContent='Create account →';return;}
+  // save profile to team table
+  await sb.from('team').upsert({id:data.user.id,full_name:name,role,email});
+  err.style.color='#86EFAC';
+  err.textContent='Account created! Check your email to confirm, then sign in.';
+  btn.disabled=false;btn.textContent='Create account →';
+}
+
+async function onLogin(user){
+  currentUser=user;
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  // load profile
+  const{data:profile}=await sb.from('team').select('*').eq('id',user.id).single();
+  const name=profile?.full_name||user.email.split('@')[0];
+  const role=profile?.role||'Counsellor';
+  document.getElementById('sb-av').textContent=ini(name);
+  document.getElementById('sb-uname').textContent=name;
+  document.getElementById('sb-urole').textContent=role;
+  await loadLeads();
+  await loadCoaching();
+  await loadTeam();
+  renderDash();badges();
+  // realtime subscription
+  sb.channel('leads-changes').on('postgres_changes',{event:'*',schema:'public',table:'leads'},()=>{
+    loadLeads().then(()=>{renderDash();renderLeads();renderFU();badges();});
+  }).subscribe();
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  leads=[];coaching=[];currentUser=null;
+  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-email').value='';
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-err').textContent='';
+  document.getElementById('login-btn').disabled=false;
+  document.getElementById('login-btn').textContent='Sign in →';
+}
+
+// check existing session
+sb.auth.getSession().then(({data:{session}})=>{if(session)onLogin(session.user);});
+
+// ── DATA LOADING ─────────────────────────────────────────────────
+async function loadLeads(){
+  const{data,error}=await sb.from('leads').select('*').order('created_at',{ascending:false});
+  if(!error&&data) leads=data;
+}
+async function loadCoaching(){
+  const{data,error}=await sb.from('coaching').select('*').order('created_at',{ascending:false});
+  if(!error&&data) coaching=data;
+}
+async function loadTeam(){
+  const{data}=await sb.from('team').select('*');
+  if(data) renderTeam(data);
+}
+
+// ── NAV ──────────────────────────────────────────────────────────
+function nav(id,btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sc-'+id).classList.add('active');
+  if(btn)btn.classList.add('active');
+  const T={dashboard:'Dashboard',leads:'Lead database',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',import:'Import data',ai:'AI Counsellor'};
+  document.getElementById('topbar-title').textContent=T[id]||id;
+  if(id==='leads')renderLeads();
+  if(id==='coaching')renderCoaching();
+  if(id==='followup')renderFU();
+}
+
+function badges(){
+  document.getElementById('nb-leads').textContent=leads.length;
+  const fu=leads.filter(l=>['New Enquiry','Contacted','Counselling Done','Deferred'].includes(l.status)).length;
+  const nb=document.getElementById('nb-fu');
+  nb.textContent=fu;nb.className='nbadge'+(fu>0?' hot':'');
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────
+function renderDash(){
+  const c={};leads.forEach(l=>{c[l.status]=(c[l.status]||0)+1;});
+  const tot=leads.length;
+  const now=new Date();
+  const mon=leads.filter(l=>{const d=new Date(l.created_at);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).length;
+  document.getElementById('k-tot').textContent=tot;
+  document.getElementById('k-enr').textContent=(c['Enrolled']||0)+(c['Fees Paid']||0);
+  document.getElementById('k-fee').textContent=c['Fees Paid']||0;
+  document.getElementById('k-act').textContent=(c['New Enquiry']||0)+(c['Contacted']||0)+(c['Counselling Done']||0);
+  document.getElementById('k-mon').textContent=mon;
+  const empty=tot===0;
+  document.getElementById('dash-empty').style.display=empty?'flex':'none';
+  document.getElementById('dash-content').style.display=empty?'none':'block';
+  if(empty)return;
+  const pl=document.getElementById('pipe-list');pl.innerHTML='';
+  STATUSES.forEach(s=>{
+    const n=c[s]||0;if(!n)return;
+    const ss=SS[s];const w=Math.round(n/tot*100);
+    pl.innerHTML+=`<div class="prow"><span class="pill" style="background:${ss.bg};color:${ss.tx};min-width:132px">${s}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:${ss.tx}"></div></div><span class="pn" style="color:${ss.tx}">${n}</span></div>`;
+  });
+  const al=document.getElementById('act-list');al.innerHTML='';
+  const dotC={"New Enquiry":"#1E40AF","Enrolled":"#065F46","Fees Paid":"#064E3B","Not Interested":"#9F1239","Counselling Done":"#C05621","Contacted":"#854D0E","Deferred":"#92400E","Dropped":"#475569"};
+  leads.slice(0,6).forEach(l=>{
+    al.innerHTML+=`<div class="aitem"><div class="adot" style="background:${dotC[l.status]||'#999'}"></div><div><div class="atext">${esc(l.name)} — ${l.status.toLowerCase()}</div><div class="atime">${ago(l.created_at)}${l.source?' · '+l.source:''}</div></div></div>`;
+  });
+}
+
+// ── LEADS ────────────────────────────────────────────────────────
+function renderLeads(){
+  document.getElementById('leads-loading').style.display='none';
+  const q=(document.getElementById('ls-q').value||'').toLowerCase();
+  const sf=document.getElementById('ls-st').value;
+  const pf=document.getElementById('ls-pr').value;
+  const df=document.getElementById('ls-de').value;
+  const f=leads.filter(l=>(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!q||[l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q))));
+  const empty=leads.length===0;
+  document.getElementById('leads-empty').style.display=empty?'flex':'none';
+  document.getElementById('leads-content').style.display=empty?'none':'block';
+  if(empty)return;
+  document.getElementById('lcount').textContent=`Showing ${f.length} of ${leads.length} leads`;
+  const tb=document.getElementById('lead-tbody');tb.innerHTML='';
+  if(!f.length){tb.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:36px;color:var(--ink3);font-style:italic">No leads match your filters.</td></tr>`;return;}
+  f.forEach((l,i)=>{
+    const[abg,atx]=AVC[i%AVC.length];
+    const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
+    const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
+    tb.innerHTML+=`<tr onclick="openDetail('${l.id}')">
+      <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
+      <td><div class="nc"><div class="av" style="background:${abg};color:${atx}">${ini(l.name)}</div><div><div class="ln">${esc(l.name)}</div><div class="lc">${esc(l.city||'—')}</div></div></div></td>
+      <td style="font-size:12px;color:var(--ink3)">${esc(l.mobile||'—')}</td>
+      <td style="font-size:12px">${esc(l.program||'—')}</td>
+      <td style="font-size:12px">${esc(l.destination||'—')}</td>
+      <td><span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span></td>
+      <td><span class="pill" style="background:${ps.bg};color:${ps.tx}">${l.priority||'—'}</span></td>
+      <td style="font-size:12px;color:var(--ink3)">${esc(l.counsellor||'—')}</td>
+    </tr>`;
+  });
+}
+
+// ── DETAIL PANEL ─────────────────────────────────────────────────
+function openDetail(id){
+  const l=leads.find(x=>x.id===id);if(!l)return;
+  curId=id;
+  document.getElementById('d-id').textContent=l.lead_id||id.substring(0,8);
+  document.getElementById('d-name').textContent=l.name;
+  document.getElementById('d-sub').textContent=(l.program||'')+(l.destination?' → '+l.destination:'');
+  document.getElementById('d-mob').textContent=l.mobile||'—';
+  document.getElementById('d-email').textContent=l.email||'—';
+  document.getElementById('d-city').textContent=l.city||'—';
+  document.getElementById('d-dob').textContent=l.dob||'—';
+  document.getElementById('d-qual').textContent=l.qualification||'—';
+  document.getElementById('d-prog').textContent=l.program||'—';
+  document.getElementById('d-dest').textContent=l.destination||'—';
+  document.getElementById('d-src').textContent=l.source||'—';
+  document.getElementById('d-prio').textContent=l.priority||'—';
+  document.getElementById('d-counsel').textContent=l.counsellor||'Unassigned';
+  document.getElementById('d-fu').textContent=l.next_followup||'Not set';
+  document.getElementById('d-notes').textContent=l.notes||'No notes.';
+  const sel=document.getElementById('d-ssel');
+  sel.innerHTML=STATUSES.map(s=>`<option${s===l.status?' selected':''}>${s}</option>`).join('');
+  document.getElementById('dover').classList.add('open');
+}
+function closeDover(e){
+  if(e&&e.target!==document.getElementById('dover'))return;
+  document.getElementById('dover').classList.remove('open');curId=null;
+}
+async function updateStatus(){
+  if(!curId)return;
+  const status=document.getElementById('d-ssel').value;
+  setSyncing();
+  const{error}=await sb.from('leads').update({status}).eq('id',curId);
+  if(error){setSyncErr();toast('Error updating status.');return;}
+  const l=leads.find(x=>x.id===curId);if(l)l.status=status;
+  setSynced();renderLeads();renderDash();badges();toast('Status → '+status);
+}
+async function deleteLead(){
+  if(!curId||!confirm('Delete this lead? This cannot be undone.'))return;
+  setSyncing();
+  const{error}=await sb.from('leads').delete().eq('id',curId);
+  if(error){setSyncErr();toast('Error deleting lead.');return;}
+  leads=leads.filter(x=>x.id!==curId);
+  setSynced();closeDover(null);renderLeads();renderDash();badges();toast('Lead deleted.');
+}
+function editLead(){
+  if(!curId)return;
+  const l=leads.find(x=>x.id===curId);if(!l)return;
+  editMode=true;
+  document.getElementById('modal-title').textContent='Edit lead';
+  document.getElementById('f-name').value=l.name||'';
+  document.getElementById('f-mobile').value=l.mobile||'';
+  document.getElementById('f-email').value=l.email||'';
+  document.getElementById('f-city').value=l.city||'';
+  document.getElementById('f-dob').value=l.dob||'';
+  document.getElementById('f-qual').value=l.qualification||'';
+  document.getElementById('f-prog').value=l.program||'';
+  document.getElementById('f-dest').value=l.destination||'';
+  document.getElementById('f-src').value=l.source||'';
+  document.getElementById('f-status').value=l.status||'New Enquiry';
+  document.getElementById('f-prio').value=l.priority||'Medium';
+  document.getElementById('f-counsel').value=l.counsellor||'';
+  document.getElementById('f-fu').value=l.next_followup||'';
+  document.getElementById('f-notes').value=l.notes||'';
+  document.getElementById('modal-lead').classList.add('open');
+  closeDover(null);
+}
+
+// ── ADD/EDIT LEAD ─────────────────────────────────────────────────
+function openAddLead(){
+  editMode=false;curId=null;
+  document.getElementById('modal-title').textContent='Add new lead';
+  ['f-name','f-mobile','f-email','f-city','f-dob','f-qual','f-notes','f-fu','f-counsel'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-status').value='New Enquiry';
+  document.getElementById('f-prio').value='Medium';
+  document.getElementById('modal-lead').classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');editMode=false;}
+
+async function saveLead(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){document.getElementById('f-name').focus();toast('Please enter a name.');return;}
+  const btn=document.getElementById('save-lead-btn');
+  btn.disabled=true;setSyncing();
+  const data={
+    name,mobile:document.getElementById('f-mobile').value,
+    email:document.getElementById('f-email').value,
+    city:document.getElementById('f-city').value,
+    dob:document.getElementById('f-dob').value||null,
+    qualification:document.getElementById('f-qual').value,
+    program:document.getElementById('f-prog').value,
+    destination:document.getElementById('f-dest').value,
+    source:document.getElementById('f-src').value,
+    status:document.getElementById('f-status').value,
+    priority:document.getElementById('f-prio').value,
+    counsellor:document.getElementById('f-counsel').value,
+    next_followup:document.getElementById('f-fu').value||null,
+    notes:document.getElementById('f-notes').value,
+    added_by:currentUser?.id
+  };
+  let error;
+  if(editMode&&curId){
+    ({error}=await sb.from('leads').update(data).eq('id',curId));
+    if(!error){const l=leads.find(x=>x.id===curId);if(l)Object.assign(l,data);}
+    toast('Lead updated.');
+  } else {
+    // auto lead ID
+    data.lead_id='S4P-'+String(leads.length+1).padStart(4,'0');
+    const res=await sb.from('leads').insert([data]).select();
+    error=res.error;
+    if(!error&&res.data)leads.unshift(res.data[0]);
+    toast('Lead added: '+name);
   }
-  if(step===2){
-    /* team saved incrementally */
-  }
-  document.getElementById('ob'+step).classList.remove('active');
-  obStep=step+1;
-  document.getElementById('ob'+obStep).classList.add('active');
+  btn.disabled=false;
+  if(error){setSyncErr();toast('Error saving lead: '+error.message);return;}
+  setSynced();closeModal('modal-lead');renderLeads();renderDash();badges();
 }
 
-function addTeamMember(){
-  const name=document.getElementById('ob-tmname').value.trim();
-  if(!name) return;
-  const role=document.getElementById('ob-tmrole').value;
-  DB.team.push({name,role});
-  document.getElementById('ob-tmname').value='';
-  renderTeamList();
+// ── COACHING ──────────────────────────────────────────────────────
+function renderCoaching(){
+  const empty=coaching.length===0;
+  document.getElementById('coaching-empty').style.display=empty?'flex':'none';
+  document.getElementById('coaching-content').style.display=empty?'none':'block';
+  if(empty)return;
+  const cg=document.getElementById('cg');cg.innerHTML='';
+  coaching.forEach(c=>{
+    const pct=c.total_sessions>0?Math.round(c.sessions_done/c.total_sessions*100):0;
+    const col=pct>=100?'#065F46':pct>=50?'#1B998B':'#C05621';
+    cg.innerHTML+=`<div class="cc"><div class="ccn">${esc(c.student_name)}</div><div class="ccp">${esc(c.program||'')} · ${esc(c.batch_name||'')}</div><div class="pt"><div class="pb" style="width:${pct}%;background:${col}"></div></div><div class="csr"><div class="cst"><div class="csl">Done</div><div class="csv">${c.sessions_done}/${c.total_sessions}</div></div><div class="cst"><div class="csl">Mock</div><div class="csv">${c.mock_score||'—'}</div></div><div class="cst"><div class="csl">Target</div><div class="csv">${c.target_score||'—'}</div></div><div class="cst"><div class="csl">%</div><div class="csv" style="color:${col}">${pct}%</div></div></div></div>`;
+  });
+  const tb=document.getElementById('ct');tb.innerHTML='';
+  coaching.forEach(c=>{
+    const pct=c.total_sessions>0?Math.round(c.sessions_done/c.total_sessions*100):0;
+    const done=pct>=100;const ss=done?{bg:'#A7F3D0',tx:'#065F46'}:{bg:'#DBEAFE',tx:'#1E40AF'};
+    tb.innerHTML+=`<tr><td style="font-weight:600">${esc(c.student_name)}</td><td style="font-size:12px">${esc(c.program||'')}</td><td style="font-size:12px">${esc(c.batch_name||'')}</td><td>${c.sessions_done}/${c.total_sessions}</td><td>${c.mock_score||'—'}</td><td>${c.target_score||'—'}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="pt" style="width:80px;margin:0;border:1px solid var(--line)"><div class="pb" style="width:${pct}%;background:${done?'#065F46':'#1B998B'}"></div></div><span style="font-size:11px;color:var(--ink3)">${pct}%</span></div></td></tr>`;
+  });
 }
 
-function renderTeamList(){
-  const el=document.getElementById('ob-team-list');
-  el.innerHTML=DB.team.map((t,i)=>`<div class="ob-team-item"><span>${esc(t.name)} · <em style="opacity:.6">${t.role}</em></span><button class="ob-team-del" onclick="removeTeam(${i})">×</button></div>`).join('');
+function openCoachingModal(){
+  const enrolled=leads.filter(l=>['Enrolled','Fees Paid'].includes(l.status));
+  document.getElementById('co-sid').innerHTML=enrolled.length?enrolled.map(l=>`<option value="${l.id}">${esc(l.name)} — ${esc(l.program||'')}</option>`).join(''):'<option>No enrolled students yet</option>';
+  ['co-prog','co-batch','co-start','co-end','co-mock','co-target'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('co-total').value='';document.getElementById('co-done').value='0';
+  document.getElementById('modal-coaching').classList.add('open');
 }
-function removeTeam(i){DB.team.splice(i,1);renderTeamList();}
 
-function dragOver(e){e.preventDefault();e.currentTarget.classList.add('drag');}
-function dragLeave(e){e.currentTarget.classList.remove('drag');}
-function dropCSV(e){e.preventDefault();e.currentTarget.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)parseCSVFile(f,'ob');}
-function mainDrop(e){e.preventDefault();e.currentTarget.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)parseCSVFile(f,'main');}
-function handleCSV(e){if(e.target.files[0])parseCSVFile(e.target.files[0],'ob');}
-function mainCSV(e){if(e.target.files[0])parseCSVFile(e.target.files[0],'main');}
+async function saveCoaching(){
+  const sid=document.getElementById('co-sid').value;
+  const lead=leads.find(l=>l.id===sid);if(!lead)return;
+  const data={
+    lead_id:sid,student_name:lead.name,
+    program:document.getElementById('co-prog').value||lead.program,
+    batch_name:document.getElementById('co-batch').value,
+    start_date:document.getElementById('co-start').value||null,
+    end_date:document.getElementById('co-end').value||null,
+    total_sessions:parseInt(document.getElementById('co-total').value)||1,
+    sessions_done:parseInt(document.getElementById('co-done').value)||0,
+    mock_score:document.getElementById('co-mock').value,
+    target_score:document.getElementById('co-target').value,
+  };
+  setSyncing();
+  const{error,data:res}=await sb.from('coaching').insert([data]).select();
+  if(error){setSyncErr();toast('Error saving: '+error.message);return;}
+  if(res)coaching.unshift(res[0]);
+  setSynced();closeModal('modal-coaching');renderCoaching();toast('Coaching record added.');
+}
 
-function parseCSVFile(file,target){
+// ── FOLLOW-UPS ────────────────────────────────────────────────────
+function renderFU(){
+  const pf=document.getElementById('fp-pr').value;
+  const cf=document.getElementById('fp-co').value;
+  const act=['New Enquiry','Contacted','Counselling Done','Deferred'];
+  const f=leads.filter(l=>act.includes(l.status)&&(!pf||l.priority===pf)&&(!cf||l.counsellor===cf))
+    .sort((a,b)=>(a.priority==='High'?0:a.priority==='Medium'?1:2)-(b.priority==='High'?0:b.priority==='Medium'?1:2));
+  const empty=f.length===0;
+  document.getElementById('fu-empty').style.display=empty?'flex':'none';
+  document.getElementById('fu-content').style.display=empty?'none':'block';
+  if(empty)return;
+  document.getElementById('fucount').textContent=`${f.length} active follow-up${f.length!==1?'s':''}`;
+  const fl=document.getElementById('fu-list');fl.innerHTML='';
+  f.forEach(l=>{
+    const cls=l.priority==='High'?'high':l.priority==='Medium'?'medium':'low';
+    const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
+    const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
+    fl.innerHTML+=`<div class="fcard ${cls}" onclick="openDetail('${l.id}')">
+      <div class="fmeta">
+        <div class="fid">${esc(l.lead_id||l.id.substring(0,8))}</div>
+        <div class="fname">${esc(l.name)}</div>
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:5px">${esc(l.mobile||'—')} · ${esc(l.city||'—')}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+          <span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span>
+          <span style="font-size:12px;color:var(--ink3);font-style:italic">${esc(l.program||'')}</span>
+        </div>
+        ${l.notes?`<div style="font-size:12px;color:var(--ink3);line-height:1.55">${esc(l.notes.substring(0,100))}${l.notes.length>100?'…':''}</div>`:''}
+      </div>
+      <div class="fright">
+        <div class="fdate">${esc(l.next_followup||'No date')}</div>
+        <div class="fcounsel">${esc(l.counsellor||'Unassigned')}</div>
+        <span class="pill" style="background:${ps.bg};color:${ps.tx};margin-top:6px;display:inline-block">${l.priority||'—'}</span>
+      </div>
+    </div>`;
+  });
+}
+
+// ── TEAM ─────────────────────────────────────────────────────────
+function renderTeam(team){
+  const tg=document.getElementById('team-grid');
+  if(!team||!team.length){tg.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No team members yet. Have your counsellors sign up using the CRM link.</div>';return;}
+  tg.innerHTML=team.map(t=>`<div class="tcard"><div class="tcard-av">${ini(t.full_name||t.email)}</div><div><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role||'Counsellor')}</div><div class="tcard-email">${esc(t.email||'')}</div></div></div>`).join('');
+  // update follow-up counsellor filter
+  const fp=document.getElementById('fp-co');
+  const existing=Array.from(fp.options).map(o=>o.value);
+  team.forEach(t=>{if(t.full_name&&!existing.includes(t.full_name)){const o=document.createElement('option');o.value=t.full_name;o.textContent=t.full_name;fp.appendChild(o);}});
+}
+
+// ── IMPORT / EXPORT ───────────────────────────────────────────────
+function dragOver(e){e.preventDefault();e.currentTarget.style.borderColor='var(--pine3)';}
+function dragLeave(e){e.currentTarget.style.borderColor='';}
+function dropCSV(e){e.preventDefault();e.currentTarget.style.borderColor='';if(e.dataTransfer.files[0])parseFile(e.dataTransfer.files[0]);}
+function handleCSV(e){if(e.target.files[0])parseFile(e.target.files[0]);}
+
+function parseFile(file){
   const reader=new FileReader();
   reader.onload=e=>{
     const lines=e.target.result.split('\n').filter(l=>l.trim());
@@ -740,366 +1070,70 @@ function parseCSVFile(file,target){
     for(let i=1;i<lines.length;i++){
       const cols=lines[i].split(',').map(c=>c.trim().replace(/^"|"$/g,''));
       if(cols.length<2)continue;
-      const row={};
-      headers.forEach((h,j)=>{row[h]=cols[j]||'';});
+      const row={};headers.forEach((h,j)=>{row[h]=cols[j]||'';});
       rows.push(row);
     }
-    importedRows=rows;
-    const prev=target==='ob'?document.getElementById('csv-preview'):document.getElementById('main-preview');
+    importRows=rows;
+    const prev=document.getElementById('imp-preview');
     prev.style.display='block';
-    prev.innerHTML=`<div style="font-weight:600;margin-bottom:6px;color:var(--pine)">${rows.length} leads found in file</div>`+
-      rows.slice(0,5).map(r=>`<div>${esc(r.name||r.fullname||'—')} · ${esc(r.mobile||r.phone||'—')} · ${esc(r.program||r.programinterest||'—')}</div>`).join('');
-    if(target==='main'){
-      document.getElementById('main-import-btn').style.display='block';
-      document.getElementById('imp-count').textContent=rows.length;
-    }
+    prev.innerHTML=`<div style="font-weight:600;margin-bottom:6px;color:var(--pine)">${rows.length} leads found</div>`+
+      rows.slice(0,5).map(r=>`<div style="padding:3px 0;border-bottom:1px solid var(--line)">${esc(r.name||r.fullname||'—')} · ${esc(r.mobile||r.phone||'—')} · ${esc(r.program||r.programinterest||'—')}</div>`).join('');
+    document.getElementById('imp-btn').style.display='block';
+    document.getElementById('imp-count').textContent=rows.length;
   };
   reader.readAsText(file);
 }
 
-function finishOnboarding(){
-  if(importedRows.length>0) importRows(importedRows);
-  DB.setup=true;
-  save();
-  document.getElementById('onboarding').classList.add('hidden');
-  setTimeout(()=>{document.getElementById('onboarding').style.display='none';},450);
-  document.getElementById('app').classList.add('visible');
-  applySetup();
-  renderAll();
-}
-
-function importRows(rows){
-  rows.forEach(r=>{
-    const name=r.name||r.fullname||r['full name']||'';
-    if(!name) return;
-    DB.leads.push({
-      id:'S4P-'+String(DB.nextId++).padStart(4,'0'),
-      name,mobile:r.mobile||r.phone||'',email:r.email||'',
-      city:r.city||r.native||'',dob:'',qual:r.qualification||r.qual||'',
-      program:r.program||r.programinterest||r['program interest']||'Other',
-      dest:r.destination||r.dest||r.country||'',
-      status:r.status||'New Enquiry',source:r.source||r.leadsource||r['lead source']||'Import',
-      prio:r.priority||'Medium',counsel:r.counsellor||r.counsel||'',
-      followup:r.followup||r['next followup']||'',
-      notes:r.notes||r.remarks||'',
-      created:Date.now()
-    });
-  });
-  importedRows=[];
-}
-
-function doMainImport(){
-  if(!importedRows.length) return;
-  importRows(importedRows);
-  save();
-  document.getElementById('main-preview').style.display='none';
-  document.getElementById('main-import-btn').style.display='none';
-  renderAll();badges();
-  toast(importedRows.length+' leads imported successfully.');
-  importedRows=[];
+async function doImport(){
+  if(!importRows.length)return;
+  const btn=document.querySelector('#imp-btn .btn');btn.disabled=true;btn.textContent='Importing…';
+  setSyncing();
+  const toInsert=importRows.map((r,i)=>({
+    lead_id:'S4P-'+String(leads.length+i+1).padStart(4,'0'),
+    name:r.name||r.fullname||r['full name']||'',
+    mobile:r.mobile||r.phone||'',email:r.email||'',
+    city:r.city||r.native||'',
+    qualification:r.qualification||r.qual||'',
+    program:r.program||r.programinterest||'Other',
+    destination:r.destination||r.dest||r.country||'',
+    status:r.status||'New Enquiry',
+    source:r.source||r.leadsource||'Import',
+    priority:r.priority||'Medium',
+    counsellor:r.counsellor||r.counsel||'',
+    next_followup:r.followup||r.nextfollowup||null,
+    notes:r.notes||r.remarks||'',
+    added_by:currentUser?.id
+  })).filter(r=>r.name);
+  const{error,data}=await sb.from('leads').insert(toInsert).select();
+  btn.disabled=false;
+  if(error){setSyncErr();toast('Import error: '+error.message);return;}
+  if(data)leads=[...data,...leads];
+  setSynced();
+  document.getElementById('imp-preview').style.display='none';
+  document.getElementById('imp-btn').style.display='none';
+  importRows=[];
+  renderLeads();renderDash();badges();
+  toast(toInsert.length+' leads imported to shared database!');
 }
 
 function exportCSV(){
-  if(!DB.leads.length){toast('No leads to export.');return;}
-  const headers=['ID','Name','Mobile','Email','City','DOB','Qualification','Program','Destination','Status','Source','Priority','Counsellor','Follow-up','Notes'];
-  const rows=DB.leads.map(l=>[l.id,l.name,l.mobile,l.email,l.city,l.dob,l.qual,l.program,l.dest,l.status,l.source,l.prio,l.counsel,l.followup,l.notes].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(','));
-  const csv=[headers.join(','),...rows].join('\n');
+  if(!leads.length){toast('No leads to export.');return;}
+  const H=['Lead ID','Name','Mobile','Email','City','DOB','Qualification','Program','Destination','Status','Source','Priority','Counsellor','Follow-up','Notes'];
+  const rows=leads.map(l=>[l.lead_id,l.name,l.mobile,l.email,l.city,l.dob,l.qualification,l.program,l.destination,l.status,l.source,l.priority,l.counsellor,l.next_followup,l.notes].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv=[H.join(','),...rows].join('\n');
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='step4progress_leads.csv';a.click();
-  toast('Leads exported as CSV.');
-}
-
-function applySetup(){
-  document.getElementById('sb-orgname').textContent=DB.org||'Step4Progress';
-  document.getElementById('sb-location').textContent=DB.city||'';
-  document.getElementById('sb-uname').textContent=DB.userName||'—';
-  document.getElementById('sb-urole').textContent=DB.userRole||'';
-  const av=ini(DB.userName||'U');
-  document.getElementById('sb-av').textContent=av;
-  // populate counsellor dropdowns
-  const allCounsellors=[{name:DB.userName,role:DB.userRole},...DB.team];
-  const coOpts=`<option value="">Unassigned</option>`+allCounsellors.map(t=>`<option>${esc(t.name)}</option>`).join('');
-  document.getElementById('f-counsel').innerHTML=coOpts;
-  const fuSel=document.getElementById('fp-co');
-  fuSel.innerHTML=`<option value="">All counsellors</option>`+allCounsellors.map(t=>`<option>${esc(t.name)}</option>`).join('');
-}
-
-// ── Check existing session ───────────────────────────────────────
-window.addEventListener('DOMContentLoaded',()=>{
-  const saved=load();
-  if(saved&&saved.setup){
-    DB=saved;
-    document.getElementById('onboarding').style.display='none';
-    document.getElementById('app').classList.add('visible');
-    applySetup();
-    renderAll();badges();
-  }
-});
-
-// ── Nav ──────────────────────────────────────────────────────────
-function nav(id,btn){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
-  document.getElementById('sc-'+id).classList.add('active');
-  if(btn) btn.classList.add('active');
-  const T={dashboard:'Dashboard',leads:'Lead database',coaching:'Coaching tracker',followup:'Follow-up planner',import:'Import data',ai:'AI Counsellor'};
-  document.getElementById('topbar-title').textContent=T[id]||id;
-  if(id==='dashboard') renderDash();
-  if(id==='leads') renderLeads();
-  if(id==='coaching') renderCoaching();
-  if(id==='followup') renderFU();
-}
-function renderAll(){renderDash();renderLeads();renderCoaching();renderFU();}
-
-function badges(){
-  document.getElementById('nb-leads').textContent=DB.leads.length;
-  const fu=DB.leads.filter(l=>['New Enquiry','Contacted','Counselling Done','Deferred'].includes(l.status)).length;
-  const nb=document.getElementById('nb-fu');
-  nb.textContent=fu;nb.className='nbadge'+(fu>0?' hot':'');
-}
-
-// ── Dashboard ────────────────────────────────────────────────────
-function renderDash(){
-  const c={};DB.leads.forEach(l=>{c[l.status]=(c[l.status]||0)+1;});
-  const tot=DB.leads.length;
-  const thisMonth=DB.leads.filter(l=>{const d=new Date(l.created);const n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).length;
-  document.getElementById('k-tot').textContent=tot;
-  document.getElementById('k-enr').textContent=(c['Enrolled']||0)+(c['Fees Paid']||0);
-  document.getElementById('k-fee').textContent=c['Fees Paid']||0;
-  document.getElementById('k-act').textContent=(c['New Enquiry']||0)+(c['Contacted']||0)+(c['Counselling Done']||0);
-  document.getElementById('k-mon').textContent=thisMonth;
-  const isEmpty=tot===0;
-  document.getElementById('dash-empty').style.display=isEmpty?'flex':'none';
-  document.getElementById('dash-content').style.display=isEmpty?'none':'block';
-  if(isEmpty) return;
-  const pl=document.getElementById('pipe-list');pl.innerHTML='';
-  STATUSES.forEach(s=>{
-    const n=c[s]||0;if(!n)return;
-    const ss=SS[s];const w=Math.round(n/tot*100);
-    pl.innerHTML+=`<div class="prow"><span class="pill" style="background:${ss.bg};color:${ss.tx};min-width:130px">${s}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:${ss.tx}"></div></div><span class="pn" style="color:${ss.tx}">${n}</span></div>`;
-  });
-  const al=document.getElementById('act-list');al.innerHTML='';
-  const dotC={"New Enquiry":"#1E40AF","Enrolled":"#065F46","Fees Paid":"#064E3B","Not Interested":"#9F1239","Counselling Done":"#C05621","Contacted":"#854D0E","Deferred":"#92400E","Dropped":"#475569"};
-  [...DB.leads].sort((a,b)=>b.created-a.created).slice(0,6).forEach(l=>{
-    al.innerHTML+=`<div class="aitem"><div class="adot" style="background:${dotC[l.status]||'#999'}"></div><div><div class="atext">${esc(l.name)} — ${l.status.toLowerCase()}</div><div class="atime">${ago(l.created)}${l.source?' · '+l.source:''}</div></div></div>`;
-  });
-}
-
-// ── Leads ────────────────────────────────────────────────────────
-function renderLeads(){
-  const q=(document.getElementById('ls-q').value||'').toLowerCase();
-  const sf=document.getElementById('ls-st').value;
-  const pf=document.getElementById('ls-pr').value;
-  const df=document.getElementById('ls-de').value;
-  const f=DB.leads.filter(l=>(!sf||l.status===sf)&&(!pf||l.prio===pf)&&(!df||l.dest===df)&&(!q||[l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q))));
-  const empty=DB.leads.length===0;
-  document.getElementById('leads-empty').style.display=empty?'flex':'none';
-  document.getElementById('leads-content').style.display=empty?'none':'block';
-  if(empty) return;
-  document.getElementById('lcount').textContent=`Showing ${f.length} of ${DB.leads.length} leads`;
-  const tb=document.getElementById('lead-tbody');tb.innerHTML='';
-  if(!f.length){tb.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:36px;color:var(--ink3);font-style:italic">No leads match your filters.</td></tr>`;return;}
-  f.forEach(l=>{
-    const idx=DB.leads.indexOf(l);
-    const[abg,atx]=AVC[idx%AVC.length];
-    const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
-    const ps=PS[l.prio]||{bg:'#eee',tx:'#555'};
-    tb.innerHTML+=`<tr onclick="openDetail('${l.id}')">
-      <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${l.id}</td>
-      <td><div class="nc"><div class="av" style="background:${abg};color:${atx}">${ini(l.name)}</div><div><div class="ln">${esc(l.name)}</div><div class="lc">${esc(l.city||'—')}</div></div></div></td>
-      <td style="font-size:12px;color:var(--ink3)">${esc(l.mobile||'—')}</td>
-      <td style="font-size:12px">${esc(l.program||'—')}</td>
-      <td style="font-size:12px">${esc(l.dest||'—')}</td>
-      <td><span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span></td>
-      <td><span class="pill" style="background:${ps.bg};color:${ps.tx}">${l.prio}</span></td>
-      <td style="font-size:12px;color:var(--ink3)">${esc(l.counsel||'—')}</td>
-    </tr>`;
-  });
-}
-
-// ── Detail panel ─────────────────────────────────────────────────
-let curId=null,editMode=false;
-function openDetail(id){
-  const l=DB.leads.find(x=>x.id===id);if(!l)return;
-  curId=id;
-  document.getElementById('d-id').textContent=l.id;
-  document.getElementById('d-name').textContent=l.name;
-  document.getElementById('d-sub').textContent=(l.program||'')+(l.dest?' → '+l.dest:'');
-  ['mob','email','city','dob','qual','prog','dest','src','prio','counsel','fu'].forEach(k=>{
-    const map={mob:'mobile',prog:'program',dest:'dest',src:'source',counsel:'counsel',fu:'followup'};
-    document.getElementById('d-'+k).textContent=l[map[k]||k]||'—';
-  });
-  document.getElementById('d-notes').textContent=l.notes||'No notes added.';
-  const sel=document.getElementById('d-ssel');
-  sel.innerHTML=STATUSES.map(s=>`<option${s===l.status?' selected':''}>${s}</option>`).join('');
-  document.getElementById('dover').classList.add('open');
-}
-function closeDover(e){
-  if(e&&e.target!==document.getElementById('dover'))return;
-  document.getElementById('dover').classList.remove('open');curId=null;
-}
-function updateStatus(){
-  if(!curId)return;
-  const l=DB.leads.find(x=>x.id===curId);if(!l)return;
-  l.status=document.getElementById('d-ssel').value;
-  save();renderLeads();renderDash();badges();toast('Status → '+l.status);
-}
-function deleteLead(){
-  if(!curId||!confirm('Delete this lead? This cannot be undone.'))return;
-  DB.leads=DB.leads.filter(x=>x.id!==curId);
-  save();closeDover(null);renderLeads();renderDash();badges();toast('Lead deleted.');
-}
-function editLead(){
-  if(!curId)return;
-  const l=DB.leads.find(x=>x.id===curId);if(!l)return;
-  editMode=true;
-  document.getElementById('modal-title').textContent='Edit lead — '+l.id;
-  document.getElementById('f-name').value=l.name||'';
-  document.getElementById('f-mobile').value=l.mobile||'';
-  document.getElementById('f-email').value=l.email||'';
-  document.getElementById('f-city').value=l.city||'';
-  document.getElementById('f-dob').value=l.dob||'';
-  document.getElementById('f-qual').value=l.qual||'';
-  document.getElementById('f-prog').value=l.program||'';
-  document.getElementById('f-dest').value=l.dest||'';
-  document.getElementById('f-src').value=l.source||'';
-  document.getElementById('f-status').value=l.status||'New Enquiry';
-  document.getElementById('f-prio').value=l.prio||'Medium';
-  document.getElementById('f-counsel').value=l.counsel||'';
-  document.getElementById('f-fu').value=l.followup||'';
-  document.getElementById('f-notes').value=l.notes||'';
-  document.getElementById('modal-lead').classList.add('open');
-  closeDover(null);
-}
-
-// ── Add/Edit Modal ────────────────────────────────────────────────
-function openAddLead(){
-  editMode=false;curId=null;
-  document.getElementById('modal-title').textContent='Add new lead';
-  ['f-name','f-mobile','f-email','f-city','f-dob','f-qual','f-notes','f-fu'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f-status').value='New Enquiry';
-  document.getElementById('f-prio').value='Medium';
-  document.getElementById('f-counsel').value='';
-  document.getElementById('modal-lead').classList.add('open');
-}
-function closeModal(){document.getElementById('modal-lead').classList.remove('open');editMode=false;}
-function saveLead(){
-  const name=document.getElementById('f-name').value.trim();
-  if(!name){document.getElementById('f-name').focus();toast('Please enter a name.');return;}
-  const data={name,mobile:document.getElementById('f-mobile').value,email:document.getElementById('f-email').value,
-    city:document.getElementById('f-city').value,dob:document.getElementById('f-dob').value,qual:document.getElementById('f-qual').value,
-    program:document.getElementById('f-prog').value,dest:document.getElementById('f-dest').value,
-    source:document.getElementById('f-src').value,status:document.getElementById('f-status').value,
-    prio:document.getElementById('f-prio').value,counsel:document.getElementById('f-counsel').value,
-    followup:document.getElementById('f-fu').value,notes:document.getElementById('f-notes').value};
-  if(editMode&&curId){
-    const l=DB.leads.find(x=>x.id===curId);if(l)Object.assign(l,data);
-    toast('Lead updated.');
-  } else {
-    data.id='S4P-'+String(DB.nextId++).padStart(4,'0');data.created=Date.now();
-    DB.leads.push(data);toast('Lead added: '+name);
-  }
-  save();closeModal();renderLeads();renderDash();badges();
-}
-
-// ── Coaching ──────────────────────────────────────────────────────
-function renderCoaching(){
-  const enrolled=DB.leads.filter(l=>['Enrolled','Fees Paid'].includes(l.status));
-  const empty=DB.coaching.length===0;
-  document.getElementById('coaching-empty').style.display=empty?'flex':'none';
-  document.getElementById('coaching-content').style.display=empty?'none':'block';
-  if(empty) return;
-  const cg=document.getElementById('cg');cg.innerHTML='';
-  DB.coaching.forEach(c=>{
-    const pct=c.total>0?Math.round(c.done/c.total*100):0;
-    const col=pct>=100?'#065F46':pct>=50?'#1B998B':'#C05621';
-    cg.innerHTML+=`<div class="cc"><div class="ccn">${esc(c.name)}</div><div class="ccp">${esc(c.prog)} · ${esc(c.batch)}</div><div class="pt"><div class="pb" style="width:${pct}%;background:${col}"></div></div><div class="csr"><div class="cst"><div class="csl">Done</div><div class="csv">${c.done}/${c.total}</div></div><div class="cst"><div class="csl">Mock</div><div class="csv">${c.mock||'—'}</div></div><div class="cst"><div class="csl">Target</div><div class="csv">${c.target||'—'}</div></div><div class="cst"><div class="csl">%</div><div class="csv" style="color:${col}">${pct}%</div></div></div></div>`;
-  });
-  const tb=document.getElementById('ct');tb.innerHTML='';
-  DB.coaching.forEach(c=>{
-    const pct=c.total>0?Math.round(c.done/c.total*100):0;const done=pct>=100;
-    const ss=done?{bg:'#A7F3D0',tx:'#065F46'}:{bg:'#DBEAFE',tx:'#1E40AF'};
-    tb.innerHTML+=`<tr><td style="font-weight:600">${esc(c.name)}</td><td style="font-size:12px">${esc(c.prog)}</td><td style="font-size:12px">${c.done}/${c.total}</td><td style="font-size:12px">${c.mock||'—'}</td><td style="font-size:12px">${c.target||'—'}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="pt" style="width:80px;margin:0;border:1px solid var(--line)"><div class="pb" style="width:${pct}%;background:${done?'#065F46':'#1B998B'}"></div></div><span style="font-size:11px;color:var(--ink3)">${pct}%</span></div></td></tr>`;
-  });
-  // add coaching button in header
-  const ch=document.querySelector('#sc-coaching .card-h');
-  if(ch&&!ch.querySelector('.btn-add-coaching')){
-    const b=document.createElement('button');b.className='btn btn-p btn-add-coaching';b.style.fontSize='12px';b.style.padding='5px 10px';
-    b.innerHTML='<i class="ti ti-plus"></i>Add record';
-    b.onclick=openCoachingModal;ch.appendChild(b);
-  }
-}
-
-function openCoachingModal(){
-  const enrolled=DB.leads.filter(l=>['Enrolled','Fees Paid'].includes(l.status));
-  document.getElementById('co-sid').innerHTML=enrolled.map(l=>`<option value="${l.id}">${esc(l.name)} — ${esc(l.program)}</option>`).join('');
-  ['co-batch','co-prog','co-start','co-end','co-mock','co-target'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('co-total').value='';
-  document.getElementById('co-done').value='0';
-  document.getElementById('modal-coaching').classList.add('open');
-}
-function saveCoaching(){
-  const sid=document.getElementById('co-sid').value;
-  const lead=DB.leads.find(l=>l.id===sid);
-  if(!lead) return;
-  DB.coaching.push({
-    sid,name:lead.name,prog:document.getElementById('co-prog').value||lead.program,
-    batch:document.getElementById('co-batch').value,
-    start:document.getElementById('co-start').value,end:document.getElementById('co-end').value,
-    total:parseInt(document.getElementById('co-total').value)||1,
-    done:parseInt(document.getElementById('co-done').value)||0,
-    mock:document.getElementById('co-mock').value,target:document.getElementById('co-target').value,
-  });
-  save();document.getElementById('modal-coaching').classList.remove('open');
-  renderCoaching();toast('Coaching record added.');
-}
-
-// ── Follow-ups ────────────────────────────────────────────────────
-function renderFU(){
-  const pf=document.getElementById('fp-pr').value;
-  const cf=document.getElementById('fp-co').value;
-  const act=['New Enquiry','Contacted','Counselling Done','Deferred'];
-  const f=DB.leads.filter(l=>act.includes(l.status)&&(!pf||l.prio===pf)&&(!cf||l.counsel===cf))
-    .sort((a,b)=>(a.prio==='High'?0:a.prio==='Medium'?1:2)-(b.prio==='High'?0:b.prio==='Medium'?1:2));
-  const empty=DB.leads.length===0||f.length===0;
-  document.getElementById('fu-empty').style.display=empty?'flex':'none';
-  document.getElementById('fu-content').style.display=empty?'none':'block';
-  if(empty) return;
-  document.getElementById('fucount').textContent=`${f.length} active follow-up${f.length!==1?'s':''}`;
-  const fl=document.getElementById('fu-list');fl.innerHTML='';
-  f.forEach(l=>{
-    const cls=l.prio==='High'?'high':l.prio==='Medium'?'medium':'low';
-    const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
-    const ps=PS[l.prio]||{bg:'#eee',tx:'#555'};
-    fl.innerHTML+=`<div class="fcard ${cls}" onclick="openDetail('${l.id}')">
-      <div class="fmeta">
-        <div class="fid">${l.id}</div>
-        <div class="fname">${esc(l.name)}</div>
-        <div class="fmob">${esc(l.mobile||'—')} · ${esc(l.city||'—')}</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span>
-          <span style="font-size:12px;color:var(--ink3);font-style:italic">${esc(l.program)}</span>
-        </div>
-        ${l.notes?`<div style="font-size:12px;color:var(--ink3);line-height:1.55">${esc(l.notes.substring(0,100))}${l.notes.length>100?'…':''}</div>`:''}
-      </div>
-      <div class="fright">
-        <div class="fdate">${esc(l.followup||'No date')}</div>
-        <div class="fcounsel">${esc(l.counsel||'Unassigned')}</div>
-        <span class="pill" style="background:${ps.bg};color:${ps.tx};margin-top:6px;display:inline-block">${l.prio}</span>
-      </div>
-    </div>`;
-  });
+  a.download='step4progress_leads.csv';a.click();toast('Exported as CSV.');
 }
 
 // ── AI ────────────────────────────────────────────────────────────
-let aiH=[{role:'assistant',content:'Hello! I am your Step4Progress AI Counsellor.\n\nI can help you with:\n• Drafting WhatsApp messages, follow-up emails, and SOP guidance\n• Summarising your pipeline and spotting urgent leads\n• Conversion strategies for each pipeline stage\n• Country-specific application checklists and visa tips\n• Re-engagement templates for unresponsive students\n\nWhat would you like help with today?'}];
+let aiH=[{role:'assistant',content:'Hello! I am your Step4Progress AI Counsellor.\n\nI can help with:\n• Drafting WhatsApp messages, follow-up emails, SOP guidance\n• Summarising your shared pipeline and spotting urgent leads\n• Conversion strategies for each pipeline stage\n• Country-specific application checklists and visa tips\n\nWhat would you like help with today?'}];
 
-function ctx(){
-  const c={};DB.leads.forEach(l=>{c[l.status]=(c[l.status]||0)+1;});
-  return`You are the AI Counsellor for ${DB.org}, an education consultancy and coaching centre${DB.city?' in '+DB.city:''}.
-Pipeline: ${DB.leads.length} total leads. Statuses: ${Object.entries(c).map(([k,v])=>k+':'+v).join(', ')}.
+function ctxStr(){
+  const c={};leads.forEach(l=>{c[l.status]=(c[l.status]||0)+1;});
+  return`You are the AI Counsellor for Step4Progress, an education consultancy and coaching centre in India.
+Shared pipeline: ${leads.length} total leads. Statuses: ${Object.entries(c).map(([k,v])=>k+':'+v).join(', ')}.
 Enrolled+Fees Paid: ${(c['Enrolled']||0)+(c['Fees Paid']||0)}.
-Recent 5: ${DB.leads.slice(-5).map(l=>l.name+' ('+l.status+', '+l.program+', '+l.dest+')').join('; ')}.
+Recent leads: ${leads.slice(0,5).map(l=>l.name+' ('+l.status+', '+l.program+', '+l.destination+')').join('; ')}.
 Be warm, practical, concise. Help counsellors convert leads and support students.`;
 }
 async function sendAI(){
@@ -1108,13 +1142,12 @@ async function sendAI(){
   inp.value='';addMsg('user',q);aiH.push({role:'user',content:q});
   document.getElementById('ai-think').style.display='block';
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:ctx(),messages:aiH})});
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:ctxStr(),messages:aiH})});
     const d=await r.json();
     const reply=d.content?.[0]?.text||'Could not get a response right now.';
     aiH.push({role:'assistant',content:reply});addMsg('assistant',reply);
-  }catch(e){addMsg('assistant','Connection issue. Please check your internet and try again.');}
+  }catch(e){addMsg('assistant','Connection issue. Please try again.');}
   document.getElementById('ai-think').style.display='none';
 }
 function addMsg(role,text){
@@ -1126,13 +1159,13 @@ function addMsg(role,text){
 function aiQ(q){document.getElementById('ai-in').value=q;sendAI();}
 function aiAboutLead(){
   if(!curId)return;
-  const l=DB.leads.find(x=>x.id===curId);if(!l)return;
-  closeDover(null);nav('ai',document.querySelectorAll('.ni')[6]);
-  const q=`Help me with lead ${l.id}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.dest}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;
+  const l=leads.find(x=>x.id===curId);if(!l)return;
+  closeDover(null);nav('ai',document.querySelectorAll('.ni')[7]);
+  const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;
   document.getElementById('ai-in').value=q;sendAI();
 }
 
-// ── Toast ─────────────────────────────────────────────────────────
+// ── TOAST ─────────────────────────────────────────────────────────
 function toast(m){
   const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2800);

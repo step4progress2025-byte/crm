@@ -836,8 +836,10 @@ async function loadCoaching(){
   if(!error&&data) coaching=data;
 }
 async function loadTeam(){
+  const tl=document.querySelector('#sc-team .loading');
   const{data}=await sb.from('team').select('*');
-  if(data) renderTeam(data);
+  if(tl) tl.style.display='none';
+  renderTeam(data||[]);
 }
 
 // ── NAV ──────────────────────────────────────────────────────────
@@ -1131,6 +1133,8 @@ function renderFU(){
 // ── TEAM ─────────────────────────────────────────────────────────
 function renderTeam(team){
   const tg=document.getElementById('team-grid');
+  const tl=document.querySelector('#sc-team .loading');
+  if(tl) tl.style.display='none';
   if(!team||!team.length){tg.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No team members yet. Have your counsellors sign up using the CRM link.</div>';return;}
   tg.innerHTML=team.map(t=>`<div class="tcard"><div class="tcard-av">${ini(t.full_name||t.email)}</div><div><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role||'Counsellor')}</div><div class="tcard-email">${esc(t.email||'')}</div></div></div>`).join('');
   // update follow-up counsellor filter

@@ -533,7 +533,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         </div>
       </section>
 
-      <!-- Events --> <section id="sc-events" class="screen"> <div class="card" style="margin-bottom:20px"> <div class="card-h"><span class="card-t">Events calendar</span><button class="btn btn-p" onclick="openAddEvent()"><i class="ti ti-plus"></i>Add event</button></div> <div id="events-calendar"></div> </div> <div class="card"> <div class="card-h"><span class="card-t">Upcoming this month</span></div> <div id="events-list"></div> </div> </section> <!-- Events --> <section id="sc-events" class="screen"> <div class="card" style="margin-bottom:20px"> <div class="card-h"><span class="card-t">Events calendar</span><button class="btn btn-p" onclick="openAddEvent()"><i class="ti ti-plus"></i>Add event</button></div> <div id="events-calendar"></div> </div> <div class="card"> <div class="card-h"><span class="card-t">Upcoming this month</span></div> <div id="events-list"></div> </div> </section> <!-- Import -->
+      <!-- Events --> <section id="sc-events" class="screen"> <div class="card" style="margin-bottom:20px"> <div class="card-h"><span class="card-t">Events calendar</span><button class="btn btn-p" onclick="openAddEvent()"><i class="ti ti-plus"></i>Add event</button></div> <div id="events-calendar"></div> </div> <div class="card"> <div class="card-h"><span class="card-t">Upcoming this month</span></div> <div id="events-list"></div> </div> </section> <!-- Events --> <section id="sc-events" class="screen"> <div class="card" style="margin-bottom:20px"> <div class="card-h"><span class="card-t">Events calendar</span><button class="btn btn-p" onclick="openAddEvent()"><i class="ti ti-plus"></i>Add event</button></div> <div id="events-calendar"></div> </div> <div class="card"> <div class="card-h"><span class="card-t">Upcoming this month</span></div> <div id="events-list"></div> </div> </section> <!-- Events --> <section id="sc-events" class="screen"><div class="card" style="margin-bottom:20px"><div class="card-h"><span class="card-t">Events calendar</span><button class="btn btn-p" onclick="openAddEvent()"><i class="ti ti-plus"></i>Add event</button></div><div id="events-calendar"></div></div><div class="card"><div class="card-h"><span class="card-t">Upcoming this month</span></div><div id="events-list"></div></div></section> <!-- Events --> <section id="sc-events" class="screen"><div class="card" style="margin-bottom:20px"><div class="card-h"><span class="card-t">Events calendar</span><button class="btn btn-p" onclick="openAddEvent()"><i class="ti ti-plus"></i>Add event</button></div><div id="events-calendar"></div></div><div class="card"><div class="card-h"><span class="card-t">Upcoming this month</span></div><div id="events-list"></div></div></section> <!-- Import -->
       <section id="sc-import" class="screen">
         <div class="card" style="max-width:620px">
           <div class="card-h"><span class="card-t">Import leads from CSV</span></div>
@@ -849,7 +849,7 @@ function nav(id,btn){
   if(btn)btn.classList.add('active');
   const T={dashboard:'Dashboard',leads:'Lead database',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',ai:'AI Counsellor'};
   document.getElementById('topbar-title').textContent=T[id]||id;
-  if(id==='leads')renderLeads();
+  if(id==='leads')renderLeads(); if(id==='events'){loadEvents();}
   if(id==='coaching')renderCoaching();
   if(id==='followup')renderFU();
 }

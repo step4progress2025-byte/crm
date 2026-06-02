@@ -533,7 +533,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         </div>
       </section>
 
-      <!-- Import -->
+      <!-- Events --> <section id="sc-events" class="screen"> <div class="card" style="margin-bottom:20px"> <div class="card-h"><span class="card-t">Events calendar</span><button class="btn btn-p" onclick="openAddEvent()"><i class="ti ti-plus"></i>Add event</button></div> <div id="events-calendar"></div> </div> <div class="card"> <div class="card-h"><span class="card-t">Upcoming this month</span></div> <div id="events-list"></div> </div> </section> <!-- Events --> <section id="sc-events" class="screen"> <div class="card" style="margin-bottom:20px"> <div class="card-h"><span class="card-t">Events calendar</span><button class="btn btn-p" onclick="openAddEvent()"><i class="ti ti-plus"></i>Add event</button></div> <div id="events-calendar"></div> </div> <div class="card"> <div class="card-h"><span class="card-t">Upcoming this month</span></div> <div id="events-list"></div> </div> </section> <!-- Import -->
       <section id="sc-import" class="screen">
         <div class="card" style="max-width:620px">
           <div class="card-h"><span class="card-t">Import leads from CSV</span></div>
@@ -712,7 +712,7 @@ What would you like help with today?</div>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div id="events-widget" style="position:fixed;bottom:80px;right:18px;width:260px;background:var(--pine);border-radius:12px;padding:12px 14px;z-index:400;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.2)"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"> <span style="color:#fff;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Upcoming events</span> <span onclick="document.getElementById('events-widget').style.display='none'" style="color:rgba(255,255,255,0.6);cursor:pointer;font-size:18px;line-height:1">&times;</span> </div> <div id="events-ticker" style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.6"></div> </div> <div id="events-bell" onclick="toggleEventsWidget()" style="position:fixed;bottom:24px;right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> <span id="events-badge" style="position:absolute;top:-2px;right:-2px;background:#F1239;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div class="toast" id="toast"></div>
 
 <script>
 // ── SUPABASE INIT ────────────────────────────────────────────────
@@ -799,7 +799,7 @@ async function onLogin(user){
   document.getElementById('sb-urole').textContent=role;
   await loadLeads();
   await loadCoaching();
-  await loadTeam();
+  await loadTeam();await loadEvents();await loadEvents();
   initPresence(user, profile);
   renderDash();badges();
   // realtime subscription
@@ -822,7 +822,7 @@ async function doLogout(){
   document.getElementById('login-btn').textContent='Sign in →';
 }
 
-// check existing session
+let events=[]; async function loadEvents(){   const{data}=await sb.from('events').select('*').order('event_date',{ascending:true});   if(data){events=data;renderEvents();renderEventsTicker();} } function renderEvents(){   const cal=document.getElementById('events-calendar');   const list=document.getElementById('events-list');   if(!cal)return;   const now=new Date();   const thisMonth=events.filter(e=>new Date(e.event_date).getMonth()===now.getMonth()&&new Date(e.event_date).getFullYear()===now.getFullYear());   const upcoming=events.filter(e=>new Date(e.event_date)>=now).slice(0,10);   const typeColors={'Seminar':'var(--sky-1)','Webinar':'var(--sky-1)','Application Deadline':'var(--rose-1)','Follow-up':'var(--sage-1)','Other':'var(--gold-1)'};   cal.innerHTML=events.length?events.map(e=>{     const d=new Date(e.event_date);     const isPast=d<now;     const bg=typeColors[e.event_type]||'var(--gold-1)';     return`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);opacity:${isPast?0.5:1}">     <div style="min-width:48px;text-align:center;background:${bg};border-radius:8px;padding:6px 4px">     <div style="font-size:18px;font-weight:600;color:var(--ink);line-height:1">${d.getDate()}</div>     <div style="font-size:10px;color:var(--ink2)">${d.toLocaleString('default',{month:'short'})}</div>     </div>     <div style="flex:1">     <div style="font-weight:500;font-size:14px;color:var(--ink)">${esc(e.title)}</div>     <div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(e.event_type||'')}${e.description?` · ${esc(e.description)}`:''}</div>     </div>     <button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">&times;</button>     </div>`;}).join(''):'<p style="color:var(--ink3);font-style:italic;font-size:13px">No events yet. Click Add event to get started.</p>';   list.innerHTML=thisMonth.length?thisMonth.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink2)"><b style="color:var(--ink)">${new Date(e.event_date).getDate()} ${new Date(e.event_date).toLocaleString('default',{month:'short'})}</b> · ${esc(e.title)}</div>`).join(''):'<p style="color:var(--ink3);font-style:italic;font-size:13px">No events this month.</p>'; } function renderEventsTicker(){   const ticker=document.getElementById('events-ticker');   const badge=document.getElementById('events-badge');   if(!ticker)return;   const now=new Date();   const soon=events.filter(e=>{const d=new Date(e.event_date);return d>=now&&(d-now)<=7*86400000;});   const upcoming=events.filter(e=>new Date(e.event_date)>=now).slice(0,5);   if(badge){if(soon.length>0){badge.textContent=soon.length;badge.style.display='flex';}else{badge.style.display='none';}}   ticker.innerHTML=upcoming.length?upcoming.map(e=>`<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.1)"><span style="opacity:0.7;font-size:11px">${new Date(e.event_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span><br>${esc(e.title)}</div>`).join(''):'<div style="opacity:0.7">No upcoming events</div>'; } function toggleEventsWidget(){   const w=document.getElementById('events-widget');   w.style.display=w.style.display==='none'?'block':'none'; } function openAddEvent(){   const title=prompt('Event title:');   if(!title)return;   const date=prompt('Event date (YYYY-MM-DD):');   if(!date)return;   const type=prompt('Type (Seminar/Webinar/Application Deadline/Follow-up/Other):');   const desc=prompt('Description (optional):');   saveEvent(title,date,type||'Other',desc||''); } async function saveEvent(title,date,type,desc){   const{error}=await sb.from('events').insert({title,event_date:date,event_type:type,description:desc,created_by:currentUser.id});   if(!error){await loadEvents();showToast('Event added!');} } async function deleteEvent(id){   if(!confirm('Delete this event?'))return;   await sb.from('events').delete().eq('id',id);   await loadEvents();   showToast('Event deleted.'); } // check existing session
 sb.auth.getSession().then(({data:{session}})=>{if(session)onLogin(session.user);});
 
 // ── DATA LOADING ─────────────────────────────────────────────────
@@ -847,7 +847,7 @@ function nav(id,btn){
   document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
   document.getElementById('sc-'+id).classList.add('active');
   if(btn)btn.classList.add('active');
-  const T={dashboard:'Dashboard',leads:'Lead database',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',import:'Import data',ai:'AI Counsellor'};
+  const T={dashboard:'Dashboard',leads:'Lead database',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',ai:'AI Counsellor'};
   document.getElementById('topbar-title').textContent=T[id]||id;
   if(id==='leads')renderLeads();
   if(id==='coaching')renderCoaching();

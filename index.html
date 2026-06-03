@@ -1004,7 +1004,7 @@ function openAddLead(){
   document.getElementById('f-prio').value='Medium';
   document.getElementById('modal-lead').classList.add('open');
 }
-function closeModal(id){document.getElementById(id).classList.remove('open');editMode=false;}
+function closeModal(id){document.getElementById(id).classList.remove('open');if(id==='modal-lead'){editMode=false;curId=null;}}
 
 async function saveLead(){
   const name=document.getElementById('f-name').value.trim();

@@ -1028,7 +1028,7 @@ async function saveLead(){
     added_by:currentUser?.id
   };
   let error;
-  if(editMode&&curId){
+  if(editMode&&curId){       delete data.lead_id;
     ({error}=await sb.from('leads').update(data).eq('id',curId));
     if(!error){const l=leads.find(x=>x.id===curId);if(l)Object.assign(l,data);}
     toast('Lead updated.');

@@ -1304,7 +1304,7 @@ function initPresence(user, profile) {
       renderOnlineUsers(state);
     })
     .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-      showToast((newPresences[0]?.name || 'Someone') + ' joined');
+      toast((newPresences[0]?.name || 'Someone') + ' joined');
       const state = presenceChannel.presenceState();
       renderOnlineUsers(state);
     })

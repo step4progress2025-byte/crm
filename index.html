@@ -747,7 +747,7 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 function ago(ts){if(!ts)return'';const d=Date.now()-new Date(ts).getTime();if(d<3600000)return Math.round(d/60000)+'m ago';if(d<86400000)return Math.round(d/3600000)+'h ago';return Math.round(d/86400000)+'d ago';}
 
 // ── State ────────────────────────────────────────────────────────
-let leads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[];
+let leads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[]; let counsellors=JSON.parse(localStorage.getItem('s4p_counsellors')||'[]'); let rrIndex=parseInt(localStorage.getItem('s4p_rr')||'0'); function saveCounsellors(){localStorage.setItem('s4p_counsellors',JSON.stringify(counsellors));localStorage.setItem('s4p_rr',rrIndex);} function getNextCounsellor(){if(!counsellors.length)return'';const c=counsellors[rrIndex%counsellors.length];rrIndex=(rrIndex+1)%counsellors.length;saveCounsellors();return c;} function renderCounsellorList(){const el=document.getElementById('counsellor-list');if(!el)return;el.innerHTML=counsellors.length?counsellors.map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)"><div class="av" style="background:var(--pine3);color:#fff;width:28px;height:28px;font-size:11px">${ini(c)}</div><span style="flex:1;font-size:13px">${esc(c)}</span>${i===rrIndex%counsellors.length?'<span class="pill" style="background:var(--sage-l);color:var(--sage)">Next</span>':''}<button onclick="removeCounsellor(${i})" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic">No counsellors added yet.</div>';const nx=document.getElementById('next-counsel');if(nx)nx.textContent=counsellors.length?counsellors[rrIndex%counsellors.length]:'None';} function openAddCounsellor(){const name=prompt('Counsellor name:');if(!name||!name.trim())return;counsellors.push(name.trim());saveCounsellors();renderCounsellorList();toast('Counsellor added.');} function removeCounsellor(i){if(!confirm('Remove this counsellor?'))return;counsellors.splice(i,1);rrIndex=Math.max(0,rrIndex%Math.max(counsellors.length,1));saveCounsellors();renderCounsellorList();toast('Counsellor removed.');}
 
 // ── SYNC indicator ───────────────────────────────────────────────
 function setSyncing(){document.getElementById('sync-dot').className='sync-dot syncing';document.getElementById('sync-label').textContent='Saving…';}
@@ -858,7 +858,7 @@ function nav(id,btn){
   if(btn)btn.classList.add('active');
   const T={dashboard:'Dashboard',leads:'Lead database',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',ai:'AI Counsellor'};
   document.getElementById('topbar-title').textContent=T[id]||id;
-  if(id==='leads')renderLeads(); if(id==='events'){loadEvents();}
+  if(id==='leads')renderLeads(); if(id==='events'){loadEvents();}   if(id==='team')renderCounsellorList();   if(id==='team')renderCounsellorList();
   if(id==='coaching')renderCoaching();
   if(id==='followup')renderFU();
 }

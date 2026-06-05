@@ -941,7 +941,7 @@ function openDetail(id){
   document.getElementById('d-prio').textContent=l.priority||'—';
   document.getElementById('d-counsel').textContent=l.counsellor||'Unassigned';
   document.getElementById('d-fu').textContent=l.next_followup||'Not set';
-  document.getElementById('d-notes').textContent=l.notes||'No notes.';
+  document.getElementById('d-notes').textContent=l.notes||'No notes.';   document.getElementById('d-intake').textContent=l.intake_month||'—';   document.getElementById('d-ielts-status').textContent=l.ielts_status||'—';   document.getElementById('d-ielts-score').textContent=l.ielts_score||'—';   document.getElementById('d-budget').textContent=l.budget_range||'—';   document.getElementById('d-english').textContent=l.english_status||'—';   document.getElementById('d-walink').textContent=l.whatsapp_group_link||'—';
   const sel=document.getElementById('d-ssel');
   sel.innerHTML=STATUSES.map(s=>`<option${s===l.status?' selected':''}>${s}</option>`).join('');
   document.getElementById('dover').classList.add('open');

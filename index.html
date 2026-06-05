@@ -873,7 +873,7 @@ function renderDash(){
   document.getElementById('k-enr').textContent=(c['Enrolled']||0)+(c['Fees Paid']||0);
   document.getElementById('k-fee').textContent=c['Fees Paid']||0;
   document.getElementById('k-act').textContent=(c['New Enquiry']||0)+(c['Contacted']||0)+(c['Counselling Done']||0);
-  document.getElementById('k-mon').textContent=mon;
+ document.getElementById('k-mon').textContent=mon;   const week=leads.filter(l=>{const d=new Date(l.created_at);return(Date.now()-d.getTime())<7*86400000;}).length;   const offers=(c['Received - Conditional Offer']||0)+(c['Received - Unconditional Offer']||0);   const apps=c['Application Submitted']||0;   const visaGranted=c['Visa Application Accepted']||0;   const visaTotal=(c['Visa Application Accepted']||0)+(c['Visa Application Rejected']||0);   const deposits=c['Deposit Paid']||0;   document.getElementById('k-offer').textContent=apps>0?Math.round(offers/apps*100)+'%':'—';   document.getElementById('k-visa').textContent=visaTotal>0?Math.round(visaGranted/visaTotal*100)+'%':'—';   document.getElementById('k-dep').textContent=offers>0?Math.round(deposits/offers*100)+'%':'—';   document.getElementById('k-fee').textContent=c['Fees Paid']||0;   document.getElementById('k-week').textContent=week;   document.getElementById('k-drop').textContent=(c['Dropped']||0)+(c['Not Interested']||0);
   const empty=tot===0;
   document.getElementById('dash-empty').style.display=empty?'flex':'none';
   document.getElementById('dash-content').style.display=empty?'none':'block';

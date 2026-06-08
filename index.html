@@ -959,6 +959,7 @@ function openDetail(id){
   const sel=document.getElementById('d-ssel');
   sel.innerHTML=STATUSES.map(s=>`<option${s===l.status?' selected':''}>${s}</option>`).join('');
   document.getElementById('dover').classList.add('open');
+  loadUniApps(id);
   broadcastStartEditing(id);
   updateDetailEditingNotice(id);
 }

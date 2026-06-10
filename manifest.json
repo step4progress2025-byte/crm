@@ -8,12 +8,12 @@
   "theme_color": "#0D4A3C",
   "icons": [
     {
-      "src": "https://step4progress2025-byte.github.io/crm/favicon.ico",
+      "src": "https://via.placeholder.com/192x192/0D4A3C/FFFFFF?text=S4P",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://step4progress2025-byte.github.io/crm/favicon.ico",
+      "src": "https://via.placeholder.com/512x512/0D4A3C/FFFFFF?text=S4P",
       "sizes": "512x512",
       "type": "image/png"
     }

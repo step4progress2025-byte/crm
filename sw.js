@@ -1,4 +1,4 @@
-const CACHE = 's4p-crm-v1';
+const CACHE = 's4p-crm-v3';
 const ASSETS = [
   '/crm/',
   '/crm/index.html',

@@ -1,0 +1,21 @@
+{
+  "name": "Step4Progress CRM",
+  "short_name": "S4P CRM",
+  "description": "Step4Progress India Student CRM",
+  "start_url": "/crm/",
+  "display": "standalone",
+  "background_color": "#0D4A3C",
+  "theme_color": "#0D4A3C",
+  "icons": [
+    {
+      "src": "https://step4progress2025-byte.github.io/crm/favicon.ico",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://step4progress2025-byte.github.io/crm/favicon.ico",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

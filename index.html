@@ -1259,7 +1259,7 @@ async function sendAI(){
   inp.value='';addMsg('user',q);aiH.push({role:'user',content:q});
   document.getElementById('ai-think').style.display='block';
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+    const r=await fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/ai-proxy',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:ctxStr(),messages:aiH})});
     const d=await r.json();
     const reply=d.content?.[0]?.text||'Could not get a response right now.';

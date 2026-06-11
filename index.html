@@ -889,7 +889,7 @@ function nav(id,btn){
   if(id==='coaching')renderCoaching();
   if(id==='followup')renderFU();
 }
-
+function navFilter(filterId,value){nav('leads',document.querySelectorAll('.ni')[1]);setTimeout(()=>{const el=document.getElementById(filterId);if(el){el.value=value;renderLeads();}},300);}
 function badges(){
   document.getElementById('nb-leads').textContent=leads.length;
   const fu=leads.filter(l=>['New Enquiry','Contacted','Counselling Done','Deferred'].includes(l.status)).length;

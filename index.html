@@ -484,6 +484,9 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <option>UK</option><option>Canada</option><option>Australia</option><option>Germany</option>
               <option>Singapore</option><option>France</option><option>Italy</option><option>UAE</option><option>USA</option><option>India</option>
             </select>
+            <select id="ls-src" onchange="renderLeads()"><option value="">All sources</option><option>Meta Ads</option><option>Google Ads</option><option>Instagram</option><option>WhatsApp</option><option>Walk-in</option><option>Referral</option><option>Website</option><option>LinkedIn</option><option>YouTube</option><option>Event / Expo</option><option>Other</option></select>
+            <input type="date" id="ls-from" onchange="renderLeads()">
+            <input type="date" id="ls-to" onchange="renderLeads()">
           </div>
           <div class="clabel" id="lcount"></div>
           <div class="tw">

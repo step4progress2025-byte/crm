@@ -768,7 +768,7 @@ const SS={
 };
 const PS={High:{bg:"#FFE4E6",tx:"#9F1239"},Medium:{bg:"#FEF9C3",tx:"#854D0E"},Low:{bg:"#DCFCE7",tx:"#166534"}};
 const AVC=[["#DBEAFE","#1E3A8A"],["#D1FAE5","#064E3B"],["#FEF3C7","#78350F"],["#EDE9FE","#3B0764"],["#FCE7F3","#831843"],["#E0F2FE","#0C4A6E"]];
-const STATUSES=["New Enquiry","Contacted","Counselling Done","Enrolled","Fees Paid","Deferred","Not Interested","Dropped"];
+const STATUSES=["New Enquiry","Pending","Ongoing","Contacted","Follow Up","Callback Later","Interested","Counselling Done","Enrolled","Fees Paid","University Shortlist Sent","Documents Pending","Application Submitted","Received - Conditional Offer","Received - Unconditional Offer","Conditional Cleared","Received CAS Letter","Deposit Paid","Visa Application Submitted","Visa Application Accepted","Visa Application Rejected","Onboarded Student","Commission Received","Deferred","Not Interested","Dropped"];
 function ini(n){const p=(n||'?').trim().split(' ');return(p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function ago(ts){if(!ts)return'';const d=Date.now()-new Date(ts).getTime();if(d<3600000)return Math.round(d/60000)+'m ago';if(d<86400000)return Math.round(d/3600000)+'h ago';return Math.round(d/86400000)+'d ago';}
@@ -1136,7 +1136,7 @@ async function saveCoaching(){
 function renderFU(){
   const pf=document.getElementById('fp-pr').value;
   const cf=document.getElementById('fp-co').value;
-  const act=['New Enquiry','Contacted','Counselling Done','Deferred'];
+  const act=['New Enquiry','Pending','Ongoing','Contacted','Follow Up','Callback Later','Interested','Counselling Done','Deferred'];
   const f=leads.filter(l=>act.includes(l.status)&&(!pf||l.priority===pf)&&(!cf||l.counsellor===cf))
     .sort((a,b)=>(a.priority==='High'?0:a.priority==='Medium'?1:2)-(b.priority==='High'?0:b.priority==='Medium'?1:2));
   const empty=f.length===0;

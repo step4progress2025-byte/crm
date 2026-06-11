@@ -1474,6 +1474,28 @@ function broadcastStopEditing(leadId) {
 // ══ END PRESENCE SYSTEM ═════════════════════════════════════════
 
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.getRegistrations().then(r=>r.forEach(reg=>reg.unregister()));</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/crm/service-worker.js', { scope: '/crm/' })
+        .then((reg) => {
+          console.log('[S4P SW] Registered, scope:', reg.scope);
+          setInterval(() => reg.update(), 60 * 60 * 1000);
+          reg.addEventListener('updatefound', () => {
+            const newSW = reg.installing;
+            newSW.addEventListener('statechange', () => {
+              if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                if (confirm('A new version of S4P CRM is available. Reload now?')) {
+                  newSW.postMessage({ type: 'SKIP_WAITING' });
+                  window.location.reload();
+                }
+              }
+            });
+          });
+        })
+        .catch((err) => console.warn('[S4P SW] Registration failed:', err));
+    });
+  }
+</script>
 </body>
 </html>

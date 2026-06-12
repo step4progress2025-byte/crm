@@ -840,7 +840,7 @@ async function onLogin(user){
   await loadCoaching();
   await loadTeam();await loadEvents();await loadEvents();
   initPresence(user, profile);
-  renderDash();badges();setTimeout(checkNoActivity,2000);setTimeout(checkNoActivity,2000);setTimeout(checkNoActivity,2000);setTimeout(checkNoActivity,2000);applyRoleUI();
+  setTimeout(()=>{renderDash();badges();checkNoActivity();applyRoleUI();},500);
   // realtime subscription
   sb.channel('leads-changes').on('postgres_changes',{event:'*',schema:'public',table:'leads'},()=>{
     loadLeads().then(()=>{renderDash();renderLeads();renderFU();badges();});

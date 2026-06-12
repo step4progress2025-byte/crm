@@ -856,9 +856,15 @@ async function onLogin(user){
   document.getElementById('sb-urole').textContent=role;
   await loadLeads();
   await loadCoaching();
-  await loadTeam();await loadEvents();await loadEvents();
+  await loadTeam();
+  await loadEvents();
   initPresence(user, profile);
-  setTimeout(()=>{renderDash();badges();checkNoActivity();applyRoleUI();},500);
+  renderDash();
+  renderLeads();
+  renderFU();
+  badges();
+  checkNoActivity();
+  applyRoleUI();
   // realtime subscription
   sb.channel('leads-changes').on('postgres_changes',{event:'*',schema:'public',table:'leads'},()=>{
     loadLeads().then(()=>{renderDash();renderLeads();renderFU();badges();});

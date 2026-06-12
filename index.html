@@ -1071,7 +1071,7 @@ function editLead(){
   document.getElementById('f-prio').value=l.priority||'Medium';
   document.getElementById('f-counsel').value=l.counsellor||'';
   document.getElementById('f-fu').value=l.next_followup||'';
-  document.getElementById('f-notes').value=l.notes||'';   document.getElementById('f-intake').value=l.intake_month||'';   document.getElementById('f-ielts-status').value=l.ielts_status||'';   document.getElementById('f-ielts-score').value=l.ielts_score||'';   document.getElementById('f-budget').value=l.budget_range||'';   document.getElementById('f-english').value=l.english_status||'';   document.getElementById('f-walink').value=l.whatsapp_group_link||'';
+  document.getElementById('f-notes').value=l.notes||'';   document.getElementById('f-intake').value=l.intake_month||'';   document.getElementById('f-ielts-status').value=l.ielts_status||'';   document.getElementById('f-ielts-score').value=l.ielts_score||'';   document.getElementById('f-budget').value=l.budget_range||'';   document.getElementById('f-english').value=l.english_status||'';   document.getElementById('f-walink').value=l.whatsapp_group_link||'';   document.getElementById('f-doclink').value=l.doc_folder_link||'';
   document.getElementById('modal-lead').classList.add('open');
  document.getElementById('dover').classList.remove('open');
   document.getElementById('editing-notice').classList.remove('show');
@@ -1081,7 +1081,7 @@ function editLead(){
 function openAddLead(){
   editMode=false;curId=null;
   document.getElementById('modal-title').textContent='Add new lead';
-  ['f-name','f-mobile','f-email','f-city','f-dob','f-qual','f-notes','f-fu','f-counsel','f-ielts-score','f-walink'].forEach(id=>document.getElementById(id).value=''); ['f-intake','f-ielts-status','f-budget','f-english'].forEach(id=>document.getElementById(id).value='');
+  ['f-name','f-mobile','f-email','f-city','f-dob','f-qual','f-notes','f-fu','f-counsel','f-ielts-score','f-walink','f-doclink'].forEach(id=>document.getElementById(id).value=''); ['f-intake','f-ielts-status','f-budget','f-english'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-status').value='New Enquiry';
   document.getElementById('f-prio').value='Medium';
   document.getElementById('modal-lead').classList.add('open');

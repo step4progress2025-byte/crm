@@ -939,10 +939,10 @@ function renderDash(){
   document.getElementById('dash-empty').style.display=empty?'flex':'none';
   document.getElementById('dash-content').style.display=empty?'none':'block';
   if(empty)return;
-  const pl=document.getElementById('pipe-list');pl.innerHTML='';
+ const pl=document.getElementById('pipe-list');pl.innerHTML='';
   STATUSES.forEach(s=>{
     const n=c[s]||0;if(!n)return;
-    const ss=SS[s];const w=Math.round(n/tot*100);
+    const ss=SS[s]||{bg:'#E2E8F0',tx:'#475569'};const w=Math.round(n/tot*100);
     pl.innerHTML+=`<div class="prow"><span class="pill" style="background:${ss.bg};color:${ss.tx};min-width:132px">${s}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:${ss.tx}"></div></div><span class="pn" style="color:${ss.tx}">${n}</span></div>`;
   });
   const al=document.getElementById('act-list');al.innerHTML='';

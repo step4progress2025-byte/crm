@@ -847,17 +847,15 @@ async function onLogin(user){
   currentUser=user;
   document.getElementById('auth-screen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
-  // load profile
   const{data:profile}=await sb.from('team').select('*').eq('id',user.id).single();
   const name=profile?.full_name||user.email.split('@')[0];
   const role=profile?.role||'Counsellor';
   document.getElementById('sb-av').textContent=ini(name);
   document.getElementById('sb-uname').textContent=name;
   document.getElementById('sb-urole').textContent=role;
-  await loadLeads();
-  await loadCoaching();
-  await loadTeam();
-  await loadEvents();
+  await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents()]);
+  initPresence(user, profile);
+  renderDash();renderLeads();renderFU();badges();checkNoActivity();applyRoleUI();setTimeout(renderDash,2000);
   initPresence(user, profile);
   renderDash();   renderLeads();   renderFU();   badges();   checkNoActivity();   applyRoleUI();   setTimeout(renderDash,1000);
   // realtime subscription

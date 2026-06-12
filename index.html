@@ -995,14 +995,37 @@ function closeDover(e){
   document.getElementById('editing-notice').classList.remove('show');
 }
 async function updateStatus(){
-  if(curId) broadcastStartEditing(curId); // signal editing
+  if(curId) broadcastStartEditing(curId);
   if(!curId)return;
   const status=document.getElementById('d-ssel').value;
+  const l=leads.find(x=>x.id===curId);
   setSyncing();
   const{error}=await sb.from('leads').update({status}).eq('id',curId);
   if(error){setSyncErr();toast('Error updating status.');return;}
-  const l=leads.find(x=>x.id===curId);if(l)l.status=status;
-  setSynced();renderLeads();renderDash();badges();setTimeout(checkNoActivity,2000);setTimeout(checkNoActivity,2000);applyRoleUI();toast('Status → '+status);
+  if(l)l.status=status;
+  setSynced();renderLeads();renderDash();badges();setTimeout(checkNoActivity,2000);applyRoleUI();toast('Status → '+status);
+  if(l&&l.mobile){
+    const name=l.name.split(' ')[0];
+    const msgs={
+      'Contacted':`Hi ${name}, this is Step4Progress India. We received your enquiry and would love to help you with your study abroad journey. When would be a good time to connect?`,
+      'Counselling Done':`Hi ${name}, thank you for your counselling session with us today! We will send you the shortlisted universities and next steps shortly. Feel free to reach out anytime 😊`,
+      'Enrolled':`Congratulations ${name}! 🎉 You are now officially enrolled with Step4Progress India. We are excited to support your journey ahead!`,
+      'Fees Paid':`Hi ${name}, we have received your payment. Thank you! Our team will now begin processing your application. Stay tuned for updates 🚀`,
+      'Application Submitted':`Great news ${name}! Your university application has been submitted successfully. We will keep you posted on any updates from the university 📩`,
+      'Received - Conditional Offer':`Congratulations ${name}! 🎊 You have received a Conditional Offer from the university. Please check the conditions and let us know how you would like to proceed.`,
+      'Received - Unconditional Offer':`Amazing news ${name}! 🎉 You have received an Unconditional Offer! This is a big step. Let us discuss the next steps together.`,
+      'Visa Application Submitted':`Hi ${name}, your visa application has been submitted successfully. We will notify you as soon as there is an update. Keep your documents ready 📋`,
+      'Visa Application Accepted':`Wonderful news ${name}! 🎉 Your visa has been approved! Welcome to the next chapter of your life. Let us help you prepare for departure!`,
+      'Deposit Paid':`Hi ${name}, your deposit payment is confirmed! 🙌 Your seat is now secured. We will share the next steps with you shortly.`,
+      'Received CAS Letter':`Great news ${name}! Your CAS letter has arrived. This is an important step for your visa application. Let us know if you need any help 😊`,
+      'Onboarded Student':`Welcome aboard ${name}! 🌟 You are now officially an onboarded student with Step4Progress. Wishing you all the best for your journey ahead!`,
+    };
+    const msg=msgs[status];
+    if(msg){
+      const num=(l.mobile||'').replace(/\D/g,'');
+      window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,'_blank');
+    }
+  }
 }
 async function deleteLead(){
   if(!curId||!confirm('Delete this lead? This cannot be undone.'))return;

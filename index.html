@@ -854,10 +854,8 @@ async function onLogin(user){
   document.getElementById('sb-uname').textContent=name;
   document.getElementById('sb-urole').textContent=role;
   await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents()]);
-  initPresence(user, profile);
+ initPresence(user, profile);
   renderDash();renderLeads();renderFU();badges();checkNoActivity();applyRoleUI();setTimeout(renderDash,2000);
-  initPresence(user, profile);
-  renderDash();   renderLeads();   renderFU();   badges();   checkNoActivity();   applyRoleUI();   setTimeout(renderDash,1000);
   // realtime subscription
   sb.channel('leads-changes').on('postgres_changes',{event:'*',schema:'public',table:'leads'},()=>{
     loadLeads().then(()=>{renderDash();renderLeads();renderFU();badges();});

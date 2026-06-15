@@ -882,6 +882,9 @@ let events=[]; async function loadEvents(){   const{data}=await sb.from('events'
 sb.auth.getSession().then(({data:{session}})=>{
   if(session&&!currentUser) onLogin(session.user);
 });
+sb.auth.getSession().then(({data:{session}})=>{
+  if(session&&!currentUser) onLogin(session.user);
+});
 sb.auth.onAuthStateChange((event,session)=>{
   if(event==='SIGNED_IN'&&session&&!currentUser) onLogin(session.user);
   if(event==='SIGNED_OUT'){

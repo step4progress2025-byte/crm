@@ -951,7 +951,7 @@ function renderDash(){
   const al=document.getElementById('act-list');al.innerHTML='';
   const dotC={"New Enquiry":"#1E40AF","Enrolled":"#065F46","Fees Paid":"#064E3B","Not Interested":"#9F1239","Counselling Done":"#C05621","Contacted":"#854D0E","Deferred":"#92400E","Dropped":"#475569"};
   leads.slice(0,6).forEach(l=>{
-    al.innerHTML+=`<div class="aitem"><div class="adot" style="background:${dotC[l.status]||'#999'}"></div><div><div class="atext">${esc(l.name)} — ${l.status.toLowerCase()}</div><div class="atime">${ago(l.created_at)}${l.source?' · '+l.source:''}</div></div></div>`;
+    al.innerHTML+=`<div class="aitem" onclick="openDetail('${l.id}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><div class="adot" style="background:${dotC[l.status]||'#999'}"></div><div><div class="atext">${esc(l.name)} — ${l.status.toLowerCase()}</div><div class="atime">${ago(l.created_at)}${l.source?' · '+l.source:''}</div></div></div>`;
   });
   renderCounsellorRank();
 }

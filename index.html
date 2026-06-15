@@ -885,7 +885,7 @@ let events=[]; async function loadEvents(){   const{data}=await sb.from('events'
 
 // ── DATA LOADING ─────────────────────────────────────────────────
 async function loadLeads(){
-  const{data,error}=await sb.from('leads').select('*').order('created_at',{ascending:false});
+  const{data,error}=await sb.from('leads').select('*').order('lead_id',{ascending:false});
   if(!error&&data) leads=data;
 }
 async function loadCoaching(){

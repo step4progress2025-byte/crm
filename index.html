@@ -946,7 +946,7 @@ function renderDash(){
   STATUSES.forEach(s=>{
     const n=c[s]||0;if(!n)return;
    const ss=SS[s]||{bg:'#E2E8F0',tx:'#475569'};if(!ss||!ss.bg)return;const w=Math.round(n/tot*100);
-    pl.innerHTML+=`<div class="prow"><span class="pill" style="background:${ss.bg};color:${ss.tx};min-width:132px">${s}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:${ss.tx}"></div></div><span class="pn" style="color:${ss.tx}">${n}</span></div>`;
+    pl.innerHTML+=`<div class="prow" onclick="navFilter('ls-st','${s}')" style="cursor:pointer;transition:background .1s" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:${ss.bg};color:${ss.tx};min-width:132px">${s}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:${ss.tx}"></div></div><span class="pn" style="color:${ss.tx}">${n}</span></div>`;
   });
   const al=document.getElementById('act-list');al.innerHTML='';
   const dotC={"New Enquiry":"#1E40AF","Enrolled":"#065F46","Fees Paid":"#064E3B","Not Interested":"#9F1239","Counselling Done":"#C05621","Contacted":"#854D0E","Deferred":"#92400E","Dropped":"#475569"};

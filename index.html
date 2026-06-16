@@ -1125,7 +1125,7 @@ async function saveLead(){
     toast('Lead updated.');
   } else {
     // auto lead ID
-    const maxId=leads.reduce((max,l)=>{const n=parseInt((l.lead_id||'S4P-0000').split('-')[1]);return n>max?n:max;},0);data.lead_id='S4P-'+String(maxId+1).padStart(4,'0');
+    const maxId=leads.reduce((max,l)=>{const n=parseInt((l.lead_id||'S4P-0000').split('-')[1]);return n>max?n:max;},0);data.lead_id='S4P-'+String(maxId+1).padStart(4,'0'); if(!data.counsellor)data.counsellor=getNextCounsellor();
     const res=await sb.from('leads').insert([data]).select();
     error=res.error;
     if(!error&&res.data)leads.unshift(res.data[0]);

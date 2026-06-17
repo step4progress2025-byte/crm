@@ -915,7 +915,7 @@ function nav(id,btn){
   if(btn)btn.classList.add('active');
   const T={dashboard:'Dashboard',leads:'Lead database',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',ai:'AI Counsellor'};
   document.getElementById('topbar-title').textContent=T[id]||id;
-  if(id==='leads'){renderLeads();setTimeout(applyRoleUI,500);} if(id==='events'){loadEvents();}   if(id==='team')renderCounsellorList();   if(id==='finance')renderFinance();   // Role guard   const role=document.getElementById('sb-urole').textContent;   if(id==='finance'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}   if(id==='team'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}   if(id==='import'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}
+  if(id==='leads'){renderLeads();setTimeout(applyRoleUI,500);} if(id==='events'){loadEvents();}   if(id==='team'){renderCounsellorList();renderBranchList();}   if(id==='finance')renderFinance();   // Role guard   const role=document.getElementById('sb-urole').textContent;   if(id==='finance'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}   if(id==='team'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}   if(id==='import'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}
   if(id==='coaching')renderCoaching();
   if(id==='followup')renderFU();
 }

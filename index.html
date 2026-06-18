@@ -1050,6 +1050,27 @@ async function updateStatus(){
     if(msg){
       const num=(l.mobile||'').replace(/\D/g,'');
       window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,'_blank');
+      if(l.email){
+        const subjects={
+          'Contacted':'We received your enquiry — Step4Progress India',
+          'Counselling Done':'Your counselling session summary — Step4Progress India',
+          'Enrolled':'Welcome to Step4Progress India! 🎉',
+          'Fees Paid':'Payment confirmed — Step4Progress India',
+          'Application Submitted':'Your application has been submitted — Step4Progress India',
+          'Received - Conditional Offer':'Congratulations! Conditional Offer received 🎊',
+          'Received - Unconditional Offer':'Congratulations! Unconditional Offer received 🎉',
+          'Visa Application Submitted':'Visa application submitted — Step4Progress India',
+          'Visa Application Accepted':'Your visa has been approved! 🎉',
+          'Deposit Paid':'Deposit confirmed — Step4Progress India',
+          'Received CAS Letter':'Your CAS Letter has arrived — Step4Progress India',
+          'Onboarded Student':'Welcome aboard! — Step4Progress India 🌟',
+        };
+        fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/send-email',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2cmVnbHFycmRud3R0amFzdndnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDM3NzEsImV4cCI6MjA5NTQxOTc3MX0.I_X-ljOPlLFYLeWz6hE15nL8z0MPqmsSdWcgwole8GE'},
+          body:JSON.stringify({to:l.email,name:l.name,subject:subjects[status]||'Update from Step4Progress India',message:msg})
+        }).then(()=>toast('✉️ Email sent to '+l.name)).catch(()=>toast('Email failed'));
+      }
     }
   }
 }

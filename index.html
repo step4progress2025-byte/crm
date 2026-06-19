@@ -359,6 +359,15 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <option style="background:#0D4A3C">Manager</option>
           </select>
         </div>
+        <div class="auth-field"><label>Country</label>
+          <select id="signup-country" onchange="syncSignupOffice()" style="width:100%;padding:12px 14px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);border-radius:var(--r);color:#fff;font-size:14px;font-family:var(--font-b)">
+            <option value="India" style="background:#0D4A3C">India</option>
+            <option value="UK" style="background:#0D4A3C">UK</option>
+          </select>
+        </div>
+        <div class="auth-field"><label>Office</label>
+          <select id="signup-office" style="width:100%;padding:12px 14px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);border-radius:var(--r);color:#fff;font-size:14px;font-family:var(--font-b)"></select>
+        </div>
         <div class="auth-field"><label>Email address</label><input type="email" id="signup-email" placeholder="you@step4progress.com"></div>
         <div class="auth-field"><label>Password</label><input type="password" id="signup-pass" placeholder="Min. 6 characters" onkeydown="if(event.key==='Enter')doSignup()"></div>
         <button class="auth-btn" id="signup-btn" onclick="doSignup()">Create account →</button>
@@ -448,6 +457,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="btn btn-p" onclick="openAddLead()"><i class="ti ti-plus"></i>Add first lead</button>
             <button class="btn" onclick="nav('import',document.querySelectorAll('.ni')[6])"><i class="ti ti-file-import"></i>Import CSV</button>
           </div>
+        </div>
+        <div class="card" id="reminders-widget">
+          <div class="card-h"><span class="card-t">⏰ Today's & upcoming reminders</span></div>
+          <div id="reminders-dash-list"></div>
         </div>
         <div id="dash-content" style="display:none">
           <div class="two-col">
@@ -662,7 +675,10 @@ What would you like help with today?</div>
       <div class="ff"><label>Priority</label>
         <select id="f-prio"><option>High</option><option selected>Medium</option><option>Low</option></select>
       </div>
-      <div class="ff"><label>Counsellor</label><input id="f-counsel" placeholder="Assigned counsellor name"></div>
+      <div class="ff"><label>Office</label>
+        <select id="f-office"><option value="India HQ">India HQ</option><option value="London">London</option><option value="Birmingham">Birmingham</option><option value="Bradford">Bradford</option><option value="Cardiff">Cardiff</option></select>
+      </div>
+      <div class="ff"><label>Counsellor</label><input id="f-counsel" placeholder="Leave blank for auto round-robin"></div>
       <div class="ff"><label>Next follow-up</label><input type="date" id="f-fu"></div>
       <div class="sdiv">Additional Details</div>       <div class="ff"><label>Intake Month</label>         <select id="f-intake"><option value="">Select intake</option><option>January 2026</option><option>May 2026</option><option>September 2026</option><option>January 2027</option><option>May 2027</option><option>September 2027</option></select>       </div>       <div class="ff"><label>IELTS Status</label>         <select id="f-ielts-status"><option value="">Select status</option><option>Not taken</option><option>Appearing soon</option><option>Score available</option><option>Exempt</option></select>       </div>       <div class="ff"><label>IELTS / PTE Score</label><input id="f-ielts-score" placeholder="e.g. 6.5"></div>       <div class="ff"><label>Budget Range</label>         <select id="f-budget"><option value="">Select budget</option><option>Under £10,000</option><option>£10,000 - £15,000</option><option>£15,000 - £20,000</option><option>£20,000 - £30,000</option><option>Above £30,000</option></select>       </div>       <div class="ff"><label>English Proficiency</label>         <select id="f-english"><option value="">Select status</option><option>Native</option><option>Fluent</option><option>Intermediate</option><option>Basic</option></select>       </div>       <div class="ff"><label>WhatsApp Group Link</label><input id="f-walink" placeholder="https://chat.whatsapp.com/..."></div> <div class="ff"><label>Documents Folder Link</label><input id="f-doclink" placeholder="https://drive.google.com/..."></div>       <div class="ff full"><label>Notes / remarks</label><textarea id="f-notes" placeholder="Call notes, documents shared, student context…"></textarea></div>
     </div>
@@ -736,6 +752,9 @@ What would you like help with today?</div>
           <div class="dsec">Document Checklist</div>
       <div id="d-doc-list" style="margin-bottom:8px"></div>
       <button onclick="initDocs()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px"><i class="ti ti-clipboard-list" style="font-size:13px"></i>Init checklist</button>
+      <div class="dsec">Reminders</div>
+          <div id="d-reminder-list" style="margin-bottom:8px"></div>
+          <button onclick="openAddReminder()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px"><i class="ti ti-bell-plus" style="font-size:13px"></i>Add reminder</button>
       <div class="dsec">University Applications</div>
           <div id="d-uni-list" style="margin-bottom:8px"></div>
           <button onclick="openAddUniApp()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px"><i class="ti ti-plus" style="font-size:13px"></i>Add university</button>
@@ -795,6 +814,10 @@ function ago(ts){if(!ts)return'';const d=Date.now()-new Date(ts).getTime();if(d<
 
 // ── State ────────────────────────────────────────────────────────
 let leads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[]; let counsellors=JSON.parse(localStorage.getItem('s4p_counsellors')||'[]'); let rrIndex=parseInt(localStorage.getItem('s4p_rr')||'0'); function saveCounsellors(){localStorage.setItem('s4p_counsellors',JSON.stringify(counsellors));localStorage.setItem('s4p_rr',rrIndex);} function getNextCounsellor(){if(!counsellors.length)return'';const c=counsellors[rrIndex%counsellors.length];rrIndex=(rrIndex+1)%counsellors.length;saveCounsellors();return c;} function renderCounsellorList(){const el=document.getElementById('counsellor-list');if(!el)return;el.innerHTML=counsellors.length?counsellors.map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)"><div class="av" style="background:var(--pine3);color:#fff;width:28px;height:28px;font-size:11px">${ini(c)}</div><span style="flex:1;font-size:13px">${esc(c)}</span>${i===rrIndex%counsellors.length?'<span class="pill" style="background:var(--sage-l);color:var(--sage)">Next</span>':''}<button onclick="removeCounsellor(${i})" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic">No counsellors added yet.</div>';const nx=document.getElementById('next-counsel');if(nx)nx.textContent=counsellors.length?counsellors[rrIndex%counsellors.length]:'None';} let branches=JSON.parse(localStorage.getItem('s4p_branches')||'{"India":[],"UK":[]}'); function saveBranches(){localStorage.setItem('s4p_branches',JSON.stringify(branches));} function openAddBranch(){const name=window.prompt('Branch name (e.g. India, UK, Malta):');if(!name||!name.trim())return;if(!branches[name.trim()])branches[name.trim()]=[];saveBranches();renderBranchList();toast('Branch added: '+name.trim());} function openAddBranchCounsellor(branch){const name=window.prompt('Add counsellor to '+branch+':');if(!name||!name.trim())return;branches[branch].push(name.trim());saveBranches();renderBranchList();toast('Counsellor added to '+branch);} function removeBranchCounsellor(branch,i){if(!confirm('Remove this counsellor?'))return;branches[branch].splice(i,1);saveBranches();renderBranchList();} function removeBranch(branch){if(!confirm('Delete branch '+branch+'?'))return;delete branches[branch];saveBranches();renderBranchList();} function renderBranchList(){const el=document.getElementById('branch-list');if(!el)return;const keys=Object.keys(branches);el.innerHTML=keys.length?keys.map(b=>`<div style="margin-bottom:16px;border:1px solid var(--line);border-radius:var(--rl);padding:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-weight:600;font-size:13px;color:var(--pine)">🏢 ${esc(b)}</span><div style="display:flex;gap:6px"><button onclick="openAddBranchCounsellor('${b}')" style="font-size:11px;padding:3px 8px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer">+ Add counsellor</button><button onclick="removeBranch('${b}')" style="font-size:11px;padding:3px 8px;background:var(--rose-l);color:var(--rose);border:none;border-radius:var(--r);cursor:pointer">Remove</button></div></div>${branches[b].length?branches[b].map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)"><div class="av" style="background:var(--pine3);color:#fff;width:24px;height:24px;font-size:10px">${ini(c)}</div><span style="flex:1;font-size:13px">${esc(c)}</span><button onclick="removeBranchCounsellor('${b}',${i})" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px">×</button></div>`).join(''):'<div style="font-size:12px;color:var(--ink3);font-style:italic">No counsellors yet.</div>'}</div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic">No branches yet. Click Add branch to start.</div>';} function openCreateUser(){const name=window.prompt('Add counsellor to round-robin rotation:');if(!name||!name.trim())return;counsellors.push(name.trim());saveCounsellors();renderCounsellorList();toast('Counsellor added: '+name.trim());} function removeCounsellor(i){if(!confirm('Remove this counsellor?'))return;counsellors.splice(i,1);rrIndex=Math.max(0,rrIndex%Math.max(counsellors.length,1));saveCounsellors();renderCounsellorList();toast('Counsellor removed.');}
+let rrIndexByOffice=JSON.parse(localStorage.getItem('s4p_rr_office')||'{}');
+function saveRRIndex(){localStorage.setItem('s4p_rr_office',JSON.stringify(rrIndexByOffice));}
+function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===office&&(t.role||'Counsellor')==='Counsellor');}
+function getNextCounsellorForOffice(office){const pool=getOfficeCounsellors(office);if(!pool.length)return{name:'',country:'',office};const idx=(rrIndexByOffice[office]||0)%pool.length;rrIndexByOffice[office]=idx+1;saveRRIndex();const c=pool[idx];return{name:c.full_name,country:c.country,office:c.office};}
 
 // ── SYNC indicator ───────────────────────────────────────────────
 function setSyncing(){document.getElementById('sync-dot').className='sync-dot syncing';document.getElementById('sync-label').textContent='Saving…';}
@@ -823,9 +846,19 @@ async function doLogin(){
   await onLogin(data.user);
 }
 
+const OFFICE_MAP={India:['India HQ'],UK:['London','Birmingham','Bradford','Cardiff']};
+function syncSignupOffice(){
+  const c=document.getElementById('signup-country').value;
+  const sel=document.getElementById('signup-office');
+  sel.innerHTML=(OFFICE_MAP[c]||[]).map(o=>`<option value="${o}" style="background:#0D4A3C">${o}</option>`).join('');
+}
+syncSignupOffice();
+
 async function doSignup(){
   const name=document.getElementById('signup-name').value.trim();
   const role=document.getElementById('signup-role').value;
+  const country=document.getElementById('signup-country').value;
+  const office=document.getElementById('signup-office').value;
   const email=document.getElementById('signup-email').value.trim();
   const pass=document.getElementById('signup-pass').value;
   const btn=document.getElementById('signup-btn');
@@ -833,10 +866,10 @@ async function doSignup(){
   if(!name||!email||!pass){err.textContent='Please fill all fields.';return;}
   if(pass.length<6){err.textContent='Password must be at least 6 characters.';return;}
   btn.disabled=true;btn.textContent='Creating account…';err.textContent='';
-  const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,role}}});
+  const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,role,country,office}}});
   if(error){err.textContent=error.message;btn.disabled=false;btn.textContent='Create account →';return;}
   // save profile to team table
-  await sb.from('team').upsert({id:data.user.id,full_name:name,role,email});
+  await sb.from('team').upsert({id:data.user.id,full_name:name,role,email,country,office});
   err.style.color='#86EFAC';
   err.textContent='Account created! Check your email to confirm, then sign in.';
   btn.disabled=false;btn.textContent='Create account →';
@@ -855,6 +888,7 @@ async function onLogin(user){
   await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents()]);
  initPresence(user, profile);
   renderDash();renderLeads();renderFU();badges();checkNoActivity();applyRoleUI();setTimeout(()=>{applyRoleUI();renderDash();},2000);
+  loadDashReminders();
   // realtime subscription
   sb.channel('leads-changes').on('postgres_changes',{event:'*',schema:'public',table:'leads'},()=>{
     loadLeads().then(()=>{renderDash();renderLeads();renderFU();badges();});
@@ -899,9 +933,11 @@ async function loadCoaching(){
   const{data,error}=await sb.from('coaching').select('*').order('created_at',{ascending:false});
   if(!error&&data) coaching=data;
 }
+let teamList=[];
 async function loadTeam(){
   const tl=document.querySelector('#sc-team .loading');
   const{data}=await sb.from('team').select('*');
+  teamList=data||[];
   if(tl) tl.style.display='none';
   renderTeam(data||[]);
 }
@@ -1011,6 +1047,7 @@ function openDetail(id){
   document.getElementById('dover').classList.add('open');
   loadUniApps(id);
   loadDocs(id);
+  loadReminders(id);
   broadcastStartEditing(id);
   updateDetailEditingNotice(id);
 }
@@ -1110,7 +1147,7 @@ function editLead(){
 function openAddLead(){
   editMode=false;curId=null;
   document.getElementById('modal-title').textContent='Add new lead';
-  ['f-name','f-mobile','f-email','f-city','f-dob','f-qual','f-notes','f-fu','f-counsel','f-ielts-score','f-walink','f-doclink'].forEach(id=>document.getElementById(id).value=''); ['f-intake','f-ielts-status','f-budget','f-english'].forEach(id=>document.getElementById(id).value='');
+  ['f-name','f-mobile','f-email','f-city','f-dob','f-qual','f-notes','f-fu','f-counsel','f-ielts-score','f-walink','f-doclink'].forEach(id=>document.getElementById(id).value=''); ['f-intake','f-ielts-status','f-budget','f-english'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-office').value='India HQ';
   document.getElementById('f-status').value='New Enquiry';
   document.getElementById('f-prio').value='Medium';
   document.getElementById('modal-lead').classList.add('open');
@@ -1134,6 +1171,7 @@ async function saveLead(){
     status:document.getElementById('f-status').value,
     priority:document.getElementById('f-prio').value,
     counsellor:document.getElementById('f-counsel').value,
+    office:document.getElementById('f-office').value,
     next_followup:document.getElementById('f-fu').value||null,
     notes:document.getElementById('f-notes').value,     intake_month:document.getElementById('f-intake').value,     ielts_status:document.getElementById('f-ielts-status').value,     ielts_score:document.getElementById('f-ielts-score').value,     budget_range:document.getElementById('f-budget').value,     english_status:document.getElementById('f-english').value,     whatsapp_group_link:document.getElementById('f-walink').value,     doc_folder_link:document.getElementById('f-doclink').value,
     added_by:currentUser?.id
@@ -1145,7 +1183,9 @@ async function saveLead(){
     toast('Lead updated.');
   } else {
     // auto lead ID
-    const maxId=leads.reduce((max,l)=>{const n=parseInt((l.lead_id||'S4P-0000').split('-')[1]);return n>max?n:max;},0);data.lead_id='S4P-'+String(maxId+1).padStart(4,'0'); if(!data.counsellor)data.counsellor=getNextCounsellor();
+    const maxId=leads.reduce((max,l)=>{const n=parseInt((l.lead_id||'S4P-0000').split('-')[1]);return n>max?n:max;},0);data.lead_id='S4P-'+String(maxId+1).padStart(4,'0');
+    if(!data.counsellor){const rr=getNextCounsellorForOffice(data.office);data.counsellor=rr.name;data.country=rr.country||(data.office==='India HQ'?'India':'UK');}
+    else{data.country=data.office==='India HQ'?'India':'UK';}
     const res=await sb.from('leads').insert([data]).select();
     error=res.error;
     if(!error&&res.data)leads.unshift(res.data[0]);
@@ -1250,7 +1290,7 @@ function renderTeam(team){
   const card=document.getElementById('team-members-card');
   if(card) card.style.display='none';
   if(!team||!team.length){tg.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No team members yet. Have your counsellors sign up using the CRM link.</div>';return;}
-  tg.innerHTML=team.map(t=>`<div class="tcard"><div class="tcard-av">${ini(t.full_name||t.email)}</div><div><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role||'Counsellor')}</div><div class="tcard-email">${esc(t.email||'')}</div></div></div>`).join('');
+  tg.innerHTML=team.map(t=>`<div class="tcard"><div class="tcard-av">${ini(t.full_name||t.email)}</div><div><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role||'Counsellor')}${t.country?' · '+esc(t.country):''}</div><div class="tcard-email">${esc(t.email||'')}</div></div></div>`).join('');
   // update follow-up counsellor filter
   const fp=document.getElementById('fp-co');
   const existing=Array.from(fp.options).map(o=>o.value);
@@ -1377,6 +1417,75 @@ async function loadDocs(leadId){const{data,error}=await sb.from('documents').sel
 function renderDocs(docs){const el=document.getElementById('d-doc-list');if(!el)return;if(!docs.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet. Click Init checklist to start.</div>';return;}el.innerHTML=docs.map(d=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><span style="flex:1;font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`).join('');}
 async function initDocs(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=DEFAULT_DOCS.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocs(curId);toast('Checklist created!');}
 async function toggleDoc(id,checked){await sb.from('documents').update({status:checked?'Done':'Pending'}).eq('id',id);const el=document.getElementById('d-doc-list');if(el){const spans=el.querySelectorAll('span');spans.forEach(s=>{if(s.style)s.style.textDecoration=checked?'line-through':''});}toast(checked?'✅ Marked done':'↩ Marked pending');}
+
+// ── REMINDERS ───────────────────────────────────────────────────
+let allReminders=[];
+async function loadReminders(leadId){
+  const{data,error}=await sb.from('reminders').select('*').eq('lead_id',leadId).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true});
+  if(!error&&data)renderReminders(data);
+}
+function renderReminders(list){
+  const el=document.getElementById('d-reminder-list');
+  if(!el)return;
+  el.innerHTML=list.length?list.map(r=>{
+    const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
+    const tm=r.reminder_time?r.reminder_time.substring(0,5):'';
+    return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${r.done?';opacity:.5':''}">
+      <input type="checkbox" ${r.done?'checked':''} onchange="toggleReminder('${r.id}',this.checked)" style="margin-top:3px;cursor:pointer">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600${r.done?';text-decoration:line-through':''}">${dt}${tm?' · '+tm:''}</div>
+        ${r.notes?`<div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(r.notes)}</div>`:''}
+      </div>
+      <button onclick="deleteReminder('${r.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button>
+    </div>`;
+  }).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No reminders set.</div>';
+}
+function openAddReminder(){
+  if(!curId)return;
+  const date=prompt('Reminder date (YYYY-MM-DD):',new Date().toISOString().split('T')[0]);
+  if(!date)return;
+  const time=prompt('Reminder time (HH:MM, 24hr):','09:00');
+  if(!time)return;
+  const notes=prompt('Notes (optional):','')||'';
+  sb.from('reminders').insert([{lead_id:curId,reminder_date:date,reminder_time:time,notes}]).then(({error})=>{
+    if(error){toast('Error: '+error.message);return;}
+    loadReminders(curId);
+    loadDashReminders();
+    toast('Reminder added!');
+  });
+}
+async function toggleReminder(id,checked){
+  await sb.from('reminders').update({done:checked}).eq('id',id);
+  loadReminders(curId);
+  loadDashReminders();
+  toast(checked?'✅ Reminder done':'↩ Reminder reopened');
+}
+async function deleteReminder(id){
+  if(!confirm('Delete this reminder?'))return;
+  await sb.from('reminders').delete().eq('id',id);
+  loadReminders(curId);
+  loadDashReminders();
+  toast('Reminder deleted.');
+}
+async function loadDashReminders(){
+  const today=new Date().toISOString().split('T')[0];
+  const{data,error}=await sb.from('reminders').select('*,leads(name)').eq('done',false).gte('reminder_date',today).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true}).limit(8);
+  const el=document.getElementById('reminders-dash-list');
+  if(!el)return;
+  if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">No upcoming reminders.</div>';return;}
+  const todayStr=today;
+  el.innerHTML=data.map(r=>{
+    const isToday=r.reminder_date===todayStr;
+    const dt=new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    const tm=r.reminder_time?r.reminder_time.substring(0,5):'';
+    const leadName=r.leads?.name||'Unknown lead';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="openDetail('${r.lead_id}')">
+      <span class="pill" style="background:${isToday?'var(--rose-l)':'var(--gold-l)'};color:${isToday?'var(--rose)':'var(--gold)'}">${isToday?'Today':dt}</span>
+      <div style="flex:1;font-size:13px"><b>${esc(leadName)}</b>${tm?' · '+tm:''}${r.notes?' — '+esc(r.notes):''}</div>
+    </div>`;
+  }).join('');
+}
+
   function checkNoActivity(){const now=Date.now();const stale=leads.filter(l=>['New Enquiry','Contacted','Counselling Done'].includes(l.status)&&l.updated_at&&(now-new Date(l.updated_at).getTime())>2*86400000);const nb=document.getElementById('nb-fu');if(stale.length>0){nb.classList.add('hot');nb.textContent=stale.length;const existing=document.getElementById('stale-toast');if(!existing){const t=document.createElement('div');t.id='stale-toast';t.style.cssText='position:fixed;top:16px;right:24px;background:var(--ember);color:#fff;font-size:13px;padding:10px 18px;border-radius:var(--r);z-index:400;box-shadow:var(--shm);cursor:pointer';t.textContent=`⚠️ ${stale.length} lead${stale.length>1?'s':''} with no activity for 2+ days`;t.onclick=()=>{t.remove();nav('followup',document.querySelectorAll('.ni')[3]);};document.body.appendChild(t);setTimeout(()=>t?.remove(),8000);}}}
   function waFollowUp(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress India regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
   function toast(m){

@@ -363,6 +363,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <select id="signup-country" onchange="syncSignupOffice()" style="width:100%;padding:12px 14px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);border-radius:var(--r);color:#fff;font-size:14px;font-family:var(--font-b)">
             <option value="India" style="background:#0D4A3C">India</option>
             <option value="UK" style="background:#0D4A3C">UK</option>
+            <option value="Pakistan" style="background:#0D4A3C">Pakistan</option>
+            <option value="Bangladesh" style="background:#0D4A3C">Bangladesh</option>
           </select>
         </div>
         <div class="auth-field"><label>Office</label>
@@ -675,8 +677,11 @@ What would you like help with today?</div>
       <div class="ff"><label>Priority</label>
         <select id="f-prio"><option>High</option><option selected>Medium</option><option>Low</option></select>
       </div>
+      <div class="ff"><label>Country *</label>
+        <select id="f-country" onchange="syncLeadOffice()"><option value="India">India</option><option value="UK">UK</option><option value="Pakistan">Pakistan</option><option value="Bangladesh">Bangladesh</option></select>
+      </div>
       <div class="ff"><label>Office</label>
-        <select id="f-office"><option value="India HQ">India HQ</option><option value="London">London</option><option value="Birmingham">Birmingham</option><option value="Bradford">Bradford</option><option value="Cardiff">Cardiff</option></select>
+        <select id="f-office"></select>
       </div>
       <div class="ff"><label>Counsellor</label><input id="f-counsel" placeholder="Leave blank for auto round-robin"></div>
       <div class="ff"><label>Next follow-up</label><input type="date" id="f-fu"></div>
@@ -722,7 +727,7 @@ What would you like help with today?</div>
         <select id="inv-role"><option>Counsellor</option><option>Admin</option><option>Manager</option></select>
       </div>
       <div class="ff"><label>Country</label>
-        <select id="inv-country" onchange="syncInviteOffice()"><option value="India">India</option><option value="UK">UK</option></select>
+        <select id="inv-country" onchange="syncInviteOffice()"><option value="India">India</option><option value="UK">UK</option><option value="Pakistan">Pakistan</option><option value="Bangladesh">Bangladesh</option></select>
       </div>
       <div class="ff full"><label>Office</label>
         <select id="inv-office" style="width:100%"></select>
@@ -769,6 +774,7 @@ What would you like help with today?</div>
       <div class="dsec">Pipeline</div>
       <div class="dfield"><div class="dlabel">Update status</div><select class="ssel" id="d-ssel" onchange="updateStatus()"></select></div>
       <div class="dfield"><div class="dlabel">Priority</div><div class="dvalue" id="d-prio"></div></div>
+      <div class="dfield"><div class="dlabel">Country / Office</div><div class="dvalue" id="d-office"></div></div>
       <div class="dfield"><div class="dlabel">Counsellor</div><div class="dvalue" id="d-counsel"></div></div>
       <div class="dfield"><div class="dlabel">Next follow-up</div><div class="dvalue" id="d-fu"></div></div>
       <div class="dsec">Additional Details</div>
@@ -883,13 +889,18 @@ async function doLogin(){
   await onLogin(data.user);
 }
 
-const OFFICE_MAP={India:['India HQ'],UK:['London','Birmingham','Bradford','Cardiff']};
+const OFFICE_MAP={India:['India HQ'],UK:['London','Birmingham','Bradford','Cardiff'],Pakistan:['Pakistan'],Bangladesh:['Bangladesh']};
 function syncSignupOffice(){
   const c=document.getElementById('signup-country').value;
   const sel=document.getElementById('signup-office');
   sel.innerHTML=(OFFICE_MAP[c]||[]).map(o=>`<option value="${o}" style="background:#0D4A3C">${o}</option>`).join('');
 }
 syncSignupOffice();
+function syncLeadOffice(){
+  const c=document.getElementById('f-country').value;
+  const sel=document.getElementById('f-office');
+  sel.innerHTML=(OFFICE_MAP[c]||[]).map(o=>`<option value="${o}">${o}</option>`).join('');
+}
 
 function syncInviteOffice(){
   const c=document.getElementById('inv-country').value;
@@ -1116,6 +1127,7 @@ function openDetail(id){
   document.getElementById('d-dest').textContent=l.destination||'—';
   document.getElementById('d-src').textContent=l.source||'—';
   document.getElementById('d-prio').textContent=l.priority||'—';
+  document.getElementById('d-office').textContent=(l.country||'—')+(l.office?' · '+l.office:'');
   document.getElementById('d-counsel').textContent=l.counsellor||'Unassigned';
   document.getElementById('d-fu').textContent=l.next_followup||'Not set';
   document.getElementById('d-notes').textContent=l.notes||'No notes.';   document.getElementById('d-intake').textContent=l.intake_month||'—';   document.getElementById('d-ielts-status').textContent=l.ielts_status||'—';   document.getElementById('d-ielts-score').textContent=l.ielts_score||'—';   document.getElementById('d-budget').textContent=l.budget_range||'—';   document.getElementById('d-english').textContent=l.english_status||'—';   document.getElementById('d-walink').textContent=l.whatsapp_group_link||'—';   const doclink=document.getElementById('d-doclink');   if(l.doc_folder_link){doclink.innerHTML=`<a href="${l.doc_folder_link}" target="_blank" style="color:var(--pine);text-decoration:underline">Open folder →</a>`;}else{doclink.textContent='—';}
@@ -1212,6 +1224,9 @@ function editLead(){
   document.getElementById('f-src').value=l.source||'';
   document.getElementById('f-status').value=l.status||'New Enquiry';
   document.getElementById('f-prio').value=l.priority||'Medium';
+  document.getElementById('f-country').value=l.country||'India';
+  syncLeadOffice();
+  document.getElementById('f-office').value=l.office||'India HQ';
   document.getElementById('f-counsel').value=l.counsellor||'';
   document.getElementById('f-fu').value=l.next_followup||'';
   document.getElementById('f-notes').value=l.notes||'';   document.getElementById('f-intake').value=l.intake_month||'';   document.getElementById('f-ielts-status').value=l.ielts_status||'';   document.getElementById('f-ielts-score').value=l.ielts_score||'';   document.getElementById('f-budget').value=l.budget_range||'';   document.getElementById('f-english').value=l.english_status||'';   document.getElementById('f-walink').value=l.whatsapp_group_link||'';   document.getElementById('f-doclink').value=l.doc_folder_link||'';
@@ -1224,7 +1239,7 @@ function editLead(){
 function openAddLead(){
   editMode=false;curId=null;
   document.getElementById('modal-title').textContent='Add new lead';
-  ['f-name','f-mobile','f-email','f-city','f-dob','f-qual','f-notes','f-fu','f-counsel','f-ielts-score','f-walink','f-doclink'].forEach(id=>document.getElementById(id).value=''); ['f-intake','f-ielts-status','f-budget','f-english'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-office').value='India HQ';
+  ['f-name','f-mobile','f-email','f-city','f-dob','f-qual','f-notes','f-fu','f-counsel','f-ielts-score','f-walink','f-doclink'].forEach(id=>document.getElementById(id).value=''); ['f-intake','f-ielts-status','f-budget','f-english'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-country').value='India'; syncLeadOffice();
   document.getElementById('f-status').value='New Enquiry';
   document.getElementById('f-prio').value='Medium';
   document.getElementById('modal-lead').classList.add('open');
@@ -1249,6 +1264,7 @@ async function saveLead(){
     priority:document.getElementById('f-prio').value,
     counsellor:document.getElementById('f-counsel').value,
     office:document.getElementById('f-office').value,
+    country:document.getElementById('f-country').value,
     next_followup:document.getElementById('f-fu').value||null,
     notes:document.getElementById('f-notes').value,     intake_month:document.getElementById('f-intake').value,     ielts_status:document.getElementById('f-ielts-status').value,     ielts_score:document.getElementById('f-ielts-score').value,     budget_range:document.getElementById('f-budget').value,     english_status:document.getElementById('f-english').value,     whatsapp_group_link:document.getElementById('f-walink').value,     doc_folder_link:document.getElementById('f-doclink').value,
     added_by:currentUser?.id
@@ -1261,8 +1277,7 @@ async function saveLead(){
   } else {
     // auto lead ID
     const maxId=leads.reduce((max,l)=>{const n=parseInt((l.lead_id||'S4P-0000').split('-')[1]);return n>max?n:max;},0);data.lead_id='S4P-'+String(maxId+1).padStart(4,'0');
-    if(!data.counsellor){const rr=getNextCounsellorForOffice(data.office);data.counsellor=rr.name;data.country=rr.country||(data.office==='India HQ'?'India':'UK');}
-    else{data.country=data.office==='India HQ'?'India':'UK';}
+    if(!data.counsellor){const rr=getNextCounsellorForOffice(data.office);data.counsellor=rr.name;}
     const res=await sb.from('leads').insert([data]).select();
     error=res.error;
     if(!error&&res.data)leads.unshift(res.data[0]);

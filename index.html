@@ -34,9 +34,9 @@ html,body{height:100%;overflow:hidden;background:var(--cream)}
 body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
 /* ── AUTH SCREEN ─────────────────────────────────────────────── */
-#auth-screen{position:fixed;inset:0;background:var(--pine);z-index:500;display:flex;align-items:center;justify-content:center}
+#auth-screen{position:fixed;inset:0;background:var(--pine);z-index:500;display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:24px 0}
 #auth-screen.hidden{display:none}
-.auth-box{width:420px;max-width:95vw}
+.auth-box{width:420px;max-width:95vw;margin:auto}
 .auth-logo{display:flex;align-items:center;gap:12px;margin-bottom:40px}
 .auth-icon{width:44px;height:44px;background:var(--pine3);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-size:18px;font-weight:500;color:#fff}
 .auth-brand{font-family:var(--font-h);font-size:24px;font-weight:300;color:#fff}
@@ -309,8 +309,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .kpi:nth-child(5){border-top-color:var(--rose) !important}
 
 /* Auth screen layered gradient */
-#auth-screen{background:var(--pine) !important;position:relative;overflow:hidden}
-#auth-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(45,158,127,.18) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(95,168,211,.12) 0%,transparent 50%),radial-gradient(ellipse at 60% 80%,rgba(255,188,66,.07) 0%,transparent 40%);pointer-events:none;z-index:0}
+#auth-screen{background:var(--pine) !important}
+#auth-screen::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(45,158,127,.18) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(95,168,211,.12) 0%,transparent 50%),radial-gradient(ellipse at 60% 80%,rgba(255,188,66,.07) 0%,transparent 40%);pointer-events:none;z-index:0}
 #auth-screen>*{position:relative;z-index:1}
 
 /* World map watermark on dashboard */

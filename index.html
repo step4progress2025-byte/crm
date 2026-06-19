@@ -711,7 +711,36 @@ What would you like help with today?</div>
   </div>
 </div>
 
+<!-- Invite User Modal -->
+<div class="mover" id="modal-invite">
+  <div class="modal" style="width:460px">
+    <div class="mhead"><span class="mtitle">Create user</span><button class="mclose" onclick="closeModal('modal-invite')">×</button></div>
+    <p style="font-size:13px;color:var(--ink3);margin-bottom:18px;line-height:1.6">Set the role, country and office for the new user, then generate an invite link. They'll sign up themselves using that link — their access is locked to what you set here.</p>
+    <div class="fg">
+      <div class="ff full"><label>Name (optional, for your reference)</label><input id="inv-name" placeholder="e.g. Priya Sharma"></div>
+      <div class="ff"><label>Role</label>
+        <select id="inv-role"><option>Counsellor</option><option>Admin</option><option>Manager</option></select>
+      </div>
+      <div class="ff"><label>Country</label>
+        <select id="inv-country" onchange="syncInviteOffice()"><option value="India">India</option><option value="UK">UK</option></select>
+      </div>
+      <div class="ff full"><label>Office</label>
+        <select id="inv-office" style="width:100%"></select>
+      </div>
+    </div>
+    <div class="mfoot" style="justify-content:flex-start">
+      <button class="btn btn-p" onclick="generateInviteLink()"><i class="ti ti-link"></i>Generate invite link</button>
+    </div>
+    <div id="invite-link-box" style="display:none;margin-top:6px;padding:14px;background:var(--cream);border:1px solid var(--line);border-radius:var(--r)">
+      <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Share this link</div>
+      <input id="inv-email-hint" readonly style="width:100%;font-size:12px;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);font-family:monospace;margin-bottom:10px">
+      <button class="btn btn-p" style="width:100%" onclick="copyInviteLink()"><i class="ti ti-copy"></i>Copy link</button>
+    </div>
+  </div>
+</div>
+
 <!-- Detail Panel -->
+
 <div class="dover" id="dover" onclick="closeDover(event)">
   <div class="dpanel">
     <div class="dhead">
@@ -813,7 +842,15 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 function ago(ts){if(!ts)return'';const d=Date.now()-new Date(ts).getTime();if(d<3600000)return Math.round(d/60000)+'m ago';if(d<86400000)return Math.round(d/3600000)+'h ago';return Math.round(d/86400000)+'d ago';}
 
 // ── State ────────────────────────────────────────────────────────
-let leads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[]; let counsellors=JSON.parse(localStorage.getItem('s4p_counsellors')||'[]'); let rrIndex=parseInt(localStorage.getItem('s4p_rr')||'0'); function saveCounsellors(){localStorage.setItem('s4p_counsellors',JSON.stringify(counsellors));localStorage.setItem('s4p_rr',rrIndex);} function getNextCounsellor(){if(!counsellors.length)return'';const c=counsellors[rrIndex%counsellors.length];rrIndex=(rrIndex+1)%counsellors.length;saveCounsellors();return c;} function renderCounsellorList(){const el=document.getElementById('counsellor-list');if(!el)return;el.innerHTML=counsellors.length?counsellors.map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)"><div class="av" style="background:var(--pine3);color:#fff;width:28px;height:28px;font-size:11px">${ini(c)}</div><span style="flex:1;font-size:13px">${esc(c)}</span>${i===rrIndex%counsellors.length?'<span class="pill" style="background:var(--sage-l);color:var(--sage)">Next</span>':''}<button onclick="removeCounsellor(${i})" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic">No counsellors added yet.</div>';const nx=document.getElementById('next-counsel');if(nx)nx.textContent=counsellors.length?counsellors[rrIndex%counsellors.length]:'None';} let branches=JSON.parse(localStorage.getItem('s4p_branches')||'{"India":[],"UK":[]}'); function saveBranches(){localStorage.setItem('s4p_branches',JSON.stringify(branches));} function openAddBranch(){const name=window.prompt('Branch name (e.g. India, UK, Malta):');if(!name||!name.trim())return;if(!branches[name.trim()])branches[name.trim()]=[];saveBranches();renderBranchList();toast('Branch added: '+name.trim());} function openAddBranchCounsellor(branch){const name=window.prompt('Add counsellor to '+branch+':');if(!name||!name.trim())return;branches[branch].push(name.trim());saveBranches();renderBranchList();toast('Counsellor added to '+branch);} function removeBranchCounsellor(branch,i){if(!confirm('Remove this counsellor?'))return;branches[branch].splice(i,1);saveBranches();renderBranchList();} function removeBranch(branch){if(!confirm('Delete branch '+branch+'?'))return;delete branches[branch];saveBranches();renderBranchList();} function renderBranchList(){const el=document.getElementById('branch-list');if(!el)return;const keys=Object.keys(branches);el.innerHTML=keys.length?keys.map(b=>`<div style="margin-bottom:16px;border:1px solid var(--line);border-radius:var(--rl);padding:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-weight:600;font-size:13px;color:var(--pine)">🏢 ${esc(b)}</span><div style="display:flex;gap:6px"><button onclick="openAddBranchCounsellor('${b}')" style="font-size:11px;padding:3px 8px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer">+ Add counsellor</button><button onclick="removeBranch('${b}')" style="font-size:11px;padding:3px 8px;background:var(--rose-l);color:var(--rose);border:none;border-radius:var(--r);cursor:pointer">Remove</button></div></div>${branches[b].length?branches[b].map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)"><div class="av" style="background:var(--pine3);color:#fff;width:24px;height:24px;font-size:10px">${ini(c)}</div><span style="flex:1;font-size:13px">${esc(c)}</span><button onclick="removeBranchCounsellor('${b}',${i})" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px">×</button></div>`).join(''):'<div style="font-size:12px;color:var(--ink3);font-style:italic">No counsellors yet.</div>'}</div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic">No branches yet. Click Add branch to start.</div>';} function openCreateUser(){const name=window.prompt('Add counsellor to round-robin rotation:');if(!name||!name.trim())return;counsellors.push(name.trim());saveCounsellors();renderCounsellorList();toast('Counsellor added: '+name.trim());} function removeCounsellor(i){if(!confirm('Remove this counsellor?'))return;counsellors.splice(i,1);rrIndex=Math.max(0,rrIndex%Math.max(counsellors.length,1));saveCounsellors();renderCounsellorList();toast('Counsellor removed.');}
+let leads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[]; let counsellors=JSON.parse(localStorage.getItem('s4p_counsellors')||'[]'); let rrIndex=parseInt(localStorage.getItem('s4p_rr')||'0'); function saveCounsellors(){localStorage.setItem('s4p_counsellors',JSON.stringify(counsellors));localStorage.setItem('s4p_rr',rrIndex);} function getNextCounsellor(){if(!counsellors.length)return'';const c=counsellors[rrIndex%counsellors.length];rrIndex=(rrIndex+1)%counsellors.length;saveCounsellors();return c;} function renderCounsellorList(){const el=document.getElementById('counsellor-list');if(!el)return;el.innerHTML=counsellors.length?counsellors.map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)"><div class="av" style="background:var(--pine3);color:#fff;width:28px;height:28px;font-size:11px">${ini(c)}</div><span style="flex:1;font-size:13px">${esc(c)}</span>${i===rrIndex%counsellors.length?'<span class="pill" style="background:var(--sage-l);color:var(--sage)">Next</span>':''}<button onclick="removeCounsellor(${i})" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic">No counsellors added yet.</div>';const nx=document.getElementById('next-counsel');if(nx)nx.textContent=counsellors.length?counsellors[rrIndex%counsellors.length]:'None';} let branches=JSON.parse(localStorage.getItem('s4p_branches')||'{"India":[],"UK":[]}'); function saveBranches(){localStorage.setItem('s4p_branches',JSON.stringify(branches));} function openAddBranch(){const name=window.prompt('Branch name (e.g. India, UK, Malta):');if(!name||!name.trim())return;if(!branches[name.trim()])branches[name.trim()]=[];saveBranches();renderBranchList();toast('Branch added: '+name.trim());} function openAddBranchCounsellor(branch){const name=window.prompt('Add counsellor to '+branch+':');if(!name||!name.trim())return;branches[branch].push(name.trim());saveBranches();renderBranchList();toast('Counsellor added to '+branch);} function removeBranchCounsellor(branch,i){if(!confirm('Remove this counsellor?'))return;branches[branch].splice(i,1);saveBranches();renderBranchList();} function removeBranch(branch){if(!confirm('Delete branch '+branch+'?'))return;delete branches[branch];saveBranches();renderBranchList();} function renderBranchList(){const el=document.getElementById('branch-list');if(!el)return;const keys=Object.keys(branches);el.innerHTML=keys.length?keys.map(b=>`<div style="margin-bottom:16px;border:1px solid var(--line);border-radius:var(--rl);padding:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-weight:600;font-size:13px;color:var(--pine)">🏢 ${esc(b)}</span><div style="display:flex;gap:6px"><button onclick="openAddBranchCounsellor('${b}')" style="font-size:11px;padding:3px 8px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer">+ Add counsellor</button><button onclick="removeBranch('${b}')" style="font-size:11px;padding:3px 8px;background:var(--rose-l);color:var(--rose);border:none;border-radius:var(--r);cursor:pointer">Remove</button></div></div>${branches[b].length?branches[b].map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)"><div class="av" style="background:var(--pine3);color:#fff;width:24px;height:24px;font-size:10px">${ini(c)}</div><span style="flex:1;font-size:13px">${esc(c)}</span><button onclick="removeBranchCounsellor('${b}',${i})" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px">×</button></div>`).join(''):'<div style="font-size:12px;color:var(--ink3);font-style:italic">No counsellors yet.</div>'}</div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic">No branches yet. Click Add branch to start.</div>';} function openCreateUser(){
+  document.getElementById('inv-name').value='';
+  document.getElementById('inv-email-hint').value='';
+  document.getElementById('inv-role').value='Counsellor';
+  document.getElementById('inv-country').value='India';
+  syncInviteOffice();
+  document.getElementById('invite-link-box').style.display='none';
+  document.getElementById('modal-invite').classList.add('open');
+} function removeCounsellor(i){if(!confirm('Remove this counsellor?'))return;counsellors.splice(i,1);rrIndex=Math.max(0,rrIndex%Math.max(counsellors.length,1));saveCounsellors();renderCounsellorList();toast('Counsellor removed.');}
 let rrIndexByOffice=JSON.parse(localStorage.getItem('s4p_rr_office')||'{}');
 function saveRRIndex(){localStorage.setItem('s4p_rr_office',JSON.stringify(rrIndexByOffice));}
 function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===office&&(t.role||'Counsellor')==='Counsellor');}
@@ -853,6 +890,46 @@ function syncSignupOffice(){
   sel.innerHTML=(OFFICE_MAP[c]||[]).map(o=>`<option value="${o}" style="background:#0D4A3C">${o}</option>`).join('');
 }
 syncSignupOffice();
+
+function syncInviteOffice(){
+  const c=document.getElementById('inv-country').value;
+  const sel=document.getElementById('inv-office');
+  sel.innerHTML=(OFFICE_MAP[c]||[]).map(o=>`<option value="${o}">${o}</option>`).join('');
+}
+function generateInviteLink(){
+  const role=document.getElementById('inv-role').value;
+  const country=document.getElementById('inv-country').value;
+  const office=document.getElementById('inv-office').value;
+  const name=document.getElementById('inv-name').value.trim();
+  const params=new URLSearchParams({invite:'1',role,country,office});
+  if(name)params.set('name',name);
+  const link=window.location.origin+window.location.pathname+'?'+params.toString();
+  document.getElementById('inv-email-hint').value=link;
+  document.getElementById('invite-link-box').style.display='block';
+}
+function copyInviteLink(){
+  const inp=document.getElementById('inv-email-hint');
+  inp.select();
+  navigator.clipboard.writeText(inp.value).then(()=>toast('Invite link copied!')).catch(()=>{document.execCommand('copy');toast('Invite link copied!');});
+}
+function applyInviteFromURL(){
+  const params=new URLSearchParams(window.location.search);
+  if(params.get('invite')!=='1')return;
+  const role=params.get('role')||'Counsellor';
+  const country=params.get('country')||'India';
+  const office=params.get('office')||'India HQ';
+  const name=params.get('name')||'';
+  toggleAuth(); // switch to signup view
+  document.getElementById('signup-role').value=role;
+  document.getElementById('signup-country').value=country;
+  syncSignupOffice();
+  document.getElementById('signup-office').value=office;
+  if(name)document.getElementById('signup-name').value=name;
+  // lock fields so invited user can't change their assigned access
+  ['signup-role','signup-country','signup-office'].forEach(id=>{document.getElementById(id).disabled=true;document.getElementById(id).style.opacity='0.6';});
+  document.querySelector('#auth-signup-view .auth-sub').textContent=`You've been invited as ${role} · ${country} · ${office}. Set your email and password to continue.`;
+}
+applyInviteFromURL();
 
 async function doSignup(){
   const name=document.getElementById('signup-name').value.trim();

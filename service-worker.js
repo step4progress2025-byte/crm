@@ -1,13 +1,13 @@
 // ── S4P CRM Service Worker ──────────────────────────────────────
-// Cache-first for static assets; network-first for Supabase API.
-// Version bump this string to force cache refresh on deploy.
+// Network-first for index.html (always get latest CRM code).
+// Cache-first for static assets (fonts/icons) for offline speed.
+// IMPORTANT: Bump CACHE_NAME on every deploy so old caches are purged
+// and every visitor (including MD) gets the new version automatically.
 
-const CACHE_NAME = 's4p-crm-v1';
+const CACHE_NAME = 's4p-crm-v2'; // ← bump this number each time you deploy
 
 // Assets to pre-cache on install (adjust paths if your repo layout differs)
 const PRECACHE = [
-  '/crm/',
-  '/crm/index.html',
   '/crm/manifest.json',
   '/crm/icons/icon-192.png',
   '/crm/icons/icon-512.png',
@@ -23,11 +23,17 @@ const NETWORK_ONLY = [
   'googleapis.com/maps',  // if you ever add maps
 ];
 
+// HTML navigation requests that must always try network FIRST
+// (this is the fix: index.html was previously cache-first, so
+// updates never reached returning visitors like your MD)
+function isNavigationOrHTML(request) {
+  return request.mode === 'navigate' || request.url.endsWith('/crm/') || request.url.endsWith('index.html');
+}
+
 // ── Install ──────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // Pre-cache local assets; skip CDN failures gracefully
       return Promise.allSettled(
         PRECACHE.map((url) => cache.add(url).catch(() => {}))
       );
@@ -64,14 +70,31 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Cache-first for everything else (HTML, CSS, JS, fonts, icons)
+  // 3. Network-FIRST for the app shell (index.html / navigations)
+  //    This guarantees every visitor gets the latest deployed CRM code.
+  //    Falls back to cache only if offline.
+  if (isNavigationOrHTML(event.request)) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/crm/index.html')))
+    );
+    return;
+  }
+
+  // 4. Cache-first for everything else (CSS, JS libs, fonts, icons)
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
 
       return fetch(event.request)
         .then((response) => {
-          // Only cache valid, non-opaque responses for same-origin or CDN
           if (
             response.ok &&
             (response.type === 'basic' || response.type === 'cors')
@@ -82,7 +105,6 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // Offline fallback: serve the app shell
           if (event.request.mode === 'navigate') {
             return caches.match('/crm/') || caches.match('/crm/index.html');
           }
@@ -90,6 +112,3 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
-
-// ── Background sync (optional, for future offline queue) ─────────
-// self.addEventListener('sync', (event) => { ... });

@@ -562,12 +562,6 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
       <!-- Team -->
       <section id="sc-team" class="screen">
-        <div class="card" style="margin-bottom:20px">
-         <div class="card-h"><span class="card-t">Branch roster</span><button class="btn btn-p" style="font-size:12px;padding:5px 10px" onclick="openAddBranch()"><i class="ti ti-plus"></i>Add branch</button></div>
-<div id="branch-list" style="margin-bottom:8px"></div>
-<div id="counsellor-list" style="display:none"></div>
-<div style="font-size:11px;color:var(--ink3);font-style:italic;margin-top:4px">Round-robin: Next up: <b id="next-counsel">—</b></div>
-</div>
         <div id="team-members-card" style="display:none">
           <div class="team-grid" id="team-grid"></div>
         </div>
@@ -876,7 +870,7 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 function ago(ts){if(!ts)return'';const d=Date.now()-new Date(ts).getTime();if(d<3600000)return Math.round(d/60000)+'m ago';if(d<86400000)return Math.round(d/3600000)+'h ago';return Math.round(d/86400000)+'d ago';}
 
 // ── State ────────────────────────────────────────────────────────
-let leads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[]; let counsellors=JSON.parse(localStorage.getItem('s4p_counsellors')||'[]'); let rrIndex=parseInt(localStorage.getItem('s4p_rr')||'0'); function saveCounsellors(){localStorage.setItem('s4p_counsellors',JSON.stringify(counsellors));localStorage.setItem('s4p_rr',rrIndex);} function getNextCounsellor(){if(!counsellors.length)return'';const c=counsellors[rrIndex%counsellors.length];rrIndex=(rrIndex+1)%counsellors.length;saveCounsellors();return c;} function renderCounsellorList(){const el=document.getElementById('counsellor-list');if(!el)return;el.innerHTML=counsellors.length?counsellors.map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)"><div class="av" style="background:var(--pine3);color:#fff;width:28px;height:28px;font-size:11px">${ini(c)}</div><span style="flex:1;font-size:13px">${esc(c)}</span>${i===rrIndex%counsellors.length?'<span class="pill" style="background:var(--sage-l);color:var(--sage)">Next</span>':''}<button onclick="removeCounsellor(${i})" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic">No counsellors added yet.</div>';const nx=document.getElementById('next-counsel');if(nx)nx.textContent=counsellors.length?counsellors[rrIndex%counsellors.length]:'None';} let branches=JSON.parse(localStorage.getItem('s4p_branches')||'{"India":[],"UK":[]}'); function saveBranches(){localStorage.setItem('s4p_branches',JSON.stringify(branches));} function openAddBranch(){const name=window.prompt('Branch name (e.g. India, UK, Malta):');if(!name||!name.trim())return;if(!branches[name.trim()])branches[name.trim()]=[];saveBranches();renderBranchList();toast('Branch added: '+name.trim());} function openAddBranchCounsellor(branch){const name=window.prompt('Add counsellor to '+branch+':');if(!name||!name.trim())return;branches[branch].push(name.trim());saveBranches();renderBranchList();toast('Counsellor added to '+branch);} function removeBranchCounsellor(branch,i){if(!confirm('Remove this counsellor?'))return;branches[branch].splice(i,1);saveBranches();renderBranchList();} function removeBranch(branch){if(!confirm('Delete branch '+branch+'?'))return;delete branches[branch];saveBranches();renderBranchList();} function renderBranchList(){const el=document.getElementById('branch-list');if(!el)return;const keys=Object.keys(branches);el.innerHTML=keys.length?keys.map(b=>`<div style="margin-bottom:16px;border:1px solid var(--line);border-radius:var(--rl);padding:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-weight:600;font-size:13px;color:var(--pine)">🏢 ${esc(b)}</span><div style="display:flex;gap:6px"><button onclick="openAddBranchCounsellor('${b}')" style="font-size:11px;padding:3px 8px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer">+ Add counsellor</button><button onclick="removeBranch('${b}')" style="font-size:11px;padding:3px 8px;background:var(--rose-l);color:var(--rose);border:none;border-radius:var(--r);cursor:pointer">Remove</button></div></div>${branches[b].length?branches[b].map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)"><div class="av" style="background:var(--pine3);color:#fff;width:24px;height:24px;font-size:10px">${ini(c)}</div><span style="flex:1;font-size:13px">${esc(c)}</span><button onclick="removeBranchCounsellor('${b}',${i})" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px">×</button></div>`).join(''):'<div style="font-size:12px;color:var(--ink3);font-style:italic">No counsellors yet.</div>'}</div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic">No branches yet. Click Add branch to start.</div>';} function openCreateUser(){
+let leads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[]; function openCreateUser(){
   document.getElementById('inv-name').value='';
   document.getElementById('inv-email-hint').value='';
   document.getElementById('inv-role').value='Counsellor';
@@ -895,7 +889,7 @@ let leads=[], coaching=[], currentUser=null, curId=null, editMode=false, importR
   }
   document.getElementById('invite-link-box').style.display='none';
   document.getElementById('modal-invite').classList.add('open');
-} function removeCounsellor(i){if(!confirm('Remove this counsellor?'))return;counsellors.splice(i,1);rrIndex=Math.max(0,rrIndex%Math.max(counsellors.length,1));saveCounsellors();renderCounsellorList();toast('Counsellor removed.');}
+}
 let rrIndexByOffice=JSON.parse(localStorage.getItem('s4p_rr_office')||'{}');
 function saveRRIndex(){localStorage.setItem('s4p_rr_office',JSON.stringify(rrIndexByOffice));}
 function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===office&&(t.role||'Counsellor')==='Counsellor');}
@@ -1083,7 +1077,7 @@ function nav(id,btn){
   if(btn)btn.classList.add('active');
   const T={dashboard:'Dashboard',leads:'Lead database',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',ai:'AI Counsellor'};
   document.getElementById('topbar-title').textContent=T[id]||id;
-  if(id==='leads'){renderLeads();setTimeout(applyRoleUI,500);} if(id==='events'){loadEvents();}   if(id==='team'){renderCounsellorList();renderBranchList();}   if(id==='finance')renderFinance();   // Role guard   const role=document.getElementById('sb-urole').textContent;   if(id==='finance'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}   if(id==='team'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}   if(id==='import'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}
+  if(id==='leads'){renderLeads();setTimeout(applyRoleUI,500);} if(id==='events'){loadEvents();}   if(id==='finance')renderFinance();   // Role guard   const role=document.getElementById('sb-urole').textContent;   if(id==='finance'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}   if(id==='team'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}   if(id==='import'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}
   if(id==='coaching')renderCoaching();
   if(id==='followup')renderFU();
 }

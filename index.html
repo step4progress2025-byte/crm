@@ -596,7 +596,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         </div>
       </section>
 
-      <!-- Finance --><section id="sc-finance" class="screen"><div class="card" style="margin-bottom:16px"><div class="card-h"><span class="card-t">Commission tracker</span><button class="btn btn-p" style="font-size:12px;padding:5px 10px" onclick="openAddCommission()"><i class="ti ti-plus"></i>Add record</button></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px"><div class="kpi" style="border-top-color:var(--pine)!important"><div class="kpi-l">Total expected</div><div class="kpi-v kv-p" id="fc-total">—</div></div><div class="kpi" style="border-top-color:var(--sage)!important"><div class="kpi-l">Received</div><div class="kpi-v kv-g" id="fc-recv">—</div></div><div class="kpi" style="border-top-color:var(--ember)!important"><div class="kpi-l">Outstanding</div><div class="kpi-v kv-o" id="fc-out">—</div></div></div><div class="tw"><table class="tbl"><thead><tr><th>Student</th><th>University</th><th>Destination</th><th>Amount</th><th>Currency</th><th>Status</th><th>Notes</th><th></th></tr></thead><tbody id="finance-tbody"></tbody></table></div></div></section>
+      <!-- Finance --><section id="sc-finance" class="screen"><div class="card" style="margin-bottom:16px"><div class="card-h"><span class="card-t">Commission tracker</span><button class="btn btn-p" style="font-size:12px;padding:5px 10px" onclick="openAddCommission()"><i class="ti ti-plus"></i>Add record</button></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px"><div class="kpi" style="border-top-color:var(--pine)!important"><div class="kpi-l">Total expected</div><div class="kpi-v kv-p" id="fc-total">—</div></div><div class="kpi" style="border-top-color:var(--sage)!important"><div class="kpi-l">Received</div><div class="kpi-v kv-g" id="fc-recv">—</div></div><div class="kpi" style="border-top-color:var(--ember)!important"><div class="kpi-l">Outstanding</div><div class="kpi-v kv-o" id="fc-out">—</div></div></div><div class="tw"><table class="tbl"><thead><tr><th>Student</th><th>University</th><th>Office</th><th>Destination</th><th>Amount</th><th>Currency</th><th>Status</th><th>Notes</th><th></th></tr></thead><tbody id="finance-tbody"></tbody></table></div></div></section>
       <!-- AI -->
       <section id="sc-ai" class="screen">
         <div class="ai-wrap">
@@ -716,6 +716,30 @@ What would you like help with today?</div>
     <div class="mfoot">
       <button class="btn" onclick="closeModal('modal-coaching')">Cancel</button>
       <button class="btn btn-p" onclick="saveCoaching()"><i class="ti ti-check"></i>Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Commission Modal -->
+<div class="mover" id="modal-commission">
+  <div class="modal" style="width:460px">
+    <div class="mhead"><span class="mtitle">Add commission record</span><button class="mclose" onclick="closeModal('modal-commission')">×</button></div>
+    <div class="fg">
+      <div class="ff full"><label>Linked lead (enrolled/fees paid students)</label><select id="cm-lead" style="width:100%;font-size:13px;padding:9px 13px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)" onchange="syncCommissionLead()"></select></div>
+      <div class="ff"><label>University</label><input id="cm-uni" placeholder="University name"></div>
+      <div class="ff"><label>Destination</label><input id="cm-dest" placeholder="UK"></div>
+      <div class="ff"><label>Commission amount</label><input id="cm-amt" type="number" placeholder="1500"></div>
+      <div class="ff"><label>Currency</label>
+        <select id="cm-curr"><option>GBP</option><option>USD</option><option>AUD</option><option>EUR</option><option>INR</option></select>
+      </div>
+      <div class="ff"><label>Status</label>
+        <select id="cm-status"><option>Pending</option><option>Received</option></select>
+      </div>
+      <div class="ff full"><label>Notes</label><input id="cm-notes" placeholder="Optional"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeModal('modal-commission')">Cancel</button>
+      <button class="btn btn-p" onclick="saveCommission()"><i class="ti ti-check"></i>Save</button>
     </div>
   </div>
 </div>
@@ -1523,7 +1547,56 @@ function aiAboutLead(){
   document.getElementById('ai-in').value=q;sendAI();
 }
 
-let commissions=[];async function loadCommissions(){const{data,error}=await sb.from('commissions').select('*').order('created_at',{ascending:false});if(!error&&data)commissions=data;}function openCommissionLead(id){if(id)openDetail(id);} function renderFinance(){loadCommissions().then(()=>{const tb=document.getElementById('finance-tbody');if(!tb)return;const total=commissions.reduce((s,c)=>s+(parseFloat(c.commission_amount)||0),0);const recv=commissions.filter(c=>c.status==='Received').reduce((s,c)=>s+(parseFloat(c.commission_amount)||0),0);const now=Date.now();const overdue=commissions.filter(c=>c.status==='Pending'&&c.created_at&&(now-new Date(c.created_at).getTime())>30*86400000);document.getElementById('fc-total').textContent='\u00a3'+total.toLocaleString();document.getElementById('fc-recv').textContent='\u00a3'+recv.toLocaleString();const outEl=document.getElementById('fc-out');outEl.textContent='\u00a3'+(total-recv).toLocaleString();if(overdue.length){outEl.style.color='var(--rose)';outEl.title=overdue.length+' overdue 30+ days';}tb.innerHTML=commissions.length?commissions.map(c=>{const lead=leads.find(l=>(l.name||'').toLowerCase().trim()===(c.student_name||'').toLowerCase().trim());return'<tr><td style="font-weight:600;font-size:13px;cursor:pointer;color:var(--pine);text-decoration:underline" onclick="openCommissionLead(this.dataset.lid)" data-lid="'+(lead?lead.id:'')+'">'+(esc(c.student_name||'\u2014'))+'</td><td style="font-size:12px">'+(esc(c.university||'\u2014'))+'</td><td style="font-size:12px">'+(esc(c.destination||'\u2014'))+'</td><td style="font-size:13px;font-weight:600">'+(esc(c.currency||'GBP'))+' '+(parseFloat(c.commission_amount||0).toLocaleString())+'</td><td style="font-size:12px">'+(esc(c.currency||'GBP'))+'</td><td><span class="pill" style="background:'+(c.status==='Received'?'#A7F3D0':'#FEF9C3')+';color:'+(c.status==='Received'?'#065F46':'#854D0E')+'">'+(esc(c.status||'Pending'))+'</span></td><td style="font-size:12px;color:var(--ink3)">'+(esc(c.notes||'\u2014'))+'</td><td><button onclick="deleteCommission(\''+c.id+'\')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px">\u00d7</button></td></tr>';}).join(''):'<tr><td colspan="8" style="text-align:center;padding:36px;color:var(--ink3);font-style:italic">No commission records yet.</td></tr>';});}function openAddCommission(){const student=prompt('Student name:');if(!student)return;const uni=prompt('University:');if(!uni)return;const dest=prompt('Destination (e.g. UK):');const amt=prompt('Commission amount:');if(!amt)return;const curr=prompt('Currency (GBP/USD/AUD/EUR):','GBP')||'GBP';const status=prompt('Status (Pending/Received):','Pending')||'Pending';const notes=prompt('Notes (optional):','')||'';sb.from('commissions').insert([{student_name:student,university:uni,destination:dest||'',commission_amount:parseFloat(amt)||0,currency:curr,status,notes}]).then(({error})=>{if(error){toast('Error: '+error.message);return;}toast('Commission record added!');renderFinance();});}async function deleteCommission(id){if(!confirm('Delete this record?'))return;await sb.from('commissions').delete().eq('id',id);toast('Record deleted.');renderFinance();}
+let commissions=[];
+async function loadCommissions(){
+  let q=sb.from('commissions').select('*,leads(name,office,country)').order('created_at',{ascending:false});
+  const{data,error}=await q;
+  if(!error&&data){
+    // Office-scope client-side via the joined lead, since commissions has no
+    // direct office column of its own — Super Admin sees everything.
+    commissions=isSuperAdmin?data:data.filter(c=>c.leads&&c.leads.office===myOffice);
+  }
+}
+function openCommissionLead(id){if(id)openDetail(id);}
+function renderFinance(){loadCommissions().then(()=>{const tb=document.getElementById('finance-tbody');if(!tb)return;const total=commissions.reduce((s,c)=>s+(parseFloat(c.commission_amount)||0),0);const recv=commissions.filter(c=>c.status==='Received').reduce((s,c)=>s+(parseFloat(c.commission_amount)||0),0);const now=Date.now();const overdue=commissions.filter(c=>c.status==='Pending'&&c.created_at&&(now-new Date(c.created_at).getTime())>30*86400000);document.getElementById('fc-total').textContent='\u00a3'+total.toLocaleString();document.getElementById('fc-recv').textContent='\u00a3'+recv.toLocaleString();const outEl=document.getElementById('fc-out');outEl.textContent='\u00a3'+(total-recv).toLocaleString();if(overdue.length){outEl.style.color='var(--rose)';outEl.title=overdue.length+' overdue 30+ days';}tb.innerHTML=commissions.length?commissions.map(c=>{const officeLabel=c.leads?.office||'\u2014';return'<tr><td style="font-weight:600;font-size:13px;cursor:pointer;color:var(--pine);text-decoration:underline" onclick="openCommissionLead(\''+(c.lead_id||'')+'\')">'+(esc(c.student_name||'\u2014'))+'</td><td style="font-size:12px">'+(esc(c.university||'\u2014'))+'</td><td style="font-size:12px">'+(esc(officeLabel))+'</td><td style="font-size:12px">'+(esc(c.destination||'\u2014'))+'</td><td style="font-size:13px;font-weight:600">'+(esc(c.currency||'GBP'))+' '+(parseFloat(c.commission_amount||0).toLocaleString())+'</td><td style="font-size:12px">'+(esc(c.currency||'GBP'))+'</td><td><span class="pill" style="background:'+(c.status==='Received'?'#A7F3D0':'#FEF9C3')+';color:'+(c.status==='Received'?'#065F46':'#854D0E')+'">'+(esc(c.status||'Pending'))+'</span></td><td style="font-size:12px;color:var(--ink3)">'+(esc(c.notes||'\u2014'))+'</td><td><button onclick="deleteCommission(\''+c.id+'\')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px">\u00d7</button></td></tr>';}).join(''):'<tr><td colspan="9" style="text-align:center;padding:36px;color:var(--ink3);font-style:italic">No commission records yet.</td></tr>';});}
+function openAddCommission(){
+  const eligible=leads.filter(l=>['Enrolled','Fees Paid','Deposit Paid','Onboarded Student','Commission Received'].includes(l.status));
+  const sel=document.getElementById('cm-lead');
+  sel.innerHTML=eligible.length?eligible.map(l=>`<option value="${l.id}">${esc(l.name)} — ${esc(l.office||'')}</option>`).join(''):'<option value="">No eligible students yet</option>';
+  ['cm-uni','cm-dest','cm-amt','cm-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cm-curr').value='GBP';
+  document.getElementById('cm-status').value='Pending';
+  syncCommissionLead();
+  document.getElementById('modal-commission').classList.add('open');
+}
+function syncCommissionLead(){
+  const id=document.getElementById('cm-lead').value;
+  const l=leads.find(x=>x.id===id);
+  if(l&&l.destination) document.getElementById('cm-dest').value=l.destination;
+}
+async function saveCommission(){
+  const leadId=document.getElementById('cm-lead').value;
+  const l=leads.find(x=>x.id===leadId);
+  if(!leadId||!l){toast('Please select a student.');return;}
+  const amt=document.getElementById('cm-amt').value;
+  if(!amt){toast('Please enter a commission amount.');return;}
+  const data={
+    lead_id:leadId,
+    student_name:l.name,
+    university:document.getElementById('cm-uni').value,
+    destination:document.getElementById('cm-dest').value,
+    commission_amount:parseFloat(amt)||0,
+    currency:document.getElementById('cm-curr').value,
+    status:document.getElementById('cm-status').value,
+    notes:document.getElementById('cm-notes').value,
+  };
+  const{error}=await sb.from('commissions').insert([data]);
+  if(error){toast('Error: '+error.message);return;}
+  toast('Commission record added!');
+  closeModal('modal-commission');
+  renderFinance();
+}
+async function deleteCommission(id){if(!confirm('Delete this record?'))return;await sb.from('commissions').delete().eq('id',id);toast('Record deleted.');renderFinance();}
   let uniApps=[];async function loadUniApps(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data)uniApps=data;renderUniApps();}function renderUniApps(){const el=document.getElementById('d-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};el.innerHTML=uniApps.length?uniApps.map(u=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div></div><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniApp('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No universities added yet.</div>';}function openAddUniApp(){if(!curId)return;const uni=prompt('University name:');if(!uni)return;const prog=prompt('Program:');const status=prompt('Status (Applied/Offer Received/Conditional/Rejected/Enrolled):','Applied')||'Applied';sb.from('university_applications').insert([{lead_id:curId,university:uni,program:prog||'',status}]).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadUniApps(curId);toast('University added!');});}async function deleteUniApp(id){if(!confirm('Remove this university?'))return;await sb.from('university_applications').delete().eq('id',id);loadUniApps(curId);toast('Removed.');}
   function applyRoleUI(){const role=(document.getElementById('sb-urole').textContent||'').trim();if(role==='Admin'){const cu=document.getElementById('create-user-btn');if(cu)cu.style.display='inline-flex';['ls-src','ls-from','ls-to'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='block';el.style.minWidth='140px';}});}if(role==='Counsellor'){const restricted=['finance','import','team'];document.querySelectorAll('.ni').forEach(btn=>{const onclick=btn.getAttribute('onclick')||'';restricted.forEach(r=>{if(onclick.includes("nav('"+r+"'"))btn.style.display='none';});});}}
   function renderCountryBreakdown(){const card=document.getElementById('country-breakdown-card');const el=document.getElementById('country-breakdown');if(!el||!card)return;if(!isSuperAdmin){card.style.display='none';return;}card.style.display='block';const map={};leads.forEach(l=>{const c=l.country||'Unspecified';if(!map[c])map[c]={country:c,total:0,enrolled:0};map[c].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[c].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.total-a.total);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}const flagMap={India:'🇮🇳',UK:'🇬🇧',Pakistan:'🇵🇰',Bangladesh:'🇧🇩'};const tot=leads.length||1;el.innerHTML=sorted.map(c=>{const w=Math.round(c.total/tot*100);const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;return`<div class="prow" onclick="navFilter('ls-country','${c.country}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:110px">${flagMap[c.country]||''} ${esc(c.country)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${c.total}</span><span style="font-size:11px;color:var(--ink3);min-width:60px;text-align:right">${pct}% enr.</span></div>`;}).join('');}

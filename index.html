@@ -1613,9 +1613,9 @@ function renderTeam(team){
   const tl=document.querySelector('#sc-team .loading');
   if(tl) tl.style.display='none';
   const card=document.getElementById('team-members-card');
-  if(card) card.style.display='none';
-  if(!team||!team.length){tg.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No team members yet. Have your counsellors sign up using the CRM link.</div>';return;}
+  if(!team||!team.length){tg.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No team members yet. Have your counsellors sign up using the CRM link.</div>';if(card)card.style.display='block';return;}
   tg.innerHTML=team.map(t=>`<div class="tcard"><div class="tcard-av">${ini(t.full_name||t.email)}</div><div><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role||'Counsellor')}${t.country?' · '+esc(t.country):''}</div><div class="tcard-email">${esc(t.email||'')}</div></div></div>`).join('');
+  if(card) card.style.display='block';
   // update follow-up counsellor filter
   const fp=document.getElementById('fp-co');
   const existing=Array.from(fp.options).map(o=>o.value);

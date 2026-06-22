@@ -508,6 +508,9 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <input type="date" id="ls-to" onchange="renderLeads()">
           </div>
           <div class="clabel" id="lcount"></div>
+          <div style="display:flex;justify-content:flex-end;margin-bottom:10px;margin-top:-6px">
+            <button class="btn" onclick="exportCurrentView()" style="font-size:12px;padding:5px 12px"><i class="ti ti-download"></i>Export this view</button>
+          </div>
           <div class="tw">
             <table class="tbl">
               <thead><tr>
@@ -584,8 +587,35 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="btn btn-p" onclick="doImport()"><i class="ti ti-database-import"></i>Import <span id="imp-count">0</span> leads to shared database</button>
           </div>
           <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--line)">
-            <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Export</div>
-            <button class="btn" onclick="exportCSV()"><i class="ti ti-download"></i>Download all leads as CSV</button>
+            <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Export leads</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+              <div>
+                <label style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Status</label>
+                <select id="exp-st" style="width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b)">
+                  <option value="">All statuses</option>
+                  <option>New Enquiry</option><option>Pending</option><option>Ongoing</option><option>Contacted</option><option>Follow Up</option><option>Callback Later</option><option>Interested</option><option>Counselling Done</option><option>Enrolled</option><option>Fees Paid</option><option>University Shortlist Sent</option><option>Documents Pending</option><option>Application Submitted</option><option>Received - Conditional Offer</option><option>Received - Unconditional Offer</option><option>Conditional Cleared</option><option>Received CAS Letter</option><option>Deposit Paid</option><option>Visa Application Submitted</option><option>Visa Application Accepted</option><option>Visa Application Rejected</option><option>Onboarded Student</option><option>Commission Received</option><option>Deferred</option><option>Not Interested</option><option>Dropped</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Country</label>
+                <select id="exp-ct" style="width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b)">
+                  <option value="">All countries</option><option>India</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Date from</label>
+                <input type="date" id="exp-from" style="width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b)">
+              </div>
+              <div>
+                <label style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Date to</label>
+                <input type="date" id="exp-to" style="width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b)">
+              </div>
+            </div>
+            <div style="display:flex;gap:10px">
+              <button class="btn btn-p" onclick="exportFiltered()"><i class="ti ti-download"></i>Export filtered leads</button>
+              <button class="btn" onclick="exportCSV()"><i class="ti ti-download"></i>Export all leads</button>
+            </div>
+            <div id="exp-count" style="font-size:12px;color:var(--ink3);margin-top:8px"></div>
           </div>
         </div>
       </section>
@@ -762,6 +792,99 @@ What would you like help with today?</div>
       <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Share this link</div>
       <input id="inv-email-hint" readonly style="width:100%;font-size:12px;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);font-family:monospace;margin-bottom:10px">
       <button class="btn btn-p" style="width:100%" onclick="copyInviteLink()"><i class="ti ti-copy"></i>Copy link</button>
+    </div>
+  </div>
+</div>
+
+<!-- Full-Screen Lead Detail Modal -->
+<div class="mover" id="modal-lead-detail" style="align-items:flex-start;padding:0;background:rgba(28,25,23,.6)">
+  <div style="width:100%;height:100vh;overflow-y:auto;background:var(--cream);display:flex;flex-direction:column">
+    <!-- Header bar -->
+    <div style="background:var(--pine);padding:18px 32px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:10">
+      <div style="display:flex;align-items:center;gap:16px">
+        <button onclick="closeLeadDetail()" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center">←</button>
+        <div>
+          <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.4);letter-spacing:.08em;font-style:italic" id="ld-id"></div>
+          <div style="font-family:var(--font-h);font-size:22px;font-weight:300;color:#fff;letter-spacing:-.02em" id="ld-name"></div>
+          <div style="font-size:12px;color:rgba(255,255,255,.5);font-style:italic;margin-top:2px" id="ld-sub"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ai" onclick="aiAboutLeadFS()"><i class="ti ti-robot"></i>Ask AI</button>
+        <button class="btn" style="background:#25D366;color:#fff;border-color:#25D366" onclick="waFollowUpFS()"><i class="ti ti-brand-whatsapp"></i></button>
+        <button class="btn" onclick="editLeadFS()"><i class="ti ti-edit"></i>Edit</button>
+        <button class="btn btn-del" onclick="deleteLeadFS()"><i class="ti ti-trash"></i>Delete</button>
+      </div>
+    </div>
+    <!-- Body: 3-column grid -->
+    <div style="padding:28px 32px;flex:1;max-width:1400px;width:100%;margin:0 auto">
+      <!-- Status update bar -->
+      <div style="background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:16px;box-shadow:var(--sh)">
+        <span style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">Update status</span>
+        <select class="ssel" id="ld-ssel" onchange="updateStatusFS()" style="flex:1;max-width:340px"></select>
+        <div id="ld-priority-badge"></div>
+        <div id="ld-office-badge"></div>
+        <div id="ld-counsel-badge"></div>
+      </div>
+      <!-- 3 columns -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
+        <!-- Col 1: Contact + Program -->
+        <div>
+          <div class="card">
+            <div class="card-h"><span class="card-t">Contact details</span></div>
+            <div class="dfield"><div class="dlabel">Mobile</div><div class="dvalue" id="ld-mob"></div></div>
+            <div class="dfield"><div class="dlabel">Email</div><div class="dvalue" id="ld-email"></div></div>
+            <div class="dfield"><div class="dlabel">City</div><div class="dvalue" id="ld-city"></div></div>
+            <div class="dfield"><div class="dlabel">Date of birth</div><div class="dvalue" id="ld-dob"></div></div>
+            <div class="dfield"><div class="dlabel">Qualification</div><div class="dvalue" id="ld-qual"></div></div>
+          </div>
+          <div class="card" style="margin-top:0">
+            <div class="card-h"><span class="card-t">Program</span></div>
+            <div class="dfield"><div class="dlabel">Program interest</div><div class="dvalue" id="ld-prog"></div></div>
+            <div class="dfield"><div class="dlabel">Destination</div><div class="dvalue" id="ld-dest"></div></div>
+            <div class="dfield"><div class="dlabel">Source</div><div class="dvalue" id="ld-src"></div></div>
+            <div class="dfield"><div class="dlabel">Intake month</div><div class="dvalue" id="ld-intake"></div></div>
+            <div class="dfield"><div class="dlabel">Budget</div><div class="dvalue" id="ld-budget"></div></div>
+          </div>
+        </div>
+        <!-- Col 2: Academic + Links + Notes -->
+        <div>
+          <div class="card">
+            <div class="card-h"><span class="card-t">Academic profile</span></div>
+            <div class="dfield"><div class="dlabel">IELTS / PTE Status</div><div class="dvalue" id="ld-ielts-status"></div></div>
+            <div class="dfield"><div class="dlabel">Score</div><div class="dvalue" id="ld-ielts-score"></div></div>
+            <div class="dfield"><div class="dlabel">English proficiency</div><div class="dvalue" id="ld-english"></div></div>
+            <div class="dfield"><div class="dlabel">Next follow-up</div><div class="dvalue" id="ld-fu"></div></div>
+          </div>
+          <div class="card" style="margin-top:0">
+            <div class="card-h"><span class="card-t">Links</span></div>
+            <div class="dfield"><div class="dlabel">WhatsApp group</div><div class="dvalue" id="ld-walink"></div></div>
+            <div class="dfield"><div class="dlabel">Documents folder</div><div class="dvalue" id="ld-doclink"></div></div>
+          </div>
+          <div class="card" style="margin-top:0">
+            <div class="card-h"><span class="card-t">Notes</span></div>
+            <div class="dvalue" id="ld-notes" style="white-space:pre-wrap;line-height:1.65;font-size:13px;color:var(--ink2)"></div>
+          </div>
+        </div>
+        <!-- Col 3: Docs, Reminders, Universities -->
+        <div>
+          <div class="card">
+            <div class="card-h"><span class="card-t">Document checklist</span></div>
+            <div id="ld-doc-list" style="margin-bottom:10px"></div>
+            <button onclick="initDocsFS()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-clipboard-list" style="font-size:13px"></i>Init checklist</button>
+          </div>
+          <div class="card" style="margin-top:0">
+            <div class="card-h"><span class="card-t">Reminders</span></div>
+            <div id="ld-reminder-list" style="margin-bottom:10px"></div>
+            <button onclick="openAddReminderFS()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-bell-plus" style="font-size:13px"></i>Add reminder</button>
+          </div>
+          <div class="card" style="margin-top:0">
+            <div class="card-h"><span class="card-t">University applications</span></div>
+            <div id="ld-uni-list" style="margin-bottom:10px"></div>
+            <button onclick="openAddUniAppFS()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-plus" style="font-size:13px"></i>Add university</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1113,7 +1236,7 @@ function renderDash(){
   const al=document.getElementById('act-list');al.innerHTML='';
   const dotC={"New Enquiry":"#1E40AF","Enrolled":"#065F46","Fees Paid":"#064E3B","Not Interested":"#9F1239","Counselling Done":"#C05621","Contacted":"#854D0E","Deferred":"#92400E","Dropped":"#475569"};
   leads.slice(0,6).forEach(l=>{
-    al.innerHTML+=`<div class="aitem" onclick="openDetail('${l.id}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><div class="adot" style="background:${dotC[l.status]||'#999'}"></div><div><div class="atext">${esc(l.name)} — ${l.status.toLowerCase()}</div><div class="atime">${ago(l.created_at)}${l.source?' · '+l.source:''}</div></div></div>`;
+    al.innerHTML+=`<div class="aitem" onclick="openLeadDetail('${l.id}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><div class="adot" style="background:${dotC[l.status]||'#999'}"></div><div><div class="atext">${esc(l.name)} — ${l.status.toLowerCase()}</div><div class="atime">${ago(l.created_at)}${l.source?' · '+l.source:''}</div></div></div>`;
   });
   renderCountryBreakdown();
   renderCounsellorRank();
@@ -1139,7 +1262,7 @@ function renderLeads(){
     const[abg,atx]=AVC[i%AVC.length];
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
     const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
-    tb.innerHTML+=`<tr onclick="openDetail('${l.id}')">
+    tb.innerHTML+=`<tr onclick="openLeadDetail('${l.id}')">
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
       <td><div class="nc"><div class="av" style="background:${abg};color:${atx}">${ini(l.name)}</div><div><div class="ln">${esc(l.name)}</div><div class="lc">${esc(l.city||'—')}</div></div></div></td>
       <td style="font-size:12px;color:var(--ink3)">${esc(l.mobile||'—')}</td>
@@ -1187,6 +1310,75 @@ function closeDover(e){
   document.getElementById('dover').classList.remove('open');curId=null;
   document.getElementById('editing-notice').classList.remove('show');
 }
+
+// ── FULL-SCREEN LEAD DETAIL ──────────────────────────────────────
+function openLeadDetail(id){
+  const l=leads.find(x=>x.id===id);if(!l)return;
+  curId=id;
+  document.getElementById('ld-id').textContent=l.lead_id||id.substring(0,8);
+  document.getElementById('ld-name').textContent=l.name;
+  document.getElementById('ld-sub').textContent=(l.program||'')+(l.destination?' → '+l.destination:'');
+  document.getElementById('ld-mob').textContent=l.mobile||'—';
+  document.getElementById('ld-email').textContent=l.email||'—';
+  document.getElementById('ld-city').textContent=l.city||'—';
+  document.getElementById('ld-dob').textContent=l.dob||'—';
+  document.getElementById('ld-qual').textContent=l.qualification||'—';
+  document.getElementById('ld-prog').textContent=l.program||'—';
+  document.getElementById('ld-dest').textContent=l.destination||'—';
+  document.getElementById('ld-src').textContent=l.source||'—';
+  document.getElementById('ld-intake').textContent=l.intake_month||'—';
+  document.getElementById('ld-budget').textContent=l.budget_range||'—';
+  document.getElementById('ld-ielts-status').textContent=l.ielts_status||'—';
+  document.getElementById('ld-ielts-score').textContent=l.ielts_score||'—';
+  document.getElementById('ld-english').textContent=l.english_status||'—';
+  document.getElementById('ld-fu').textContent=l.next_followup||'Not set';
+  document.getElementById('ld-notes').textContent=l.notes||'No notes.';
+  const wa=document.getElementById('ld-walink');
+  wa.textContent=l.whatsapp_group_link||'—';
+  const dl=document.getElementById('ld-doclink');
+  if(l.doc_folder_link){dl.innerHTML=`<a href="${l.doc_folder_link}" target="_blank" style="color:var(--pine);text-decoration:underline">Open folder →</a>`;}else{dl.textContent='—';}
+  const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
+  document.getElementById('ld-priority-badge').innerHTML=`<span class="pill" style="background:${ps.bg};color:${ps.tx}">${l.priority||'—'}</span>`;
+  document.getElementById('ld-office-badge').innerHTML=`<span style="font-size:12px;color:var(--ink3)">${esc(l.country||'—')} · ${esc(l.office||'—')}</span>`;
+  document.getElementById('ld-counsel-badge').innerHTML=`<span style="font-size:12px;color:var(--pine3);font-style:italic">${esc(l.counsellor||'Unassigned')}</span>`;
+  const sel=document.getElementById('ld-ssel');
+  sel.innerHTML=STATUSES.map(s=>`<option${s===l.status?' selected':''}>${s}</option>`).join('');
+  document.getElementById('modal-lead-detail').classList.add('open');
+  loadDocsFS(id);
+  loadRemindersFS(id);
+  loadUniAppsFS(id);
+  broadcastStartEditing(id);
+}
+function closeLeadDetail(){
+  if(curId) broadcastStopEditing(curId);
+  document.getElementById('modal-lead-detail').classList.remove('open');
+  curId=null;
+}
+async function updateStatusFS(){
+  if(!curId)return;
+  const status=document.getElementById('ld-ssel').value;
+  const l=leads.find(x=>x.id===curId);
+  setSyncing();
+  const{error}=await sb.from('leads').update({status}).eq('id',curId);
+  if(error){setSyncErr();toast('Error updating status.');return;}
+  if(l)l.status=status;
+  setSynced();renderLeads();renderDash();badges();toast('Status → '+status);
+}
+function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';document.getElementById('f-mobile').value=l.mobile||'';document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'India';syncLeadOffice();document.getElementById('f-office').value=l.office||'India HQ';document.getElementById('f-counsel').value=l.counsellor||'';document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;},100);}
+async function deleteLeadFS(){if(!curId||!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
+function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelectorAll('.ni')[7]);const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
+function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress India regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
+// FS versions of doc/reminder/uni functions
+async function loadDocsFS(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-doc-list');if(!el)return;if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet.</div>';return;}el.innerHTML=data.map(d=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><span style="flex:1;font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`).join('');}
+async function initDocsFS(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=DEFAULT_DOCS.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocsFS(curId);toast('Checklist created!');}
+async function loadRemindersFS(leadId){const{data,error}=await sb.from('reminders').select('*').eq('lead_id',leadId).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true});const el=document.getElementById('ld-reminder-list');if(!el)return;if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No reminders set.</div>';return;}el.innerHTML=data.map(r=>{const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';const tm=r.reminder_time?r.reminder_time.substring(0,5):'';return`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${r.done?';opacity:.5':''}"><input type="checkbox" ${r.done?'checked':''} onchange="toggleReminderFS('${r.id}',this.checked)" style="margin-top:3px;cursor:pointer"><div style="flex:1"><div style="font-size:13px;font-weight:600${r.done?';text-decoration:line-through':''}">${dt}${tm?' · '+tm:''}</div>${r.notes?`<div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(r.notes)}</div>`:''}</div><button onclick="deleteReminderFS('${r.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`;}).join('');}
+async function toggleReminderFS(id,checked){await sb.from('reminders').update({done:checked}).eq('id',id);loadRemindersFS(curId);loadDashReminders();toast(checked?'✅ Done':'↩ Reopened');}
+async function deleteReminderFS(id){if(!confirm('Delete this reminder?'))return;await sb.from('reminders').delete().eq('id',id);loadRemindersFS(curId);loadDashReminders();toast('Reminder deleted.');}
+function openAddReminderFS(){if(!curId)return;const date=prompt('Reminder date (YYYY-MM-DD):',new Date().toISOString().split('T')[0]);if(!date)return;const time=prompt('Reminder time (HH:MM, 24hr):','09:00');if(!time)return;const notes=prompt('Notes (optional):','')||'';sb.from('reminders').insert([{lead_id:curId,reminder_date:date,reminder_time:time,notes}]).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadRemindersFS(curId);loadDashReminders();toast('Reminder added!');});}
+async function loadUniAppsFS(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No universities added yet.</div>';return;}el.innerHTML=data.map(u=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div></div><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniAppFS('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`).join('');}
+function openAddUniAppFS(){if(!curId)return;const uni=prompt('University name:');if(!uni)return;const prog=prompt('Program:');const status=prompt('Status (Applied/Offer Received/Conditional/Rejected/Enrolled):','Applied')||'Applied';sb.from('university_applications').insert([{lead_id:curId,university:uni,program:prog||'',status}]).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadUniAppsFS(curId);toast('University added!');});}
+async function deleteUniAppFS(id){if(!confirm('Remove this university?'))return;await sb.from('university_applications').delete().eq('id',id);loadUniAppsFS(curId);toast('Removed.');}
+
 async function updateStatus(){
   if(curId) broadcastStartEditing(curId);
   if(!curId)return;
@@ -1395,7 +1587,7 @@ function renderFU(){
     const cls=l.priority==='High'?'high':l.priority==='Medium'?'medium':'low';
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
     const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
-    fl.innerHTML+=`<div class="fcard ${cls}" onclick="openDetail('${l.id}')">
+    fl.innerHTML+=`<div class="fcard ${cls}" onclick="openLeadDetail('${l.id}')">
       <div class="fmeta">
         <div class="fid">${esc(l.lead_id||l.id.substring(0,8))}</div>
         <div class="fname">${esc(l.name)}</div>
@@ -1492,13 +1684,59 @@ async function doImport(){
   toast(toInsert.length+' leads imported to shared database!');
 }
 
+function buildCSV(rows){
+  const H=['Lead ID','Name','Mobile','Email','City','DOB','Qualification','Program','Destination','Status','Source','Priority','Country','Office','Counsellor','Follow-up','Notes','Intake Month','IELTS Status','IELTS Score','Budget','English','Created'];
+  const lines=rows.map(l=>[l.lead_id,l.name,l.mobile,l.email,l.city,l.dob,l.qualification,l.program,l.destination,l.status,l.source,l.priority,l.country,l.office,l.counsellor,l.next_followup,l.notes,l.intake_month,l.ielts_status,l.ielts_score,l.budget_range,l.english_status,l.created_at].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(','));
+  return[H.join(','),...lines].join('\n');
+}
+function downloadCSV(csv,filename){
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=filename;a.click();
+}
 function exportCSV(){
   if(!leads.length){toast('No leads to export.');return;}
-  const H=['Lead ID','Name','Mobile','Email','City','DOB','Qualification','Program','Destination','Status','Source','Priority','Counsellor','Follow-up','Notes'];
-  const rows=leads.map(l=>[l.lead_id,l.name,l.mobile,l.email,l.city,l.dob,l.qualification,l.program,l.destination,l.status,l.source,l.priority,l.counsellor,l.next_followup,l.notes].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(','));
-  const csv=[H.join(','),...rows].join('\n');
-  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='step4progress_leads.csv';a.click();toast('Exported as CSV.');
+  downloadCSV(buildCSV(leads),'step4progress_all_leads.csv');
+  toast('Exported '+leads.length+' leads.');
+}
+function exportFiltered(){
+  const st=document.getElementById('exp-st').value;
+  const ct=document.getElementById('exp-ct').value;
+  const from=document.getElementById('exp-from').value;
+  const to=document.getElementById('exp-to').value;
+  let filtered=leads.filter(l=>{
+    if(st&&l.status!==st)return false;
+    if(ct&&l.country!==ct)return false;
+    if(from&&l.created_at&&l.created_at<from)return false;
+    if(to&&l.created_at&&l.created_at>to+'T23:59:59')return false;
+    return true;
+  });
+  if(!filtered.length){toast('No leads match those filters.');document.getElementById('exp-count').textContent='0 leads matched.';return;}
+  const parts=[st||'all',ct||'all',from||'',to||''].filter(Boolean).join('_');
+  downloadCSV(buildCSV(filtered),`step4progress_${parts}_leads.csv`);
+  document.getElementById('exp-count').textContent=`✓ Exported ${filtered.length} leads.`;
+  toast('Exported '+filtered.length+' leads.');
+}
+function exportCurrentView(){
+  const q=(document.getElementById('ls-q').value||'').toLowerCase();
+  const sf=document.getElementById('ls-st').value;
+  const pf=document.getElementById('ls-pr').value;
+  const df=document.getElementById('ls-de').value;
+  const cf=document.getElementById('ls-country').value;
+  const from=document.getElementById('ls-from').value;
+  const to=document.getElementById('ls-to').value;
+  const filtered=leads.filter(l=>{
+    if(sf&&l.status!==sf)return false;
+    if(pf&&l.priority!==pf)return false;
+    if(df&&l.destination!==df)return false;
+    if(cf&&l.country!==cf)return false;
+    if(from&&l.created_at&&l.created_at<from)return false;
+    if(to&&l.created_at&&l.created_at>to+'T23:59:59')return false;
+    if(q&&![l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q)))return false;
+    return true;
+  });
+  if(!filtered.length){toast('No leads in current view.');return;}
+  downloadCSV(buildCSV(filtered),'step4progress_filtered_leads.csv');
+  toast('Exported '+filtered.length+' leads from current view.');
 }
 
 // ── AI ────────────────────────────────────────────────────────────
@@ -1662,7 +1900,7 @@ async function loadDashReminders(){
     const dt=new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
     const tm=r.reminder_time?r.reminder_time.substring(0,5):'';
     const leadName=r.leads?.name||'Unknown lead';
-    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="openDetail('${r.lead_id}')">
+    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="openLeadDetail('${r.lead_id}')">
       <span class="pill" style="background:${isToday?'var(--rose-l)':'var(--gold-l)'};color:${isToday?'var(--rose)':'var(--gold)'}">${isToday?'Today':dt}</span>
       <div style="flex:1;font-size:13px"><b>${esc(leadName)}</b>${tm?' · '+tm:''}${r.notes?' — '+esc(r.notes):''}</div>
     </div>`;
@@ -1785,7 +2023,7 @@ function refreshEditingUI() {
 
   Object.entries(activeEditors).forEach(([leadId, editors]) => {
     if (!editors.length) return;
-    // Find the row — rows have onclick="openDetail('leadId')"
+    // Find the row — rows have onclick="openLeadDetail('leadId')"
     const row = document.querySelector(`.tbl tbody tr[onclick*="${leadId}"]`);
     if (row) {
       row.classList.add('being-edited');

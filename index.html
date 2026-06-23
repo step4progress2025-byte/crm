@@ -402,7 +402,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <div class="sng">Workspace</div>
       <button class="ni" onclick="nav('team',this)"><i class="ti ti-id-badge"></i>Team</button>
       <button class="ni" onclick="nav('events',this)"><i class="ti ti-calendar-event"></i>Events</button><button class="ni" onclick="nav('import',this)"><i class="ti ti-file-import"></i>Import data</button>
-      <button class="ni" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
+      <button class="ni" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" onclick="nav('coursefinder',this)"><i class="ti ti-search"></i>Course Finder</button>       <button class="ni" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
     </div>
     <div class="sb-foot">
       <div class="sb-user">
@@ -504,6 +504,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <option>Singapore</option><option>France</option><option>Italy</option><option>UAE</option><option>USA</option><option>India</option>
             </select>
             <select id="ls-src" onchange="renderLeads()"><option value="">All sources</option><option>Meta Ads</option><option>Google Ads</option><option>Instagram</option><option>WhatsApp</option><option>Walk-in</option><option>Referral</option><option>Website</option><option>LinkedIn</option><option>YouTube</option><option>Event / Expo</option><option>Other</option></select>
+            <select id="ls-counsel" onchange="renderLeads()"><option value="">All counsellors</option></select>
             <input type="date" id="ls-from" onchange="renderLeads()">
             <input type="date" id="ls-to" onchange="renderLeads()">
           </div>
@@ -603,6 +604,12 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
                 </select>
               </div>
               <div>
+                <label style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Counsellor</label>
+                <select id="exp-counsel" style="width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b)">
+                  <option value="">All counsellors</option>
+                </select>
+              </div>
+              <div>
                 <label style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Date from</label>
                 <input type="date" id="exp-from" style="width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b)">
               </div>
@@ -621,6 +628,60 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       </section>
 
       <!-- Finance --><section id="sc-finance" class="screen"><div class="card" style="margin-bottom:16px"><div class="card-h"><span class="card-t">Commission tracker</span><button class="btn btn-p" style="font-size:12px;padding:5px 10px" onclick="openAddCommission()"><i class="ti ti-plus"></i>Add record</button></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px"><div class="kpi" style="border-top-color:var(--pine)!important"><div class="kpi-l">Total expected</div><div class="kpi-v kv-p" id="fc-total">—</div></div><div class="kpi" style="border-top-color:var(--sage)!important"><div class="kpi-l">Received</div><div class="kpi-v kv-g" id="fc-recv">—</div></div><div class="kpi" style="border-top-color:var(--ember)!important"><div class="kpi-l">Outstanding</div><div class="kpi-v kv-o" id="fc-out">—</div></div></div><div class="tw"><table class="tbl"><thead><tr><th>Student</th><th>University</th><th>Office</th><th>Destination</th><th>Amount</th><th>Currency</th><th>Status</th><th>Notes</th><th></th></tr></thead><tbody id="finance-tbody"></tbody></table></div></div></section>
+      <!-- Course Finder -->
+      <section id="sc-coursefinder" class="screen">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h"><span class="card-t">🎓 Course & University Finder</span><span style="font-size:11px;color:var(--ink3)">645 partner universities · All marked as Step4Progress tie-ups ✅</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;margin-bottom:12px;align-items:end">
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Student nationality</div>
+              <select id="cf-nat" style="width:100%;font-size:13px;padding:9px 12px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)" onchange="searchCourses()">
+                <option value="">All nationalities</option>
+                <option>India</option><option>Nepal</option><option>Sri Lanka</option><option>Bangladesh</option><option>Pakistan</option><option>Bhutan</option><option>Vietnam</option><option>Malaysia</option><option>Philippines</option><option>Indonesia</option><option>Nigeria</option><option>Ghana</option><option>Kenya</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Study destination</div>
+              <select id="cf-dest" style="width:100%;font-size:13px;padding:9px 12px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)" onchange="searchCourses()">
+                <option value="">All countries</option>
+                <option>Australia</option><option>Austria</option><option>Belgium</option><option>Canada</option><option>Cyprus</option><option>Denmark</option><option>Finland</option><option>France</option><option>Germany</option><option>Hungary</option><option>Ireland</option><option>Italy</option><option>Japan</option><option>Malaysia</option><option>Malta</option><option>Netherlands</option><option>New Zealand</option><option>Singapore</option><option>Spain</option><option>Sweden</option><option>Switzerland</option><option>UAE</option><option>UK</option><option>USA</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Search university</div>
+              <input id="cf-search" type="text" placeholder="Type university name…" style="width:100%;font-size:13px;padding:9px 12px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)" oninput="searchCourses()">
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Link to lead</div>
+              <select id="cf-lead" style="width:100%;font-size:13px;padding:9px 12px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)">
+                <option value="">Select lead to shortlist for</option>
+              </select>
+            </div>
+            <button class="btn btn-p" onclick="searchCourses()" style="padding:9px 16px;white-space:nowrap"><i class="ti ti-search"></i>Search</button>
+          </div>
+          <div id="cf-count" style="font-size:12px;color:var(--ink3);margin-bottom:10px"></div>
+        </div>
+        <!-- AI Suggestions -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h"><span class="card-t">🤖 AI University Suggestions</span></div>
+          <div style="display:flex;gap:10px;margin-bottom:10px">
+            <input id="cf-ai-input" type="text" placeholder="Describe the student: e.g. India student, PG in Computer Science, budget £15k, IELTS 6.5, wants UK or Canada…" style="flex:1;font-size:13px;padding:9px 12px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)" onkeydown="if(event.key==='Enter')askCourseAI()">
+            <button class="btn btn-ai" onclick="askCourseAI()"><i class="ti ti-robot"></i>Ask AI</button>
+          </div>
+          <div id="cf-ai-thinking" style="display:none;font-size:12px;color:var(--ink3);font-style:italic"><i class="ti ti-loader-2" style="font-size:13px;vertical-align:-2px"></i> Thinking…</div>
+          <div id="cf-ai-response" style="font-size:13px;line-height:1.7;color:var(--ink);white-space:pre-wrap"></div>
+        </div>
+        <!-- Results -->
+        <div class="tw">
+          <table class="tbl">
+            <thead><tr>
+              <th>University</th><th>Country</th><th>Eligible Nationalities</th><th>Tie-up</th><th>Shortlist</th>
+            </tr></thead>
+            <tbody id="cf-tbody"><tr><td colspan="5" style="text-align:center;padding:36px;color:var(--ink3);font-style:italic">Select filters above to find universities.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
       <!-- AI -->
       <section id="sc-ai" class="screen">
         <div class="ai-wrap">
@@ -811,6 +872,7 @@ What would you like help with today?</div>
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-ai" onclick="aiAboutLeadFS()"><i class="ti ti-robot"></i>Ask AI</button>
+        <button class="btn" style="background:var(--gold-l);color:var(--gold);border-color:var(--gold)" onclick="openCourseFinderForLead(curId)"><i class="ti ti-search"></i>Find Courses</button>
         <button class="btn" style="background:#25D366;color:#fff;border-color:#25D366" onclick="waFollowUpFS()"><i class="ti ti-brand-whatsapp"></i></button>
         <button class="btn" onclick="editLeadFS()"><i class="ti ti-edit"></i>Edit</button>
         <button class="btn btn-del" onclick="deleteLeadFS()"><i class="ti ti-trash"></i>Delete</button>
@@ -1198,9 +1260,9 @@ function nav(id,btn){
   document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
   document.getElementById('sc-'+id).classList.add('active');
   if(btn)btn.classList.add('active');
-  const T={dashboard:'Dashboard',leads:'Lead database',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',ai:'AI Counsellor'};
+  const T={dashboard:'Dashboard',leads:'Lead database',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',coursefinder:'Course & University Finder',ai:'AI Counsellor'};
   document.getElementById('topbar-title').textContent=T[id]||id;
-  if(id==='leads'){renderLeads();setTimeout(applyRoleUI,500);} if(id==='events'){loadEvents();}   if(id==='finance')renderFinance();   // Role guard   const role=document.getElementById('sb-urole').textContent;   if(id==='finance'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}   if(id==='team'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}   if(id==='import'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}
+  if(id==='leads'){renderLeads();setTimeout(applyRoleUI,500);} if(id==='events'){loadEvents();}   if(id==='import'){populateExportCounsellorDropdown();}   if(id==='coursefinder')initCourseFinder();   if(id==='finance')renderFinance();   // Role guard   const role=document.getElementById('sb-urole').textContent;   if(id==='finance'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}   if(id==='team'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}   if(id==='import'&&role==='Counsellor'){nav('dashboard',document.querySelectorAll('.ni')[0]);toast('Access restricted.');return;}
   if(id==='coaching')renderCoaching();
   if(id==='followup')renderFU();
 }
@@ -1245,12 +1307,17 @@ function renderDash(){
 // ── LEADS ────────────────────────────────────────────────────────
 function renderLeads(){
   document.getElementById('leads-loading').style.display='none';
+  // Populate counsellor filter dropdown from live leads
+  const counselSel=document.getElementById('ls-counsel');
+  const existingC=Array.from(counselSel.options).map(o=>o.value);
+  leads.forEach(l=>{if(l.counsellor&&!existingC.includes(l.counsellor)){const o=document.createElement('option');o.value=l.counsellor;o.textContent=l.counsellor;counselSel.appendChild(o);existingC.push(l.counsellor);}});
   const q=(document.getElementById('ls-q').value||'').toLowerCase();
   const sf=document.getElementById('ls-st').value;
   const pf=document.getElementById('ls-pr').value;
   const df=document.getElementById('ls-de').value;
   const cf=document.getElementById('ls-country').value;
-  const f=leads.filter(l=>(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!q||[l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q))));
+  const counsel=document.getElementById('ls-counsel').value;
+  const f=leads.filter(l=>(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!counsel||l.counsellor===counsel)&&(!q||[l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q))));
   const empty=leads.length===0;
   document.getElementById('leads-empty').style.display=empty?'flex':'none';
   document.getElementById('leads-content').style.display=empty?'none':'block';
@@ -1735,11 +1802,13 @@ function exportCSV(){
 function exportFiltered(){
   const st=document.getElementById('exp-st').value;
   const ct=document.getElementById('exp-ct').value;
+  const counsel=document.getElementById('exp-counsel').value;
   const from=document.getElementById('exp-from').value;
   const to=document.getElementById('exp-to').value;
   let filtered=leads.filter(l=>{
     if(st&&l.status!==st)return false;
     if(ct&&l.country!==ct)return false;
+    if(counsel&&l.counsellor!==counsel)return false;
     if(from&&l.created_at&&l.created_at<from)return false;
     if(to&&l.created_at&&l.created_at>to+'T23:59:59')return false;
     return true;
@@ -1756,6 +1825,7 @@ function exportCurrentView(){
   const pf=document.getElementById('ls-pr').value;
   const df=document.getElementById('ls-de').value;
   const cf=document.getElementById('ls-country').value;
+  const counsel=document.getElementById('ls-counsel').value;
   const from=document.getElementById('ls-from').value;
   const to=document.getElementById('ls-to').value;
   const filtered=leads.filter(l=>{
@@ -1763,6 +1833,7 @@ function exportCurrentView(){
     if(pf&&l.priority!==pf)return false;
     if(df&&l.destination!==df)return false;
     if(cf&&l.country!==cf)return false;
+    if(counsel&&l.counsellor!==counsel)return false;
     if(from&&l.created_at&&l.created_at<from)return false;
     if(to&&l.created_at&&l.created_at>to+'T23:59:59')return false;
     if(q&&![l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q)))return false;
@@ -1771,6 +1842,12 @@ function exportCurrentView(){
   if(!filtered.length){toast('No leads in current view.');return;}
   downloadCSV(buildCSV(filtered),'step4progress_filtered_leads.csv');
   toast('Exported '+filtered.length+' leads from current view.');
+}
+function populateExportCounsellorDropdown(){
+  const sel=document.getElementById('exp-counsel');
+  if(!sel)return;
+  const existing=Array.from(sel.options).map(o=>o.value);
+  leads.forEach(l=>{if(l.counsellor&&!existing.includes(l.counsellor)){const o=document.createElement('option');o.value=l.counsellor;o.textContent=l.counsellor;sel.appendChild(o);existing.push(l.counsellor);}});
 }
 
 // ── AI ────────────────────────────────────────────────────────────
@@ -1948,6 +2025,86 @@ async function loadDashReminders(){
   setTimeout(()=>t.classList.remove('show'),2800);
 }
 
+
+// ── COURSE FINDER ────────────────────────────────────────────────
+let cfUniversities = [];
+async function loadUniversities(){
+  if(cfUniversities.length) return;
+  const{data,error}=await sb.from('universities').select('*').order('name',{ascending:true});
+  if(!error&&data) cfUniversities=data;
+}
+function initCourseFinder(){
+  // Populate lead dropdown
+  const sel=document.getElementById('cf-lead');
+  sel.innerHTML='<option value="">Select lead to shortlist for</option>'+
+    leads.map(l=>`<option value="${l.id}">${esc(l.name)} — ${esc(l.status)}</option>`).join('');
+  loadUniversities().then(searchCourses);
+}
+function searchCourses(){
+  const nat=document.getElementById('cf-nat').value;
+  const dest=document.getElementById('cf-dest').value;
+  const q=(document.getElementById('cf-search').value||'').toLowerCase();
+  const tb=document.getElementById('cf-tbody');
+  const countEl=document.getElementById('cf-count');
+  if(!cfUniversities.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink3)">Loading universities…</td></tr>';loadUniversities().then(searchCourses);return;}
+  let filtered=cfUniversities.filter(u=>{
+    if(dest&&u.country!==dest)return false;
+    if(nat&&!(u.eligible_nationalities||[]).includes(nat))return false;
+    if(q&&!u.name.toLowerCase().includes(q))return false;
+    return true;
+  });
+  countEl.textContent=`${filtered.length} universities found${nat?' eligible for '+nat:''}${dest?' in '+dest:''}`;
+  if(!filtered.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:36px;color:var(--ink3);font-style:italic">No universities match your filters.</td></tr>';return;}
+  tb.innerHTML=filtered.slice(0,100).map(u=>{
+    const nats=(u.eligible_nationalities||[]).slice(0,5).join(', ')+(u.eligible_nationalities?.length>5?' +more':'');
+    return`<tr>
+      <td style="font-weight:600;font-size:13px">${esc(u.name)}</td>
+      <td style="font-size:12px">${esc(u.country)}</td>
+      <td style="font-size:11px;color:var(--ink3)">${esc(nats||'—')}</td>
+      <td><span class="pill" style="background:#DCFCE7;color:#166534">✅ Tie-up</span></td>
+      <td><button onclick="shortlistUniversity('${u.id}','${u.name.replace(/'/g,"\\'")}','${u.country}')" style="font-size:12px;padding:4px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer">+ Shortlist</button></td>
+    </tr>`;
+  }).join('');
+  if(filtered.length>100) tb.innerHTML+=`<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--ink3);font-size:12px">Showing first 100 of ${filtered.length} — refine your filters to narrow results.</td></tr>`;
+}
+async function shortlistUniversity(uniId, uniName, uniCountry){
+  const leadId=document.getElementById('cf-lead').value;
+  if(!leadId){toast('Please select a lead first.');return;}
+  const{error}=await sb.from('university_applications').insert([{lead_id:leadId,university:uniName,program:'',status:'Applied'}]);
+  if(error){toast('Error: '+error.message);return;}
+  toast('✅ '+uniName+' shortlisted!');
+}
+async function askCourseAI(){
+  const inp=document.getElementById('cf-ai-input');
+  const q=inp.value.trim();
+  if(!q)return;
+  const thinking=document.getElementById('cf-ai-thinking');
+  const resp=document.getElementById('cf-ai-response');
+  thinking.style.display='block';
+  resp.textContent='';
+  const nat=document.getElementById('cf-nat').value;
+  const dest=document.getElementById('cf-dest').value;
+  const context=`You are a UK study abroad expert counsellor at Step4Progress. We have tie-ups with 645+ universities across UK, Canada, Australia, USA, Europe and more. The counsellor is asking for university and course recommendations.\n\nStudent profile context: ${nat?'Nationality: '+nat+'.':''} ${dest?'Wants to study in: '+dest+'.':''}\n\nCounsellor's question: ${q}\n\nProvide 5-8 specific university recommendations with: university name, country, why it suits this student, and any key notes. Be practical and concise.`;
+  try{
+    const r=await fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/ai-proxy',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:context,messages:[{role:'user',content:q}]})});
+    const d=await r.json();
+    resp.textContent=d.content?.[0]?.text||'Could not get a response.';
+  }catch(e){resp.textContent='Connection issue. Please try again.';}
+  thinking.style.display='none';
+}
+// Open course finder pre-filled with lead's nationality/destination
+function openCourseFinderForLead(leadId){
+  const l=leads.find(x=>x.id===leadId);
+  if(!l)return;
+  nav('coursefinder',document.querySelectorAll('.ni')[6]);
+  setTimeout(()=>{
+    if(l.country)document.getElementById('cf-nat').value=l.country;
+    if(l.destination)document.getElementById('cf-dest').value=l.destination;
+    document.getElementById('cf-lead').value=leadId;
+    searchCourses();
+  },300);
+}
 
 // ══ PRESENCE SYSTEM ════════════════════════════════════════════
 // Uses Supabase Realtime Presence to track who is online

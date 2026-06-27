@@ -2084,13 +2084,23 @@ async function askCourseAI(){
   resp.textContent='';
   const nat=document.getElementById('cf-nat').value;
   const dest=document.getElementById('cf-dest').value;
-  const context=`You are a UK study abroad expert counsellor at Step4Progress. We have tie-ups with 645+ universities across UK, Canada, Australia, USA, Europe and more. The counsellor is asking for university and course recommendations.\n\nStudent profile context: ${nat?'Nationality: '+nat+'.':''} ${dest?'Wants to study in: '+dest+'.':''}\n\nCounsellor's question: ${q}\n\nProvide 5-8 specific university recommendations with: university name, country, why it suits this student, and any key notes. Be practical and concise.`;
+  const context=`You are an expert study abroad counsellor at Step4Progress, a UK-headquartered education consultancy with offices in India, UK, Pakistan and Bangladesh. You have tie-ups with 645+ partner universities across UK, Canada, Australia, USA, Europe and more.\n\nYour job: recommend the best universities and courses for this student. Be specific, practical and helpful. For each recommendation include: university name, country, why it suits this student, degree level, and any important notes (IELTS requirement, fees range if known, special strengths).\n\nContext: ${nat?'Student nationality: '+nat+'.':''} ${dest?'Preferred destination: '+dest+'.':''}\n\nFormat your response clearly with numbered recommendations. End with 1-2 practical next steps the counsellor should take.`;
   try{
-    const r=await fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/ai-proxy',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:context,messages:[{role:'user',content:q}]})});
+    const r=await fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/ai-proxy',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,system:context,messages:[{role:'user',content:q}]})
+    });
+    if(!r.ok){const err=await r.text();throw new Error('API error: '+r.status+' '+err);}
     const d=await r.json();
-    resp.textContent=d.content?.[0]?.text||'Could not get a response.';
-  }catch(e){resp.textContent='Connection issue. Please try again.';}
+    const reply=d.content?.[0]?.text||'';
+    if(!reply)throw new Error('Empty response');
+    resp.textContent=reply;
+  }catch(e){
+    console.error('Course AI error:',e);
+    resp.style.color='var(--rose)';
+    resp.textContent='Could not get a response. Please check your AI proxy Edge Function is deployed and working.';
+  }
   thinking.style.display='none';
 }
 // Open course finder pre-filled with lead's nationality/destination

@@ -1317,7 +1317,9 @@ function renderLeads(){
   const df=document.getElementById('ls-de').value;
   const cf=document.getElementById('ls-country').value;
   const counsel=document.getElementById('ls-counsel').value;
-  const f=leads.filter(l=>(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!counsel||l.counsellor===counsel)&&(!q||[l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q))));
+  const from=document.getElementById('ls-from').value;
+  const to=document.getElementById('ls-to').value;
+  const f=leads.filter(l=>(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!counsel||l.counsellor===counsel)&&(!from||l.created_at.substring(0,10)>=from)&&(!to||l.created_at.substring(0,10)<=to)&&(!q||[l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q))));
   const empty=leads.length===0;
   document.getElementById('leads-empty').style.display=empty?'flex':'none';
   document.getElementById('leads-content').style.display=empty?'none':'block';

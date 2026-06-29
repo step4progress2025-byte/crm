@@ -1809,8 +1809,8 @@ function exportFiltered(){
     if(st&&l.status!==st)return false;
     if(ct&&l.country!==ct)return false;
     if(counsel&&l.counsellor!==counsel)return false;
-    if(from&&l.created_at&&l.created_at<from)return false;
-    if(to&&l.created_at&&l.created_at>to+'T23:59:59')return false;
+    if(from&&l.created_at&&new Date(l.created_at)<new Date(from))return false;
+    if(to&&l.created_at&&new Date(l.created_at)>new Date(to+'T23:59:59'))return false;
     return true;
   });
   if(!filtered.length){toast('No leads match those filters.');document.getElementById('exp-count').textContent='0 leads matched.';return;}
@@ -1834,8 +1834,8 @@ function exportCurrentView(){
     if(df&&l.destination!==df)return false;
     if(cf&&l.country!==cf)return false;
     if(counsel&&l.counsellor!==counsel)return false;
-    if(from&&l.created_at&&l.created_at<from)return false;
-    if(to&&l.created_at&&l.created_at>to+'T23:59:59')return false;
+    if(from&&l.created_at&&new Date(l.created_at)<new Date(from))return false;
+    if(to&&l.created_at&&new Date(l.created_at)>new Date(to+'T23:59:59'))return false;
     if(q&&![l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q)))return false;
     return true;
   });

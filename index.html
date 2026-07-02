@@ -489,7 +489,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <select id="ls-st" onchange="renderLeads()">
               <option value="">All statuses</option>
               <option>New Enquiry</option><option>Pending</option><option>Ongoing</option><option>Contacted</option><option>Follow Up</option><option>Callback Later</option><option>Interested</option><option>Counselling Done</option>
-              <option>Enrolled</option><option>Fees Paid</option><option>University Shortlist Sent</option><option>Documents Pending</option><option>Application Submitted</option><option>Received - Conditional Offer</option><option>Received - Unconditional Offer</option><option>Conditional Cleared</option><option>Received CAS Letter</option><option>Deposit Paid</option><option>Visa Application Submitted</option><option>Visa Application Accepted</option><option>Visa Application Rejected</option><option>Onboarded Student</option><option>Commission Received</option><option>Deferred</option>
+              <option>Enrolled</option><option>Fees Paid</option><option>University Shortlist Sent</option><option>Documents Pending</option><option>Application Submitted</option><option>Received - Conditional Offer</option><option>Received - Unconditional Offer</option><option>Conditional Cleared</option><option>Received CAS Letter</option><option>Deposit Paid</option><option>Visa Application Submitted</option><option>Visa Application Accepted</option><option>Visa Application Rejected</option><option>Onboarded Student</option><option>Commission Received</option><option>Process Completed</option><option>Deferred</option>
               <option>Not Interested</option><option>Dropped</option>
             </select>
             <select id="ls-pr" onchange="renderLeads()">
@@ -594,7 +594,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
                 <label style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Status</label>
                 <select id="exp-st" style="width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b)">
                   <option value="">All statuses</option>
-                  <option>New Enquiry</option><option>Pending</option><option>Ongoing</option><option>Contacted</option><option>Follow Up</option><option>Callback Later</option><option>Interested</option><option>Counselling Done</option><option>Enrolled</option><option>Fees Paid</option><option>University Shortlist Sent</option><option>Documents Pending</option><option>Application Submitted</option><option>Received - Conditional Offer</option><option>Received - Unconditional Offer</option><option>Conditional Cleared</option><option>Received CAS Letter</option><option>Deposit Paid</option><option>Visa Application Submitted</option><option>Visa Application Accepted</option><option>Visa Application Rejected</option><option>Onboarded Student</option><option>Commission Received</option><option>Deferred</option><option>Not Interested</option><option>Dropped</option>
+                  <option>New Enquiry</option><option>Pending</option><option>Ongoing</option><option>Contacted</option><option>Follow Up</option><option>Callback Later</option><option>Interested</option><option>Counselling Done</option><option>Enrolled</option><option>Fees Paid</option><option>University Shortlist Sent</option><option>Documents Pending</option><option>Application Submitted</option><option>Received - Conditional Offer</option><option>Received - Unconditional Offer</option><option>Conditional Cleared</option><option>Received CAS Letter</option><option>Deposit Paid</option><option>Visa Application Submitted</option><option>Visa Application Accepted</option><option>Visa Application Rejected</option><option>Onboarded Student</option><option>Commission Received</option><option>Process Completed</option><option>Deferred</option><option>Not Interested</option><option>Dropped</option>
                 </select>
               </div>
               <div>
@@ -759,7 +759,7 @@ What would you like help with today?</div>
       <div class="ff"><label>Status</label>
         <select id="f-status">
           <option>New Enquiry</option><option>Pending</option><option>Ongoing</option><option>Contacted</option><option>Follow Up</option><option>Callback Later</option><option>Interested</option><option>Counselling Done</option>
-          <option>Enrolled</option><option>Fees Paid</option><option>University Shortlist Sent</option><option>Documents Pending</option><option>Application Submitted</option><option>Received - Conditional Offer</option><option>Received - Unconditional Offer</option><option>Conditional Cleared</option><option>Received CAS Letter</option><option>Deposit Paid</option><option>Visa Application Submitted</option><option>Visa Application Accepted</option><option>Visa Application Rejected</option><option>Onboarded Student</option><option>Commission Received</option><option>Deferred</option>
+          <option>Enrolled</option><option>Fees Paid</option><option>University Shortlist Sent</option><option>Documents Pending</option><option>Application Submitted</option><option>Received - Conditional Offer</option><option>Received - Unconditional Offer</option><option>Conditional Cleared</option><option>Received CAS Letter</option><option>Deposit Paid</option><option>Visa Application Submitted</option><option>Visa Application Accepted</option><option>Visa Application Rejected</option><option>Onboarded Student</option><option>Commission Received</option><option>Process Completed</option><option>Deferred</option>
           <option>Not Interested</option><option>Dropped</option>
         </select>
       </div>
@@ -1030,6 +1030,7 @@ const SS={
   "Counselling Done":{bg:"#DCFCE7",tx:"#166534"},
   "Enrolled":        {bg:"#A7F3D0",tx:"#065F46"},
   "Fees Paid":       {bg:"#6EE7B7",tx:"#064E3B"},
+  "Process Completed":{bg:"#1E3A5F",tx:"#FFFFFF"},
   "University Shortlist Sent":{bg:"#EDE9FE",tx:"#6D28D9"},
   "Documents Pending":{bg:"#FEF9C3",tx:"#854D0E"},
   "Application Submitted":{bg:"#DBEAFE",tx:"#1E40AF"},
@@ -1049,7 +1050,7 @@ const SS={
 };
 const PS={High:{bg:"#FFE4E6",tx:"#9F1239"},Medium:{bg:"#FEF9C3",tx:"#854D0E"},Low:{bg:"#DCFCE7",tx:"#166534"}};
 const AVC=[["#DBEAFE","#1E3A8A"],["#D1FAE5","#064E3B"],["#FEF3C7","#78350F"],["#EDE9FE","#3B0764"],["#FCE7F3","#831843"],["#E0F2FE","#0C4A6E"]];
-const STATUSES=["New Enquiry","Pending","Ongoing","Contacted","Follow Up","Callback Later","Interested","Counselling Done","Enrolled","Fees Paid","University Shortlist Sent","Documents Pending","Application Submitted","Received - Conditional Offer","Received - Unconditional Offer","Conditional Cleared","Received CAS Letter","Deposit Paid","Visa Application Submitted","Visa Application Accepted","Visa Application Rejected","Onboarded Student","Commission Received","Deferred","Not Interested","Dropped"];
+const STATUSES=["New Enquiry","Pending","Ongoing","Contacted","Follow Up","Callback Later","Interested","Counselling Done","Enrolled","Fees Paid","University Shortlist Sent","Documents Pending","Application Submitted","Received - Conditional Offer","Received - Unconditional Offer","Conditional Cleared","Received CAS Letter","Deposit Paid","Visa Application Submitted","Visa Application Accepted","Visa Application Rejected","Onboarded Student","Commission Received","Process Completed","Deferred","Not Interested","Dropped"];
 function ini(n){const p=(n||'?').trim().split(' ');return(p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function ago(ts){if(!ts)return'';const d=Date.now()-new Date(ts).getTime();if(d<3600000)return Math.round(d/60000)+'m ago';if(d<86400000)return Math.round(d/3600000)+'h ago';return Math.round(d/86400000)+'d ago';}
@@ -1296,7 +1297,7 @@ function renderDash(){
     pl.innerHTML+=`<div class="prow" onclick="navFilter('ls-st','${s}')" style="cursor:pointer;transition:background .1s" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:${ss.bg};color:${ss.tx};min-width:132px">${s}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:${ss.tx}"></div></div><span class="pn" style="color:${ss.tx}">${n}</span></div>`;
   });
   const al=document.getElementById('act-list');al.innerHTML='';
-  const dotC={"New Enquiry":"#1E40AF","Enrolled":"#065F46","Fees Paid":"#064E3B","Not Interested":"#9F1239","Counselling Done":"#C05621","Contacted":"#854D0E","Deferred":"#92400E","Dropped":"#475569"};
+  const dotC={"New Enquiry":"#1E40AF","Enrolled":"#065F46","Fees Paid":"#064E3B","Process Completed":"#1E3A5F","Not Interested":"#9F1239","Counselling Done":"#C05621","Contacted":"#854D0E","Deferred":"#92400E","Dropped":"#475569"};
   leads.slice(0,6).forEach(l=>{
     al.innerHTML+=`<div class="aitem" onclick="openLeadDetail('${l.id}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><div class="adot" style="background:${dotC[l.status]||'#999'}"></div><div><div class="atext">${esc(l.name)} — ${l.status.toLowerCase()}</div><div class="atime">${ago(l.created_at)}${l.source?' · '+l.source:''}</div></div></div>`;
   });
@@ -1465,6 +1466,7 @@ async function updateStatus(){
       'Counselling Done':`Hi ${name}, thank you for your counselling session with us today! We will send you the shortlisted universities and next steps shortly. Feel free to reach out anytime 😊`,
       'Enrolled':`Congratulations ${name}! 🎉 You are now officially enrolled with Step4Progress India. We are excited to support your journey ahead!`,
       'Fees Paid':`Hi ${name}, we have received your payment. Thank you! Our team will now begin processing your application. Stay tuned for updates 🚀`,
+      'Process Completed':`Congratulations ${name}! 🎓✈️ Your journey is complete! Visa approved, fees paid, and you're on your way to university. We are so proud of you! Wishing you all the very best. Thank you for choosing Step4Progress India 🌟`,
       'Application Submitted':`Great news ${name}! Your university application has been submitted successfully. We will keep you posted on any updates from the university 📩`,
       'Received - Conditional Offer':`Congratulations ${name}! 🎊 You have received a Conditional Offer from the university. Please check the conditions and let us know how you would like to proceed.`,
       'Received - Unconditional Offer':`Amazing news ${name}! 🎉 You have received an Unconditional Offer! This is a big step. Let us discuss the next steps together.`,

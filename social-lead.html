@@ -380,6 +380,13 @@ html,body{min-height:100vh;font-family:'Inter',system-ui,sans-serif;background:v
 </div>
 
 <script>
+// Unregister CRM service worker so it doesn't intercept our fetch
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(reg => reg.unregister());
+  });
+}
+
 const EDGE = 'https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/tally-webhook';
 
 async function submitLead() {
@@ -419,9 +426,12 @@ async function submitLead() {
     const res = await fetch(EDGE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      cache: 'no-store'
     });
     if (!res.ok) throw new Error('Server error ' + res.status);
+    const data = await res.json();
+    console.log('Lead created:', data);
 
     // Show success
     document.getElementById('form-card').style.display = 'none';

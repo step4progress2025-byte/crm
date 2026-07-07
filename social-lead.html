@@ -314,6 +314,26 @@ if ('serviceWorker' in navigator) {
 
 const EDGE = 'https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/tally-webhook';
 
+// Optional tracking: reads ?src=xxx from the URL to label where the lead came from.
+// If no ?src= is present (e.g. old links already in circulation), falls back to
+// "Social Media" exactly as before — nothing breaks for existing links.
+const SOURCE_LABELS = {
+  'ig_bio': 'Instagram Bio Link',
+  'ig_ad': 'Instagram Ad',
+  'fb_ad': 'Facebook Ad',
+  'fb_bio': 'Facebook Page Link',
+  'ig_story': 'Instagram Story',
+  'whatsapp': 'WhatsApp Share',
+};
+
+function getSourceLabel() {
+  const params = new URLSearchParams(window.location.search);
+  const tag = params.get('src');
+  return SOURCE_LABELS[tag] || 'Social Media';
+}
+
+const sourceLabel = getSourceLabel();
+
 async function submitLead() {
   const name = document.getElementById('f-name').value.trim();
   const mobile = document.getElementById('f-mobile').value.trim();
@@ -341,8 +361,8 @@ async function submitLead() {
         { label: 'City Native', value: city },
         { label: 'Destination Country', value: dest || 'Not decided yet' },
         { label: 'Nationality', value: 'India' },
-        { label: 'How Did You Find Us', value: 'Social Media' },
-        { label: 'Source', value: 'Social Media' }
+        { label: 'How Did You Find Us', value: sourceLabel },
+        { label: 'Source', value: sourceLabel }
       ]
     }
   };

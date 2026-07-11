@@ -2129,7 +2129,64 @@ function openCourseFinderForLead(leadId){
     searchCourses();
   },300);
 }
+// ── RESOURCE LIBRARY ADMIN ────────────────────────────────────
+const RESOURCE_DEFS = [
+  { key:'starter-kit', icon:'🎓', title:'The Study Abroad Starter Kit' },
+  { key:'scholarship-handbook', icon:'💰', title:'The Scholarship Handbook' },
+  { key:'visa-interview-guide', icon:'🛂', title:'The Visa Interview Guide' },
+  { key:'sop-workbook', icon:'✍️', title:'The SOP Workbook' },
+  { key:'survival-guide', icon:'📦', title:'The Student Survival Guide' },
+  { key:'parents-handbook', icon:'👨‍👩‍👧', title:'The Parents\' Handbook' },
+  { key:'country-comparison', icon:'📊', title:'The Country Comparison Guide' },
+];
+let resourceRows = [];
+async function loadResourcesAdmin(){
+  const { data, error } = await sb.from('resources').select('*');
+  if(!error && data) resourceRows = data;
+  renderResourcesAdmin();
+}
+function renderResourcesAdmin(){
+  const el = document.getElementById('resources-list');
+  if(!el) return;
+  el.innerHTML = RESOURCE_DEFS.map(def => {
+    const row = resourceRows.find(r => r.key === def.key) || {};
+    const hasFile = !!row.file_url;
+    return `
+      <div class="card" style="margin-bottom:0;display:flex;align-items:center;gap:16px;padding:16px 20px">
+        <span style="font-size:26px">${def.icon}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:14px;color:var(--ink)">${def.title}</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:2px">
+            ${hasFile
+              ? `<span style="color:var(--pine3);font-weight:600">✅ Live</span> · <a href="${row.file_url}" target="_blank" style="color:var(--pine2)">View current PDF</a>`
+              : '<span style="color:var(--ink3);font-style:italic">No file uploaded yet</span>'}
+          </div>
+        </div>
+        <input type="file" id="file-${def.key}" accept="application/pdf" style="display:none" onchange="uploadResourcePDF('${def.key}', this)">
+        <button class="btn btn-p" style="font-size:12px;padding:7px 14px" onclick="document.getElementById('file-${def.key}').click()">
+          <i class="ti ti-upload"></i>${hasFile ? 'Replace PDF' : 'Upload PDF'}
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+async function uploadResourcePDF(key, input){
+  const file = input.files[0];
+  if(!file) return;
+  if(file.type !== 'application/pdf'){ toast('Please upload a PDF file.'); return; }
+  toast('Uploading ' + file.name + '…');
+  const filePath = `${key}-${Date.now()}.pdf`;
+  const { error: uploadError } = await sb.storage.from('resource-pdfs').upload(filePath, file, { upsert: true, contentType: 'application/pdf' });
+  if(uploadError){ toast('Upload failed: ' + uploadError.message); return; }
+  const { data: urlData } = sb.storage.from('resource-pdfs').getPublicUrl(filePath);
+  const fileUrl = urlData.publicUrl;
+  const { error: dbError } = await sb.from('resources').update({ file_url: fileUrl, updated_at: new Date().toISOString() }).eq('key', key);
+  if(dbError){ toast('Saved file but failed to update database: ' + dbError.message); return; }
+  toast('✅ ' + file.name + ' is now live!');
+  loadResourcesAdmin();
+}
 
+// ══ PRESENCE SYSTEM ════════════════════════════════════════════
 // ══ PRESENCE SYSTEM ════════════════════════════════════════════
 // Uses Supabase Realtime Presence to track who is online
 // and Broadcast to signal who is editing which lead

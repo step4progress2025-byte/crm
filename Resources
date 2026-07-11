@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Free Study Abroad Resources — Step4Progress India</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0D2137;
+  --navy2:#16304D;
+  --gold:#B8924A;
+  --gold-l:#E8C96A;
+  --cream:#FAF7F1;
+  --paper:#FFFFFF;
+  --ink:#1C1917;
+  --ink2:#44403C;
+  --ink3:#78716C;
+  --line:#E7E2D8;
+  --sage:#5C7A63;
+  --sage-l:#E8EFE9;
+  --font-h:'Fraunces',Georgia,serif;
+  --font-b:'Inter',system-ui,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-b);background:var(--cream);color:var(--ink);line-height:1.6}
+
+/* ── HEADER ── */
+.topbar{background:var(--navy);padding:16px 0;position:sticky;top:0;z-index:50;border-bottom:1px solid rgba(255,255,255,.08)}
+.topbar-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{width:34px;height:34px;background:linear-gradient(135deg,var(--gold),var(--gold-l));border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-weight:600;font-size:15px;color:var(--navy)}
+.brand-name{font-family:var(--font-h);font-size:16px;font-weight:500;color:#fff;letter-spacing:-.01em}
+.brand-name em{font-style:italic;color:var(--gold-l)}
+.topbar-tag{font-size:11px;color:rgba(255,255,255,.45);letter-spacing:.06em;text-transform:uppercase;display:none}
+@media(min-width:640px){.topbar-tag{display:block}}
+
+/* ── HERO ── */
+.hero{background:var(--navy);padding:64px 24px 88px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:
+  radial-gradient(ellipse 600px 400px at 15% 20%,rgba(184,146,74,.14) 0%,transparent 60%),
+  radial-gradient(ellipse 500px 500px at 85% 80%,rgba(184,146,74,.08) 0%,transparent 55%);
+  pointer-events:none}
+.hero-inner{max-width:760px;margin:0 auto;text-align:center;position:relative;z-index:1}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-l);margin-bottom:22px;padding:7px 16px;border:1px solid rgba(232,201,106,.3);border-radius:99px}
+.hero h1{font-family:var(--font-h);font-size:clamp(32px,5.5vw,54px);font-weight:500;color:#fff;line-height:1.1;letter-spacing:-.02em;margin-bottom:20px}
+.hero h1 em{font-style:italic;font-weight:300;color:var(--gold-l)}
+.hero p{font-size:17px;color:rgba(255,255,255,.6);max-width:520px;margin:0 auto 8px;line-height:1.65}
+.hero-count{font-size:13px;color:rgba(255,255,255,.4);margin-top:24px;letter-spacing:.02em}
+.hero-count b{color:var(--gold-l);font-weight:600}
+
+/* ── RESOURCE GRID ── */
+.section{max-width:1100px;margin:0 auto;padding:0 24px}
+.grid-wrap{margin-top:-52px;position:relative;z-index:2;padding-bottom:80px}
+.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:860px){.rgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.rgrid{grid-template-columns:1fr}}
+
+.rcard{background:var(--paper);border-radius:16px;padding:28px 24px;box-shadow:0 2px 8px rgba(13,33,55,.06),0 12px 32px rgba(13,33,55,.08);border:1px solid var(--line);display:flex;flex-direction:column;transition:transform .25s ease,box-shadow .25s ease;cursor:pointer;position:relative;overflow:hidden}
+.rcard:hover{transform:translateY(-4px);box-shadow:0 4px 16px rgba(13,33,55,.1),0 20px 44px rgba(13,33,55,.14)}
+.rcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--gold-l));opacity:0;transition:opacity .25s}
+.rcard:hover::before{opacity:1}
+.rcard-icon{font-size:30px;margin-bottom:16px;display:block}
+.rcard-value{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--gold);background:rgba(184,146,74,.1);padding:4px 10px;border-radius:99px;margin-bottom:12px;align-self:flex-start}
+.rcard h3{font-family:var(--font-h);font-size:19px;font-weight:500;color:var(--navy);margin-bottom:8px;letter-spacing:-.01em;line-height:1.25}
+.rcard p{font-size:13px;color:var(--ink3);line-height:1.55;margin-bottom:20px;flex:1}
+.rcard-btn{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;color:var(--navy);padding-top:16px;border-top:1px solid var(--line)}
+.rcard-btn .arrow{transition:transform .2s}
+.rcard:hover .rcard-btn .arrow{transform:translateX(4px)}
+
+/* ── TRUST STRIP ── */
+.trust-strip{background:var(--sage-l);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:20px 24px}
+.trust-inner{max-width:1100px;margin:0 auto;display:flex;gap:32px;justify-content:center;flex-wrap:wrap}
+.trust-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);font-weight:500}
+
+/* ── FOOTER ── */
+.footer{padding:40px 24px;text-align:center}
+.footer p{font-size:12px;color:var(--ink3)}
+.footer a{color:var(--navy);text-decoration:none;font-weight:600}
+
+/* ── MODAL (lead capture before download) ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(13,33,55,.55);backdrop-filter:blur(3px);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--paper);border-radius:20px;max-width:440px;width:100%;padding:36px 32px;position:relative;box-shadow:0 24px 64px rgba(0,0,0,.25);animation:modalIn .3s ease}
+@keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.modal-close{position:absolute;top:16px;right:16px;width:30px;height:30px;border-radius:50%;background:var(--cream);border:none;color:var(--ink3);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:var(--line)}
+.modal-icon{font-size:32px;margin-bottom:14px}
+.modal h2{font-family:var(--font-h);font-size:22px;font-weight:500;color:var(--navy);margin-bottom:6px;letter-spacing:-.01em}
+.modal-sub{font-size:13px;color:var(--ink3);margin-bottom:22px;line-height:1.55}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.field input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;font-family:var(--font-b);color:var(--ink);background:var(--cream);outline:none;transition:border .15s,box-shadow .15s}
+.field input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(13,33,55,.08);background:var(--paper)}
+.field input::placeholder{color:#B8B2A6}
+.err-msg{font-size:11px;color:#B91C1C;margin-top:4px;display:none}
+.field.invalid input{border-color:#B91C1C}
+.field.invalid .err-msg{display:block}
+.modal-submit{width:100%;padding:14px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:var(--font-b);cursor:pointer;margin-top:6px;transition:background .15s,transform .15s;letter-spacing:.01em}
+.modal-submit:hover{background:var(--navy2);transform:translateY(-1px)}
+.modal-submit:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.modal-privacy{font-size:11px;color:var(--ink3);text-align:center;margin-top:14px;line-height:1.5}
+
+/* Success state inside modal */
+.modal-success{display:none;text-align:center;padding:8px 0}
+.modal-success .icon{width:64px;height:64px;background:var(--sage-l);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:28px}
+.modal-success h3{font-family:var(--font-h);font-size:20px;font-weight:500;color:var(--navy);margin-bottom:8px}
+.modal-success p{font-size:13px;color:var(--ink3);margin-bottom:20px;line-height:1.55}
+.download-btn{display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:#fff;text-decoration:none;padding:12px 26px;border-radius:10px;font-size:14px;font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark">S4</div>
+      <div class="brand-name">Step<em>4</em>Progress</div>
+    </div>
+    <div class="topbar-tag">Study Abroad Resource Library</div>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">📚 Free Resource Library</div>
+    <h1>Everything you need to <em>study abroad</em>, in one place.</h1>
+    <p>Seven premium guides, researched from official university and government sources — built by our counsellors, given to you free.</p>
+    <div class="hero-count"><b>7</b> guides &nbsp;·&nbsp; <b>100%</b> free &nbsp;·&nbsp; sourced from official channels</div>
+  </div>
+</div>
+
+<div class="section grid-wrap">
+  <div class="rgrid" id="resource-grid">
+    <!-- Cards injected by JS from resource data below -->
+  </div>
+</div>
+
+<div class="trust-strip">
+  <div class="trust-inner">
+    <div class="trust-item">✅ Verified sources only</div>
+    <div class="trust-item">🎓 Written by real counsellors</div>
+    <div class="trust-item">🔄 Updated regularly</div>
+    <div class="trust-item">🔒 No spam, ever</div>
+  </div>
+</div>
+
+<div class="footer">
+  <p>A free initiative by <a href="https://step4progress.com">Step4Progress India</a> — Think Global.</p>
+</div>
+
+<!-- Lead capture modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+
+    <div id="modal-form-view">
+      <div class="modal-icon" id="modal-icon">📄</div>
+      <h2 id="modal-title">Download guide</h2>
+      <p class="modal-sub" id="modal-sub">Enter your details and we'll send this straight to you.</p>
+
+      <div class="field" id="name-wrap">
+        <label>Full name</label>
+        <input type="text" id="lead-name" placeholder="Your name">
+        <div class="err-msg">Please enter your name</div>
+      </div>
+      <div class="field" id="mobile-wrap">
+        <label>Mobile number</label>
+        <input type="tel" id="lead-mobile" placeholder="+91 98765 43210">
+        <div class="err-msg">Please enter a valid mobile number</div>
+      </div>
+      <div class="field">
+        <label>Email (optional)</label>
+        <input type="email" id="lead-email" placeholder="you@email.com">
+      </div>
+      <div class="field">
+        <label>Which country interests you?</label>
+        <input type="text" id="lead-dest" placeholder="e.g. UK, Canada, Australia…">
+      </div>
+
+      <button class="modal-submit" id="submit-btn" onclick="submitLead()">Get instant access →</button>
+      <p class="modal-privacy">We'll never spam you. Unsubscribe anytime.</p>
+    </div>
+
+    <div id="modal-success-view" class="modal-success">
+      <div class="icon">✅</div>
+      <h3>You're in!</h3>
+      <p id="success-text">Your guide is ready to download below. We've also sent it to your details on file.</p>
+      <a href="#" id="download-link" class="download-btn" target="_blank">⬇ Download now</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const EDGE_URL = 'https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/tally-webhook';
+const SUPABASE_URL = 'https://jvreglqrrdnwttjasvwg.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2cmVnbHFycmRud3R0amFzdndnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDM3NzEsImV4cCI6MjA5NTQxOTc3MX0.I_X-ljOPlLFYLeWz6hE15nL8z0MPqmsSdWcgwole8GE';
+
+// Resource definitions — icon, title, description, badge, and the storage file key
+const RESOURCES = [
+  { key:'starter-kit', icon:'🎓', badge:'Worth ₹2,999', title:'The Study Abroad Starter Kit', desc:'Your complete first-step guide — timelines, budgets, country shortlisting and a personalised action plan.' },
+  { key:'scholarship-handbook', icon:'💰', badge:'Worth ₹4,999', title:'The Scholarship Handbook', desc:'200+ verified scholarships across UK, Canada, Australia and Europe, sourced directly from official portals.' },
+  { key:'visa-interview-guide', icon:'🛂', badge:'Worth ₹3,499', title:'The Visa Interview Guide', desc:'Real interview questions, officer expectations, and a preparation checklist from successful visa outcomes.' },
+  { key:'sop-workbook', icon:'✍️', badge:'Worth ₹2,499', title:'The SOP Workbook', desc:'A step-by-step framework to write a Statement of Purpose that admissions officers actually remember.' },
+  { key:'survival-guide', icon:'📦', badge:'Worth ₹1,999', title:'The Student Survival Guide', desc:'Packing lists, banking, first-week checklists and everything nobody tells you before you land abroad.' },
+  { key:'parents-handbook', icon:'👨‍👩‍👧', badge:'Worth ₹1,999', title:'The Parents\' Handbook', desc:'A calm, clear guide for parents — costs, safety, staying connected, and what to expect at every stage.' },
+  { key:'country-comparison', icon:'📊', badge:'Worth ₹2,999', title:'The Country Comparison Guide', desc:'UK vs Canada vs Australia vs Europe — costs, visas, work rights and outcomes, compared side by side.' },
+];
+
+let currentResource = null;
+
+function renderGrid(){
+  const grid = document.getElementById('resource-grid');
+  grid.innerHTML = RESOURCES.map(r => `
+    <div class="rcard" onclick="openModal('${r.key}')">
+      <span class="rcard-icon">${r.icon}</span>
+      <span class="rcard-value">${r.badge}</span>
+      <h3>${r.title}</h3>
+      <p>${r.desc}</p>
+      <div class="rcard-btn"><span>Get free access</span><span class="arrow">→</span></div>
+    </div>
+  `).join('');
+}
+renderGrid();
+
+function openModal(key){
+  currentResource = RESOURCES.find(r => r.key === key);
+  if(!currentResource) return;
+  document.getElementById('modal-icon').textContent = currentResource.icon;
+  document.getElementById('modal-title').textContent = currentResource.title;
+  document.getElementById('modal-sub').textContent = 'Enter your details and we\'ll unlock this guide instantly.';
+  document.getElementById('modal-form-view').style.display = 'block';
+  document.getElementById('modal-success-view').style.display = 'none';
+  document.getElementById('lead-name').value = '';
+  document.getElementById('lead-mobile').value = '';
+  document.getElementById('lead-email').value = '';
+  document.getElementById('lead-dest').value = '';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(){
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if(e.target.id === 'modal-overlay') closeModal();
+});
+
+async function submitLead(){
+  const name = document.getElementById('lead-name').value.trim();
+  const mobile = document.getElementById('lead-mobile').value.trim();
+  const email = document.getElementById('lead-email').value.trim();
+  const dest = document.getElementById('lead-dest').value.trim();
+
+  let valid = true;
+  document.getElementById('name-wrap').classList.toggle('invalid', !name);
+  document.getElementById('mobile-wrap').classList.toggle('invalid', mobile.length < 7);
+  if(!name || mobile.length < 7) valid = false;
+  if(!valid) return;
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Unlocking…';
+
+  const payload = {
+    data: {
+      fields: [
+        { label: 'Full Name', value: name },
+        { label: 'Mobile Number', value: mobile },
+        { label: 'Email', value: email },
+        { label: 'Destination Country', value: dest },
+        { label: 'Nationality', value: 'India' },
+        { label: 'How Did You Find Us', value: 'Resource Download: ' + currentResource.title },
+        { label: 'Source', value: 'Resource Download' },
+      ]
+    }
+  };
+
+  try {
+    const res = await fetch(EDGE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      cache: 'no-store'
+    });
+    if(!res.ok) throw new Error('Server error');
+
+    // Fetch the actual PDF url from Supabase resources table
+    let fileUrl = '#';
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/resources?key=eq.${currentResource.key}&select=file_url`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+      });
+      const d = await r.json();
+      if(d && d[0] && d[0].file_url) fileUrl = d[0].file_url;
+    } catch(e){}
+
+    document.getElementById('modal-form-view').style.display = 'none';
+    document.getElementById('modal-success-view').style.display = 'block';
+    document.getElementById('download-link').href = fileUrl;
+    if(fileUrl === '#'){
+      document.getElementById('success-text').textContent = 'Thanks! This guide is being finalised — our team will email it to you within 24 hours.';
+      document.getElementById('download-link').style.display = 'none';
+    }
+
+  } catch(err){
+    console.error(err);
+    btn.disabled = false;
+    btn.textContent = 'Get instant access →';
+    alert('Something went wrong. Please try again or WhatsApp us directly.');
+  }
+}
+</script>
+</body>
+</html>

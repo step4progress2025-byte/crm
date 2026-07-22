@@ -9,26 +9,31 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="S4P CRM">
-<meta name="theme-color" content="#0D4A3C">
+<meta name="theme-color" content="#1C3F6E">
 <title>Step4Progress India · CRM</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;1,300&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --ink:#1C1917;--ink2:#44403C;--ink3:#78716C;
-  --cream:#FAFAF8;--paper:#FFFFFF;--line:#E7E5E4;--line2:#D6D3D1;
-  --pine:#0D4A3C;--pine2:#1A6B57;--pine3:#2D9E7F;--pine4:#A7F3D0;
-  --ember:#C2410C;--rose:#9F1239;--rose-l:#FFE4E6;
+  /* ── Classical navy/gold reskin (from Claude Design mockup) ── */
+  /* Every variable name below is UNCHANGED from the original file -
+     only the color VALUES and font choices moved, so every rule that
+     already references var(--pine), var(--font-h), etc. picks up the
+     new look automatically. Nothing else in this file needed to change. */
+  --ink:#1C1712;--ink2:#3A3229;--ink3:#7A7168;
+  --cream:#F6F3EC;--paper:#FFFDF9;--line:#E6DDCC;--line2:#D9CCAF;
+  --pine:#1C3F6E;--pine2:#132B4D;--pine3:#E08429;--pine4:#D7B16B;
+  --ember:#A3453A;--rose:#8C3F3A;--rose-l:#F6E3E0;
   --sky:#1E40AF;--sky-l:#DBEAFE;
-  --sage:#15803D;--sage-l:#DCFCE7;
-  --gold:#92400E;--gold-l:#FEF3C7;
-  --font-h:'Fraunces',Georgia,serif;
-  --font-b:'Plus Jakarta Sans',system-ui,sans-serif;
-  --r:8px;--rl:12px;--rxl:16px;
-  --sh:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
-  --shm:0 4px 12px rgba(0,0,0,.08),0 2px 4px rgba(0,0,0,.04);
+  --sage:#357A2D;--sage-l:#E5EEE2;
+  --gold:#A8721F;--gold-l:#F7ECD6;
+  --font-h:'Cormorant Garamond',Georgia,serif;
+  --font-b:'Lora',Georgia,serif;
+  --r:4px;--rl:6px;--rxl:10px;
+  --sh:0 1px 3px rgba(28,23,18,.07),0 1px 2px rgba(28,23,18,.05);
+  --shm:0 4px 14px rgba(28,23,18,.10),0 2px 5px rgba(28,23,18,.05);
 }
 html,body{height:100%;overflow:hidden;background:var(--cream)}
 body{font-family:var(--font-b);color:var(--ink);font-size:14px}

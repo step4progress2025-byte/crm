@@ -409,7 +409,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <div class="sng">Workspace</div>
       <button class="ni" data-nav="team" onclick="nav('team',this)"><i class="ti ti-id-badge"></i>Team</button>
       <button class="ni" data-nav="events" onclick="nav('events',this)"><i class="ti ti-calendar-event"></i>Events</button><button class="ni" data-nav="import" onclick="nav('import',this)"><i class="ti ti-file-import"></i>Import data</button>
-      <button class="ni" data-nav="finance" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books"></i>Resource Library</button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
+      <button class="ni" data-nav="finance" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
     </div>
     <div class="sb-foot">
       <div class="sb-user">
@@ -722,6 +722,28 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <p style="font-size:13px;color:var(--ink3);margin-bottom:0;line-height:1.6">Upload the final PDF for each guide below. Once uploaded, it goes live instantly on the public resource page — students unlock it after submitting their details.</p>
         </div>
         <div id="resources-list" style="display:grid;gap:12px"></div>
+      </section>
+
+    <!-- Resumes -->
+      <section id="sc-resumes" class="screen">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h"><span class="card-t">📄 Resumes — OpportunityFinder Tool</span></div>
+          <p style="font-size:13px;color:var(--ink3);margin-bottom:0;line-height:1.6">Resumes students uploaded through the Career/OpportunityFinder tool on the website. Match by mobile number against the Leads tab to find the full enquiry.</p>
+        </div>
+        <div id="resumes-empty" class="empty-state" style="display:none">
+          <div class="es-icon"><i class="ti ti-file-cv"></i></div>
+          <div class="es-title">No resumes yet</div>
+          <div class="es-sub">Once a visitor uploads a resume through the OpportunityFinder tool, it'll show up here with a direct download link.</div>
+        </div>
+        <div id="resumes-content" style="display:none">
+          <div class="clabel" id="resumes-count"></div>
+          <div class="tw">
+            <table class="tbl">
+              <thead><tr><th>Name</th><th>Mobile</th><th>Field</th><th>Country</th><th>Submitted</th><th>Resume</th></tr></thead>
+              <tbody id="resumes-tbody"></tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <!-- AI -->
@@ -1236,7 +1258,7 @@ async function onLogin(user){
   document.getElementById('sb-av').textContent=ini(name);
   document.getElementById('sb-uname').textContent=name;
   document.getElementById('sb-urole').textContent=role+(isSuperAdmin?' (Super Admin)':'');
-  await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents()]);
+  await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents(),loadResumes()]);
  initPresence(user, profile);
   renderDash();renderLeads();renderFU();badges();checkNoActivity();applyRoleUI();setTimeout(()=>{applyRoleUI();renderDash();},2000);
   loadDashReminders();
@@ -1303,7 +1325,7 @@ function nav(id,btn){
   if(btn)btn.classList.add('active');
   const T={dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',coursefinder:'Course & University Finder',resources:'Resource Library',ai:'AI Counsellor'};
   document.getElementById('topbar-title').textContent=T[id]||id;
-  if(id==='leads'){renderLeads();setTimeout(applyRoleUI,500);} if(id==='toolleads'){renderToolLeads();} if(id==='events'){loadEvents();}   if(id==='import'){populateExportCounsellorDropdown();}   if(id==='coursefinder')initCourseFinder();   if(id==='resources')loadResourcesAdmin();   if(id==='finance')renderFinance();   // Role guard   const role=document.getElementById('sb-urole').textContent;   if(id==='finance'&&role==='Counsellor'){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}   if(id==='team'&&role==='Counsellor'){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}   if(id==='import'&&role==='Counsellor'){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
+  if(id==='leads'){renderLeads();setTimeout(applyRoleUI,500);} if(id==='toolleads'){renderToolLeads();} if(id==='events'){loadEvents();}   if(id==='import'){populateExportCounsellorDropdown();}   if(id==='coursefinder')initCourseFinder();   if(id==='resources')loadResourcesAdmin();   if(id==='resumes'){loadResumes().then(renderResumesAdmin);}   if(id==='finance')renderFinance();   // Role guard   const role=document.getElementById('sb-urole').textContent;   if(id==='finance'&&role==='Counsellor'){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}   if(id==='team'&&role==='Counsellor'){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}   if(id==='import'&&role==='Counsellor'){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
   if(id==='coaching')renderCoaching();
   if(id==='followup')renderFU();
 }
@@ -2246,6 +2268,41 @@ async function uploadResourcePDF(key, input){
   if(dbError){ toast('Saved file but failed to update database: ' + dbError.message); return; }
   toast('✅ ' + file.name + ' is now live!');
   loadResourcesAdmin();
+}
+
+// ── RESUMES (OpportunityFinder tool uploads) ──────────────────────
+let resumesList = [];
+async function loadResumes(){
+  const { data, error } = await sb.from('resume_submissions').select('*').order('created_at', {ascending:false});
+  if(!error && data) resumesList = data;
+  const nb = document.getElementById('nb-resumes');
+  if(nb) nb.textContent = resumesList.length;
+}
+function renderResumesAdmin(){
+  const empty = document.getElementById('resumes-empty');
+  const content = document.getElementById('resumes-content');
+  if(!resumesList.length){
+    empty.style.display = 'flex';
+    content.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  content.style.display = 'block';
+  document.getElementById('resumes-count').textContent = resumesList.length + ' resume' + (resumesList.length!==1?'s':'') + ' submitted';
+  document.getElementById('resumes-tbody').innerHTML = resumesList.map(r => {
+    const dt = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—';
+    const link = r.resume_url
+      ? `<a href="${r.resume_url}" target="_blank" style="color:var(--pine);font-weight:600;text-decoration:underline">${esc(r.resume_filename||'View file')}</a>`
+      : `<span style="color:var(--ink3);font-style:italic">${esc(r.resume_filename||'Upload failed')}</span>`;
+    return `<tr>
+      <td style="font-weight:600">${esc(r.name||'—')}</td>
+      <td style="font-size:12px;color:var(--ink3)">${esc(r.mobile||'—')}</td>
+      <td style="font-size:12px">${esc(r.field_of_study||'—')}</td>
+      <td style="font-size:12px">${esc(r.target_country||'—')}</td>
+      <td style="font-size:12px;color:var(--ink3)">${dt}</td>
+      <td>${link}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ══ PRESENCE SYSTEM ════════════════════════════════════════════

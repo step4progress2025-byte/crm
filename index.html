@@ -409,7 +409,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <div class="sng">Workspace</div>
       <button class="ni" data-nav="team" onclick="nav('team',this)"><i class="ti ti-id-badge"></i>Team</button>
       <button class="ni" data-nav="events" onclick="nav('events',this)"><i class="ti ti-calendar-event"></i>Events</button><button class="ni" data-nav="import" onclick="nav('import',this)"><i class="ti ti-file-import"></i>Import data</button>
-      <button class="ni" data-nav="finance" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
+      <button class="ni" data-nav="finance" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
     </div>
     <div class="sb-foot">
       <div class="sb-user">
@@ -444,6 +444,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
       <!-- Dashboard -->
       <section id="sc-dashboard" class="screen active">
+        <div id="dash-scope-note" style="font-size:11.5px;color:var(--ink3);margin-bottom:10px;font-style:italic"></div>
         <div class="kpi-row">
           <div class="kpi"><div class="kpi-l">Total leads</div><div class="kpi-v kv-p" id="k-tot">—</div></div>
           <div class="kpi"><div class="kpi-l">Enrolled</div><div class="kpi-v kv-t" id="k-enr">—</div></div>
@@ -476,7 +477,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <div class="card"><div class="card-h"><span class="card-t">Pipeline status</span></div><div id="pipe-list"></div></div>
             <div class="card"><div class="card-h"><span class="card-t">Recent activity</span></div><div id="act-list"></div></div>
             <div class="card" style="margin-top:16px" id="country-breakdown-card"><div class="card-h"><span class="card-t">🌍 Leads by country</span></div><div id="country-breakdown"></div></div>
-            <div class="card" style="margin-top:16px"><div class="card-h"><span class="card-t">🏆 Counsellor ranking</span></div><div id="counsel-rank"></div></div>
+            <div class="card" style="margin-top:16px" id="counsel-rank-card"><div class="card-h"><span class="card-t">🏆 Counsellor ranking</span></div><div id="counsel-rank"></div></div>
           </div>
         </div>
       </section>
@@ -536,17 +537,33 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div class="card" style="margin-bottom:20px">
           <p style="font-size:13px;color:var(--ink3);line-height:1.6">Leads that came in through one of the site's interactive tools (self-assessment quiz, cost calculator, OpportunityFinder, etc.) rather than the main enquiry form - tagged automatically by which tool they used. This is a filtered view of the same Leads database, not a separate list.</p>
         </div>
+        <div class="card" style="margin-bottom:16px;padding:14px 16px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="tl-tabs">
+            <button class="pill tl-tab" data-cat="webtools" onclick="setTLFilter('webtools')" style="cursor:pointer;border:none;background:var(--gold-l);color:var(--gold);font-weight:600">🛠️ Web Tools</button>
+            <button class="pill tl-tab" data-cat="website" onclick="setTLFilter('website')" style="cursor:pointer;border:none;background:var(--sky-l);color:var(--sky);font-weight:600">🌐 Website</button>
+            <button class="pill tl-tab" data-cat="social" onclick="setTLFilter('social')" style="cursor:pointer;border:none;background:var(--rose-l);color:var(--rose);font-weight:600">📱 Social Media</button>
+            <button class="pill tl-tab" data-cat="other" onclick="setTLFilter('other')" style="cursor:pointer;border:none;background:var(--sage-l);color:var(--sage);font-weight:600">📋 Other</button>
+            <button class="pill tl-tab" data-cat="all" onclick="setTLFilter('all')" style="cursor:pointer;border:none;background:var(--cream);color:var(--ink3);font-weight:600">All sources</button>
+          </div>
+          <div id="tl-social-tabs" style="display:none;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
+            <button class="pill tl-subtab" data-sub="All" onclick="setTLSocial('All')" style="cursor:pointer;border:none;background:var(--cream);color:var(--ink3);font-weight:600">All</button>
+            <button class="pill tl-subtab" data-sub="Instagram" onclick="setTLSocial('Instagram')" style="cursor:pointer;border:none;background:#FCE7F3;color:#831843;font-weight:600">📸 Instagram</button>
+            <button class="pill tl-subtab" data-sub="Facebook" onclick="setTLSocial('Facebook')" style="cursor:pointer;border:none;background:#DBEAFE;color:#1E3A8A;font-weight:600">👍 Facebook</button>
+            <button class="pill tl-subtab" data-sub="LinkedIn" onclick="setTLSocial('LinkedIn')" style="cursor:pointer;border:none;background:#DBEAFE;color:#0C4A6E;font-weight:600">💼 LinkedIn</button>
+            <button class="pill tl-subtab" data-sub="YouTube" onclick="setTLSocial('YouTube')" style="cursor:pointer;border:none;background:#FFE4E6;color:#9F1239;font-weight:600">▶️ YouTube</button>
+          </div>
+        </div>
         <div id="tl-empty" class="empty-state" style="display:none">
           <div class="es-icon"><i class="ti ti-click"></i></div>
-          <div class="es-title">No tool-originated leads yet</div>
-          <div class="es-sub">Once a visitor completes a tool on the website (self-assessment, cost calculator, OpportunityFinder, life abroad hub, etc.) and it gets tagged with a source, it'll show up here automatically.</div>
+          <div class="es-title">No leads in this category yet</div>
+          <div class="es-sub">Once a lead comes in tagged with a source in this category, it'll show up here automatically.</div>
         </div>
         <div id="tl-content" style="display:none">
           <div class="clabel" id="tlcount"></div>
           <div class="tw">
             <table class="tbl">
               <thead><tr>
-                <th>ID</th><th>Name</th><th>Mobile</th><th>Tool Used</th><th>Program</th><th>Destination</th><th>Status</th>
+                <th>ID</th><th>Name</th><th>Mobile</th><th>Source</th><th>Program</th><th>Destination</th><th>Status</th>
               </tr></thead>
               <tbody id="toolleads-tbody"></tbody>
             </table>
@@ -607,6 +624,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div class="card" style="max-width:620px">
           <div class="card-h"><span class="card-t">Import leads from CSV</span></div>
           <p style="font-size:13px;color:var(--ink3);margin-bottom:16px;line-height:1.65">Supported columns: <strong>Name, Mobile, Email, City, Program, Destination, Status, Source, Priority, Notes</strong>. Headers on row 1. All imported leads are immediately shared with your team.</p>
+          <div id="import-counsellor-note" style="display:none;margin-bottom:14px;font-size:12px;color:var(--gold);background:var(--gold-l);border:1px solid var(--line2);border-radius:var(--r);padding:9px 12px;line-height:1.5"><i class="ti ti-info-circle"></i> As a Counsellor, any leads you import will be assigned to you only — you can't import into another counsellor's name.</div>
           <div class="import-zone" onclick="document.getElementById('imp-csv').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropCSV(event)">
             <i class="ti ti-upload"></i>
             <p style="font-size:14px;font-weight:500;color:var(--ink2);margin-bottom:4px">Drop your CSV here</p>
@@ -739,8 +757,45 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div class="clabel" id="resumes-count"></div>
           <div class="tw">
             <table class="tbl">
-              <thead><tr><th>Name</th><th>Mobile</th><th>Field</th><th>Country</th><th>Submitted</th><th>Resume</th></tr></thead>
+              <thead><tr><th>Name</th><th>Mobile</th><th>Field</th><th>Country</th><th>Submitted</th><th>Resume</th><th></th></tr></thead>
               <tbody id="resumes-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Productivity / Call Recorder -->
+      <section id="sc-productivity" class="screen">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h"><span class="card-t">🎧 Call Recorder — call logs & recordings</span></div>
+          <p style="font-size:13px;color:var(--ink3);margin-bottom:0;line-height:1.6">Log calls made to leads, with optional recording upload. This tab sits under Productivity and is restricted to Admins and the Super Admin.</p>
+        </div>
+        <div class="card" style="margin-bottom:16px;max-width:640px">
+          <div class="card-h"><span class="card-t">Log a call</span></div>
+          <div class="ff"><label>Lead name / mobile</label><input id="cl-lead" placeholder="e.g. Arjun Kumar — 98765 43210"></div>
+          <div class="ff"><label>Counsellor</label><input id="cl-counsellor" placeholder="Who made the call"></div>
+          <div style="display:flex;gap:10px">
+            <div class="ff" style="flex:1"><label>Call date</label><input type="date" id="cl-date"></div>
+            <div class="ff" style="flex:1"><label>Duration (mins)</label><input type="number" id="cl-duration" min="0" placeholder="e.g. 8"></div>
+          </div>
+          <div class="ff"><label>Outcome</label>
+            <select id="cl-outcome"><option>Connected</option><option>No Answer</option><option>Follow-up Scheduled</option><option>Not Interested</option><option>Wrong Number</option><option>Other</option></select>
+          </div>
+          <div class="ff"><label>Notes</label><textarea id="cl-notes" rows="3" placeholder="What was discussed..." style="width:100%;padding:10px;border:1px solid var(--line);border-radius:var(--r);font-family:var(--font-b);font-size:13px"></textarea></div>
+          <div class="ff"><label>Recording (optional)</label><input type="file" id="cl-audio" accept="audio/*"></div>
+          <button class="btn btn-p" style="margin-top:8px" onclick="saveCallLog()"><i class="ti ti-device-floppy"></i>Save call log</button>
+        </div>
+        <div id="cl-empty" class="empty-state" style="display:none">
+          <div class="es-icon"><i class="ti ti-headset"></i></div>
+          <div class="es-title">No call logs yet</div>
+          <div class="es-sub">Once you log a call above, it'll show up here.</div>
+        </div>
+        <div id="cl-content" style="display:none">
+          <div class="clabel" id="cl-count"></div>
+          <div class="tw">
+            <table class="tbl">
+              <thead><tr><th>Lead</th><th>Counsellor</th><th>Date</th><th>Duration</th><th>Outcome</th><th>Recording</th><th></th></tr></thead>
+              <tbody id="cl-tbody"></tbody>
             </table>
           </div>
         </div>
@@ -937,7 +992,7 @@ What would you like help with today?</div>
         <button class="btn" style="background:var(--gold-l);color:var(--gold);border-color:var(--gold)" onclick="openCourseFinderForLead(curId)"><i class="ti ti-search"></i>Find Courses</button>
         <button class="btn" style="background:#25D366;color:#fff;border-color:#25D366" onclick="waFollowUpFS()"><i class="ti ti-brand-whatsapp"></i></button>
         <button class="btn" onclick="editLeadFS()"><i class="ti ti-edit"></i>Edit</button>
-        <button class="btn btn-del" onclick="deleteLeadFS()"><i class="ti ti-trash"></i>Delete</button>
+        <button class="btn btn-del" id="btn-delete-lead-fs" onclick="deleteLeadFS()"><i class="ti ti-trash"></i>Delete</button>
       </div>
     </div>
     <!-- Body: 3-column grid -->
@@ -1068,7 +1123,7 @@ What would you like help with today?</div>
     <div class="dfoot">
       <button class="btn btn-ai" style="flex:1" onclick="aiAboutLead()"><i class="ti ti-robot"></i>Ask AI</button>       <button class="btn" style="background:#25D366;color:#fff;border-color:#25D366" onclick="waFollowUp()"><i class="ti ti-brand-whatsapp"></i></button>
       <button class="btn" onclick="editLead()"><i class="ti ti-edit"></i>Edit</button>
-      <button class="btn btn-del" onclick="deleteLead()"><i class="ti ti-trash"></i></button>
+      <button class="btn btn-del" id="btn-delete-lead" onclick="deleteLead()"><i class="ti ti-trash"></i></button>
     </div>
   </div>
 </div>
@@ -1119,22 +1174,14 @@ function ago(ts){if(!ts)return'';const d=Date.now()-new Date(ts).getTime();if(d<
 
 // ── State ────────────────────────────────────────────────────────
 let leads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[]; function openCreateUser(){
+  // Only the Super Admin can add team members / send invites.
+  if(!isSuperAdmin){toast('Only the Super Admin can add team members.');return;}
   document.getElementById('inv-name').value='';
   document.getElementById('inv-email-hint').value='';
   document.getElementById('inv-role').value='Counsellor';
-  if(isSuperAdmin){
-    document.getElementById('inv-country').disabled=false;
-    document.getElementById('inv-country').value='India';
-    syncInviteOffice();
-  } else {
-    // Office Admins can only invite into their own office/country
-    const myCountry=Object.keys(OFFICE_MAP).find(c=>OFFICE_MAP[c].includes(myOffice))||'India';
-    document.getElementById('inv-country').value=myCountry;
-    document.getElementById('inv-country').disabled=true;
-    syncInviteOffice();
-    document.getElementById('inv-office').value=myOffice;
-    document.getElementById('inv-office').disabled=true;
-  }
+  document.getElementById('inv-country').disabled=false;
+  document.getElementById('inv-country').value='India';
+  syncInviteOffice();
   document.getElementById('invite-link-box').style.display='none';
   document.getElementById('modal-invite').classList.add('open');
 }
@@ -1245,7 +1292,7 @@ async function doSignup(){
 }
 
 const SUPER_ADMIN_EMAIL='india@step4progress.com';
-let myOffice=null, isSuperAdmin=false;
+let myOffice=null, isSuperAdmin=false, myName=null, myRole='Counsellor', myCountry=null;
 async function onLogin(user){
   currentUser=user;
   document.getElementById('auth-screen').classList.add('hidden');
@@ -1254,6 +1301,9 @@ async function onLogin(user){
   const name=profile?.full_name||user.email.split('@')[0];
   const role=profile?.role||'Counsellor';
   myOffice=profile?.office||null;
+  myName=name;
+  myRole=role;
+  myCountry=profile?.country||Object.keys(OFFICE_MAP).find(c=>OFFICE_MAP[c].includes(myOffice))||null;
   isSuperAdmin=(user.email||'').toLowerCase()===SUPER_ADMIN_EMAIL.toLowerCase();
   document.getElementById('sb-av').textContent=ini(name);
   document.getElementById('sb-uname').textContent=name;
@@ -1300,7 +1350,20 @@ sb.auth.onAuthStateChange((event,session)=>{
 // ── DATA LOADING ─────────────────────────────────────────────────
 async function loadLeads(){
   let q=sb.from('leads').select('*').order('lead_id',{ascending:false});
-  if(!isSuperAdmin&&myOffice) q=q.eq('office',myOffice);
+  if(!isSuperAdmin&&myCountry&&OFFICE_MAP[myCountry]){
+    // Country-scoped: an Admin/Counsellor only ever sees leads from offices
+    // within their own country (e.g. a UK admin sees London+Birmingham+
+    // Bradford+Cardiff, not other countries' offices).
+    q=q.in('office',OFFICE_MAP[myCountry]);
+  } else if(!isSuperAdmin&&myOffice){
+    q=q.eq('office',myOffice);
+  }
+  // Counsellors only see leads assigned to them or that they personally added.
+  // Admins and Super Admin see everything in scope above.
+  if(myRole==='Counsellor'&&!isSuperAdmin&&currentUser){
+    const nameFilter=myName?`counsellor.eq.${myName},`:'';
+    q=q.or(`${nameFilter}added_by.eq.${currentUser.id}`);
+  }
   const{data,error}=await q;
   if(!error&&data) leads=data;
 }
@@ -1323,9 +1386,23 @@ function nav(id,btn){
   document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
   document.getElementById('sc-'+id).classList.add('active');
   if(btn)btn.classList.add('active');
-  const T={dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',coursefinder:'Course & University Finder',resources:'Resource Library',ai:'AI Counsellor'};
+  const T={dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',coursefinder:'Course & University Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor'};
   document.getElementById('topbar-title').textContent=T[id]||id;
-  if(id==='leads'){renderLeads();setTimeout(applyRoleUI,500);} if(id==='toolleads'){renderToolLeads();} if(id==='events'){loadEvents();}   if(id==='import'){populateExportCounsellorDropdown();}   if(id==='coursefinder')initCourseFinder();   if(id==='resources')loadResourcesAdmin();   if(id==='resumes'){loadResumes().then(renderResumesAdmin);}   if(id==='finance')renderFinance();   // Role guard   const role=document.getElementById('sb-urole').textContent;   if(id==='finance'&&role==='Counsellor'){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}   if(id==='team'&&role==='Counsellor'){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}   if(id==='import'&&role==='Counsellor'){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
+  // Role guard — checked before rendering the target screen
+  const role=(document.getElementById('sb-urole').textContent||'').trim();
+  const roleIsCounsellor=role==='Counsellor';
+  if(id==='finance'&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
+  if(id==='team'&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
+  if(id==='productivity'&&roleIsCounsellor&&!isSuperAdmin){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Productivity is restricted to Admins.');return;}
+  if(id==='leads'){renderLeads();setTimeout(applyRoleUI,500);}
+  if(id==='toolleads'){renderToolLeads();}
+  if(id==='events'){loadEvents();}
+  if(id==='import'){populateExportCounsellorDropdown();const note=document.getElementById('import-counsellor-note');if(note)note.style.display=(myRole==='Counsellor'&&!isSuperAdmin)?'block':'none';}
+  if(id==='coursefinder')initCourseFinder();
+  if(id==='resources')loadResourcesAdmin();
+  if(id==='resumes'){loadResumes().then(renderResumesAdmin);}
+  if(id==='finance')renderFinance();
+  if(id==='productivity'){loadCallLogs().then(renderCallLogs);}
   if(id==='coaching')renderCoaching();
   if(id==='followup')renderFU();
 }
@@ -1347,6 +1424,12 @@ function badges(){
 
 // ── DASHBOARD ────────────────────────────────────────────────────
 function renderDash(){
+  const scopeNote=document.getElementById('dash-scope-note');
+  if(scopeNote){
+    if(isSuperAdmin) scopeNote.textContent='Showing all countries and offices · Super Admin view';
+    else if(myRole==='Counsellor') scopeNote.textContent='Showing only leads assigned to you or added by you';
+    else scopeNote.textContent='Showing '+(myCountry||'your')+' — all offices in your country';
+  }
   const c={};leads.forEach(l=>{c[l.status]=(c[l.status]||0)+1;});
   const tot=leads.length;
   const now=new Date();
@@ -1416,13 +1499,48 @@ function renderLeads(){
 }
 
 // ── TOOL LEADS (filtered view of the same Leads table) ────────────
+// Rainbow split: every lead's source falls into Website / Social Media / Web Tools / Other.
+// Social Media further splits into Instagram / Facebook / LinkedIn / YouTube.
+function sourceCategory(source){
+  const s=(source||'').toLowerCase();
+  if(s.includes('tool')||s.includes('quiz')||s.includes('calculator')||s.includes('opportunityfinder')
+    ||s.includes('life abroad hub')||s.includes('find your country')||s.includes('visa eligibility')
+    ||s.includes('parent corner')||s.includes('self assessment')) return 'webtools';
+  if(s.includes('instagram')||s.includes('facebook')||s.includes('fb ')||s==='fb'||s.includes('linkedin')
+    ||s.includes('youtube')||s.includes('social media')||s.includes('whatsapp')) return 'social';
+  if(s.includes('website')) return 'website';
+  return 'other';
+}
+function socialSubCategory(source){
+  const s=(source||'').toLowerCase();
+  if(s.includes('instagram')) return 'Instagram';
+  if(s.includes('facebook')||s==='fb'||s.includes('fb ')) return 'Facebook';
+  if(s.includes('linkedin')) return 'LinkedIn';
+  if(s.includes('youtube')) return 'YouTube';
+  return 'Other';
+}
+let tlFilter='webtools', tlSocial='All';
+function setTLFilter(cat){
+  tlFilter=cat;tlSocial='All';
+  document.querySelectorAll('.tl-tab').forEach(b=>b.style.outline=b.dataset.cat===cat?'2px solid currentColor':'none');
+  document.getElementById('tl-social-tabs').style.display=cat==='social'?'flex':'none';
+  document.querySelectorAll('.tl-subtab').forEach(b=>b.style.outline=b.dataset.sub==='All'?'2px solid currentColor':'none');
+  renderToolLeads();
+}
+function setTLSocial(sub){
+  tlSocial=sub;
+  document.querySelectorAll('.tl-subtab').forEach(b=>b.style.outline=b.dataset.sub===sub?'2px solid currentColor':'none');
+  renderToolLeads();
+}
 function renderToolLeads(){
-  const f=leads.filter(isToolLead);
+  let f=leads.filter(l=>tlFilter==='all'?true:sourceCategory(l.source)===tlFilter);
+  if(tlFilter==='social'&&tlSocial!=='All') f=f.filter(l=>socialSubCategory(l.source)===tlSocial);
   const empty=f.length===0;
   document.getElementById('tl-empty').style.display=empty?'flex':'none';
   document.getElementById('tl-content').style.display=empty?'none':'block';
   if(empty)return;
-  document.getElementById('tlcount').textContent=`${f.length} lead${f.length!==1?'s':''} from website tools`;
+  const labelMap={webtools:'from website tools',website:'from the website form',social:'from social media'+(tlSocial!=='All'?' — '+tlSocial:''),other:'from other sources',all:'total'};
+  document.getElementById('tlcount').textContent=`${f.length} lead${f.length!==1?'s':''} ${labelMap[tlFilter]||''}`;
   const tb=document.getElementById('toolleads-tbody');tb.innerHTML='';
   f.forEach((l,i)=>{
     const[abg,atx]=AVC[i%AVC.length];
@@ -1529,7 +1647,7 @@ async function updateStatusFS(){
   setSynced();renderLeads();renderDash();badges();toast('Status → '+status);
 }
 function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';document.getElementById('f-mobile').value=l.mobile||'';document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'India';syncLeadOffice();document.getElementById('f-office').value=l.office||'India HQ';document.getElementById('f-counsel').value=l.counsellor||'';document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;},100);}
-async function deleteLeadFS(){if(!curId||!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
+async function deleteLeadFS(){if(!curId)return;if(!isSuperAdmin&&myRole!=='Admin'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress India regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
 // FS versions of doc/reminder/uni functions
@@ -1599,7 +1717,9 @@ async function updateStatus(){
   }
 }
 async function deleteLead(){
-  if(!curId||!confirm('Delete this lead? This cannot be undone.'))return;
+  if(!curId)return;
+  if(!isSuperAdmin&&myRole!=='Admin'){toast('Only Admins can delete leads.');return;}
+  if(!confirm('Delete this lead? This cannot be undone.'))return;
   setSyncing();
   const{error}=await sb.from('leads').delete().eq('id',curId);
   if(error){setSyncErr();toast('Error deleting lead.');return;}
@@ -1687,19 +1807,28 @@ async function saveLead(){
 }
 
 // ── COACHING ──────────────────────────────────────────────────────
+function visibleCoaching(){
+  // Coaching rows aren't tagged with office/country themselves — scope them
+  // through the lead they belong to, which is already correctly filtered
+  // by loadLeads() (own country for Admins, own leads only for Counsellors).
+  if(isSuperAdmin) return coaching;
+  const visibleLeadIds=new Set(leads.map(l=>l.id));
+  return coaching.filter(c=>visibleLeadIds.has(c.lead_id));
+}
 function renderCoaching(){
-  const empty=coaching.length===0;
+  const scoped=visibleCoaching();
+  const empty=scoped.length===0;
   document.getElementById('coaching-empty').style.display=empty?'flex':'none';
   document.getElementById('coaching-content').style.display=empty?'none':'block';
   if(empty)return;
   const cg=document.getElementById('cg');cg.innerHTML='';
-  coaching.forEach(c=>{
+  scoped.forEach(c=>{
     const pct=c.total_sessions>0?Math.round(c.sessions_done/c.total_sessions*100):0;
     const col=pct>=100?'#065F46':pct>=50?'#1B998B':'#C05621';
     cg.innerHTML+=`<div class="cc"><div class="ccn">${esc(c.student_name)}</div><div class="ccp">${esc(c.program||'')} · ${esc(c.batch_name||'')}</div><div class="pt"><div class="pb" style="width:${pct}%;background:${col}"></div></div><div class="csr"><div class="cst"><div class="csl">Done</div><div class="csv">${c.sessions_done}/${c.total_sessions}</div></div><div class="cst"><div class="csl">Mock</div><div class="csv">${c.mock_score||'—'}</div></div><div class="cst"><div class="csl">Target</div><div class="csv">${c.target_score||'—'}</div></div><div class="cst"><div class="csl">%</div><div class="csv" style="color:${col}">${pct}%</div></div></div></div>`;
   });
   const tb=document.getElementById('ct');tb.innerHTML='';
-  coaching.forEach(c=>{
+  scoped.forEach(c=>{
     const pct=c.total_sessions>0?Math.round(c.sessions_done/c.total_sessions*100):0;
     const done=pct>=100;const ss=done?{bg:'#A7F3D0',tx:'#065F46'}:{bg:'#DBEAFE',tx:'#1E40AF'};
     tb.innerHTML+=`<tr><td style="font-weight:600">${esc(c.student_name)}</td><td style="font-size:12px">${esc(c.program||'')}</td><td style="font-size:12px">${esc(c.batch_name||'')}</td><td>${c.sessions_done}/${c.total_sessions}</td><td>${c.mock_score||'—'}</td><td>${c.target_score||'—'}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="pt" style="width:80px;margin:0;border:1px solid var(--line)"><div class="pb" style="width:${pct}%;background:${done?'#065F46':'#1B998B'}"></div></div><span style="font-size:11px;color:var(--ink3)">${pct}%</span></div></td></tr>`;
@@ -1855,6 +1984,9 @@ async function doImport(){
   if(!importRows.length)return;
   const btn=document.querySelector('#imp-btn .btn');btn.disabled=true;btn.textContent='Importing…';
   setSyncing();
+  // Counsellors can only import into their own name — CSV-supplied counsellor is ignored
+  // for them so they can't assign imported leads to a colleague.
+  const restrictedToSelf=(myRole==='Counsellor'&&!isSuperAdmin);
   const toInsert=importRows.map((r,i)=>({
     lead_id:'S4P-'+String(leads.length+i+1).padStart(4,'0'),
     name:r.name||r.fullname||r['full name']||'',
@@ -1866,7 +1998,7 @@ async function doImport(){
     status:r.status||'New Enquiry',
     source:r.source||r.leadsource||'Import',
     priority:r.priority||'Medium',
-    counsellor:r.counsellor||r.counsel||'',
+    counsellor:restrictedToSelf?myName:(r.counsellor||r.counsel||''),
     next_followup:r.followup||r.nextfollowup||null,
     notes:r.notes||r.remarks||'',
     added_by:currentUser?.id
@@ -2039,9 +2171,44 @@ async function saveCommission(){
 }
 async function deleteCommission(id){if(!confirm('Delete this record?'))return;await sb.from('commissions').delete().eq('id',id);toast('Record deleted.');renderFinance();}
   let uniApps=[];async function loadUniApps(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data)uniApps=data;renderUniApps();}function renderUniApps(){const el=document.getElementById('d-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};el.innerHTML=uniApps.length?uniApps.map(u=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div></div><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniApp('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No universities added yet.</div>';}function openAddUniApp(){if(!curId)return;const uni=prompt('University name:');if(!uni)return;const prog=prompt('Program:');const status=prompt('Status (Applied/Offer Received/Conditional/Rejected/Enrolled):','Applied')||'Applied';sb.from('university_applications').insert([{lead_id:curId,university:uni,program:prog||'',status}]).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadUniApps(curId);toast('University added!');});}async function deleteUniApp(id){if(!confirm('Remove this university?'))return;await sb.from('university_applications').delete().eq('id',id);loadUniApps(curId);toast('Removed.');}
-  function applyRoleUI(){const role=(document.getElementById('sb-urole').textContent||'').trim();if(role.startsWith('Admin')){const cu=document.getElementById('create-user-btn');if(cu)cu.style.display='inline-flex';['ls-src','ls-from','ls-to'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='block';el.style.minWidth='140px';}});}if(role==='Counsellor'){const restricted=['finance','import','team'];document.querySelectorAll('.ni').forEach(btn=>{const onclick=btn.getAttribute('onclick')||'';restricted.forEach(r=>{if(onclick.includes("nav('"+r+"'"))btn.style.display='none';});});}}
-  function renderCountryBreakdown(){const card=document.getElementById('country-breakdown-card');const el=document.getElementById('country-breakdown');if(!el||!card)return;if(!isSuperAdmin){card.style.display='none';return;}card.style.display='block';const map={};leads.forEach(l=>{const c=l.country||'Unspecified';if(!map[c])map[c]={country:c,total:0,enrolled:0};map[c].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[c].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.total-a.total);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}const flagMap={India:'🇮🇳',UK:'🇬🇧',Pakistan:'🇵🇰',Bangladesh:'🇧🇩'};const tot=leads.length||1;el.innerHTML=sorted.map(c=>{const w=Math.round(c.total/tot*100);const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;return`<div class="prow" onclick="navFilter('ls-country','${c.country}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:110px">${flagMap[c.country]||''} ${esc(c.country)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${c.total}</span><span style="font-size:11px;color:var(--ink3);min-width:60px;text-align:right">${pct}% enr.</span></div>`;}).join('');}
-  function renderCounsellorRank(){const el=document.getElementById('counsel-rank');if(!el)return;const map={};leads.forEach(l=>{if(!l.counsellor)return;if(!map[l.counsellor])map[l.counsellor]={name:l.counsellor,total:0,enrolled:0};map[l.counsellor].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[l.counsellor].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.enrolled-a.enrolled);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="border-bottom:2px solid var(--line)"><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">#</th><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Counsellor</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Leads</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Enrolled</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Conversion %</th></tr></thead><tbody>${sorted.map((c,i)=>{const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';return`<tr style="border-bottom:1px solid var(--line)"><td style="padding:10px 8px;font-weight:600;color:var(--ink3)">${medal||i+1}</td><td style="padding:10px 8px;font-weight:600">${esc(c.name)}</td><td style="padding:10px 8px;text-align:center">${c.total}</td><td style="padding:10px 8px;text-align:center;color:var(--sage);font-weight:600">${c.enrolled}</td><td style="padding:10px 8px;text-align:center"><span style="background:${pct>=50?'#DCFCE7':pct>=25?'#FEF9C3':'#FFE4E6'};color:${pct>=50?'#166534':pct>=25?'#854D0E':'#9F1239'};padding:3px 10px;border-radius:99px;font-weight:600;font-size:11px">${pct}%</span></td></tr>`;}).join('')}</tbody></table>`;}
+  function applyRoleUI(){
+    const role=(document.getElementById('sb-urole').textContent||'').trim();
+    const isAdminLike=role.startsWith('Admin')||isSuperAdmin;
+    const isCounsellor=myRole==='Counsellor'&&!isSuperAdmin;
+
+    // "Add team member" — Super Admin only, god access.
+    const cu=document.getElementById('create-user-btn');
+    if(cu) cu.style.display=isSuperAdmin?'inline-flex':'none';
+
+    if(isAdminLike){
+      ['ls-src','ls-from','ls-to'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='block';el.style.minWidth='140px';}});
+    }
+
+    // Counsellors: hide Finance & Team nav entirely; Productivity is Admin/Super Admin only.
+    if(isCounsellor){
+      const restricted=['finance','team','productivity'];
+      document.querySelectorAll('.ni').forEach(btn=>{
+        const onclick=btn.getAttribute('onclick')||'';
+        restricted.forEach(r=>{if(onclick.includes("nav('"+r+"'"))btn.style.display='none';});
+      });
+    } else {
+      document.querySelectorAll('.ni').forEach(btn=>{
+        const onclick=btn.getAttribute('onclick')||'';
+        if(onclick.includes("nav('productivity'")) btn.style.display='inline-flex';
+      });
+    }
+
+    // Lead delete — Admin / Super Admin only (god access for Super Admin).
+    ['btn-delete-lead-fs','btn-delete-lead'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.style.display=isAdminLike?'':'none';
+    });
+
+    // Resume delete buttons are rendered per-row in renderResumesAdmin(); re-render to pick up role.
+    if(typeof renderResumesAdmin==='function'&&document.getElementById('resumes-tbody')) renderResumesAdmin();
+  }
+  function renderCountryBreakdown(){const card=document.getElementById('country-breakdown-card');const el=document.getElementById('country-breakdown');if(!el||!card)return;if(myRole==='Counsellor'&&!isSuperAdmin){card.style.display='none';return;}card.style.display='block';const titleEl=card.querySelector('.card-t');if(titleEl)titleEl.textContent=isSuperAdmin?'🌍 Country breakdown':'🌍 '+(myCountry||'Your country')+' breakdown';const map={};leads.forEach(l=>{const c=l.country||'Unspecified';if(!map[c])map[c]={country:c,total:0,enrolled:0};map[c].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[c].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.total-a.total);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}const flagMap={India:'🇮🇳',UK:'🇬🇧',Pakistan:'🇵🇰',Bangladesh:'🇧🇩'};const tot=leads.length||1;el.innerHTML=sorted.map(c=>{const w=Math.round(c.total/tot*100);const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;return`<div class="prow" onclick="navFilter('ls-country','${c.country}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:110px">${flagMap[c.country]||''} ${esc(c.country)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${c.total}</span><span style="font-size:11px;color:var(--ink3);min-width:60px;text-align:right">${pct}% enr.</span></div>`;}).join('');}
+  function renderCounsellorRank(){const el=document.getElementById('counsel-rank');const card=document.getElementById('counsel-rank-card');if(!el)return;if(myRole==='Counsellor'&&!isSuperAdmin){if(card)card.style.display='none';return;}if(card)card.style.display='block';const map={};leads.forEach(l=>{if(!l.counsellor)return;if(!map[l.counsellor])map[l.counsellor]={name:l.counsellor,total:0,enrolled:0};map[l.counsellor].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[l.counsellor].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.enrolled-a.enrolled);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="border-bottom:2px solid var(--line)"><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">#</th><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Counsellor</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Leads</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Enrolled</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Conversion %</th></tr></thead><tbody>${sorted.map((c,i)=>{const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';return`<tr style="border-bottom:1px solid var(--line)"><td style="padding:10px 8px;font-weight:600;color:var(--ink3)">${medal||i+1}</td><td style="padding:10px 8px;font-weight:600">${esc(c.name)}</td><td style="padding:10px 8px;text-align:center">${c.total}</td><td style="padding:10px 8px;text-align:center;color:var(--sage);font-weight:600">${c.enrolled}</td><td style="padding:10px 8px;text-align:center"><span style="background:${pct>=50?'#DCFCE7':pct>=25?'#FEF9C3':'#FFE4E6'};color:${pct>=50?'#166534':pct>=25?'#854D0E':'#9F1239'};padding:3px 10px;border-radius:99px;font-weight:600;font-size:11px">${pct}%</span></td></tr>`;}).join('')}</tbody></table>`;}
   const DEFAULT_DOCS=['Passport Copy','Academic Transcripts','English Test Scores','Bank Statements','SOP Draft','References / LOR','Photo','CV / Resume'];
 async function loadDocs(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data){renderDocs(data);}else{renderDocs([]);}}
 function renderDocs(docs){const el=document.getElementById('d-doc-list');if(!el)return;if(!docs.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet. Click Init checklist to start.</div>';return;}el.innerHTML=docs.map(d=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><span style="flex:1;font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`).join('');}
@@ -2288,6 +2455,7 @@ function renderResumesAdmin(){
   }
   empty.style.display = 'none';
   content.style.display = 'block';
+  const canDelete = isSuperAdmin || myRole==='Admin';
   document.getElementById('resumes-count').textContent = resumesList.length + ' resume' + (resumesList.length!==1?'s':'') + ' submitted';
   document.getElementById('resumes-tbody').innerHTML = resumesList.map(r => {
     const dt = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—';
@@ -2301,8 +2469,93 @@ function renderResumesAdmin(){
       <td style="font-size:12px">${esc(r.target_country||'—')}</td>
       <td style="font-size:12px;color:var(--ink3)">${dt}</td>
       <td>${link}</td>
+      <td>${canDelete?`<button onclick="deleteResume('${r.id}')" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:0 4px" title="Delete resume"><i class="ti ti-trash"></i></button>`:''}</td>
     </tr>`;
   }).join('');
+}
+async function deleteResume(id){
+  if(!isSuperAdmin&&myRole!=='Admin'){toast('Only Admins can delete resumes.');return;}
+  if(!confirm('Delete this resume submission? This cannot be undone.'))return;
+  const{error}=await sb.from('resume_submissions').delete().eq('id',id);
+  if(error){toast('Error deleting resume: '+error.message);return;}
+  resumesList=resumesList.filter(r=>r.id!==id);
+  const nb=document.getElementById('nb-resumes');if(nb)nb.textContent=resumesList.length;
+  renderResumesAdmin();
+  toast('Resume deleted.');
+}
+
+// ══ PRODUCTIVITY — CALL RECORDER ═════════════════════════════════
+// Requires a `call_logs` table and (optionally, for uploaded recordings)
+// a public `call-recordings` storage bucket in Supabase. See setup notes
+// shared alongside this file for the SQL to create both.
+let callLogs=[];
+async function loadCallLogs(){
+  const{data,error}=await sb.from('call_logs').select('*').order('call_date',{ascending:false});
+  if(!error&&data) callLogs=data;
+  else if(error) callLogs=[];
+}
+function renderCallLogs(){
+  const empty=document.getElementById('cl-empty'), content=document.getElementById('cl-content');
+  if(!empty||!content)return;
+  if(!callLogs.length){empty.style.display='flex';content.style.display='none';return;}
+  empty.style.display='none';content.style.display='block';
+  const canDelete=isSuperAdmin||myRole==='Admin';
+  document.getElementById('cl-count').textContent=callLogs.length+' call'+(callLogs.length!==1?'s':'')+' logged';
+  document.getElementById('cl-tbody').innerHTML=callLogs.map(c=>{
+    const dt=c.call_date?new Date(c.call_date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
+    const rec=c.recording_url?`<a href="${c.recording_url}" target="_blank" style="color:var(--pine);font-weight:600;text-decoration:underline">▶ Play</a>`:'<span style="color:var(--ink3);font-style:italic">No recording</span>';
+    return`<tr>
+      <td style="font-weight:600">${esc(c.lead_label||'—')}</td>
+      <td style="font-size:12px;color:var(--ink3)">${esc(c.counsellor||'—')}</td>
+      <td style="font-size:12px;color:var(--ink3)">${dt}</td>
+      <td style="font-size:12px">${c.duration_mins?c.duration_mins+' min':'—'}</td>
+      <td style="font-size:12px"><span class="pill" style="background:var(--sky-l);color:var(--sky)">${esc(c.outcome||'—')}</span></td>
+      <td>${rec}</td>
+      <td>${canDelete?`<button onclick="deleteCallLog('${c.id}')" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:0 4px" title="Delete log"><i class="ti ti-trash"></i></button>`:''}</td>
+    </tr>`;
+  }).join('');
+}
+async function saveCallLog(){
+  if(!isSuperAdmin&&myRole!=='Admin'){toast('Only Admins can log calls.');return;}
+  const lead=document.getElementById('cl-lead').value.trim();
+  if(!lead){toast('Enter the lead name or mobile.');return;}
+  const counsellor=document.getElementById('cl-counsellor').value.trim()||myName||'';
+  const call_date=document.getElementById('cl-date').value||new Date().toISOString().substring(0,10);
+  const duration_mins=parseInt(document.getElementById('cl-duration').value)||null;
+  const outcome=document.getElementById('cl-outcome').value;
+  const notes=document.getElementById('cl-notes').value.trim();
+  const fileInput=document.getElementById('cl-audio');
+  const file=fileInput.files[0];
+  let recording_url=null, recording_filename=null;
+  if(file){
+    const path=`${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const{error:upErr}=await sb.storage.from('call-recordings').upload(path,file);
+    if(upErr){toast('Recording upload failed: '+upErr.message+' (log saved without it)');}
+    else{
+      const{data:pub}=sb.storage.from('call-recordings').getPublicUrl(path);
+      recording_url=pub?.publicUrl||null;
+      recording_filename=file.name;
+    }
+  }
+  const{error,data}=await sb.from('call_logs').insert({
+    lead_label:lead,counsellor,call_date,duration_mins,outcome,notes,
+    recording_url,recording_filename,logged_by:currentUser?.id
+  }).select();
+  if(error){toast('Error saving call log: '+error.message);return;}
+  if(data)callLogs=[...data,...callLogs];
+  ['cl-lead','cl-counsellor','cl-date','cl-duration','cl-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  fileInput.value='';
+  renderCallLogs();
+  toast('Call logged.');
+}
+async function deleteCallLog(id){
+  if(!isSuperAdmin&&myRole!=='Admin'){toast('Only Admins can delete call logs.');return;}
+  if(!confirm('Delete this call log? This cannot be undone.'))return;
+  const{error}=await sb.from('call_logs').delete().eq('id',id);
+  if(error){toast('Error deleting log: '+error.message);return;}
+  callLogs=callLogs.filter(c=>c.id!==id);
+  renderCallLogs();
+  toast('Call log deleted.');
 }
 
 // ══ PRESENCE SYSTEM ════════════════════════════════════════════

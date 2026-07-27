@@ -1379,11 +1379,12 @@ sb.auth.onAuthStateChange((event,session)=>{
 // ── DATA LOADING ─────────────────────────────────────────────────
 async function loadLeads(){
   let q=sb.from('leads').select('*').order('lead_id',{ascending:false});
-  if(!isSuperAdmin&&myCountry&&OFFICE_MAP[myCountry]){
-    // Country-scoped: an Admin/Counsellor only ever sees leads from offices
-    // within their own country (e.g. a UK admin sees London+Birmingham+
-    // Bradford+Cardiff, not other countries' offices).
-    q=q.in('office',OFFICE_MAP[myCountry]);
+  if(!isSuperAdmin&&myCountry){
+    // Direct country-level scoping: India leads only ever go to India, UK
+    // leads only to UK, etc. This is deliberately based on the lead's own
+    // `country` column rather than derived from office, so it can't drift
+    // even if office data is inconsistent or missing.
+    q=q.eq('country',myCountry);
   } else if(!isSuperAdmin&&myOffice){
     q=q.eq('office',myOffice);
   }
@@ -2044,6 +2045,11 @@ async function doImport(){
     source:r.source||r.leadsource||'Import',
     priority:r.priority||'Medium',
     counsellor:restrictedToSelf?myName:(r.counsellor||r.counsel||''),
+    // Every lead needs a country so it's visible to the right country's team.
+    // Counsellors always import into their own country; Admins/Super Admin
+    // can override via a "Country"/"Office" column in the CSV if present.
+    country:restrictedToSelf?myCountry:(r.country||r.branchcountry||myCountry||'India'),
+    office:restrictedToSelf?myOffice:(r.office||r.branch||myOffice||'India HQ'),
     next_followup:r.followup||r.nextfollowup||null,
     notes:r.notes||r.remarks||'',
     added_by:currentUser?.id

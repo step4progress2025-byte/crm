@@ -680,7 +680,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <section id="sc-coursefinder" class="screen">
         <div class="card" style="margin-bottom:16px">
           <div class="card-h"><span class="card-t">🎓 Course & University Finder</span><span style="font-size:11px;color:var(--ink3)">645 partner universities · All marked as Step4Progress tie-ups ✅</span></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;margin-bottom:12px;align-items:end">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr auto auto;gap:10px;margin-bottom:12px;align-items:end">
             <div>
               <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Student nationality</div>
               <select id="cf-nat" style="width:100%;font-size:13px;padding:9px 12px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)" onchange="searchCourses()">
@@ -696,6 +696,13 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               </select>
             </div>
             <div>
+              <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Study level</div>
+              <select id="cf-level" style="width:100%;font-size:13px;padding:9px 12px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)" onchange="searchCourses()">
+                <option value="">All levels</option>
+                <option>Foundation</option><option>Diploma</option><option>Bachelor's</option><option>Master's</option><option>PhD</option>
+              </select>
+            </div>
+            <div>
               <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Search university</div>
               <input id="cf-search" type="text" placeholder="Type university name…" style="width:100%;font-size:13px;padding:9px 12px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)" oninput="searchCourses()">
             </div>
@@ -706,6 +713,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               </select>
             </div>
             <button class="btn btn-p" onclick="searchCourses()" style="padding:9px 16px;white-space:nowrap"><i class="ti ti-search"></i>Search</button>
+            <button class="btn" onclick="exportCourseResults()" style="padding:9px 16px;white-space:nowrap;background:var(--cream);border:1px solid var(--line2);color:var(--ink2)"><i class="ti ti-download"></i>Export</button>
           </div>
           <div id="cf-count" style="font-size:12px;color:var(--ink3);margin-bottom:10px"></div>
         </div>
@@ -1646,7 +1654,7 @@ async function updateStatusFS(){
   if(l)l.status=status;
   setSynced();renderLeads();renderDash();badges();toast('Status → '+status);
 }
-function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';document.getElementById('f-mobile').value=l.mobile||'';document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'India';syncLeadOffice();document.getElementById('f-office').value=l.office||'India HQ';document.getElementById('f-counsel').value=l.counsellor||'';document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;},100);}
+function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';document.getElementById('f-mobile').value=l.mobile||'';document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'India';syncLeadOffice();document.getElementById('f-office').value=l.office||'India HQ';const cf=document.getElementById('f-counsel');cf.disabled=false;cf.placeholder='Leave blank for auto round-robin';cf.value=l.counsellor||'';document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;},100);}
 async function deleteLeadFS(){if(!curId)return;if(!isSuperAdmin&&myRole!=='Admin'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress India regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
@@ -1745,7 +1753,7 @@ function editLead(){
   document.getElementById('f-country').value=l.country||'India';
   syncLeadOffice();
   document.getElementById('f-office').value=l.office||'India HQ';
-  document.getElementById('f-counsel').value=l.counsellor||'';
+  {const cf=document.getElementById('f-counsel');cf.disabled=false;cf.placeholder='Leave blank for auto round-robin';cf.value=l.counsellor||'';}
   document.getElementById('f-fu').value=l.next_followup||'';
   document.getElementById('f-notes').value=l.notes||'';   document.getElementById('f-intake').value=l.intake_month||'';   document.getElementById('f-ielts-status').value=l.ielts_status||'';   document.getElementById('f-ielts-score').value=l.ielts_score||'';   document.getElementById('f-budget').value=l.budget_range||'';   document.getElementById('f-english').value=l.english_status||'';   document.getElementById('f-walink').value=l.whatsapp_group_link||'';   document.getElementById('f-doclink').value=l.doc_folder_link||'';
   document.getElementById('modal-lead').classList.add('open');
@@ -1760,6 +1768,16 @@ function openAddLead(){
   ['f-name','f-mobile','f-email','f-city','f-dob','f-qual','f-notes','f-fu','f-counsel','f-ielts-score','f-walink','f-doclink'].forEach(id=>document.getElementById(id).value=''); ['f-intake','f-ielts-status','f-budget','f-english'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-country').value='India'; syncLeadOffice();
   document.getElementById('f-status').value='New Enquiry';
   document.getElementById('f-prio').value='Medium';
+  const counselField=document.getElementById('f-counsel');
+  if(myRole==='Counsellor'&&!isSuperAdmin){
+    // Counsellors can only add leads to themselves — field is pre-filled and locked.
+    counselField.value=myName||'';
+    counselField.disabled=true;
+    counselField.placeholder='Assigned to you';
+  } else {
+    counselField.disabled=false;
+    counselField.placeholder='Leave blank for auto round-robin';
+  }
   document.getElementById('modal-lead').classList.add('open');
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');if(id==='modal-lead'){editMode=false;curId=null;}}
@@ -1795,7 +1813,13 @@ async function saveLead(){
   } else {
     // auto lead ID
     const maxId=leads.reduce((max,l)=>{const n=parseInt((l.lead_id||'S4P-0000').split('-')[1]);return n>max?n:max;},0);data.lead_id='S4P-'+String(maxId+1).padStart(4,'0');
-    if(!data.counsellor){const rr=getNextCounsellorForOffice(data.office);data.counsellor=rr.name;}
+    // Counsellors can only add leads assigned to themselves — this mirrors the
+    // Import restriction. Round-robin / typing another name is only for Admins.
+    if(myRole==='Counsellor'&&!isSuperAdmin){
+      data.counsellor=myName;
+    } else if(!data.counsellor){
+      const rr=getNextCounsellorForOffice(data.office);data.counsellor=rr.name;
+    }
     const res=await sb.from('leads').insert([data]).select();
     error=res.error;
     if(!error&&res.data)leads.unshift(res.data[0]);
@@ -2305,9 +2329,21 @@ function initCourseFinder(){
     leads.map(l=>`<option value="${l.id}">${esc(l.name)} — ${esc(l.status)}</option>`).join('');
   loadUniversities().then(searchCourses);
 }
+let cfLastFiltered=[];
+function matchesStudyLevel(u,level){
+  if(!level) return true;
+  // The universities table may store this under different column names depending
+  // on how it was imported — check the common ones, and don't hide a result just
+  // because the data doesn't have this field populated.
+  const raw=u.study_level??u.study_levels??u.degree_level??u.degree_levels??u.level??u.levels??u.program_level??null;
+  if(raw==null) return true;
+  const vals=Array.isArray(raw)?raw:String(raw).split(/[,/]/);
+  return vals.some(v=>String(v).trim().toLowerCase()===level.toLowerCase());
+}
 function searchCourses(){
   const nat=document.getElementById('cf-nat').value;
   const dest=document.getElementById('cf-dest').value;
+  const level=document.getElementById('cf-level').value;
   const q=(document.getElementById('cf-search').value||'').toLowerCase();
   const tb=document.getElementById('cf-tbody');
   const countEl=document.getElementById('cf-count');
@@ -2315,10 +2351,12 @@ function searchCourses(){
   let filtered=cfUniversities.filter(u=>{
     if(dest&&u.country!==dest)return false;
     if(nat&&!(u.eligible_nationalities||[]).includes(nat))return false;
+    if(!matchesStudyLevel(u,level))return false;
     if(q&&!u.name.toLowerCase().includes(q))return false;
     return true;
   });
-  countEl.textContent=`${filtered.length} universities found${nat?' eligible for '+nat:''}${dest?' in '+dest:''}`;
+  cfLastFiltered=filtered;
+  countEl.textContent=`${filtered.length} universities found${nat?' eligible for '+nat:''}${dest?' in '+dest:''}${level?' · '+level:''}`;
   if(!filtered.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:36px;color:var(--ink3);font-style:italic">No universities match your filters.</td></tr>';return;}
   tb.innerHTML=filtered.slice(0,100).map(u=>{
     const nats=(u.eligible_nationalities||[]).slice(0,5).join(', ')+(u.eligible_nationalities?.length>5?' +more':'');
@@ -2331,6 +2369,15 @@ function searchCourses(){
     </tr>`;
   }).join('');
   if(filtered.length>100) tb.innerHTML+=`<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--ink3);font-size:12px">Showing first 100 of ${filtered.length} — refine your filters to narrow results.</td></tr>`;
+}
+function exportCourseResults(){
+  const rows=cfLastFiltered.length?cfLastFiltered:cfUniversities;
+  if(!rows.length){toast('No universities to export — run a search first.');return;}
+  const H=['University','Country','Eligible Nationalities'];
+  const lines=rows.map(u=>[u.name,u.country,(u.eligible_nationalities||[]).join('; ')].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
+  const csv=[H.join(','),...lines].join('\n');
+  downloadCSV(csv,'step4progress_university_shortlist.csv');
+  toast('Exported '+rows.length+' universities.');
 }
 async function shortlistUniversity(uniId, uniName, uniCountry){
   const leadId=document.getElementById('cf-lead').value;
@@ -2349,7 +2396,8 @@ async function askCourseAI(){
   resp.textContent='';
   const nat=document.getElementById('cf-nat').value;
   const dest=document.getElementById('cf-dest').value;
-  const context=`You are an expert study abroad counsellor at Step4Progress, a UK-headquartered education consultancy with offices in India, UK, Pakistan and Bangladesh. You have tie-ups with 645+ partner universities across UK, Canada, Australia, USA, Europe and more.\n\nYour job: recommend the best universities and courses for this student. Be specific, practical and helpful. For each recommendation include: university name, country, why it suits this student, degree level, and any important notes (IELTS requirement, fees range if known, special strengths).\n\nContext: ${nat?'Student nationality: '+nat+'.':''} ${dest?'Preferred destination: '+dest+'.':''}\n\nFormat your response clearly with numbered recommendations. End with 1-2 practical next steps the counsellor should take.`;
+  const level=document.getElementById('cf-level').value;
+  const context=`You are an expert study abroad counsellor at Step4Progress, a UK-headquartered education consultancy with offices in India, UK, Pakistan and Bangladesh. You have tie-ups with 645+ partner universities across UK, Canada, Australia, USA, Europe and more.\n\nYour job: recommend the best universities and courses for this student. Be specific, practical and helpful. For each recommendation include: university name, country, why it suits this student, degree level, and any important notes (IELTS requirement, fees range if known, special strengths).\n\nContext: ${nat?'Student nationality: '+nat+'.':''} ${dest?'Preferred destination: '+dest+'.':''} ${level?'Study level: '+level+'.':''}\n\nFormat your response clearly with numbered recommendations. End with 1-2 practical next steps the counsellor should take.`;
   try{
     const r=await fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/ai-proxy',{
       method:'POST',

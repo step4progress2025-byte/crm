@@ -1213,6 +1213,19 @@ function toggleAuth(){
   document.getElementById('auth-toggle-btn').textContent=authMode==='login'?'Sign up':'Sign in';
 }
 
+// Supabase errors don't always have a useful `.message` (e.g. a malformed
+// server response can leave it empty, which used to render literally as "{}").
+// This always returns something readable, and logs the raw error to the
+// console so it can be diagnosed from DevTools.
+function readableAuthError(error,context){
+  console.error('Auth error ('+context+'):',error);
+  if(!error) return 'Something went wrong. Please try again.';
+  if(error.message&&error.message.trim()&&error.message.trim()!=='{}') return error.message;
+  if(error.error_description) return error.error_description;
+  if(error.status===429) return 'Too many attempts — please wait a minute and try again.';
+  return 'Something went wrong on the server. Open the browser console (F12) for details, or try again in a moment.';
+}
+
 async function doLogin(){
   const email=document.getElementById('login-email').value.trim();
   const pass=document.getElementById('login-pass').value;
@@ -1221,7 +1234,7 @@ async function doLogin(){
   if(!email||!pass){err.textContent='Please enter email and password.';return;}
   btn.disabled=true;btn.textContent='Signing in…';err.textContent='';
   const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
-  if(error){err.textContent=error.message;btn.disabled=false;btn.textContent='Sign in →';return;}
+  if(error){err.textContent=readableAuthError(error,'login');btn.disabled=false;btn.textContent='Sign in →';return;}
   await onLogin(data.user);
 }
 
@@ -1287,13 +1300,21 @@ async function doSignup(){
   const pass=document.getElementById('signup-pass').value;
   const btn=document.getElementById('signup-btn');
   const err=document.getElementById('signup-err');
+  err.style.color='';
   if(!name||!email||!pass){err.textContent='Please fill all fields.';return;}
   if(pass.length<6){err.textContent='Password must be at least 6 characters.';return;}
   btn.disabled=true;btn.textContent='Creating account…';err.textContent='';
   const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,role,country,office}}});
-  if(error){err.textContent=error.message;btn.disabled=false;btn.textContent='Create account →';return;}
+  if(error){err.textContent=readableAuthError(error,'signup');btn.disabled=false;btn.textContent='Create account →';return;}
+  if(!data?.user){err.textContent='Account may already exist, or email confirmation is required before this can complete. Check your inbox, or check Supabase → Authentication → Users.';btn.disabled=false;btn.textContent='Create account →';return;}
   // save profile to team table
-  await sb.from('team').upsert({id:data.user.id,full_name:name,role,email,country,office});
+  const{error:teamErr}=await sb.from('team').upsert({id:data.user.id,full_name:name,role,email,country,office});
+  if(teamErr){
+    console.error('Team profile save failed:',teamErr);
+    err.textContent='Account created, but saving your team profile failed: '+(teamErr.message||'unknown error')+'. Contact your Super Admin.';
+    btn.disabled=false;btn.textContent='Create account →';
+    return;
+  }
   err.style.color='#86EFAC';
   err.textContent='Account created! Check your email to confirm, then sign in.';
   btn.disabled=false;btn.textContent='Create account →';

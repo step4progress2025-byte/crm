@@ -1176,9 +1176,10 @@ const SS={
 const PS={High:{bg:"#FFE4E6",tx:"#9F1239"},Medium:{bg:"#FEF9C3",tx:"#854D0E"},Low:{bg:"#DCFCE7",tx:"#166534"}};
 const AVC=[["#DBEAFE","#1E3A8A"],["#D1FAE5","#064E3B"],["#FEF3C7","#78350F"],["#EDE9FE","#3B0764"],["#FCE7F3","#831843"],["#E0F2FE","#0C4A6E"]];
 const STATUSES=["New Enquiry","Pending","Ongoing","Contacted","Follow Up","Callback Later","Interested","Counselling Done","Enrolled","Fees Paid","University Shortlist Sent","Documents Pending","Application Submitted","Received - Conditional Offer","Received - Unconditional Offer","Conditional Cleared","Received CAS Letter","Deposit Paid","Visa Application Submitted","Visa Application Accepted","Visa Application Rejected","Onboarded Student","Commission Received","Process Completed","Deferred","Not Interested","Dropped"];
-const ALLOWED_EMAIL_DOMAIN='step4progress.com';
+const ALLOWED_EMAIL_DOMAINS=['step4progress.com','step4progress.co.uk'];
 function isAllowedEmail(email){
-  return (email||'').toLowerCase().trim().endsWith('@'+ALLOWED_EMAIL_DOMAIN);
+  const e=(email||'').toLowerCase().trim();
+  return ALLOWED_EMAIL_DOMAINS.some(d=>e.endsWith('@'+d));
 }
 function ini(n){const p=(n||'?').trim().split(' ');return(p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -1236,7 +1237,7 @@ async function doLogin(){
   const btn=document.getElementById('login-btn');
   const err=document.getElementById('login-err');
   if(!email||!pass){err.textContent='Please enter email and password.';return;}
-  if(!isAllowedEmail(email)){err.textContent='Only @step4progress.com email addresses can sign in.';return;}
+  if(!isAllowedEmail(email)){err.textContent='Only @step4progress.com or @step4progress.co.uk email addresses can sign in.';return;}
   btn.disabled=true;btn.textContent='Signing in…';err.textContent='';
   const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
   if(error){err.textContent=readableAuthError(error,'login');btn.disabled=false;btn.textContent='Sign in →';return;}
@@ -1308,7 +1309,7 @@ async function doSignup(){
   err.style.color='';
   if(!name||!email||!pass){err.textContent='Please fill all fields.';return;}
   if(pass.length<6){err.textContent='Password must be at least 6 characters.';return;}
-  if(!isAllowedEmail(email)){err.textContent='Only @step4progress.com email addresses can be used to create an account.';return;}
+  if(!isAllowedEmail(email)){err.textContent='Only @step4progress.com or @step4progress.co.uk email addresses can be used to create an account.';return;}
   btn.disabled=true;btn.textContent='Creating account…';err.textContent='';
   const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,role,country,office}}});
   if(error){err.textContent=readableAuthError(error,'signup');btn.disabled=false;btn.textContent='Create account →';return;}
@@ -1333,7 +1334,7 @@ async function onLoginGuarded(user){
     console.warn('Blocked sign-in from disallowed email domain:',user.email);
     await sb.auth.signOut();
     const loginErr=document.getElementById('login-err');
-    if(loginErr) loginErr.textContent='This account ('+user.email+') is not authorised for this CRM. Only @step4progress.com accounts may sign in.';
+    if(loginErr) loginErr.textContent='This account ('+user.email+') is not authorised for this CRM. Only @step4progress.com or @step4progress.co.uk accounts may sign in.';
     return;
   }
   await onLogin(user);

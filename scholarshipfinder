@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scholarship Finder — Step4Progress (Internal Prototype)</title>
+<style>
+  :root{
+    --ink:#132A3A;
+    --ink-2:#1D3E54;
+    --paper:#FBF9F4;
+    --paper-dim:#F0ECE1;
+    --brass:#C89B3C;
+    --brass-dim:#8F6C24;
+    --teal:#2F5D50;
+    --teal-dim:#254A40;
+    --rose:#B14A3E;
+    --line:#D9D2BE;
+    --ok:#2F5D50;
+    --warn:#B8862E;
+    --unver:#8A5A4A;
+    --radius:14px;
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body: 'IBM Plex Sans', -apple-system, Segoe UI, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  }
+
+  @font-face{font-family:'Fraunces';src:local('Fraunces');}
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--ink);
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(200,155,60,0.10), transparent 45%),
+      radial-gradient(circle at 85% 92%, rgba(47,93,80,0.18), transparent 50%);
+    color:var(--paper);
+    font-family:var(--font-body);
+    line-height:1.5;
+    min-height:100vh;
+  }
+
+  .wrap{max-width:1100px;margin:0 auto;padding:40px 24px 80px;}
+
+  /* ---------- Header ---------- */
+  header.hero{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:24px;
+    border-bottom:1px solid rgba(251,249,244,0.18);
+    padding-bottom:28px;
+    margin-bottom:28px;
+  }
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin:0 0 10px;
+  }
+  h1{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:clamp(28px,4vw,44px);
+    line-height:1.05;
+    margin:0 0 8px;
+    color:var(--paper);
+  }
+  .hero p.sub{
+    margin:0;
+    max-width:56ch;
+    color:rgba(251,249,244,0.72);
+    font-size:15px;
+  }
+  .status-pill{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    letter-spacing:.03em;
+    background:rgba(47,93,80,0.35);
+    border:1px solid var(--teal);
+    color:#CFE3DB;
+    padding:7px 12px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+
+  /* ---------- Lead auto-fill bar ---------- */
+  .lead-bar{
+    background:rgba(251,249,244,0.06);
+    border:1px dashed rgba(200,155,60,0.5);
+    border-radius:var(--radius);
+    padding:16px 18px;
+    margin-bottom:24px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    align-items:center;
+  }
+  .lead-bar label{
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--brass);
+    text-transform:uppercase;
+    letter-spacing:.06em;
+  }
+  .lead-bar select{
+    background:var(--ink-2);
+    color:var(--paper);
+    border:1px solid rgba(251,249,244,0.25);
+    border-radius:8px;
+    padding:8px 10px;
+    font-family:var(--font-body);
+    font-size:13.5px;
+  }
+  .lead-bar .note{
+    font-size:12.5px;
+    color:rgba(251,249,244,0.55);
+    flex-basis:100%;
+  }
+  .lead-bar button.clear{
+    background:none;
+    border:1px solid rgba(251,249,244,0.3);
+    color:var(--paper);
+    border-radius:8px;
+    padding:8px 12px;
+    font-size:12.5px;
+    cursor:pointer;
+  }
+  .lead-bar button.clear:hover{border-color:var(--rose);color:#F0B4A9;}
+
+  /* ---------- Filters ---------- */
+  .filters{
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:var(--radius);
+    padding:20px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    gap:14px;
+    margin-bottom:26px;
+    box-shadow:0 12px 30px rgba(0,0,0,0.25);
+  }
+  .field-group{display:flex;flex-direction:column;gap:6px;}
+  .field-group label{
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--teal-dim);
+  }
+  .field-group select, .field-group input[type="text"]{
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:9px 10px;
+    font-family:var(--font-body);
+    font-size:13.5px;
+    background:#fff;
+    color:var(--ink);
+  }
+  .filters .actions{
+    display:flex;
+    align-items:flex-end;
+  }
+  .filters .actions button{
+    width:100%;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    border-radius:8px;
+    padding:10px 12px;
+    font-family:var(--font-body);
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .filters .actions button:hover{background:var(--teal-dim);}
+
+  .results-meta{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:16px;
+    color:rgba(251,249,244,0.75);
+    font-size:13.5px;
+  }
+  .results-meta strong{color:var(--paper);}
+
+  /* ---------- Ticket / stub cards ---------- */
+  .grid{display:grid;grid-template-columns:1fr;gap:20px;}
+  @media(min-width:760px){.grid{grid-template-columns:1fr 1fr;}}
+
+  .ticket{
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:var(--radius);
+    display:grid;
+    grid-template-columns:1fr 108px;
+    overflow:hidden;
+    box-shadow:0 14px 34px rgba(0,0,0,0.28);
+    position:relative;
+  }
+  .ticket .main{padding:20px 18px 18px;}
+  .ticket .stub{
+    background:var(--ink);
+    color:var(--paper);
+    padding:16px 10px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    gap:6px;
+    position:relative;
+  }
+  /* perforation effect between main and stub */
+  .ticket .stub::before{
+    content:"";
+    position:absolute;
+    left:0;top:0;bottom:0;
+    width:0;
+    border-left:2px dashed rgba(251,249,244,0.35);
+  }
+  .ticket .stub .badge-circle{
+    width:44px;height:44px;
+    border-radius:50%;
+    border:2px solid var(--brass);
+    display:flex;align-items:center;justify-content:center;
+    font-size:19px;
+  }
+  .ticket .stub .stamp-label{
+    font-family:var(--font-mono);
+    font-size:10px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--brass);
+  }
+  .ticket .stub .deadline{
+    font-family:var(--font-mono);
+    font-size:12px;
+    line-height:1.35;
+    color:var(--paper);
+  }
+
+  .name-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;}
+  .ticket h3{
+    font-family:var(--font-display);
+    font-size:19px;
+    margin:0 0 3px;
+    line-height:1.2;
+  }
+  .provider{
+    font-size:12px;
+    color:var(--teal-dim);
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    margin-bottom:10px;
+  }
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+  .tag{
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    padding:3px 8px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    color:var(--ink-2);
+    white-space:nowrap;
+  }
+  .tag.category{background:#EFE7D2;border-color:#D8C68F;color:var(--brass-dim);}
+  .tag.gender{background:#F3E2DE;border-color:#E0B7AE;color:var(--rose);}
+  .tag.popularity-gem{background:#E1EEE9;border-color:#B9D8CC;color:var(--teal-dim);}
+  .tag.popularity-known{background:#E8E3F2;border-color:#CBC0E6;color:#5B4A8A;}
+
+  .fund-summary{font-size:13.5px;margin-bottom:10px;}
+  .fund-summary strong{color:var(--ink);}
+
+  details.elig{margin-bottom:10px;}
+  details.elig summary{
+    cursor:pointer;
+    font-size:12.5px;
+    color:var(--teal-dim);
+    font-weight:600;
+  }
+  details.elig ul{margin:8px 0 0;padding-left:18px;font-size:13px;color:#3A3A34;}
+  details.elig li{margin-bottom:4px;}
+
+  .card-footer{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-top:1px dashed var(--line);
+    padding-top:10px;
+    margin-top:6px;
+  }
+  .source-note{font-size:11px;color:#7A7566;font-family:var(--font-mono);}
+  .source-note .verified{color:var(--ok);}
+  .source-note .partial{color:var(--warn);}
+  a.official-link{
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--teal-dim);
+    text-decoration:none;
+    border-bottom:1px solid var(--teal-dim);
+    white-space:nowrap;
+  }
+  a.official-link:hover{color:var(--rose);border-color:var(--rose);}
+
+  .empty-state{
+    text-align:center;
+    padding:60px 20px;
+    color:rgba(251,249,244,0.6);
+    font-family:var(--font-mono);
+    font-size:13.5px;
+  }
+
+  /* ---------- Verification log ---------- */
+  .verify-section{margin-top:48px;}
+  .verify-section > summary{
+    cursor:pointer;
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin-bottom:12px;
+  }
+  table.verify-table{
+    width:100%;
+    border-collapse:collapse;
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:10px;
+    overflow:hidden;
+    font-size:12.5px;
+  }
+  table.verify-table th, table.verify-table td{
+    text-align:left;
+    padding:9px 10px;
+    border-bottom:1px solid var(--line);
+  }
+  table.verify-table th{
+    background:var(--paper-dim);
+    font-family:var(--font-mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+  .status-ok{color:var(--ok);font-weight:600;}
+  .status-partial{color:var(--warn);font-weight:600;}
+
+  footer.page-footer{
+    margin-top:40px;
+    padding-top:20px;
+    border-top:1px solid rgba(251,249,244,0.15);
+    font-size:12px;
+    color:rgba(251,249,244,0.5);
+  }
+
+  @media (prefers-reduced-motion:no-preference){
+    .ticket{transition:transform .15s ease, box-shadow .15s ease;}
+    .ticket:hover{transform:translateY(-2px);box-shadow:0 18px 40px rgba(0,0,0,0.34);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Step4Progress CRM &middot; Internal Assessment Prototype</p>
+      <h1>Scholarship Finder</h1>
+      <p class="sub">A standalone lookup tool for genuine, currently-active scholarships — filterable by destination, degree level, field, category and gender eligibility. Built so it can be dropped into the CRM's Leads module later with minimal rework.</p>
+    </div>
+    <div class="status-pill">10 scholarships &middot; sources checked Jul 2026</div>
+  </header>
+
+  <div class="lead-bar">
+    <label for="leadSelect">Load from lead (demo)</label>
+    <select id="leadSelect">
+      <option value="">— select a sample lead —</option>
+    </select>
+    <button class="clear" id="clearLead" type="button">Clear</button>
+    <span class="note">This dropdown uses hardcoded sample leads for the prototype. In the live CRM, it will read the selected lead's destination, degree level, field and gender directly from the <code>leads</code> table — see the code comments near <code>SAMPLE_LEADS</code>.</span>
+  </div>
+
+  <div class="filters">
+    <div class="field-group">
+      <label for="fDestination">Destination</label>
+      <select id="fDestination"><option value="">Any</option></select>
+    </div>
+    <div class="field-group">
+      <label for="fDegree">Degree level</label>
+      <select id="fDegree"><option value="">Any</option></select>
+    </div>
+    <div class="field-group">
+      <label for="fGender">Gender eligibility</label>
+      <select id="fGender"><option value="">Any</option></select>
+    </div>
+    <div class="field-group">
+      <label for="fCategory">Category</label>
+      <select id="fCategory"><option value="">Any</option></select>
+    </div>
+    <div class="field-group">
+      <label for="fPopularity">Popularity</label>
+      <select id="fPopularity"><option value="">Any</option></select>
+    </div>
+    <div class="field-group">
+      <label for="fSearch">Field / keyword</label>
+      <input type="text" id="fSearch" placeholder="e.g. public health, arts">
+    </div>
+    <div class="field-group actions">
+      <button id="resetFilters" type="button">Reset filters</button>
+    </div>
+  </div>
+
+  <div class="results-meta">
+    <span><strong id="resultCount">10</strong> scholarships match</span>
+    <span>Sorted by relevance</span>
+  </div>
+
+  <div class="grid" id="resultsGrid"></div>
+  <div class="empty-state" id="emptyState" style="display:none;">No scholarships match this combination of filters — try widening the destination or degree level.</div>
+
+  <details class="verify-section">
+    <summary>Verification log — how each fact was checked</summary>
+    <table class="verify-table">
+      <thead>
+        <tr><th>Scholarship</th><th>Claim checked</th><th>Status</th><th>Source</th><th>Notes</th></tr>
+      </thead>
+      <tbody id="verifyBody"></tbody>
+    </table>
+  </details>
+
+  <footer class="page-footer">
+    Prototype for internal review only — not yet wired to Supabase or the Leads module. Figures and deadlines move yearly; the "checked" date on each card shows when it was last confirmed against the official source. Always re-verify before sharing a specific deadline with a student.
+  </footer>
+
+</div>
+
+<script>
+/* =========================================================================
+   SCHOLARSHIP DATASET
+   ---------------------------------------------------------------------
+   This array is the seed dataset for the prototype. It is shaped so it can
+   be lifted almost directly into a Supabase `scholarships` table later:
+     id, name, provider, destination, degree_levels[], fields[],
+     gender_eligibility, category, popularity, funding_type,
+     funding_summary, eligibility[], deadline_info, official_url,
+     source_name, source_status, source_checked
+   ========================================================================= */
+const SCHOLARSHIPS = [
+  {
+    id:"chevening",
+    name:"Chevening Scholarship",
+    provider:"UK Foreign, Commonwealth & Development Office",
+    destination:"UK",
+    degreeLevels:["Master's"],
+    fields:["All fields"],
+    genderEligibility:"All genders",
+    category:"Government-funded",
+    popularity:"Well-known",
+    fundingType:"Full funding",
+    fundingSummary:"Covers tuition, a monthly living stipend, return airfare and a visa application for a one-year UK Master's.",
+    eligibility:[
+      "At least 2 years' work experience (2,800 hours)",
+      "Undergraduate degree completed at least 2 years before the deadline",
+      "Must apply to 3 eligible UK university courses and secure one unconditional offer",
+      "Commit to returning home for 2 years after the award"
+    ],
+    deadlineInfo:"Applications open 4 Aug 2026, close 6 Oct 2026, 11:00 UTC (for the 2027–28 intake).",
+    officialUrl:"https://www.chevening.org/scholarships/",
+    sourceName:"chevening.org",
+    sourceStatus:"verified",
+    sourceChecked:"Jul 2026"
+  },
+  {
+    id:"commonwealth",
+    name:"Commonwealth Scholarship (Master's / Shared)",
+    provider:"Commonwealth Scholarship Commission in the UK (CSC)",
+    destination:"UK",
+    degreeLevels:["Master's","PhD"],
+    fields:["All fields", "Aligned to CSC development themes"],
+    genderEligibility:"All genders",
+    category:"Government-funded",
+    popularity:"Well-known",
+    fundingType:"Full funding (need-based)",
+    fundingSummary:"Tuition, a monthly living allowance, and airfare, for candidates who can demonstrate they could not otherwise afford UK study.",
+    eligibility:[
+      "Citizen of an eligible Commonwealth country (India included)",
+      "Upper second-class (2:1) degree or equivalent",
+      "Explicit financial-need requirement — not just a preference",
+      "For India, requires parallel application via the Ministry of Education's nomination portal"
+    ],
+    deadlineInfo:"The 2026/27 cycle is closed. Cycles typically reopen around August–November each year — confirm exact dates on the official site before quoting them to a student.",
+    officialUrl:"https://cscuk.fcdo.gov.uk/scholarships/",
+    sourceName:"cscuk.fcdo.gov.uk",
+    sourceStatus:"verified",
+    sourceChecked:"Jul 2026"
+  },
+  {
+    id:"great",
+    name:"GREAT Scholarships",
+    provider:"British Council, UK GREAT Campaign & partner universities",
+    destination:"UK",
+    degreeLevels:["Master's"],
+    fields:["Varies by participating university"],
+    genderEligibility:"All genders",
+    category:"University-tied",
+    popularity:"Moderately known",
+    fundingType:"Partial funding",
+    fundingSummary:"A minimum of £10,000 toward tuition for a one-year taught postgraduate course — a discount, not a full ride; living costs are the student's own.",
+    eligibility:[
+      "Citizen of one of 18 eligible countries (India included)",
+      "Must hold or be pursuing an offer at a participating UK university",
+      "Each university sets its own subjects, eligibility add-ons and deadline"
+    ],
+    deadlineInfo:"No single deadline — each participating university sets its own, typically between March and June for that year's autumn intake.",
+    officialUrl:"https://study-uk.britishcouncil.org/scholarships-funding/great-scholarships",
+    sourceName:"study-uk.britishcouncil.org",
+    sourceStatus:"verified",
+    sourceChecked:"Jul 2026"
+  },
+  {
+    id:"cwit",
+    name:"Charles Wallace India Trust (CWIT)",
+    provider:"Charles Wallace India Trust, with British Council India",
+    destination:"UK",
+    degreeLevels:["Master's","Short professional / research grant"],
+    fields:["Arts","Heritage conservation","Humanities"],
+    genderEligibility:"All genders",
+    category:"Private foundation",
+    popularity:"Underrated gem",
+    fundingType:"Full funding (for the awards it makes)",
+    fundingSummary:"Covers UK living costs, fees and a contribution to airfare for arts, heritage-conservation and humanities awards — a narrow but generous niche most students never hear about.",
+    eligibility:[
+      "Indian citizen, resident in India, early-to-mid career",
+      "Working or studying in arts, heritage conservation or the humanities",
+      "Different award types (fellowships, short grants, MFA partnership) have different age and experience rules"
+    ],
+    deadlineInfo:"Deadlines vary by award type — short research grants have closed around late February, fellowships around March; the main scholarship round has historically opened in autumn. Confirm the current window on the official page before advising a student.",
+    officialUrl:"https://www.britishcouncil.in/study-uk/scholarships/charles-wallace-india-trust-scholarships",
+    sourceName:"britishcouncil.in / charleswallaceindiatrust.com",
+    sourceStatus:"partial",
+    sourceChecked:"Jul 2026"
+  },
+  {
+    id:"inlaks",
+    name:"Inlaks Shivdasani Foundation Scholarship",
+    provider:"Inlaks Shivdasani Foundation",
+    destination:"USA / UK / Europe",
+    degreeLevels:["Master's","MPhil","PhD"],
+    fields:["Social Sciences","Humanities","Law","Fine Arts","Architecture","Mathematics","Science","Environmental Studies"],
+    genderEligibility:"All genders",
+    category:"Private foundation",
+    popularity:"Underrated gem",
+    fundingType:"Full funding (capped)",
+    fundingSummary:"Up to USD 120,000 covering tuition, living costs, one-way travel, visa and health costs — one of the largest private awards for Indian students, but far less applied-to than Chevening or Fulbright.",
+    eligibility:[
+      "Indian passport holder, resident in India",
+      "Already holds an admission offer (conditional or unconditional) before applying",
+      "Does not fund Management Studies / MBA, and postgraduate-qualification holders from abroad are not eligible"
+    ],
+    deadlineInfo:"The 2026 cycle closed 31 March 2026. The Foundation runs one cycle a year, opening around February — confirm the 2027 window on the official site.",
+    officialUrl:"https://inlaksfoundation.org/opportunities/scholarship/",
+    sourceName:"inlaksfoundation.org",
+    sourceStatus:"verified",
+    sourceChecked:"Jul 2026"
+  },
+  {
+    id:"jntata",
+    name:"J N Tata Endowment Loan Scholarship",
+    provider:"J N Tata Endowment (Tata Trusts)",
+    destination:"Any country (overseas study only)",
+    degreeLevels:["Master's","PhD","Postdoctoral"],
+    fields:["All fields"],
+    genderEligibility:"All genders",
+    category:"Private foundation",
+    popularity:"Underrated gem",
+    fundingType:"Loan scholarship",
+    fundingSummary:"A concessional loan of up to ₹20 lakh at 2% simple interest, repayable over 7 years starting from the third year — not a grant, but far cheaper than an education loan, and often overlooked because it isn't 'free money'.",
+    eligibility:[
+      "Indian citizen, under 45 years of age",
+      "Minimum 60% average in undergraduate or postgraduate studies from a recognised Indian university",
+      "A guarantor (parent, guardian, spouse or approved relative) is mandatory"
+    ],
+    deadlineInfo:"For the Fall 2026–Spring 2027 cycle, applications were open 5 Jan – 29 Mar 2026. The Endowment runs one cycle per year starting each January — confirm the next window on the official site.",
+    officialUrl:"https://jntataendowment.org/",
+    sourceName:"jntataendowment.org / tatatrusts.org",
+    sourceStatus:"verified",
+    sourceChecked:"Jul 2026"
+  },
+  {
+    id:"fulbright-nehru",
+    name:"Fulbright-Nehru Master's Fellowship",
+    provider:"United States-India Educational Foundation (USIEF)",
+    destination:"USA",
+    degreeLevels:["Master's"],
+    fields:["Economics","Environmental Science","Public Health","Journalism & Mass Communication","International Legal Studies","Public Administration","Urban & Regional Planning","Women's / Gender Studies","and other listed fields — not open to all subjects"],
+    genderEligibility:"All genders",
+    category:"Government-funded",
+    popularity:"Well-known",
+    fundingType:"Full funding",
+    fundingSummary:"Tuition, living costs, return airfare and health coverage for up to two years of a US Master's, placed by IIE on the applicant's behalf.",
+    eligibility:[
+      "At least 3 years of full-time professional work experience",
+      "Bachelor's degree with a minimum of 55% marks",
+      "Government of India / state government employees are not eligible",
+      "Only one Fulbright-Nehru category may be applied to per cycle"
+    ],
+    deadlineInfo:"Deadlines fall in mid-May each year for the following year's intake — the exact date shifts annually, so confirm on usief.org.in before quoting it.",
+    officialUrl:"https://www.usief.org.in/fulbright-fellowships/fellowships-for-indian-citizen/fulbright-nehru-masters-fellowships/",
+    sourceName:"usief.org.in",
+    sourceStatus:"verified",
+    sourceChecked:"Jul 2026"
+  },
+  {
+    id:"aauw",
+    name:"AAUW International Fellowship",
+    provider:"American Association of University Women (AAUW)",
+    destination:"USA",
+    degreeLevels:["Master's","PhD","Postdoctoral"],
+    fields:["All fields"],
+    genderEligibility:"Women only",
+    category:"Private foundation",
+    popularity:"Underrated gem",
+    fundingType:"Partial funding",
+    fundingSummary:"USD 20,000 (Master's), USD 25,000 (PhD) or USD 50,000 (postdoctoral) — open to women of any nationality and any field, with no separate application fee, yet rarely on an Indian student's radar.",
+    eligibility:[
+      "Applicant must identify as a woman and not hold US citizenship/permanent residency",
+      "Admitted to or enrolled in a first Master's/professional degree or a doctorate at a US-accredited institution",
+      "Plans to return to her home country after the fellowship"
+    ],
+    deadlineInfo:"The 2026–27 cycle's application window ran August–September 2025 and has closed; AAUW typically reopens applications each August for the following academic year.",
+    officialUrl:"https://www.aauw.org/resources/programs/fellowships-grants/current-opportunities/international/",
+    sourceName:"aauw.org",
+    sourceStatus:"verified",
+    sourceChecked:"Jul 2026"
+  },
+  {
+    id:"nos-sc",
+    name:"National Overseas Scholarship (NOS)",
+    provider:"Ministry of Social Justice & Empowerment / Ministry of Tribal Affairs, Govt of India",
+    destination:"Any country except UK-only variant differs by scheme",
+    degreeLevels:["Master's","PhD"],
+    fields:["All fields except Indian culture, heritage, history or social-studies research"],
+    genderEligibility:"All genders (30% of seats reserved for women)",
+    category:"Reserved category (Govt of India)",
+    popularity:"Underrated gem",
+    fundingType:"Near-full funding (need-based, reserved category)",
+    fundingSummary:"Tuition paid directly to the university, plus an annual maintenance allowance of USD 15,400 (or GBP 9,900 for the UK), a contingency/book allowance, and one-way airfare.",
+    eligibility:[
+      "Belongs to Scheduled Castes, Denotified/Semi-Nomadic Tribes, Landless Agricultural Labourers or Traditional Artisans (separate portal for Scheduled Tribes via the Ministry of Tribal Affairs)",
+      "Family annual income below ₹8 lakh",
+      "Minimum 60% in the last qualifying exam; under 35 years of age",
+      "Only 125 awards a year across all fields — highly competitive within its category"
+    ],
+    deadlineInfo:"The 2026–27 SC/etc. round ran in two phases between April and June 2026; the Scheduled Tribes portal closed 30 June 2026 for the same cycle. Reopens annually — confirm current dates before advising.",
+    officialUrl:"https://socialjustice.gov.in/schemes/28",
+    sourceName:"socialjustice.gov.in / overseas.tribal.gov.in",
+    sourceStatus:"verified",
+    sourceChecked:"Jul 2026"
+  },
+  {
+    id:"daad",
+    name:"DAAD Study / EPOS Scholarships",
+    provider:"German Academic Exchange Service (DAAD)",
+    destination:"Germany",
+    degreeLevels:["Master's","PhD"],
+    fields:["Varies by programme — development-related courses (EPOS), or open subject areas depending on scheme"],
+    genderEligibility:"All genders",
+    category:"Government-funded",
+    popularity:"Well-known",
+    fundingType:"Full funding",
+    fundingSummary:"A monthly stipend of roughly €992 (Master's) or €1,300–1,400 (PhD/postdoc), plus health insurance and travel allowances — German public universities already charge little to no tuition, so this largely covers living costs.",
+    eligibility:[
+      "Bachelor's degree from a recognised Indian university (for Master's programmes)",
+      "EPOS Master's programmes typically require 2 years of work experience",
+      "Language requirement depends on whether the programme is English- or German-taught"
+    ],
+    deadlineInfo:"Deadlines are programme-specific, generally 12 months ahead of the October intake (commonly October of the prior year) — always check the specific programme's listing on the DAAD scholarship database.",
+    officialUrl:"https://www.daad.in/en/find-funding/scholarship-database/",
+    sourceName:"daad.de / daad.in",
+    sourceStatus:"verified",
+    sourceChecked:"Jul 2026"
+  }
+];
+
+/* =========================================================================
+   SAMPLE LEADS (demo only)
+   ---------------------------------------------------------------------
+   Stand-in for the real Leads module. In the CRM build, replace this array
+   and loadLead() with a Supabase call, e.g.:
+     const { data } = await supabase.from('leads')
+       .select('id, name, destination_country, degree_level, field_of_study, gender, branch')
+       .eq('branch', currentBranch);
+   The shape below already matches that target schema so the filter-mapping
+   logic in applyLead() should not need to change.
+   ========================================================================= */
+const SAMPLE_LEADS = [
+  { id:"L-1042", name:"Aditi R. (Coimbatore)", destination:"UK", degreeLevel:"Master's", field:"public health", gender:"Women only", branch:"India" },
+  { id:"L-1088", name:"Rohan K. (Pune)", destination:"USA", degreeLevel:"Master's", field:"economics", gender:"All genders", branch:"India" },
+  { id:"L-1123", name:"Farah S. (London)", destination:"Germany", degreeLevel:"PhD", field:"", gender:"All genders", branch:"UK" },
+  { id:"L-1156", name:"Devansh P. (Ahmedabad)", destination:"UK", degreeLevel:"Master's", field:"heritage conservation", gender:"All genders", branch:"India" }
+];
+
+/* ---------------------------------------------------------------------- */
+
+const els = {
+  destination: document.getElementById('fDestination'),
+  degree: document.getElementById('fDegree'),
+  gender: document.getElementById('fGender'),
+  category: document.getElementById('fCategory'),
+  popularity: document.getElementById('fPopularity'),
+  search: document.getElementById('fSearch'),
+  grid: document.getElementById('resultsGrid'),
+  empty: document.getElementById('emptyState'),
+  count: document.getElementById('resultCount'),
+  leadSelect: document.getElementById('leadSelect'),
+  clearLead: document.getElementById('clearLead'),
+  verifyBody: document.getElementById('verifyBody'),
+  resetBtn: document.getElementById('resetFilters')
+};
+
+function uniqueValues(list, getter){
+  const set = new Set();
+  list.forEach(item => {
+    const v = getter(item);
+    if(Array.isArray(v)){ v.forEach(x=>set.add(x)); } else if(v){ set.add(v); }
+  });
+  return Array.from(set).sort();
+}
+
+function populateSelect(select, values){
+  values.forEach(v=>{
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    select.appendChild(opt);
+  });
+}
+
+function init(){
+  populateSelect(els.destination, uniqueValues(SCHOLARSHIPS, s=>s.destination));
+  populateSelect(els.degree, uniqueValues(SCHOLARSHIPS, s=>s.degreeLevels));
+  populateSelect(els.gender, ["All genders","Women only"]);
+  populateSelect(els.category, uniqueValues(SCHOLARSHIPS, s=>s.category));
+  populateSelect(els.popularity, ["Well-known","Moderately known","Underrated gem"]);
+
+  SAMPLE_LEADS.forEach(l=>{
+    const opt = document.createElement('option');
+    opt.value = l.id; opt.textContent = `${l.name} — ${l.destination}, ${l.degreeLevel}`;
+    els.leadSelect.appendChild(opt);
+  });
+
+  [els.destination, els.degree, els.gender, els.category, els.popularity].forEach(sel=>{
+    sel.addEventListener('change', render);
+  });
+  els.search.addEventListener('input', render);
+  els.resetBtn.addEventListener('click', resetFilters);
+  els.leadSelect.addEventListener('change', onLeadChange);
+  els.clearLead.addEventListener('click', ()=>{ els.leadSelect.value=""; resetFilters(); });
+
+  buildVerifyLog();
+  render();
+}
+
+function resetFilters(){
+  els.destination.value = "";
+  els.degree.value = "";
+  els.gender.value = "";
+  els.category.value = "";
+  els.popularity.value = "";
+  els.search.value = "";
+  render();
+}
+
+function onLeadChange(){
+  const lead = SAMPLE_LEADS.find(l=>l.id===els.leadSelect.value);
+  if(!lead) return;
+  // Auto-fill filters from the lead's profile — this is the "auto-fill from a
+  // selected lead" behaviour, simulated here with SAMPLE_LEADS.
+  els.destination.value = uniqueValues(SCHOLARSHIPS, s=>s.destination).includes(lead.destination) ? lead.destination : "";
+  els.degree.value = lead.degreeLevel || "";
+  els.gender.value = lead.gender || "";
+  els.category.value = "";
+  els.popularity.value = "";
+  els.search.value = lead.field || "";
+  render();
+}
+
+function matches(s){
+  const dest = els.destination.value;
+  const degree = els.degree.value;
+  const gender = els.gender.value;
+  const category = els.category.value;
+  const popularity = els.popularity.value;
+  const search = els.search.value.trim().toLowerCase();
+
+  if(dest && s.destination !== dest) return false;
+  if(degree && !s.degreeLevels.includes(degree)) return false;
+  if(gender && s.genderEligibility.indexOf(gender) === -1 && !(gender==="All genders" && s.genderEligibility.indexOf("All genders")>-1)) return false;
+  if(category && s.category !== category) return false;
+  if(popularity && s.popularity !== popularity) return false;
+  if(search){
+    const haystack = (s.name + " " + s.fields.join(" ") + " " + s.fundingSummary + " " + s.eligibility.join(" ")).toLowerCase();
+    if(haystack.indexOf(search) === -1) return false;
+  }
+  return true;
+}
+
+function popularityTagClass(p){
+  if(p === "Underrated gem") return "popularity-gem";
+  if(p === "Well-known" || p === "Moderately known") return "popularity-known";
+  return "";
+}
+
+function flagFor(destination){
+  if(destination.includes("UK")) return "🇬🇧";
+  if(destination.includes("USA")) return "🇺🇸";
+  if(destination.includes("Germany")) return "🇩🇪";
+  return "🌍";
+}
+
+function renderCard(s){
+  const el = document.createElement('article');
+  el.className = 'ticket';
+
+  const genderTag = s.genderEligibility.includes('Women') ? `<span class="tag gender">${s.genderEligibility}</span>` : '';
+
+  el.innerHTML = `
+    <div class="main">
+      <div class="name-row">
+        <div>
+          <h3>${s.name}</h3>
+          <div class="provider">${s.provider}</div>
+        </div>
+      </div>
+      <div class="tags">
+        <span class="tag category">${s.category}</span>
+        <span class="tag ${popularityTagClass(s.popularity)}">${s.popularity}</span>
+        ${genderTag}
+      </div>
+      <div class="fund-summary"><strong>${s.fundingType}.</strong> ${s.fundingSummary}</div>
+      <details class="elig">
+        <summary>Eligibility snapshot</summary>
+        <ul>${s.eligibility.map(e=>`<li>${e}</li>`).join('')}</ul>
+      </details>
+      <div class="card-footer">
+        <span class="source-note">Source: ${s.sourceName} &middot;
+          <span class="${s.sourceStatus === 'verified' ? 'verified' : 'partial'}">${s.sourceStatus === 'verified' ? 'verified' : 'partially verified'}</span>
+          &middot; checked ${s.sourceChecked}</span>
+        <a class="official-link" href="${s.officialUrl}" target="_blank" rel="noopener">Official page →</a>
+      </div>
+    </div>
+    <div class="stub">
+      <div class="badge-circle">${flagFor(s.destination)}</div>
+      <div class="stamp-label">Deadline</div>
+      <div class="deadline">${s.deadlineInfo}</div>
+    </div>
+  `;
+  return el;
+}
+
+function render(){
+  const filtered = SCHOLARSHIPS.filter(matches);
+  els.grid.innerHTML = '';
+  els.count.textContent = filtered.length;
+  els.empty.style.display = filtered.length ? 'none' : 'block';
+  filtered.forEach(s => els.grid.appendChild(renderCard(s)));
+}
+
+function buildVerifyLog(){
+  const rows = SCHOLARSHIPS.map(s => `
+    <tr>
+      <td>${s.name}</td>
+      <td>Funding amount &amp; current deadline window</td>
+      <td class="${s.sourceStatus==='verified' ? 'status-ok' : 'status-partial'}">${s.sourceStatus==='verified' ? '✅ Verified' : '⚠️ Partially verified'}</td>
+      <td>${s.sourceName}</td>
+      <td>Checked ${s.sourceChecked}${s.sourceStatus!=='verified' ? ' — exact dates vary by award type, confirm before quoting' : ''}</td>
+    </tr>
+  `).join('');
+  els.verifyBody.innerHTML = rows;
+}
+
+/* =========================================================================
+   FUTURE SUPABASE INTEGRATION NOTES (for the CRM build-out)
+   ---------------------------------------------------------------------
+   1. Move SCHOLARSHIPS into a `scholarships` table with the same field
+      shape used above (see column list in the comment before SCHOLARSHIPS).
+   2. Replace the SCHOLARSHIPS constant with an async fetch:
+        const { data } = await supabase.from('scholarships').select('*');
+      and call render() once data resolves.
+   3. Replace SAMPLE_LEADS / onLeadChange with a live lookup against the
+      `leads` table, scoped to the counsellor's branch (India/UK) and
+      filtered by permission the same way the Leads module already does.
+   4. Add a `matched_scholarships` join table if you want to let a
+      counsellor save specific scholarship matches against a lead record —
+      out of scope for this prototype but the id fields here are already
+      stable strings suitable as foreign keys.
+   ========================================================================= */
+
+init();
+</script>
+</body>
+</html>

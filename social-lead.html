@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Free Study Abroad Consultation — Step4Progress</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0D2137;
+  --navy2:#163352;
+  --navy3:#0A1929;
+  --gold:#C9A84C;
+  --gold2:#E8C96A;
+  --cream:#F8F7F4;
+  --ink:#1C1917;
+  --ink2:#44403C;
+  --ink3:#6B7280;
+  --line:#E5E7EB;
+  --green:#166534;
+  --light-green:#DCFCE7;
+  --r:10px;
+  --font-h:'Playfair Display',Georgia,serif;
+  --font-b:'Inter',system-ui,sans-serif;
+}
+html,body{min-height:100vh;font-family:var(--font-b);background:var(--cream);color:var(--ink)}
+
+/* ── HERO ── */
+.hero{
+  background:linear-gradient(160deg,var(--navy3) 0%,var(--navy) 55%,var(--navy2) 100%);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:40px 20px 60px;
+  position:relative;
+  overflow:hidden;
+}
+.hero::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:radial-gradient(ellipse 60% 50% at 25% 20%,rgba(201,168,76,.14) 0%,transparent 60%),
+             radial-gradient(ellipse 50% 60% at 85% 80%,rgba(255,255,255,.04) 0%,transparent 55%);
+  pointer-events:none;
+}
+
+.logo{
+  font-family:var(--font-h);
+  font-size:20px;
+  font-weight:700;
+  color:#fff;
+  letter-spacing:-.01em;
+  margin-bottom:36px;
+  position:relative;z-index:1;
+  animation:fadeIn .7s ease both;
+}
+.logo span{color:var(--gold2)}
+
+.card{
+  background:#fff;
+  border-radius:16px;
+  padding:36px 28px;
+  width:100%;max-width:420px;
+  box-shadow:0 24px 64px rgba(0,0,0,.25);
+  position:relative;z-index:1;
+  animation:fadeUp .6s ease .15s both;
+}
+
+.eyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;
+  color:var(--gold);
+  padding:6px 14px;border-radius:99px;
+  border:1px solid rgba(201,168,76,.35);
+  margin-bottom:16px;
+}
+.card h1{
+  font-family:var(--font-h);
+  font-size:26px;font-weight:700;
+  color:var(--navy);
+  line-height:1.25;
+  margin-bottom:10px;
+  letter-spacing:-.01em;
+}
+.card h1 span{color:var(--gold)}
+.card p{
+  font-size:13.5px;color:var(--ink3);
+  line-height:1.6;margin-bottom:26px;
+}
+
+/* ── FORM ── */
+.field{margin-bottom:15px}
+.field label{
+  display:block;
+  font-size:11px;font-weight:600;
+  color:var(--ink2);
+  text-transform:uppercase;letter-spacing:.05em;
+  margin-bottom:6px;
+}
+.field input,.field select{
+  width:100%;
+  padding:12px 14px;
+  border:1.5px solid var(--line);
+  border-radius:8px;
+  font-size:14.5px;
+  font-family:var(--font-b);
+  color:var(--ink);
+  background:var(--cream);
+  outline:none;
+  transition:border .15s,box-shadow .15s,background .15s;
+  -webkit-appearance:none;appearance:none;
+}
+.field input:focus,.field select:focus{
+  border-color:var(--navy);
+  box-shadow:0 0 0 3px rgba(13,33,55,.08);
+  background:#fff;
+}
+.field input::placeholder{color:#C4C9D0}
+.field select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 14px center;
+  padding-right:40px;cursor:pointer;
+}
+
+.btn{
+  width:100%;
+  padding:15px;
+  background:var(--navy);
+  color:#fff;
+  border:none;
+  border-radius:8px;
+  font-size:14.5px;font-weight:700;
+  font-family:var(--font-b);
+  cursor:pointer;
+  margin-top:6px;
+  transition:background .15s,transform .15s,box-shadow .15s;
+  letter-spacing:.02em;
+}
+.btn:hover:not(:disabled){background:var(--navy2);transform:translateY(-1px);box-shadow:0 8px 20px rgba(13,33,55,.28)}
+.btn:active:not(:disabled){transform:translateY(0)}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+
+.trust{
+  display:flex;align-items:center;justify-content:center;
+  gap:14px;flex-wrap:wrap;
+  margin-top:16px;
+  padding-top:16px;
+  border-top:1px solid var(--line);
+}
+.trust-item{
+  font-size:11px;color:var(--ink3);
+  display:flex;align-items:center;gap:4px;
+}
+
+/* ── SUCCESS ── */
+.success{
+  display:none;
+  text-align:center;
+  padding:36px 16px;
+}
+.success-ring{
+  width:72px;height:72px;
+  background:linear-gradient(135deg,var(--navy),var(--navy2));
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 18px;
+  font-size:30px;
+}
+.success h2{
+  font-family:var(--font-h);
+  font-size:21px;font-weight:700;
+  color:var(--navy);
+  margin-bottom:8px;
+}
+.success p{font-size:13px;color:var(--ink3);line-height:1.6;max-width:280px;margin:0 auto 18px}
+.success-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--navy);color:var(--gold2);
+  font-size:11px;font-weight:700;
+  padding:7px 16px;border-radius:99px;
+  letter-spacing:.04em;
+}
+
+/* ── BOTTOM ── */
+.bottom{
+  text-align:center;
+  margin-top:26px;
+  position:relative;z-index:1;
+  animation:fadeIn .8s ease .3s both;
+}
+.bottom a{
+  color:rgba(255,255,255,.45);
+  font-size:12px;text-decoration:none;
+}
+.bottom a:hover{color:var(--gold2)}
+
+.phone-link{
+  display:block;
+  text-align:center;
+  margin-top:12px;
+  font-size:12px;color:var(--ink3);
+}
+.phone-link a{color:var(--navy);font-weight:700;text-decoration:none}
+
+.error-msg{
+  font-size:11.5px;color:#DC2626;
+  margin-top:5px;display:none;
+}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+@media(max-width:440px){
+  .card{padding:28px 20px;border-radius:14px}
+  .card h1{font-size:22px}
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+
+  <div class="logo">Step4Progress <span>India</span></div>
+
+  <div class="card" id="form-card">
+    <div class="eyebrow">🎓 Free Consultation</div>
+    <h1>Study Abroad?<br>Let's make it <span>happen.</span></h1>
+    <p>Fill in your details — our expert counsellor will call you back within 24 hours. Completely free.</p>
+
+    <div class="field">
+      <label>Your name</label>
+      <input type="text" id="f-name" placeholder="Full name" autocomplete="name">
+      <div class="error-msg" id="err-name">Please enter your name</div>
+    </div>
+
+    <div class="field">
+      <label>Mobile number</label>
+      <input type="tel" id="f-mobile" placeholder="+91 98765 43210" autocomplete="tel">
+      <div class="error-msg" id="err-mobile">Please enter a valid mobile number</div>
+    </div>
+
+    <div class="field">
+      <label>Current city</label>
+      <input type="text" id="f-city" placeholder="e.g. Madurai, Chennai…" autocomplete="address-level2">
+    </div>
+
+    <div class="field">
+      <label>Your country</label>
+      <select id="f-nationality">
+        <option value="">Select your country</option>
+        <option>India</option>
+        <option>UK</option>
+        <option>Pakistan</option>
+        <option>Bangladesh</option>
+        <option>Other</option>
+      </select>
+      <div class="error-msg" id="err-nationality">Please select your country</div>
+    </div>
+
+    <div class="field">
+      <label>Where do you want to study?</label>
+      <select id="f-dest">
+        <option value="">Select a country</option>
+        <option>UK</option>
+        <option>Canada</option>
+        <option>Australia</option>
+        <option>USA</option>
+        <option>Germany</option>
+        <option>France</option>
+        <option>Ireland</option>
+        <option>Singapore</option>
+        <option>UAE</option>
+        <option>New Zealand</option>
+        <option>Malaysia</option>
+        <option>Malta</option>
+        <option>Europe - Other</option>
+        <option>Not decided yet</option>
+      </select>
+    </div>
+
+    <div class="error-msg" id="err-submit" style="margin-bottom:8px;font-size:13px">Something went wrong. Please try again or call us directly on +91 915 915 8881.</div>
+
+    <button class="btn" id="submit-btn" onclick="submitLead()">
+      <span id="btn-text">Get My Free Callback →</span>
+    </button>
+
+    <div class="trust">
+      <div class="trust-item">✅ 100% Free</div>
+      <div class="trust-item">📞 Call within 24hrs</div>
+      <div class="trust-item">🔒 Your data is safe</div>
+    </div>
+
+    <div class="phone-link">
+      Prefer to call? <a href="tel:+919159158881">+91 915 915 8881</a>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="card success" id="success-card">
+    <div class="success-ring">🎉</div>
+    <h2>You're all set!</h2>
+    <p>Thank you! Our counsellor will call you within 24 hours for your free consultation session.</p>
+    <div class="success-badge">✅ Callback confirmed</div>
+    <div class="phone-link" style="margin-top:20px">
+      Can't wait? Call us now: <a href="tel:+919159158881">+91 915 915 8881</a>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <a href="https://step4progress.com">step4progress.com</a>
+  </div>
+
+</div>
+
+<script>
+// Unregister CRM service worker so it doesn't intercept our fetch
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(reg => reg.unregister());
+  });
+}
+
+const EDGE = 'https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/tally-webhook';
+
+// Optional tracking: reads ?src=xxx from the URL to label where the lead came from.
+// If no ?src= is present (e.g. old links already in circulation), falls back to
+// "Social Media" exactly as before — nothing breaks for existing links.
+const SOURCE_LABELS = {
+  'ig_bio': 'Instagram Bio Link',
+  'ig_ad': 'Instagram Ad',
+  'fb_ad': 'Facebook Ad',
+  'fb_bio': 'Facebook Page Link',
+  'ig_story': 'Instagram Story',
+  'whatsapp': 'WhatsApp Share',
+};
+
+function getSourceLabel() {
+  const params = new URLSearchParams(window.location.search);
+  const tag = params.get('src');
+  return SOURCE_LABELS[tag] || 'Social Media';
+}
+
+const sourceLabel = getSourceLabel();
+
+async function submitLead() {
+  const name = document.getElementById('f-name').value.trim();
+  const mobile = document.getElementById('f-mobile').value.trim();
+  const city = document.getElementById('f-city').value.trim();
+  const dest = document.getElementById('f-dest').value;
+  const nationality = document.getElementById('f-nationality').value;
+
+  // Validate
+  let valid = true;
+  document.getElementById('err-name').style.display = name ? 'none' : 'block';
+  document.getElementById('err-mobile').style.display = mobile.length >= 7 ? 'none' : 'block';
+  document.getElementById('err-nationality').style.display = nationality ? 'none' : 'block';
+  document.getElementById('err-submit').style.display = 'none';
+  if (!name) valid = false;
+  if (mobile.length < 7) valid = false;
+  if (!nationality) valid = false;
+  if (!valid) return;
+
+  const btn = document.getElementById('submit-btn');
+  document.getElementById('btn-text').textContent = 'Submitting…';
+  btn.disabled = true;
+
+  const payload = {
+    data: {
+      fields: [
+        { label: 'Full Name', value: name },
+        { label: 'Mobile Number', value: mobile },
+        { label: 'City Native', value: city },
+        { label: 'Destination Country', value: dest || 'Not decided yet' },
+        { label: 'Nationality', value: nationality },
+        { label: 'How Did You Find Us', value: sourceLabel },
+        { label: 'Source', value: sourceLabel }
+      ]
+    }
+  };
+
+  try {
+    const res = await fetch(EDGE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      cache: 'no-store'
+    });
+    if (!res.ok) throw new Error('Server error ' + res.status);
+    const data = await res.json();
+    console.log('Lead created:', data);
+
+    // Show success
+    document.getElementById('form-card').style.display = 'none';
+    document.getElementById('success-card').style.display = 'block';
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById('err-submit').style.display = 'block';
+    document.getElementById('btn-text').textContent = 'Get My Free Callback →';
+    btn.disabled = false;
+  }
+}
+
+// Enter key submits
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitLead();
+});
+</script>
+</body>
+</html>

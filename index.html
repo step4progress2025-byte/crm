@@ -564,6 +564,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             </select>
             <select id="ls-src" onchange="renderLeads()"><option value="">All sources</option><option>Meta Ads</option><option>Google Ads</option><option>Instagram</option><option>WhatsApp</option><option>Walk-in</option><option>Referral</option><option>Website</option><option>LinkedIn</option><option>YouTube</option><option>Event / Expo</option><option>Website Enquiry</option><option>Website Tools Enquiry</option><option>Meta Enquiry</option><option>Other</option></select>
             <select id="ls-counsel" onchange="renderLeads()"><option value="">All counsellors</option></select>
+            <select id="ls-assign" onchange="renderLeads()"><option value="">Assigned + Unassigned</option><option value="assigned">Assigned only</option><option value="unassigned">Unassigned only</option></select>
             <input type="date" id="ls-from" onchange="renderLeads()">
             <input type="date" id="ls-to" onchange="renderLeads()">
           </div>
@@ -575,7 +576,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <table class="tbl">
               <thead><tr>
                 <th>#</th><th>ID</th><th>Name</th><th>Mobile</th><th>Program</th>
-                <th>Destination</th><th>Status</th><th>Priority</th><th>Counsellor</th>
+                <th>Destination</th><th>Captured</th><th>Status</th><th>Priority</th><th>Counsellor</th>
               </tr></thead>
               <tbody id="lead-tbody"></tbody>
             </table>
@@ -786,6 +787,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
                 <button class="btn btn-p" onclick="saveReportNotes()"><i class="ti ti-device-floppy"></i>Save note</button>
                 <span id="rpt-notes-meta" style="font-size:11px;color:var(--ink3);font-style:italic"></span>
               </div>
+            </div>
+            <div class="rpt-card" style="grid-column:1/-1">
+              <div class="rpt-card-h">🕐 Activity log — who did what, and when (this report's scope)</div>
+              <div id="rpt-activity-log" style="max-height:400px;overflow-y:auto"></div>
             </div>
           </div>
         </div>
@@ -1122,6 +1127,36 @@ What would you like help with today?</div>
   </div>
 </div>
 
+<!-- Reminder Modal — one wide dialog, everything fillable at once -->
+<div class="mover" id="modal-reminder">
+  <div class="modal" style="width:560px">
+    <div class="mhead"><span class="mtitle">Add reminder</span><button class="mclose" onclick="closeModal('modal-reminder')">×</button></div>
+    <div class="ff full" style="margin-bottom:14px">
+      <label>Comments</label>
+      <textarea id="rem-comments" placeholder="Why are you leaving this note? What's the context?" style="width:100%;min-height:80px;padding:10px;border:1px solid var(--line);border-radius:var(--r);font-family:var(--font-b);font-size:13px;resize:vertical"></textarea>
+    </div>
+    <div class="ff full" style="margin-bottom:14px">
+      <label>What do you want to do?</label>
+      <div style="display:flex;gap:20px;padding:10px 0">
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:500;cursor:pointer">
+          <input type="radio" name="rem-mode" value="comment" checked onchange="toggleReminderMode()"> Comment only — don't follow up
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:500;cursor:pointer">
+          <input type="radio" name="rem-mode" value="reminder" onchange="toggleReminderMode()"> Set a reminder pop-up
+        </label>
+      </div>
+    </div>
+    <div class="fg" id="rem-datetime-wrap" style="display:none">
+      <div class="ff"><label>Reminder date</label><input type="date" id="rem-date"></div>
+      <div class="ff"><label>Reminder time</label><input type="time" id="rem-time" value="09:00"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeModal('modal-reminder')">Cancel</button>
+      <button class="btn btn-p" id="save-rem-btn" onclick="saveReminderModal()"><i class="ti ti-check"></i>Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Invite User Modal -->
 <div class="mover" id="modal-invite">
   <div class="modal" style="width:460px">
@@ -1326,7 +1361,10 @@ What would you like help with today?</div>
   </div>
 </div>
 
-<div id="events-widget" style="position:fixed;bottom:80px;right:18px;width:260px;background:var(--pine);border-radius:12px;padding:12px 14px;z-index:400;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.2)"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"> <span style="color:#fff;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Upcoming events</span> <span onclick="document.getElementById('events-widget').style.display='none'" style="color:rgba(255,255,255,0.6);cursor:pointer;font-size:18px;line-height:1">&times;</span> </div> <div id="events-ticker" style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.6"></div> </div> <div id="events-bell" onclick="toggleEventsWidget()" style="position:fixed;bottom:24px;right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> <span id="events-badge" style="position:absolute;top:-2px;right:-2px;background:#F1239;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div class="toast" id="toast"></div>
+<div id="events-widget" style="position:fixed;bottom:80px;right:18px;width:260px;background:var(--pine);border-radius:12px;padding:12px 14px;z-index:400;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.2)"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"> <span style="color:#fff;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Upcoming events</span> <span onclick="document.getElementById('events-widget').style.display='none'" style="color:rgba(255,255,255,0.6);cursor:pointer;font-size:18px;line-height:1">&times;</span> </div> <div id="events-ticker" style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.6"></div> </div> <div id="events-bell" onclick="toggleEventsWidget()" style="position:fixed;bottom:24px;right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> <span id="events-badge" style="position:absolute;top:-2px;right:-2px;background:#F1239;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="urgent-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,20,20,.6);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
+  <div id="urgent-popup-card" style="background:#fff;border-radius:18px;padding:0;max-width:460px;width:92%;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden"></div>
+</div>
+<div class="toast" id="toast"></div>
 
 <script>
 // ── SUPABASE INIT ────────────────────────────────────────────────
@@ -1948,18 +1986,20 @@ function renderLeads(){
   const counsel=document.getElementById('ls-counsel').value;
   const from=document.getElementById('ls-from').value;
   const to=document.getElementById('ls-to').value;
-  const f=leads.filter(l=>(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!counsel||l.counsellor===counsel)&&(!from||l.created_at.substring(0,10)>=from)&&(!to||l.created_at.substring(0,10)<=to)&&(!q||[l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q))));
+  const assignF=document.getElementById('ls-assign').value;
+  const f=leads.filter(l=>(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!counsel||l.counsellor===counsel)&&(!from||l.created_at.substring(0,10)>=from)&&(!to||l.created_at.substring(0,10)<=to)&&(!assignF||(assignF==='assigned'?!!l.counsellor:!l.counsellor))&&(!q||[l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q))));
   const empty=leads.length===0;
   document.getElementById('leads-empty').style.display=empty?'flex':'none';
   document.getElementById('leads-content').style.display=empty?'none':'block';
   if(empty)return;
   document.getElementById('lcount').textContent=`Showing ${f.length} of ${leads.length} leads`;
   const tb=document.getElementById('lead-tbody');tb.innerHTML='';
-  if(!f.length){tb.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:36px;color:var(--ink3);font-style:italic">No leads match your filters.</td></tr>`;return;}
+  if(!f.length){tb.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:36px;color:var(--ink3);font-style:italic">No leads match your filters.</td></tr>`;return;}
   f.forEach((l,i)=>{
     const[abg,atx]=AVC[i%AVC.length];
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
     const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
+    const capturedStr=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
     tb.innerHTML+=`<tr onclick="openLeadDetail('${l.id}')">
       <td style="font-size:12px;color:var(--ink3);font-weight:600">${i+1}</td>
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
@@ -1967,6 +2007,7 @@ function renderLeads(){
       <td style="font-size:12px;color:var(--ink3)">${esc(l.mobile||'—')}</td>
       <td style="font-size:12px">${esc(l.program||'—')}</td>
       <td style="font-size:12px">${esc(l.destination||'—')}</td>
+      <td style="font-size:11px;color:var(--ink3);white-space:nowrap">${capturedStr}</td>
       <td><span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span></td>
       <td><span class="pill" style="background:${ps.bg};color:${ps.tx}">${l.priority||'—'}</span></td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderCounsellorCell(l)}</td>
@@ -2183,10 +2224,10 @@ async function deleteTaskFS(id){
   loadTasksFS(curId);loadMyTasks();toast('Task deleted.');
 }
 
-async function loadRemindersFS(leadId){const{data,error}=await sb.from('reminders').select('*').eq('lead_id',leadId).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true});const el=document.getElementById('ld-reminder-list');if(!el)return;if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No reminders set.</div>';return;}el.innerHTML=data.map(r=>{const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';const tm=r.reminder_time?r.reminder_time.substring(0,5):'';return`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${r.done?';opacity:.5':''}"><input type="checkbox" ${r.done?'checked':''} onchange="toggleReminderFS('${r.id}',this.checked)" style="margin-top:3px;cursor:pointer"><div style="flex:1"><div style="font-size:13px;font-weight:600${r.done?';text-decoration:line-through':''}">${dt}${tm?' · '+tm:''}</div>${r.notes?`<div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(r.notes)}</div>`:''}</div><button onclick="deleteReminderFS('${r.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`;}).join('');}
+async function loadRemindersFS(leadId){const{data,error}=await sb.from('reminders').select('*').eq('lead_id',leadId).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true});const el=document.getElementById('ld-reminder-list');if(!el)return;if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No reminders set.</div>';return;}el.innerHTML=data.map(r=>{const isComment=!r.reminder_date;const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';const tm=r.reminder_time?r.reminder_time.substring(0,5):'';return`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${r.done?';opacity:.5':''}"><input type="checkbox" ${r.done?'checked':''} onchange="toggleReminderFS('${r.id}',this.checked)" style="margin-top:3px;cursor:pointer"><div style="flex:1">${isComment?`<div style="font-size:11px;color:var(--ink3);font-style:italic;margin-bottom:2px"><i class="ti ti-message-circle" style="font-size:12px"></i> Comment only</div>`:`<div style="font-size:13px;font-weight:600${r.done?';text-decoration:line-through':''}">${dt}${tm?' \u00b7 '+tm:''}</div>`}${r.notes?`<div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(r.notes)}</div>`:''}</div><button onclick="deleteReminderFS('${r.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">\u00d7</button></div>`;}).join('');}
 async function toggleReminderFS(id,checked){await sb.from('reminders').update({done:checked}).eq('id',id);loadRemindersFS(curId);loadDashReminders();toast(checked?'✅ Done':'↩ Reopened');}
 async function deleteReminderFS(id){if(!confirm('Delete this reminder?'))return;await sb.from('reminders').delete().eq('id',id);loadRemindersFS(curId);loadDashReminders();toast('Reminder deleted.');}
-function openAddReminderFS(){if(!curId)return;const date=prompt('Reminder date (YYYY-MM-DD):',new Date().toISOString().split('T')[0]);if(!date)return;const time=prompt('Reminder time (HH:MM, 24hr):','09:00');if(!time)return;const notes=prompt('Notes (optional):','')||'';sb.from('reminders').insert([{lead_id:curId,reminder_date:date,reminder_time:time,notes}]).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadRemindersFS(curId);loadDashReminders();toast('Reminder added!');});}
+function openAddReminderFS(){openReminderModal();}
 async function loadUniAppsFS(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No universities added yet.</div>';return;}el.innerHTML=data.map(u=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${u.attachment_url?`<div style="font-size:11px;margin-top:2px"><a href="${u.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(u.attachment_filename||'View attachment')}</a></div>`:''}</div><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniAppFS('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`).join('');}
 function openAddUniAppFS(){openUniversityModal();}
 
@@ -2240,6 +2281,43 @@ async function saveUniversityApp(){
   toast('University added!');
 }
 async function deleteUniAppFS(id){if(!confirm('Remove this university?'))return;await sb.from('university_applications').delete().eq('id',id);loadUniAppsFS(curId);toast('Removed.');}
+
+// ── Reminder modal — comments always, date+time only if "Set reminder" chosen ──
+function openReminderModal(){
+  if(!curId){toast('Open a lead first.');return;}
+  document.getElementById('rem-comments').value='';
+  document.querySelector('input[name="rem-mode"][value="comment"]').checked=true;
+  document.getElementById('rem-date').value=new Date().toISOString().substring(0,10);
+  document.getElementById('rem-time').value='09:00';
+  toggleReminderMode();
+  document.getElementById('modal-reminder').classList.add('open');
+}
+function toggleReminderMode(){
+  const isReminder=document.querySelector('input[name="rem-mode"]:checked')?.value==='reminder';
+  document.getElementById('rem-datetime-wrap').style.display=isReminder?'grid':'none';
+}
+async function saveReminderModal(){
+  if(!curId){toast('No lead selected.');return;}
+  const isReminder=document.querySelector('input[name="rem-mode"]:checked')?.value==='reminder';
+  const notes=document.getElementById('rem-comments').value.trim();
+  let reminder_date=null,reminder_time=null;
+  if(isReminder){
+    reminder_date=document.getElementById('rem-date').value;
+    reminder_time=document.getElementById('rem-time').value;
+    if(!reminder_date){toast('Please pick a date, or switch to "Comment only".');return;}
+  }
+  if(!notes&&!isReminder){toast('Please add a comment, or switch to "Set a reminder pop-up".');return;}
+  const btn=document.getElementById('save-rem-btn');
+  btn.disabled=true;btn.textContent='Saving…';
+  const{error}=await sb.from('reminders').insert([{lead_id:curId,reminder_date,reminder_time,notes}]);
+  btn.disabled=false;btn.textContent='Save';
+  if(error){toast('Error: '+error.message);return;}
+  closeModal('modal-reminder');
+  loadReminders(curId);
+  loadRemindersFS(curId);
+  loadDashReminders();
+  toast(isReminder?'Reminder set!':'Comment added!');
+}
 
 async function updateStatus(){
   if(curId) broadcastStartEditing(curId);
@@ -2470,6 +2548,21 @@ async function saveLead(){
     }
     if(existing&&existing.status!==data.status){
       logEvents.push(['status_change',`Status: ${existing.status} → ${data.status}`]);
+    }
+    // Every other meaningful field edit gets its own logged entry too —
+    // "whatever the changes, every change should get stored" — not just
+    // status and assignment.
+    if(existing){
+      const trackedFields={name:'Name',mobile:'Mobile',email:'Email',city:'City',
+        program:'Program',destination:'Destination',priority:'Priority',
+        next_followup:'Next follow-up',visa_deadline:'Visa deadline',
+        budget_range:'Budget',ielts_status:'IELTS status',qualification:'Qualification',
+        intake_month:'Intake month',office:'Office',country:'Country'};
+      Object.entries(trackedFields).forEach(([key,label])=>{
+        if((existing[key]||'')!==(data[key]||'')){
+          logEvents.push(['field_edit',`${label}: ${existing[key]||'—'} → ${data[key]||'—'}`]);
+        }
+      });
     }
     ({error}=await sb.from('leads').update(data).eq('id',curId));
     if(!error){const l=leads.find(x=>x.id===curId);if(l)Object.assign(l,data);}
@@ -3064,6 +3157,7 @@ async function loadReport(){
   renderLeaderboard(scoped);
   renderIntakeChart(scoped);
   await loadReportNotes();
+  await loadGlobalActivityLog(scoped,start,end);
 }
 
 function renderFunnelChart(scoped){
@@ -3149,6 +3243,35 @@ async function saveReportNotes(){
   if(error){toast('Error saving note: '+error.message);return;}
   toast('Note saved.');
   loadReportNotes();
+}
+
+// ── Global Activity Log (Reports tab) ───────────────────────────────
+// Every lead's activity trail, combined and filterable — scoped to
+// exactly the same country/date range already selected for this report.
+// This is the audit-trail view: who captured each lead, who it was
+// assigned/reassigned to, and every status change, all in one place.
+async function loadGlobalActivityLog(scopedLeads,start,end){
+  const el=document.getElementById('rpt-activity-log');
+  if(!el)return;
+  const leadIds=scopedLeads.map(l=>l.id);
+  if(!leadIds.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">No leads in this scope.</div>';return;}
+  const leadNameById={};scopedLeads.forEach(l=>{leadNameById[l.id]=l.name;});
+  const{data,error}=await sb.from('activity_log').select('*')
+    .in('lead_id',leadIds)
+    .gte('created_at',start+'T00:00:00')
+    .lte('created_at',end+'T23:59:59')
+    .order('created_at',{ascending:false})
+    .limit(200);
+  if(error){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load activity log — has activity_log been created in Supabase yet?</div>';return;}
+  if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">No activity recorded in this period yet.</div>';return;}
+  const icons={created:'✨',imported:'📥',status_change:'🔄',reassigned:'👤',field_edit:'✏️'};
+  el.innerHTML=data.map(e=>`<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;cursor:pointer" onclick="openLeadDetail('${e.lead_id}')">
+    <span>${icons[e.event_type]||'•'}</span>
+    <div style="flex:1">
+      <div><b>${esc(leadNameById[e.lead_id]||'Unknown lead')}</b> — ${esc(e.detail||e.event_type)}</div>
+      <div style="font-size:11px;color:var(--ink3)">${esc(e.actor_name||'System')} · ${new Date(e.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+    </div>
+  </div>`).join('');
 }
   let uniApps=[];async function loadUniApps(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data)uniApps=data;renderUniApps();}function renderUniApps(){const el=document.getElementById('d-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};el.innerHTML=uniApps.length?uniApps.map(u=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${u.attachment_url?`<div style="font-size:11px;margin-top:2px"><a href="${u.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(u.attachment_filename||'View attachment')}</a></div>`:''}</div><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniApp('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No universities added yet.</div>';}
 function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){if(!confirm('Remove this university?'))return;await sb.from('university_applications').delete().eq('id',id);loadUniApps(curId);toast('Removed.');}
@@ -3238,12 +3361,13 @@ function renderReminders(list){
   const el=document.getElementById('d-reminder-list');
   if(!el)return;
   el.innerHTML=list.length?list.map(r=>{
-    const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
+    const isComment=!r.reminder_date;
+    const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';
     const tm=r.reminder_time?r.reminder_time.substring(0,5):'';
     return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${r.done?';opacity:.5':''}">
       <input type="checkbox" ${r.done?'checked':''} onchange="toggleReminder('${r.id}',this.checked)" style="margin-top:3px;cursor:pointer">
       <div style="flex:1">
-        <div style="font-size:13px;font-weight:600${r.done?';text-decoration:line-through':''}">${dt}${tm?' · '+tm:''}</div>
+        ${isComment?`<div style="font-size:11px;color:var(--ink3);font-style:italic;margin-bottom:2px"><i class="ti ti-message-circle" style="font-size:12px"></i> Comment only</div>`:`<div style="font-size:13px;font-weight:600${r.done?';text-decoration:line-through':''}">${dt}${tm?' · '+tm:''}</div>`}
         ${r.notes?`<div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(r.notes)}</div>`:''}
       </div>
       <button onclick="deleteReminder('${r.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button>
@@ -3274,7 +3398,7 @@ async function loadActivityTimeline(leadId,statElId,listElId){
   } else {
     statEl.textContent='';
   }
-  const icons={created:'✨',imported:'📥',status_change:'🔄',reassigned:'👤'};
+  const icons={created:'✨',imported:'📥',status_change:'🔄',reassigned:'👤',field_edit:'✏️'};
   listEl.innerHTML=data.map(e=>`<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:12px">
     <span>${icons[e.event_type]||'•'}</span>
     <div style="flex:1">
@@ -3325,18 +3449,7 @@ async function deleteTask(id){
   loadTasks(curId);loadMyTasks();toast('Task deleted.');
 }
 function openAddReminder(){
-  if(!curId)return;
-  const date=prompt('Reminder date (YYYY-MM-DD):',new Date().toISOString().split('T')[0]);
-  if(!date)return;
-  const time=prompt('Reminder time (HH:MM, 24hr):','09:00');
-  if(!time)return;
-  const notes=prompt('Notes (optional):','')||'';
-  sb.from('reminders').insert([{lead_id:curId,reminder_date:date,reminder_time:time,notes}]).then(({error})=>{
-    if(error){toast('Error: '+error.message);return;}
-    loadReminders(curId);
-    loadDashReminders();
-    toast('Reminder added!');
-  });
+  openReminderModal();
 }
 async function toggleReminder(id,checked){
   await sb.from('reminders').update({done:checked}).eq('id',id);
@@ -3458,16 +3571,51 @@ function stopNotificationEngine(){
 
 // A more attention-grabbing popup than the normal toast() — stays up longer,
 // colour signals urgency, click jumps straight to the lead.
+// ── Centered urgent popup, with a queue so escalations never collide ──
+// Bigger, dead-centre, dimmed backdrop — designed to actually be noticed,
+// not just a small corner banner easy to miss.
+let urgentPopupQueue=[];
+let urgentPopupAction=null;
+function queueUrgentPopup(html,onView){
+  urgentPopupQueue.push({html,onView});
+  showNextUrgentPopup();
+}
+function showNextUrgentPopup(){
+  const overlay=document.getElementById('urgent-popup-overlay');
+  if(!overlay||overlay.style.display==='flex')return; // one at a time
+  if(!urgentPopupQueue.length)return;
+  const item=urgentPopupQueue.shift();
+  document.getElementById('urgent-popup-card').innerHTML=item.html;
+  urgentPopupAction=item.onView;
+  overlay.style.display='flex';
+}
+function actOnUrgentPopup(){
+  if(urgentPopupAction)urgentPopupAction();
+  dismissUrgentPopup();
+}
+function dismissUrgentPopup(){
+  document.getElementById('urgent-popup-overlay').style.display='none';
+  urgentPopupAction=null;
+  setTimeout(showNextUrgentPopup,300); // show the next queued one, if any
+}
+
 function showUrgentPopup(lead,level){
   const isManagerLevel=level==='manager';
-  const el=document.createElement('div');
-  el.style.cssText=`position:fixed;top:${16+Math.random()*4}px;right:24px;background:${isManagerLevel?'var(--rose)':'var(--gold)'};color:#fff;font-size:13px;padding:14px 18px;border-radius:var(--r);z-index:500;box-shadow:var(--shm);cursor:pointer;max-width:320px;line-height:1.5`;
-  el.innerHTML=isManagerLevel
-    ? `🚨 <b>${esc(lead.name)}</b> still not contacted after 15+ minutes — assigned to ${esc(lead.counsellor||'no one')}. Click to view.`
-    : `⏰ <b>${esc(lead.name)}</b> hasn't been contacted in 10+ minutes. Click to view.`;
-  el.onclick=()=>{el.remove();openLeadDetail(lead.id);};
-  document.body.appendChild(el);
-  setTimeout(()=>el?.remove(),12000);
+  const color=isManagerLevel?'var(--rose)':'var(--gold)';
+  const html=`
+    <div style="background:${color};padding:26px 28px 20px;text-align:center">
+      <div style="font-size:44px;line-height:1">${isManagerLevel?'🚨':'⏰'}</div>
+      <div style="color:#fff;font-weight:700;font-size:18px;margin-top:8px">${isManagerLevel?'Still not contacted after 15+ minutes':'No contact in 10+ minutes'}</div>
+    </div>
+    <div style="padding:24px 28px 28px;text-align:center">
+      <div style="font-family:var(--font-h);font-size:22px;font-weight:600;color:var(--ink);margin-bottom:6px">${esc(lead.name)}</div>
+      <div style="font-size:13px;color:var(--ink3);margin-bottom:22px">${isManagerLevel?`Assigned to ${esc(lead.counsellor||'no one')} — still sitting in New Enquiry.`:'This lead is still in New Enquiry and needs a first touch.'}</div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button onclick="dismissUrgentPopup()" style="padding:10px 22px;border:1px solid var(--line2);background:var(--paper);color:var(--ink2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Dismiss</button>
+        <button onclick="actOnUrgentPopup()" style="padding:10px 22px;border:none;background:var(--pine);color:#fff;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">View lead →</button>
+      </div>
+    </div>`;
+  queueUrgentPopup(html,()=>openLeadDetail(lead.id));
 }
 
 function checkEscalations(){
@@ -3521,12 +3669,20 @@ function checkDailyFollowupPopup(){
   );
   localStorage.setItem(shownKey,'1'); // mark shown regardless, even if zero — don't re-check all day
   if(!myFollowups.length)return;
-  const el=document.createElement('div');
-  el.style.cssText='position:fixed;top:16px;right:24px;background:var(--pine);color:#fff;font-size:13px;padding:14px 18px;border-radius:var(--r);z-index:500;box-shadow:var(--shm);cursor:pointer;max-width:340px;line-height:1.5';
-  el.innerHTML=`📅 <b>${myFollowups.length} follow-up${myFollowups.length!==1?'s':''} due today</b><br>${myFollowups.slice(0,3).map(l=>esc(l.name)).join(', ')}${myFollowups.length>3?'…':''} — click to view`;
-  el.onclick=()=>{el.remove();nav('followup',document.querySelector('.ni[data-nav="followup"]'));};
-  document.body.appendChild(el);
-  setTimeout(()=>el?.remove(),15000);
+  const names=myFollowups.slice(0,4).map(l=>esc(l.name)).join(', ')+(myFollowups.length>4?'…':'');
+  const html=`
+    <div style="background:var(--pine);padding:26px 28px 20px;text-align:center">
+      <div style="font-size:44px;line-height:1">📅</div>
+      <div style="color:#fff;font-weight:700;font-size:18px;margin-top:8px">${myFollowups.length} follow-up${myFollowups.length!==1?'s':''} due today</div>
+    </div>
+    <div style="padding:24px 28px 28px;text-align:center">
+      <div style="font-size:14px;color:var(--ink);margin-bottom:22px;line-height:1.6">${names}</div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button onclick="dismissUrgentPopup()" style="padding:10px 22px;border:1px solid var(--line2);background:var(--paper);color:var(--ink2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Dismiss</button>
+        <button onclick="actOnUrgentPopup()" style="padding:10px 22px;border:none;background:var(--pine);color:#fff;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">View follow-ups →</button>
+      </div>
+    </div>`;
+  queueUrgentPopup(html,()=>nav('followup',document.querySelector('.ni[data-nav="followup"]')));
 }
 
 function checkNoActivity(){const now=Date.now();const stale=leads.filter(l=>['New Enquiry','Contacted','Counselling Done'].includes(l.status)&&l.updated_at&&(now-new Date(l.updated_at).getTime())>2*86400000);const nb=document.getElementById('nb-fu');if(stale.length>0){nb.classList.add('hot');nb.textContent=stale.length;const existing=document.getElementById('stale-toast');if(!existing){const t=document.createElement('div');t.id='stale-toast';t.style.cssText='position:fixed;top:16px;right:24px;background:var(--ember);color:#fff;font-size:13px;padding:10px 18px;border-radius:var(--r);z-index:400;box-shadow:var(--shm);cursor:pointer';t.textContent=`⚠️ ${stale.length} lead${stale.length>1?'s':''} with no activity for 2+ days`;t.onclick=()=>{t.remove();nav('followup',document.querySelector('.ni[data-nav="followup"]'));};document.body.appendChild(t);setTimeout(()=>t?.remove(),8000);}}}

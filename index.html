@@ -480,25 +480,25 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <section id="sc-dashboard" class="screen active">
         <div id="dash-scope-note" style="font-size:11.5px;color:var(--ink3);margin-bottom:10px;font-style:italic"></div>
         <div class="kpi-row">
-          <div class="kpi"><div class="kpi-l">Total leads</div><div class="kpi-v kv-p" id="k-tot">—</div></div>
-          <div class="kpi"><div class="kpi-l">Enrolled</div><div class="kpi-v kv-t" id="k-enr">—</div></div>
-          <div class="kpi"><div class="kpi-l">Active pipeline</div><div class="kpi-v kv-o" id="k-act">—</div></div>
-          <div class="kpi"><div class="kpi-l">This month</div><div class="kpi-v kv-p" id="k-mon">—</div></div>
-          <div class="kpi"><div class="kpi-l">Offer rate %</div><div class="kpi-v kv-g" id="k-offer">—</div></div>
+          <div class="kpi" onclick="kpiNav('total')" style="cursor:pointer"><div class="kpi-l">Total leads</div><div class="kpi-v kv-p" id="k-tot">—</div></div>
+          <div class="kpi" onclick="kpiNav('enrolled')" style="cursor:pointer"><div class="kpi-l">Enrolled</div><div class="kpi-v kv-t" id="k-enr">—</div></div>
+          <div class="kpi" onclick="kpiNav('active')" style="cursor:pointer"><div class="kpi-l">Active pipeline</div><div class="kpi-v kv-o" id="k-act">—</div></div>
+          <div class="kpi" onclick="kpiNav('month')" style="cursor:pointer"><div class="kpi-l">This month</div><div class="kpi-v kv-p" id="k-mon">—</div></div>
+          <div class="kpi" onclick="kpiNav('offer')" style="cursor:pointer"><div class="kpi-l">Offer rate %</div><div class="kpi-v kv-g" id="k-offer">—</div></div>
         </div>
         <div class="kpi-row" style="margin-top:-10px">
-          <div class="kpi"><div class="kpi-l">Visa success %</div><div class="kpi-v kv-g" id="k-visa">—</div></div>
-          <div class="kpi"><div class="kpi-l">Deposit conv. %</div><div class="kpi-v kv-t" id="k-dep">—</div></div>
-          <div class="kpi"><div class="kpi-l">Fees paid</div><div class="kpi-v kv-g" id="k-fee">—</div></div>
-          <div class="kpi"><div class="kpi-l">This week</div><div class="kpi-v kv-p" id="k-week">—</div></div>
-          <div class="kpi"><div class="kpi-l">Dropped</div><div class="kpi-v kv-r" id="k-drop">—</div></div>
+          <div class="kpi" onclick="kpiNav('visa')" style="cursor:pointer"><div class="kpi-l">Visa success %</div><div class="kpi-v kv-g" id="k-visa">—</div></div>
+          <div class="kpi" onclick="kpiNav('deposit')" style="cursor:pointer"><div class="kpi-l">Deposit conv. %</div><div class="kpi-v kv-t" id="k-dep">—</div></div>
+          <div class="kpi" onclick="kpiNav('fees')" style="cursor:pointer"><div class="kpi-l">Fees paid</div><div class="kpi-v kv-g" id="k-fee">—</div></div>
+          <div class="kpi" onclick="kpiNav('week')" style="cursor:pointer"><div class="kpi-l">This week</div><div class="kpi-v kv-p" id="k-week">—</div></div>
+          <div class="kpi" onclick="kpiNav('dropped')" style="cursor:pointer"><div class="kpi-l">Dropped</div><div class="kpi-v kv-r" id="k-drop">—</div></div>
         </div>
         <div class="kpi-row" style="margin-top:-10px" id="kpi-row-exec">
-          <div class="kpi"><div class="kpi-l">Leads today</div><div class="kpi-v kv-p" id="k-today">—</div></div>
-          <div class="kpi"><div class="kpi-l">Applications submitted</div><div class="kpi-v kv-t" id="k-apps">—</div></div>
-          <div class="kpi" id="k-revenue-tile"><div class="kpi-l">Revenue pipeline</div><div class="kpi-v kv-g" id="k-revenue">—</div></div>
-          <div class="kpi" id="k-outstanding-tile"><div class="kpi-l">Commission outstanding</div><div class="kpi-v kv-o" id="k-outstanding">—</div></div>
-          <div class="kpi"><div class="kpi-l">Lead leakage %</div><div class="kpi-v kv-r" id="k-leakage">—</div></div>
+          <div class="kpi" onclick="kpiNav('today')" style="cursor:pointer"><div class="kpi-l">Leads today</div><div class="kpi-v kv-p" id="k-today">—</div></div>
+          <div class="kpi" onclick="kpiNav('apps')" style="cursor:pointer"><div class="kpi-l">Applications submitted</div><div class="kpi-v kv-t" id="k-apps">—</div></div>
+          <div class="kpi" id="k-revenue-tile" onclick="kpiNav('revenue')" style="cursor:pointer"><div class="kpi-l">Revenue pipeline</div><div class="kpi-v kv-g" id="k-revenue">—</div></div>
+          <div class="kpi" id="k-outstanding-tile" onclick="kpiNav('outstanding')" style="cursor:pointer"><div class="kpi-l">Commission outstanding</div><div class="kpi-v kv-o" id="k-outstanding">—</div></div>
+          <div class="kpi" onclick="kpiNav('leakage')" style="cursor:pointer"><div class="kpi-l">Lead leakage %</div><div class="kpi-v kv-r" id="k-leakage">—</div></div>
         </div>
         <div id="dash-empty" class="empty-state" style="display:none">
           <div class="es-icon"><i class="ti ti-rocket"></i></div>
@@ -1885,6 +1885,41 @@ function nav(id,btn){
   if(id==='followup')renderFU();
 }
 function navFilter(filterId,value){nav('leads',document.querySelector('.ni[data-nav="leads"]'));setTimeout(()=>{const el=document.getElementById(filterId);if(el){el.value=value;renderLeads();}},300);}
+
+// ── Dashboard tile hyperlinking — every KPI jumps to the relevant tab ──
+function navDateRange(from,to){
+  nav('leads',document.querySelector('.ni[data-nav="leads"]'));
+  setTimeout(()=>{
+    document.getElementById('ls-st').value='';
+    document.getElementById('ls-from').value=from;
+    document.getElementById('ls-to').value=to;
+    renderLeads();
+  },300);
+}
+function kpiNav(kind){
+  const todayStr=new Date().toISOString().substring(0,10);
+  switch(kind){
+    case 'total': navFilter('ls-st',''); break;
+    case 'enrolled': navFilter('ls-st','Enrolled'); break;
+    case 'active': navFilter('ls-st',''); break; // spans multiple statuses — show the full list instead of picking one
+    case 'month': {
+      const now=new Date();
+      const firstOfMonth=new Date(now.getFullYear(),now.getMonth(),1).toISOString().substring(0,10);
+      navDateRange(firstOfMonth,todayStr);
+      break;
+    }
+    case 'week': navDateRange(new Date(Date.now()-7*86400000).toISOString().substring(0,10),todayStr); break;
+    case 'today': navDateRange(todayStr,todayStr); break;
+    case 'offer': navFilter('ls-st','Received - Conditional Offer'); break;
+    case 'visa': navFilter('ls-st','Visa Application Accepted'); break;
+    case 'deposit': navFilter('ls-st','Deposit Paid'); break;
+    case 'fees': navFilter('ls-st','Fees Paid'); break;
+    case 'dropped': navFilter('ls-st','Dropped'); break;
+    case 'apps': navFilter('ls-st','Application Submitted'); break;
+    case 'leakage': nav('followup',document.querySelector('.ni[data-nav="followup"]')); break;
+    case 'revenue': case 'outstanding': nav('finance',document.querySelector('.ni[data-nav="finance"]')); break;
+  }
+}
 function isToolLead(l){
   const s=(l.source||'').toLowerCase();
   return s.includes('tool')||s.includes('quiz')||s.includes('calculator')||s.includes('opportunityfinder')
@@ -1916,7 +1951,7 @@ function renderDash(){
   document.getElementById('k-enr').textContent=(c['Enrolled']||0)+(c['Fees Paid']||0);
   document.getElementById('k-fee').textContent=c['Fees Paid']||0;
   document.getElementById('k-act').textContent=(c['New Enquiry']||0)+(c['Contacted']||0)+(c['Counselling Done']||0);
- document.getElementById('k-mon').textContent=mon;   const week=leads.filter(l=>{const d=new Date(l.created_at);return(Date.now()-d.getTime())<7*86400000;}).length;   const offers=(c['Received - Conditional Offer']||0)+(c['Received - Unconditional Offer']||0);   const apps=c['Application Submitted']||0;   const visaGranted=c['Visa Application Accepted']||0;   const visaTotal=(c['Visa Application Accepted']||0)+(c['Visa Application Rejected']||0);   const deposits=c['Deposit Paid']||0;   document.getElementById('k-offer').textContent=apps>0?Math.round(offers/apps*100)+'%':'—';   document.getElementById('k-visa').textContent=visaTotal>0?Math.round(visaGranted/visaTotal*100)+'%':'—';   document.getElementById('k-dep').textContent=offers>0?Math.round(deposits/offers*100)+'%':'—';   document.getElementById('k-fee').textContent=c['Fees Paid']||0;   document.getElementById('k-week').textContent=week;   document.getElementById('k-drop').textContent=(c['Dropped']||0)+(c['Not Interested']||0);
+ document.getElementById('k-mon').textContent=mon;   const week=leads.filter(l=>{const d=new Date(l.created_at);return(Date.now()-d.getTime())<7*86400000;}).length;   const appsReached=leads.filter(l=>reachedStage(l.status,'Application Submitted')).length;   const offersReached=leads.filter(l=>reachedStage(l.status,'Received - Conditional Offer')).length;   const depositReached=leads.filter(l=>reachedStage(l.status,'Deposit Paid')).length;   const visaGranted=c['Visa Application Accepted']||0;   const visaTotal=(c['Visa Application Accepted']||0)+(c['Visa Application Rejected']||0);   document.getElementById('k-offer').textContent=appsReached>0?Math.round(offersReached/appsReached*100)+'%':'—';   document.getElementById('k-visa').textContent=visaTotal>0?Math.round(visaGranted/visaTotal*100)+'%':'—';   document.getElementById('k-dep').textContent=offersReached>0?Math.round(depositReached/offersReached*100)+'%':'—';   document.getElementById('k-fee').textContent=c['Fees Paid']||0;   document.getElementById('k-week').textContent=week;   document.getElementById('k-drop').textContent=(c['Dropped']||0)+(c['Not Interested']||0);
 
   // ── Executive KPI row ──
   const todayStr=new Date().toISOString().substring(0,10);
@@ -3125,14 +3160,13 @@ async function loadReport(){
   const c={};scoped.forEach(l=>{c[l.status]=(c[l.status]||0)+1;});
   const tot=scoped.length;
   const appsSubmitted=scoped.filter(l=>reachedStage(l.status,'Application Submitted')).length;
-  const offers=(c['Received - Conditional Offer']||0)+(c['Received - Unconditional Offer']||0);
-  const apps=c['Application Submitted']||0;
+  const offersReached=scoped.filter(l=>reachedStage(l.status,'Received - Conditional Offer')).length;
+  const depositReached=scoped.filter(l=>reachedStage(l.status,'Deposit Paid')).length;
   const visaGranted=c['Visa Application Accepted']||0;
   const visaTotal=visaGranted+(c['Visa Application Rejected']||0);
-  const deposits=c['Deposit Paid']||0;
-  const offerRate=apps>0?Math.round(offers/apps*100):0;
+  const offerRate=appsSubmitted>0?Math.round(offersReached/appsSubmitted*100):0;
   const visaRate=visaTotal>0?Math.round(visaGranted/visaTotal*100):0;
-  const depositRate=offers>0?Math.round(deposits/offers*100):0;
+  const depositRate=offersReached>0?Math.round(depositReached/offersReached*100):0;
   const leakage=scoped.filter(l=>['New Enquiry','Contacted'].includes(l.status)&&l.updated_at&&(Date.now()-new Date(l.updated_at).getTime())>2*86400000).length;
   const leakagePct=tot>0?Math.round(leakage/tot*100):0;
   const outstanding=scopedCommissions.filter(cm=>cm.status==='Pending').reduce((s,cm)=>s+(parseFloat(cm.commission_amount)||0),0);

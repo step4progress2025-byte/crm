@@ -1471,6 +1471,15 @@ function populateCounsellorDropdown(){
   const sel=document.getElementById('f-counsel');
   if(!sel)return;
   const current=sel.value;
+  if(!office){
+    // Nothing meaningful to show until a native country (and therefore an
+    // office) has actually been chosen — showing any names here before that
+    // would be coincidental, not a real answer to "who's in this office".
+    sel.innerHTML='<option value="">Select native country first...</option>';
+    sel.disabled=true;
+    return;
+  }
+  sel.disabled=false;
   const pool=getOfficeCounsellors(office);
   sel.innerHTML='<option value="">Auto-assign (round robin)</option>'+
     pool.map(c=>`<option value="${esc(c.full_name)}">${esc(c.full_name)}</option>`).join('');

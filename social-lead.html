@@ -245,8 +245,9 @@ html,body{min-height:100vh;font-family:var(--font-b);background:var(--cream);col
     </div>
 
     <div class="field">
-      <label>Current city</label>
+      <label>Current city *</label>
       <input type="text" id="f-city" placeholder="e.g. Madurai, Chennai…" autocomplete="address-level2">
+      <div class="error-msg" id="err-city">Please enter your current city</div>
     </div>
 
     <div class="field">
@@ -359,10 +360,12 @@ async function submitLead() {
   document.getElementById('err-name').style.display = name ? 'none' : 'block';
   document.getElementById('err-mobile').style.display = mobile.length >= 7 ? 'none' : 'block';
   document.getElementById('err-nationality').style.display = nationality ? 'none' : 'block';
+  document.getElementById('err-city').style.display = city ? 'none' : 'block';
   document.getElementById('err-submit').style.display = 'none';
   if (!name) valid = false;
   if (mobile.length < 7) valid = false;
   if (!nationality) valid = false;
+  if (!city) valid = false;
   if (!valid) return;
 
   const btn = document.getElementById('submit-btn');

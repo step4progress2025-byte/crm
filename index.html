@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -331,6 +332,38 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 #sc-coaching{position:relative}
 #sc-coaching::after{content:'';position:absolute;top:10px;right:10px;width:180px;height:180px;opacity:.032;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cpolygon points='90,18 165,54 90,90 15,54' fill='%230D4A3C'/%3E%3Crect x='140' y='54' width='8' height='46' fill='%230D4A3C'/%3E%3Cellipse cx='144' cy='104' rx='11' ry='7' fill='%23C05621'/%3E%3Crect x='70' y='90' width='40' height='32' rx='4' fill='%230D4A3C'/%3E%3C/svg%3E");background-size:contain;background-repeat:no-repeat;pointer-events:none;z-index:0}
 
+/* ── REPORTS TAB ─────────────────────────────────────────────── */
+.rpt-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.rpt-toggle{display:flex;background:var(--paper);border:1px solid var(--line2);border-radius:99px;padding:3px;box-shadow:var(--sh)}
+.rpt-toggle-btn{border:none;background:none;padding:7px 18px;border-radius:99px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink3);font-family:var(--font-b);transition:all .15s}
+.rpt-toggle-btn.active{background:linear-gradient(135deg,var(--pine),var(--pine2));color:#fff;box-shadow:0 2px 8px rgba(28,63,110,.35)}
+#rpt-date,#rpt-country{font-size:13px;padding:8px 14px;border:1px solid var(--line2);border-radius:99px;background:var(--paper);color:var(--ink);font-family:var(--font-b);box-shadow:var(--sh)}
+.rpt-range-label{font-size:12px;color:var(--ink3);font-style:italic;margin-left:4px}
+
+.rpt-hero-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.rpt-hero{border-radius:14px;padding:18px 20px;color:#fff;position:relative;overflow:hidden;box-shadow:0 8px 20px rgba(0,0,0,.12);transition:transform .18s}
+.rpt-hero:hover{transform:translateY(-3px)}
+.rpt-hero::before{content:'';position:absolute;top:-30%;right:-20%;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.14)}
+.rpt-hero-l{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.85;margin-bottom:8px;position:relative}
+.rpt-hero-v{font-family:var(--font-h);font-size:30px;font-weight:600;line-height:1;position:relative}
+.rpt-hero-sub{font-size:11px;opacity:.85;margin-top:6px;position:relative}
+.rpt-hero.c1{background:linear-gradient(135deg,#1C3F6E,#2D5C9E)}
+.rpt-hero.c2{background:linear-gradient(135deg,#0D6E4F,#12A56F)}
+.rpt-hero.c3{background:linear-gradient(135deg,#B8590E,#E08429)}
+.rpt-hero.c4{background:linear-gradient(135deg,#8C2F2F,#C0392B)}
+.rpt-hero.c5{background:linear-gradient(135deg,#5B2E8C,#8449BE)}
+.rpt-hero.c6{background:linear-gradient(135deg,#0E7C86,#16A6B3)}
+.rpt-hero.c7{background:linear-gradient(135deg,#9B4A9E,#C264C6)}
+.rpt-hero.c8{background:linear-gradient(135deg,#3D5A1E,#679A2E)}
+
+.rpt-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.rpt-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:18px;box-shadow:var(--sh)}
+.rpt-card-h{font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:12px;letter-spacing:.02em}
+.rpt-lb-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.rpt-lb-row:last-child{border-bottom:none}
+.rpt-lb-medal{width:26px;font-size:16px;text-align:center;flex-shrink:0}
+.rpt-lb-bar-t{flex:1;background:var(--cream);border-radius:99px;height:8px;overflow:hidden}
+.rpt-lb-bar-f{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--pine3),var(--gold))}
 </style>
 </head>
 <body>
@@ -409,7 +442,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <div class="sng">Workspace</div>
       <button class="ni" data-nav="team" onclick="nav('team',this)"><i class="ti ti-id-badge"></i>Team</button>
       <button class="ni" data-nav="events" onclick="nav('events',this)"><i class="ti ti-calendar-event"></i>Events</button><button class="ni" data-nav="import" onclick="nav('import',this)"><i class="ti ti-file-import"></i>Import data</button>
-      <button class="ni" data-nav="finance" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
+      <button class="ni" data-nav="finance" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic"></i>Reports</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
     </div>
     <div class="sb-foot">
       <div class="sb-user">
@@ -459,6 +492,13 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div class="kpi"><div class="kpi-l">This week</div><div class="kpi-v kv-p" id="k-week">—</div></div>
           <div class="kpi"><div class="kpi-l">Dropped</div><div class="kpi-v kv-r" id="k-drop">—</div></div>
         </div>
+        <div class="kpi-row" style="margin-top:-10px" id="kpi-row-exec">
+          <div class="kpi"><div class="kpi-l">Leads today</div><div class="kpi-v kv-p" id="k-today">—</div></div>
+          <div class="kpi"><div class="kpi-l">Applications submitted</div><div class="kpi-v kv-t" id="k-apps">—</div></div>
+          <div class="kpi" id="k-revenue-tile"><div class="kpi-l">Revenue pipeline</div><div class="kpi-v kv-g" id="k-revenue">—</div></div>
+          <div class="kpi" id="k-outstanding-tile"><div class="kpi-l">Commission outstanding</div><div class="kpi-v kv-o" id="k-outstanding">—</div></div>
+          <div class="kpi"><div class="kpi-l">Lead leakage %</div><div class="kpi-v kv-r" id="k-leakage">—</div></div>
+        </div>
         <div id="dash-empty" class="empty-state" style="display:none">
           <div class="es-icon"><i class="ti ti-rocket"></i></div>
           <div class="es-title">Your CRM is ready</div>
@@ -474,6 +514,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         </div>
         <div id="dash-content" style="display:none">
           <div class="two-col">
+            <div class="card"><div class="card-h"><span class="card-t">🔻 Conversion funnel</span></div><div id="conversion-funnel"></div></div>
+            <div class="card"><div class="card-h"><span class="card-t">📅 Intake forecast</span></div><div id="intake-forecast"></div></div>
             <div class="card"><div class="card-h"><span class="card-t">Pipeline status</span></div><div id="pipe-list"></div></div>
             <div class="card"><div class="card-h"><span class="card-t">Recent activity</span></div><div id="act-list"></div></div>
             <div class="card" style="margin-top:16px" id="country-breakdown-card"><div class="card-h"><span class="card-t">🌍 Leads by country</span></div><div id="country-breakdown"></div></div>
@@ -676,6 +718,60 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       </section>
 
       <!-- Finance --><section id="sc-finance" class="screen"><div class="card" style="margin-bottom:16px"><div class="card-h"><span class="card-t">Commission tracker</span><button class="btn btn-p" style="font-size:12px;padding:5px 10px" onclick="openAddCommission()"><i class="ti ti-plus"></i>Add record</button></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px"><div class="kpi" style="border-top-color:var(--pine)!important"><div class="kpi-l">Total expected</div><div class="kpi-v kv-p" id="fc-total">—</div></div><div class="kpi" style="border-top-color:var(--sage)!important"><div class="kpi-l">Received</div><div class="kpi-v kv-g" id="fc-recv">—</div></div><div class="kpi" style="border-top-color:var(--ember)!important"><div class="kpi-l">Outstanding</div><div class="kpi-v kv-o" id="fc-out">—</div></div></div><div class="tw"><table class="tbl"><thead><tr><th>Student</th><th>University</th><th>Office</th><th>Destination</th><th>Amount</th><th>Currency</th><th>Status</th><th>Notes</th><th></th></tr></thead><tbody id="finance-tbody"></tbody></table></div></div></section>
+
+      <!-- Reports -->
+      <section id="sc-reports" class="screen">
+        <div class="rpt-toolbar">
+          <div class="rpt-toggle" id="rpt-period-toggle">
+            <button class="rpt-toggle-btn active" data-period="daily" onclick="setReportPeriod('daily')">☀️ Daily</button>
+            <button class="rpt-toggle-btn" data-period="weekly" onclick="setReportPeriod('weekly')">📆 Weekly</button>
+          </div>
+          <input type="date" id="rpt-date" onchange="loadReport()">
+          <select id="rpt-country" onchange="loadReport()"></select>
+          <span id="rpt-range-label" class="rpt-range-label"></span>
+        </div>
+
+        <div id="rpt-empty" class="empty-state" style="display:none">
+          <div class="es-icon"><i class="ti ti-chart-infographic"></i></div>
+          <div class="es-title">No data for this period yet</div>
+          <div class="es-sub">Try a different date, or check back once leads start coming in for this country.</div>
+        </div>
+
+        <div id="rpt-content">
+          <div class="rpt-hero-grid" id="rpt-hero-grid"></div>
+
+          <div class="rpt-grid">
+            <div class="rpt-card">
+              <div class="rpt-card-h">🔻 Conversion funnel</div>
+              <canvas id="rpt-funnel-chart" height="220"></canvas>
+            </div>
+            <div class="rpt-card">
+              <div class="rpt-card-h">🥧 Pipeline mix</div>
+              <canvas id="rpt-mix-chart" height="220"></canvas>
+            </div>
+            <div class="rpt-card" id="rpt-country-card" style="display:none">
+              <div class="rpt-card-h">🌍 Country comparison</div>
+              <canvas id="rpt-country-chart" height="220"></canvas>
+            </div>
+            <div class="rpt-card">
+              <div class="rpt-card-h">🏆 Counsellor leaderboard</div>
+              <div id="rpt-leaderboard"></div>
+            </div>
+            <div class="rpt-card">
+              <div class="rpt-card-h">📅 Intake forecast</div>
+              <canvas id="rpt-intake-chart" height="220"></canvas>
+            </div>
+            <div class="rpt-card">
+              <div class="rpt-card-h">📝 Notes for this report</div>
+              <textarea id="rpt-notes" placeholder="Add context, blockers, or a summary for this report — visible to everyone who can see this country's reports..." style="width:100%;min-height:110px;padding:10px;border:1px solid var(--line);border-radius:var(--r);font-family:var(--font-b);font-size:13px;resize:vertical"></textarea>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+                <button class="btn btn-p" onclick="saveReportNotes()"><i class="ti ti-device-floppy"></i>Save note</button>
+                <span id="rpt-notes-meta" style="font-size:11px;color:var(--ink3);font-style:italic"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
       <!-- Course Finder -->
       <section id="sc-coursefinder" class="screen">
         <div class="card" style="margin-bottom:16px">
@@ -911,7 +1007,19 @@ What would you like help with today?</div>
       <div class="ff"><label>Office</label>
         <select id="f-office" onchange="populateCounsellorDropdown()"></select>
       </div>
-      <div class="ff"><label>Counsellor</label>
+      <div class="ff full" id="f-assign-mode-wrap" style="display:none">
+        <label>Counsellor assignment</label>
+        <div style="display:flex;gap:16px;align-items:center;padding:8px 0">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer">
+            <input type="radio" name="f-assign-mode" value="auto" checked onchange="toggleAssignMode()"> Round-robin (auto)
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer">
+            <input type="radio" name="f-assign-mode" value="manual" onchange="toggleAssignMode()"> Manual — pick counsellor
+          </label>
+        </div>
+      </div>
+      <div class="ff" id="f-counsel-wrap">
+        <label>Counsellor</label>
         <select id="f-counsel"><option value="">Auto-assign (round robin)</option></select>
       </div>
       <div class="ff"><label>Next follow-up</label><input type="date" id="f-fu"></div>
@@ -1192,6 +1300,22 @@ const SS={
 const PS={High:{bg:"#FFE4E6",tx:"#9F1239"},Medium:{bg:"#FEF9C3",tx:"#854D0E"},Low:{bg:"#DCFCE7",tx:"#166534"}};
 const AVC=[["#DBEAFE","#1E3A8A"],["#D1FAE5","#064E3B"],["#FEF3C7","#78350F"],["#EDE9FE","#3B0764"],["#FCE7F3","#831843"],["#E0F2FE","#0C4A6E"]];
 const STATUSES=["New Enquiry","Pending","Ongoing","Contacted","Follow Up","Callback Later","Interested","Counselling Done","Enrolled","Fees Paid","University Shortlist Sent","Documents Pending","Application Submitted","Received - Conditional Offer","Received - Unconditional Offer","Conditional Cleared","Received CAS Letter","Deposit Paid","Visa Application Submitted","Visa Application Accepted","Visa Application Rejected","Onboarded Student","Commission Received","Process Completed","Deferred","Not Interested","Dropped"];
+// Chronological forward-journey order, used only for "reached this stage or later"
+// calculations (Applications Submitted, Conversion Funnel). This is deliberately
+// separate from STATUSES above, which is just the dropdown's display order.
+// Off-ramp statuses (Deferred/Not Interested/Dropped/Visa Application Rejected)
+// are excluded on purpose: since the CRM stores only a lead's CURRENT status and
+// not a history of every stage it ever passed through, a lead that reached
+// "Application Submitted" and later got marked Dropped can no longer be counted
+// as having reached that stage — its current status no longer reflects that
+// historical fact. This is an honest limitation, not a bug: a true lifetime
+// cumulative count needs a status-history log, which doesn't exist yet.
+const PIPELINE_ORDER=["New Enquiry","Pending","Ongoing","Contacted","Follow Up","Callback Later","Interested","Counselling Done","University Shortlist Sent","Documents Pending","Application Submitted","Received - Conditional Offer","Received - Unconditional Offer","Conditional Cleared","Received CAS Letter","Deposit Paid","Visa Application Submitted","Visa Application Accepted","Enrolled","Fees Paid","Onboarded Student","Commission Received","Process Completed"];
+function reachedStage(status,stageName){
+  const li=PIPELINE_ORDER.indexOf(status);
+  const si=PIPELINE_ORDER.indexOf(stageName);
+  return li>=0&&si>=0&&li>=si;
+}
 const ALLOWED_EMAIL_DOMAINS=['step4progress.com','step4progress.co.uk'];
 function isAllowedEmail(email){
   const e=(email||'').toLowerCase().trim();
@@ -1314,6 +1438,34 @@ function splitMobile(fullMobile,country){
 // ── Counsellor dropdown: populated from the actual team in the selected ──
 // office, so assignment always matches a real team member exactly (no more
 // free-text typos causing a counsellor to lose visibility of their own leads).
+// ── Round-robin vs manual assignment toggle ──
+// Only Manager/Admin/Super Admin see this choice at all — Counsellors stay
+// locked to themselves regardless, same rule as before.
+function toggleAssignMode(){
+  const manual=document.querySelector('input[name="f-assign-mode"]:checked')?.value==='manual';
+  const wrap=document.getElementById('f-counsel-wrap');
+  if(!wrap)return;
+  if(manual){
+    wrap.style.display='';
+  } else {
+    wrap.style.display='none';
+    const sel=document.getElementById('f-counsel');
+    if(sel) sel.value='';
+  }
+}
+function setupAssignModeUI(){
+  const canChoose=!(myRole==='Counsellor'&&!isSuperAdmin);
+  const modeWrap=document.getElementById('f-assign-mode-wrap');
+  const counselWrap=document.getElementById('f-counsel-wrap');
+  if(!modeWrap||!counselWrap)return;
+  modeWrap.style.display=canChoose?'':'none';
+  if(canChoose){
+    document.querySelector('input[name="f-assign-mode"][value="auto"]').checked=true;
+    counselWrap.style.display='none';
+  } else {
+    counselWrap.style.display='';
+  }
+}
 function populateCounsellorDropdown(){
   const office=document.getElementById('f-office').value;
   const sel=document.getElementById('f-counsel');
@@ -1501,7 +1653,7 @@ function nav(id,btn){
   document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
   document.getElementById('sc-'+id).classList.add('active');
   if(btn)btn.classList.add('active');
-  const T={dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',coursefinder:'Course & University Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor'};
+  const T={dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',reports:'Reports',coursefinder:'Course & University Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor'};
   document.getElementById('topbar-title').textContent=T[id]||id;
   // Role guard — checked before rendering the target screen
   const role=(document.getElementById('sb-urole').textContent||'').trim();
@@ -1517,6 +1669,7 @@ function nav(id,btn){
   if(id==='resources')loadResourcesAdmin();
   if(id==='resumes'){loadResumes().then(renderResumesAdmin);}
   if(id==='finance')renderFinance();
+  if(id==='reports'){if(roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}initReports();}
   if(id==='productivity'){loadCallLogs().then(renderCallLogs);}
   if(id==='coaching')renderCoaching();
   if(id==='followup')renderFU();
@@ -1554,6 +1707,41 @@ function renderDash(){
   document.getElementById('k-fee').textContent=c['Fees Paid']||0;
   document.getElementById('k-act').textContent=(c['New Enquiry']||0)+(c['Contacted']||0)+(c['Counselling Done']||0);
  document.getElementById('k-mon').textContent=mon;   const week=leads.filter(l=>{const d=new Date(l.created_at);return(Date.now()-d.getTime())<7*86400000;}).length;   const offers=(c['Received - Conditional Offer']||0)+(c['Received - Unconditional Offer']||0);   const apps=c['Application Submitted']||0;   const visaGranted=c['Visa Application Accepted']||0;   const visaTotal=(c['Visa Application Accepted']||0)+(c['Visa Application Rejected']||0);   const deposits=c['Deposit Paid']||0;   document.getElementById('k-offer').textContent=apps>0?Math.round(offers/apps*100)+'%':'—';   document.getElementById('k-visa').textContent=visaTotal>0?Math.round(visaGranted/visaTotal*100)+'%':'—';   document.getElementById('k-dep').textContent=offers>0?Math.round(deposits/offers*100)+'%':'—';   document.getElementById('k-fee').textContent=c['Fees Paid']||0;   document.getElementById('k-week').textContent=week;   document.getElementById('k-drop').textContent=(c['Dropped']||0)+(c['Not Interested']||0);
+
+  // ── Executive KPI row ──
+  const todayStr=new Date().toISOString().substring(0,10);
+  const leadsToday=leads.filter(l=>(l.created_at||'').substring(0,10)===todayStr).length;
+  document.getElementById('k-today').textContent=leadsToday;
+
+  // "Applications submitted" counts every lead currently at Application Submitted
+  // OR any stage after it (Offer/Deposit/CAS/Visa/Enrolled/...) — not just an exact
+  // status match — so students who have moved further along the pipeline still
+  // count towards having submitted an application. See the PIPELINE_ORDER note above
+  // for why leads that later dropped out can't be included in this count.
+  const appsSubmitted=leads.filter(l=>reachedStage(l.status,'Application Submitted')).length;
+  document.getElementById('k-apps').textContent=appsSubmitted;
+
+  // Lead leakage: enquiries sitting untouched with no follow-up in 2+ days —
+  // leads at genuine risk of being lost to inactivity rather than an explicit
+  // "Not Interested"/"Dropped" decision.
+  const leakageCount=leads.filter(l=>['New Enquiry','Contacted'].includes(l.status)&&l.updated_at&&(Date.now()-new Date(l.updated_at).getTime())>2*86400000).length;
+  document.getElementById('k-leakage').textContent=tot>0?Math.round(leakageCount/tot*100)+'%':'—';
+
+  // Revenue Pipeline / Commission Outstanding — hidden from Counsellors, matching
+  // the same "no finance visibility" rule already applied to the Finance tab.
+  const showFinanceTiles=!(myRole==='Counsellor'&&!isSuperAdmin);
+  ['k-revenue-tile','k-outstanding-tile'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=showFinanceTiles?'':'none';});
+  if(showFinanceTiles){
+    loadCommissions().then(()=>{
+      const totalRev=commissions.reduce((s,c)=>s+(parseFloat(c.commission_amount)||0),0);
+      const outstanding=commissions.filter(c=>c.status==='Pending').reduce((s,c)=>s+(parseFloat(c.commission_amount)||0),0);
+      document.getElementById('k-revenue').textContent='£'+totalRev.toLocaleString();
+      document.getElementById('k-outstanding').textContent='£'+outstanding.toLocaleString();
+    });
+  }
+
+  renderConversionFunnel(leads);
+  renderIntakeForecast(leads);
   const empty=tot===0;
   document.getElementById('dash-empty').style.display=empty?'flex':'none';
   document.getElementById('dash-content').style.display=empty?'none':'block';
@@ -1762,7 +1950,7 @@ async function updateStatusFS(){
   if(l)l.status=status;
   setSynced();renderLeads();renderDash();badges();toast('Status → '+status);
 }
-function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-office').value=l.office||'India HQ';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;},100);}
+function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-office').value=l.office||'India HQ';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;},100);}
 async function deleteLeadFS(){if(!curId)return;if(!isSuperAdmin&&myRole!=='Admin'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
@@ -1869,6 +2057,14 @@ function editLead(){
     }
     cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);
     cf.value=l.counsellor||'';
+    setupAssignModeUI();
+    // Editing an existing lead always starts in Manual mode with its current
+    // counsellor shown — round robin should never silently re-roll an
+    // already-assigned lead just because someone opened it to edit.
+    if(!(myRole==='Counsellor'&&!isSuperAdmin)){
+      const manualRadio=document.querySelector('input[name="f-assign-mode"][value="manual"]');
+      if(manualRadio){manualRadio.checked=true;toggleAssignMode();}
+    }
   }
   document.getElementById('f-fu').value=l.next_followup||'';
   document.getElementById('f-notes').value=l.notes||'';   document.getElementById('f-intake').value=l.intake_month||'';   document.getElementById('f-ielts-status').value=l.ielts_status||'';   document.getElementById('f-ielts-score').value=l.ielts_score||'';   document.getElementById('f-budget').value=l.budget_range||'';   document.getElementById('f-english').value=l.english_status||'';   document.getElementById('f-walink').value=l.whatsapp_group_link||'';   document.getElementById('f-doclink').value=l.doc_folder_link||'';
@@ -1892,6 +2088,7 @@ function openAddLead(){
   document.getElementById('f-status').value='New Enquiry';
   document.getElementById('f-prio').value='Medium';
   populateCounsellorDropdown();
+  setupAssignModeUI();
   const counselField=document.getElementById('f-counsel');
   if(myRole==='Counsellor'&&!isSuperAdmin){
     // Counsellors can only add leads to themselves — field is pre-filled and locked.
@@ -2353,6 +2550,188 @@ async function saveCommission(){
   renderFinance();
 }
 async function deleteCommission(id){if(!confirm('Delete this record?'))return;await sb.from('commissions').delete().eq('id',id);toast('Record deleted.');renderFinance();}
+
+// ══ REPORTS TAB ══════════════════════════════════════════════════
+// Two kinds of numbers appear in every report, and it matters which is which:
+//   "New activity in this period"  -> genuinely time-windowed (created_at falls
+//   inside the selected day/week), so these are accurate historical facts.
+//   "Current pipeline snapshot"    -> reflects the state of leads RIGHT NOW,
+//   filtered to the same country/scope, but NOT time-windowed - because the
+//   CRM stores only a lead's current status, not a history of every status it
+//   ever passed through. A funnel/offer-rate/etc for "last Tuesday" would be
+//   misleading to claim as historically accurate, so this report is honest
+//   about only showing today's snapshot, whichever day you're looking at.
+let rptCharts={};
+let rptState={period:'daily',date:new Date().toISOString().substring(0,10),country:'India'};
+
+function initReports(){
+  const countrySel=document.getElementById('rpt-country');
+  const dateInput=document.getElementById('rpt-date');
+  if(!dateInput.value) dateInput.value=rptState.date;
+  if(isSuperAdmin){
+    countrySel.disabled=false;
+    countrySel.innerHTML='<option value="All">🌐 All Countries</option><option>India</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option>';
+    if(!countrySel.value) countrySel.value='All';
+    rptState.country=countrySel.value||'All';
+  } else {
+    countrySel.disabled=true;
+    countrySel.innerHTML=`<option>${esc(myCountry||'India')}</option>`;
+    rptState.country=myCountry||'India';
+  }
+  loadReport();
+}
+function setReportPeriod(period){
+  rptState.period=period;
+  document.querySelectorAll('.rpt-toggle-btn').forEach(b=>b.classList.toggle('active',b.dataset.period===period));
+  loadReport();
+}
+function dateRangeFor(period,dateStr){
+  if(period==='daily') return {start:dateStr,end:dateStr};
+  const end=new Date(dateStr+'T00:00:00');
+  const start=new Date(end.getTime()-6*86400000);
+  return {start:start.toISOString().substring(0,10),end:dateStr};
+}
+function scopedLeadsFor(country){
+  return country==='All'?leads:leads.filter(l=>l.country===country);
+}
+function destroyChart(id){if(rptCharts[id]){rptCharts[id].destroy();delete rptCharts[id];}}
+
+async function loadReport(){
+  rptState.date=document.getElementById('rpt-date').value||rptState.date;
+  rptState.country=document.getElementById('rpt-country').value||rptState.country;
+  const {start,end}=dateRangeFor(rptState.period,rptState.date);
+  const label=rptState.period==='daily'?`Showing ${start}`:`Showing ${start} → ${end} (7 days)`;
+  document.getElementById('rpt-range-label').textContent=label;
+
+  const scoped=scopedLeadsFor(rptState.country);
+  const emptyEl=document.getElementById('rpt-empty'), contentEl=document.getElementById('rpt-content');
+  const isEmpty=scoped.length===0;
+  emptyEl.style.display=isEmpty?'flex':'none';
+  contentEl.style.display=isEmpty?'none':'block';
+  if(isEmpty)return;
+
+  await loadCommissions();
+  const scopedLeadIds=new Set(scoped.map(l=>l.id));
+  const scopedCommissions=commissions.filter(c=>scopedLeadIds.has(c.lead_id));
+
+  // New activity in this period (accurate, time-windowed)
+  const inPeriod=l=>{const d=(l.created_at||'').substring(0,10);return d&&d>=start&&d<=end;};
+  const leadsCaptured=scoped.filter(inPeriod).length;
+  const revenueAdded=scopedCommissions.filter(c=>{const d=(c.created_at||'').substring(0,10);return d&&d>=start&&d<=end;}).reduce((s,c)=>s+(parseFloat(c.commission_amount)||0),0);
+
+  // Current pipeline snapshot (same country scope, not time-windowed)
+  const c={};scoped.forEach(l=>{c[l.status]=(c[l.status]||0)+1;});
+  const tot=scoped.length;
+  const appsSubmitted=scoped.filter(l=>reachedStage(l.status,'Application Submitted')).length;
+  const offers=(c['Received - Conditional Offer']||0)+(c['Received - Unconditional Offer']||0);
+  const apps=c['Application Submitted']||0;
+  const visaGranted=c['Visa Application Accepted']||0;
+  const visaTotal=visaGranted+(c['Visa Application Rejected']||0);
+  const deposits=c['Deposit Paid']||0;
+  const offerRate=apps>0?Math.round(offers/apps*100):0;
+  const visaRate=visaTotal>0?Math.round(visaGranted/visaTotal*100):0;
+  const depositRate=offers>0?Math.round(deposits/offers*100):0;
+  const leakage=scoped.filter(l=>['New Enquiry','Contacted'].includes(l.status)&&l.updated_at&&(Date.now()-new Date(l.updated_at).getTime())>2*86400000).length;
+  const leakagePct=tot>0?Math.round(leakage/tot*100):0;
+  const outstanding=scopedCommissions.filter(cm=>cm.status==='Pending').reduce((s,cm)=>s+(parseFloat(cm.commission_amount)||0),0);
+
+  // ── Hero tiles ──
+  const hero=document.getElementById('rpt-hero-grid');
+  const tiles=[
+    ['c1','📥 Leads captured','This period',leadsCaptured],
+    ['c2','📝 Applications submitted','Current snapshot',appsSubmitted],
+    ['c3','🎯 Offer rate','Current snapshot',offerRate+'%'],
+    ['c4','🛂 Visa success','Current snapshot',visaRate+'%'],
+    ['c5','💰 Deposit rate','Current snapshot',depositRate+'%'],
+    ['c6','💷 Revenue added','This period','£'+Math.round(revenueAdded).toLocaleString()],
+    ['c7','⏳ Commission outstanding','Current snapshot','£'+Math.round(outstanding).toLocaleString()],
+    ['c8','⚠️ Lead leakage','Current snapshot',leakagePct+'%'],
+  ];
+  hero.innerHTML=tiles.map(([cls,label,sub,val])=>`<div class="rpt-hero ${cls}"><div class="rpt-hero-l">${label}</div><div class="rpt-hero-v">${val}</div><div class="rpt-hero-sub">${sub}</div></div>`).join('');
+
+  renderFunnelChart(scoped);
+  renderMixChart(c);
+  renderCountryChart();
+  renderLeaderboard(scoped);
+  renderIntakeChart(scoped);
+  await loadReportNotes();
+}
+
+function renderFunnelChart(scoped){
+  const stages=['New Enquiry','Counselling Done','Application Submitted','Received - Conditional Offer','Deposit Paid','Enrolled'];
+  const labels=['Enquiries','Counselled','Applied','Offer','Deposit','Enrolled'];
+  const counts=stages.map(s=>scoped.filter(l=>reachedStage(l.status,s)).length);
+  destroyChart('funnel');
+  const ctx=document.getElementById('rpt-funnel-chart');
+  if(!ctx||typeof Chart==='undefined')return;
+  rptCharts.funnel=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data:counts,backgroundColor:['#1C3F6E','#2D5C9E','#0D6E4F','#12A56F','#E08429','#C0392B'],borderRadius:6}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0}}}}});
+}
+function renderMixChart(c){
+  const entries=Object.entries(c).sort((a,b)=>b[1]-a[1]);
+  const top=entries.slice(0,6);
+  const otherSum=entries.slice(6).reduce((s,[,n])=>s+n,0);
+  const labels=top.map(([s])=>s).concat(otherSum>0?['Other']:[]);
+  const data=top.map(([,n])=>n).concat(otherSum>0?[otherSum]:[]);
+  destroyChart('mix');
+  const ctx=document.getElementById('rpt-mix-chart');
+  if(!ctx||typeof Chart==='undefined')return;
+  rptCharts.mix=new Chart(ctx,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:['#1C3F6E','#12A56F','#E08429','#C0392B','#8449BE','#16A6B3','#94A3B8'],borderWidth:2,borderColor:'#fff'}]},options:{plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}}}});
+}
+function renderCountryChart(){
+  const card=document.getElementById('rpt-country-card');
+  if(rptState.country!=='All'){card.style.display='none';return;}
+  card.style.display='block';
+  const map={};leads.forEach(l=>{const cn=l.country||'Unspecified';map[cn]=(map[cn]||0)+1;});
+  destroyChart('country');
+  const ctx=document.getElementById('rpt-country-chart');
+  if(!ctx||typeof Chart==='undefined')return;
+  const labels=Object.keys(map), data=Object.values(map);
+  rptCharts.country=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data,backgroundColor:['#1C3F6E','#0D6E4F','#E08429','#8449BE'],borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+}
+function renderLeaderboard(scoped){
+  const el=document.getElementById('rpt-leaderboard');
+  const map={};
+  scoped.forEach(l=>{if(!l.counsellor)return;if(!map[l.counsellor])map[l.counsellor]={name:l.counsellor,total:0,enrolled:0};map[l.counsellor].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[l.counsellor].enrolled++;});
+  const sorted=Object.values(map).sort((a,b)=>b.enrolled-a.enrolled).slice(0,8);
+  if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No counsellor data for this scope yet.</div>';return;}
+  const maxN=Math.max(...sorted.map(s=>s.enrolled),1);
+  const medals=['🥇','🥈','🥉'];
+  el.innerHTML=sorted.map((s,i)=>`<div class="rpt-lb-row"><span class="rpt-lb-medal">${medals[i]||(i+1)}</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${esc(s.name)}</div><div class="rpt-lb-bar-t"><div class="rpt-lb-bar-f" style="width:${Math.round(s.enrolled/maxN*100)}%"></div></div></div><span style="font-size:13px;font-weight:700;color:var(--pine)">${s.enrolled}</span></div>`).join('');
+}
+function renderIntakeChart(scoped){
+  const offRamps=['Deferred','Not Interested','Dropped','Visa Application Rejected'];
+  const active=scoped.filter(l=>l.intake_month&&!offRamps.includes(l.status));
+  destroyChart('intake');
+  const ctx=document.getElementById('rpt-intake-chart');
+  if(!ctx||typeof Chart==='undefined')return;
+  if(!active.length){ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height);return;}
+  const map={};active.forEach(l=>{map[l.intake_month]=(map[l.intake_month]||0)+1;});
+  const sorted=Object.entries(map).sort((a,b)=>new Date('1 '+a[0]).getTime()-new Date('1 '+b[0]).getTime());
+  rptCharts.intake=new Chart(ctx,{type:'bar',data:{labels:sorted.map(s=>s[0]),datasets:[{data:sorted.map(s=>s[1]),backgroundColor:'#E08429',borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+}
+
+async function loadReportNotes(){
+  const meta=document.getElementById('rpt-notes-meta');
+  const box=document.getElementById('rpt-notes');
+  box.value='';meta.textContent='';
+  const {data,error}=await sb.from('report_notes').select('*').eq('report_date',rptState.date).eq('period_type',rptState.period).eq('country',rptState.country);
+  if(error){console.error('Failed to load report notes:',error);meta.textContent='Could not load notes — has report_notes been created in Supabase yet?';return;}
+  if(data&&data.length){
+    box.value=data[0].notes||'';
+    const who=teamList.find(t=>t.id===data[0].edited_by)?.full_name||'someone';
+    meta.textContent=data[0].edited_at?`Last edited by ${who} · ${new Date(data[0].edited_at).toLocaleString()}`:'';
+  }
+}
+async function saveReportNotes(){
+  const notes=document.getElementById('rpt-notes').value;
+  const{error}=await sb.from('report_notes').upsert({
+    report_date:rptState.date,period_type:rptState.period,country:rptState.country,
+    notes,edited_by:currentUser?.id,edited_at:new Date().toISOString()
+  },{onConflict:'report_date,period_type,country'});
+  if(error){toast('Error saving note: '+error.message);return;}
+  toast('Note saved.');
+  loadReportNotes();
+}
   let uniApps=[];async function loadUniApps(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data)uniApps=data;renderUniApps();}function renderUniApps(){const el=document.getElementById('d-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};el.innerHTML=uniApps.length?uniApps.map(u=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div></div><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniApp('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No universities added yet.</div>';}function openAddUniApp(){if(!curId)return;const uni=prompt('University name:');if(!uni)return;const prog=prompt('Program:');const status=prompt('Status (Applied/Offer Received/Conditional/Rejected/Enrolled):','Applied')||'Applied';sb.from('university_applications').insert([{lead_id:curId,university:uni,program:prog||'',status}]).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadUniApps(curId);toast('University added!');});}async function deleteUniApp(id){if(!confirm('Remove this university?'))return;await sb.from('university_applications').delete().eq('id',id);loadUniApps(curId);toast('Removed.');}
   function applyRoleUI(){
     const role=(document.getElementById('sb-urole').textContent||'').trim();
@@ -2369,7 +2748,7 @@ async function deleteCommission(id){if(!confirm('Delete this record?'))return;aw
 
     // Counsellors: hide Finance & Team nav entirely; Productivity is Admin/Super Admin only.
     if(isCounsellor){
-      const restricted=['finance','team','productivity'];
+      const restricted=['finance','team','productivity','reports'];
       document.querySelectorAll('.ni').forEach(btn=>{
         const onclick=btn.getAttribute('onclick')||'';
         restricted.forEach(r=>{if(onclick.includes("nav('"+r+"'"))btn.style.display='none';});
@@ -2389,6 +2768,37 @@ async function deleteCommission(id){if(!confirm('Delete this record?'))return;aw
 
     // Resume delete buttons are rendered per-row in renderResumesAdmin(); re-render to pick up role.
     if(typeof renderResumesAdmin==='function'&&document.getElementById('resumes-tbody')) renderResumesAdmin();
+  }
+  function renderConversionFunnel(allLeads){
+    const el=document.getElementById('conversion-funnel');
+    if(!el)return;
+    const stages=['New Enquiry','Counselling Done','Application Submitted','Received - Conditional Offer','Deposit Paid','Enrolled'];
+    const labels={'New Enquiry':'Enquiries','Counselling Done':'Counselled','Application Submitted':'Applied','Received - Conditional Offer':'Offer received','Deposit Paid':'Deposit paid','Enrolled':'Enrolled'};
+    const counts=stages.map(s=>allLeads.filter(l=>reachedStage(l.status,s)).length);
+    const top=counts[0]||0;
+    if(!top){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}
+    el.innerHTML=stages.map((s,i)=>{
+      const n=counts[i];
+      const pctOfTop=Math.round(n/top*100);
+      const stepConv=i>0&&counts[i-1]>0?Math.round(n/counts[i-1]*100):null;
+      return `<div class="prow"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:110px">${labels[s]}</span><div class="bar-t"><div class="bar-f" style="width:${pctOfTop}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${n}</span><span style="font-size:11px;color:var(--ink3);min-width:70px;text-align:right">${stepConv!==null?stepConv+'% of prev':''}</span></div>`;
+    }).join('');
+  }
+  function renderIntakeForecast(allLeads){
+    const el=document.getElementById('intake-forecast');
+    if(!el)return;
+    const offRamps=['Deferred','Not Interested','Dropped','Visa Application Rejected'];
+    const active=allLeads.filter(l=>l.intake_month&&!offRamps.includes(l.status));
+    if(!active.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No intake data yet — set an Intake Month on leads to see a forecast here.</div>';return;}
+    const byIntake={};
+    active.forEach(l=>{byIntake[l.intake_month]=(byIntake[l.intake_month]||0)+1;});
+    // Sort chronologically by parsing "Month Year" rather than alphabetically
+    const sorted=Object.entries(byIntake).sort((a,b)=>new Date('1 '+a[0]).getTime()-new Date('1 '+b[0]).getTime());
+    const maxN=Math.max(...sorted.map(([,n])=>n));
+    el.innerHTML=sorted.map(([intake,n])=>{
+      const w=Math.round(n/maxN*100);
+      return `<div class="prow" onclick="navFilter('ls-st','')" style="cursor:pointer"><span class="pill" style="background:var(--gold-l);color:var(--gold);min-width:130px">${esc(intake)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--gold)"></div></div><span class="pn" style="color:var(--gold)">${n}</span></div>`;
+    }).join('');
   }
   function renderCountryBreakdown(){const card=document.getElementById('country-breakdown-card');const el=document.getElementById('country-breakdown');if(!el||!card)return;if(myRole==='Counsellor'&&!isSuperAdmin){card.style.display='none';return;}card.style.display='block';const titleEl=card.querySelector('.card-t');if(titleEl)titleEl.textContent=isSuperAdmin?'🌍 Country breakdown':'🌍 '+(myCountry||'Your country')+' breakdown';const map={};leads.forEach(l=>{const c=l.country||'Unspecified';if(!map[c])map[c]={country:c,total:0,enrolled:0};map[c].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[c].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.total-a.total);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}const flagMap={India:'🇮🇳',UK:'🇬🇧',Pakistan:'🇵🇰',Bangladesh:'🇧🇩'};const tot=leads.length||1;el.innerHTML=sorted.map(c=>{const w=Math.round(c.total/tot*100);const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;return`<div class="prow" onclick="navFilter('ls-country','${c.country}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:110px">${flagMap[c.country]||''} ${esc(c.country)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${c.total}</span><span style="font-size:11px;color:var(--ink3);min-width:60px;text-align:right">${pct}% enr.</span></div>`;}).join('');}
   function renderCounsellorRank(){const el=document.getElementById('counsel-rank');const card=document.getElementById('counsel-rank-card');if(!el)return;if(myRole==='Counsellor'&&!isSuperAdmin){if(card)card.style.display='none';return;}if(card)card.style.display='block';const map={};leads.forEach(l=>{if(!l.counsellor)return;if(!map[l.counsellor])map[l.counsellor]={name:l.counsellor,total:0,enrolled:0};map[l.counsellor].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[l.counsellor].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.enrolled-a.enrolled);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="border-bottom:2px solid var(--line)"><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">#</th><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Counsellor</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Leads</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Enrolled</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Conversion %</th></tr></thead><tbody>${sorted.map((c,i)=>{const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';return`<tr style="border-bottom:1px solid var(--line)"><td style="padding:10px 8px;font-weight:600;color:var(--ink3)">${medal||i+1}</td><td style="padding:10px 8px;font-weight:600">${esc(c.name)}</td><td style="padding:10px 8px;text-align:center">${c.total}</td><td style="padding:10px 8px;text-align:center;color:var(--sage);font-weight:600">${c.enrolled}</td><td style="padding:10px 8px;text-align:center"><span style="background:${pct>=50?'#DCFCE7':pct>=25?'#FEF9C3':'#FFE4E6'};color:${pct>=50?'#166534':pct>=25?'#854D0E':'#9F1239'};padding:3px 10px;border-radius:99px;font-weight:600;font-size:11px">${pct}%</span></td></tr>`;}).join('')}</tbody></table>`;}

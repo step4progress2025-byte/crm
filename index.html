@@ -1361,7 +1361,8 @@ What would you like help with today?</div>
   </div>
 </div>
 
-<div id="events-widget" style="position:fixed;bottom:80px;right:18px;width:260px;background:var(--pine);border-radius:12px;padding:12px 14px;z-index:400;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.2)"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"> <span style="color:#fff;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Upcoming events</span> <span onclick="document.getElementById('events-widget').style.display='none'" style="color:rgba(255,255,255,0.6);cursor:pointer;font-size:18px;line-height:1">&times;</span> </div> <div id="events-ticker" style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.6"></div> </div> <div id="events-bell" onclick="toggleEventsWidget()" style="position:fixed;bottom:24px;right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> <span id="events-badge" style="position:absolute;top:-2px;right:-2px;background:#F1239;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="urgent-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,20,20,.6);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
+<div id="events-widget" style="position:fixed;bottom:80px;right:18px;width:260px;background:var(--pine);border-radius:12px;padding:12px 14px;z-index:400;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.2)"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"> <span style="color:#fff;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Upcoming events</span> <span onclick="document.getElementById('events-widget').style.display='none'" style="color:rgba(255,255,255,0.6);cursor:pointer;font-size:18px;line-height:1">&times;</span> </div> <div id="events-ticker" style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.6"></div> </div> <div id="events-bell" onclick="toggleEventsWidget()" style="position:fixed;bottom:24px;right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> <span id="events-badge" style="position:absolute;top:-2px;right:-2px;background:#F1239;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="super-admin-notif-list" style="position:fixed;bottom:24px;left:18px;z-index:500;display:flex;flex-direction:column-reverse;gap:8px;max-width:320px"></div>
+<div id="urgent-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,20,20,.6);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
   <div id="urgent-popup-card" style="background:#fff;border-radius:18px;padding:0;max-width:460px;width:92%;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden"></div>
 </div>
 <div class="toast" id="toast"></div>
@@ -3588,8 +3589,12 @@ async function loadMyTasks(){
 let notificationInterval=null;
 // Session-only — resets on page reload, so the same lead won't nag forever,
 // but also won't silently stay suppressed across a fresh login either.
-const escalationShown10=new Set();
-const escalationShown15=new Set();
+// Tracks the last time each lead's escalation was shown, so it can keep
+// re-notifying every RENOTIFY_MS until the lead is actually attended —
+// not just once per session.
+const escalationLastShown10=new Map();
+const escalationLastShown15=new Map();
+const RENOTIFY_MS=5*60*1000; // re-nag every 5 minutes while still unattended
 
 function startNotificationEngine(){
   checkEscalations();
@@ -3607,10 +3612,16 @@ function stopNotificationEngine(){
 // colour signals urgency, click jumps straight to the lead.
 // ── Centered urgent popup, with a queue so escalations never collide ──
 // Bigger, dead-centre, dimmed backdrop — designed to actually be noticed,
-// not just a small corner banner easy to miss.
+// not just a small corner banner easy to miss. Super Admin gets a quieter
+// corner list instead — they oversee every branch at once, so a full-screen
+// interruption for every single office's escalation would be overwhelming.
 let urgentPopupQueue=[];
 let urgentPopupAction=null;
-function queueUrgentPopup(html,onView){
+function queueUrgentPopup(html,onView,compactText){
+  if(isSuperAdmin){
+    addSuperAdminNotification(compactText||html,onView);
+    return;
+  }
   urgentPopupQueue.push({html,onView});
   showNextUrgentPopup();
 }
@@ -3632,6 +3643,17 @@ function dismissUrgentPopup(){
   urgentPopupAction=null;
   setTimeout(showNextUrgentPopup,300); // show the next queued one, if any
 }
+function addSuperAdminNotification(compactText,onView){
+  const container=document.getElementById('super-admin-notif-list');
+  if(!container)return;
+  const card=document.createElement('div');
+  card.style.cssText='background:#fff;border:1px solid var(--line);border-left:4px solid var(--rose);border-radius:8px;padding:10px 12px;box-shadow:var(--shm);font-size:12px;cursor:pointer;line-height:1.5';
+  card.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="flex:1">${compactText}</div><span style="color:var(--ink3);font-size:15px;line-height:1;flex-shrink:0">×</span></div>`;
+  card.querySelector('span').onclick=(e)=>{e.stopPropagation();card.remove();};
+  card.addEventListener('click',(e)=>{if(e.target.tagName!=='SPAN'){onView();card.remove();}});
+  container.appendChild(card);
+  setTimeout(()=>card?.remove(),25000);
+}
 
 function showUrgentPopup(lead,level){
   const isManagerLevel=level==='manager';
@@ -3649,27 +3671,36 @@ function showUrgentPopup(lead,level){
         <button onclick="actOnUrgentPopup()" style="padding:10px 22px;border:none;background:var(--pine);color:#fff;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">View lead →</button>
       </div>
     </div>`;
-  queueUrgentPopup(html,()=>openLeadDetail(lead.id));
+  const compact=`${isManagerLevel?'🚨':'⏰'} <b>${esc(lead.name)}</b> ${isManagerLevel?'still not contacted after 15+ min — assigned to '+esc(lead.counsellor||'no one'):'no contact in 10+ min'}`;
+  queueUrgentPopup(html,()=>openLeadDetail(lead.id),compact);
 }
 
 function checkEscalations(){
   if(!currentUser)return;
   const now=Date.now();
   leads.forEach(l=>{
-    if(l.status!=='New Enquiry')return;
+    if(l.status!=='New Enquiry')return; // status changed = attended = stop nagging entirely
     const ref=l.updated_at||l.created_at;
     if(!ref)return;
     const minutes=(now-new Date(ref).getTime())/60000;
     // 10-minute alert: to whoever is this lead's own assigned counsellor.
-    if(minutes>=10&&l.counsellor===myName&&!escalationShown10.has(l.id)){
-      escalationShown10.add(l.id);
-      showUrgentPopup(l,'counsellor');
+    // Keeps re-showing every RENOTIFY_MINUTES until the lead is actually
+    // attended (status changes away from New Enquiry) — not just once.
+    if(minutes>=10&&l.counsellor===myName){
+      const last=escalationLastShown10.get(l.id)||0;
+      if(now-last>=RENOTIFY_MS){
+        escalationLastShown10.set(l.id,now);
+        showUrgentPopup(l,'counsellor');
+      }
     }
     // 15-minute escalation: to Manager/Admin/Super Admin within the same
     // country scope (Super Admin sees all countries).
-    if(minutes>=15&&myRole!=='Counsellor'&&(isSuperAdmin||l.country===myCountry)&&!escalationShown15.has(l.id)){
-      escalationShown15.add(l.id);
-      showUrgentPopup(l,'manager');
+    if(minutes>=15&&myRole!=='Counsellor'&&(isSuperAdmin||l.country===myCountry)){
+      const last=escalationLastShown15.get(l.id)||0;
+      if(now-last>=RENOTIFY_MS){
+        escalationLastShown15.set(l.id,now);
+        showUrgentPopup(l,'manager');
+      }
     }
   });
 }
@@ -3716,7 +3747,8 @@ function checkDailyFollowupPopup(){
         <button onclick="actOnUrgentPopup()" style="padding:10px 22px;border:none;background:var(--pine);color:#fff;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">View follow-ups →</button>
       </div>
     </div>`;
-  queueUrgentPopup(html,()=>nav('followup',document.querySelector('.ni[data-nav="followup"]')));
+  const compact=`📅 <b>${myFollowups.length} follow-up${myFollowups.length!==1?'s':''} due today</b> — ${names}`;
+  queueUrgentPopup(html,()=>nav('followup',document.querySelector('.ni[data-nav="followup"]')),compact);
 }
 
 function checkNoActivity(){const now=Date.now();const stale=leads.filter(l=>['New Enquiry','Contacted','Counselling Done'].includes(l.status)&&l.updated_at&&(now-new Date(l.updated_at).getTime())>2*86400000);const nb=document.getElementById('nb-fu');if(stale.length>0){nb.classList.add('hot');nb.textContent=stale.length;const existing=document.getElementById('stale-toast');if(!existing){const t=document.createElement('div');t.id='stale-toast';t.style.cssText='position:fixed;top:16px;right:24px;background:var(--ember);color:#fff;font-size:13px;padding:10px 18px;border-radius:var(--r);z-index:400;box-shadow:var(--shm);cursor:pointer';t.textContent=`⚠️ ${stale.length} lead${stale.length>1?'s':''} with no activity for 2+ days`;t.onclick=()=>{t.remove();nav('followup',document.querySelector('.ni[data-nav="followup"]'));};document.body.appendChild(t);setTimeout(()=>t?.remove(),8000);}}}

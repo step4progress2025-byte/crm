@@ -1191,6 +1191,22 @@ What would you like help with today?</div>
   </div>
 </div>
 
+<!-- Generic Quick-Input Modal — for the handful of single-value edits
+     (document expiry, daily reminder time) that don't need a full form -->
+<div class="mover" id="modal-quick-input">
+  <div class="modal" style="width:380px">
+    <div class="mhead"><span class="mtitle" id="qi-title">Edit</span><button class="mclose" onclick="closeModal('modal-quick-input')">×</button></div>
+    <div class="ff full">
+      <label id="qi-label">Value</label>
+      <input id="qi-value">
+    </div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeModal('modal-quick-input')">Cancel</button>
+      <button class="btn btn-p" onclick="saveQuickInput()"><i class="ti ti-check"></i>Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Invite User Modal -->
 <div class="mover" id="modal-invite">
   <div class="modal" style="width:460px">
@@ -1498,6 +1514,20 @@ async function logActivity(leadId,eventType,detail){
     lead_id:leadId,event_type:eventType,detail,actor_name:myName||null
   });
   if(error)console.error('Activity log failed (non-blocking):',error);
+}
+
+// Every time a lead is opened, log who viewed it — this is what actually
+// answers "who has looked at this lead" for Admin/Manager/Super Admin.
+// De-duplicated per person per lead within a 2-minute window so opening
+// and closing the same lead repeatedly doesn't flood the log.
+const recentViewLog=new Map();
+function logViewIfNeeded(leadId){
+  if(!leadId)return;
+  const key=leadId+':'+(myName||currentUser?.id||'');
+  const last=recentViewLog.get(key)||0;
+  if(Date.now()-last<2*60*1000)return;
+  recentViewLog.set(key,Date.now());
+  logActivity(leadId,'viewed',`Viewed by ${myName||'someone'}`);
 }
 
 async function autoCreateTaskForStatus(lead,newStatus){
@@ -1866,7 +1896,28 @@ async function saveEventModal(){
   if(editingEventId){await updateEvent(editingEventId,title,date,type,desc);}else{await saveEvent(title,date,type,desc);}
   btn.disabled=false;btn.textContent='Save';
   closeModal('modal-event');
-} async function updateEvent(id,title,date,type,desc){   const{error}=await sb.from('events').update({title,event_date:date,event_type:type,description:desc}).eq('id',id);   if(!error){await loadEvents();toast('Event updated!');} } async function saveEvent(title,date,type,desc){   const{error}=await sb.from('events').insert({title,event_date:date,event_type:type,description:desc,created_by:currentUser.id});   if(!error){await loadEvents();toast('Event added!');} } async function deleteEvent(id){   if(!confirm('Delete this event?'))return;   await sb.from('events').delete().eq('id',id);   await loadEvents();   toast('Event deleted.'); } // check existing session
+}
+
+// ── Generic quick-input modal — replaces the last few single-value prompts ──
+let quickInputCallback=null;
+function openQuickInput(title,label,type,currentValue,onSave){
+  document.getElementById('qi-title').textContent=title;
+  document.getElementById('qi-label').textContent=label;
+  const input=document.getElementById('qi-value');
+  input.type=type;
+  input.value=currentValue||'';
+  quickInputCallback=onSave;
+  document.getElementById('modal-quick-input').classList.add('open');
+  setTimeout(()=>input.focus(),50);
+}
+function saveQuickInput(){
+  const val=document.getElementById('qi-value').value;
+  const cb=quickInputCallback;
+  closeModal('modal-quick-input');
+  if(cb)cb(val);
+}
+
+async function updateEvent(id,title,date,type,desc){   const{error}=await sb.from('events').update({title,event_date:date,event_type:type,description:desc}).eq('id',id);   if(!error){await loadEvents();toast('Event updated!');} } async function saveEvent(title,date,type,desc){   const{error}=await sb.from('events').insert({title,event_date:date,event_type:type,description:desc,created_by:currentUser.id});   if(!error){await loadEvents();toast('Event added!');} } async function deleteEvent(id){   if(!confirm('Delete this event?'))return;   await sb.from('events').delete().eq('id',id);   await loadEvents();   toast('Event deleted.'); } // check existing session
 
  
 sb.auth.getSession().then(({data:{session}})=>{
@@ -2171,6 +2222,7 @@ function renderToolLeads(){
 function openDetail(id){
   const l=leads.find(x=>x.id===id);if(!l)return;
   curId=id;
+  logViewIfNeeded(id);
   document.getElementById('d-id').textContent=l.lead_id||id.substring(0,8);
   document.getElementById('d-captured-at').textContent=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'Unknown';
   document.getElementById('d-name').textContent=l.name;
@@ -2212,6 +2264,7 @@ function closeDover(e){
 function openLeadDetail(id){
   const l=leads.find(x=>x.id===id);if(!l)return;
   curId=id;
+  logViewIfNeeded(id);
   document.getElementById('ld-id').textContent=l.lead_id||id.substring(0,8);
   document.getElementById('ld-captured-at').textContent=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'Unknown';
   document.getElementById('ld-name').textContent=l.name;
@@ -2277,7 +2330,7 @@ function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if
 function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
 // FS versions of doc/reminder/uni functions
 async function loadDocsFS(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-doc-list');if(!el)return;if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet.</div>';return;}el.innerHTML=data.map(d=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}</div><button onclick="setDocExpiryFS('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`).join('');}
-function setDocExpiryFS(id,current){const val=prompt('Expiry date (YYYY-MM-DD), blank to clear:',current||'');if(val===null)return;sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocsFS(curId);toast('Expiry date updated.');});}
+function setDocExpiryFS(id,current){openQuickInput('Set expiry date','Expiry date','date',current,(val)=>{sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocsFS(curId);toast('Expiry date updated.');});});}
 async function initDocsFS(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=DEFAULT_DOCS.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocsFS(curId);toast('Checklist created!');}
 // ── Per-lead Tasks (full-screen panel) ──────────────────────────────
 async function loadTasksFS(leadId){
@@ -3374,7 +3427,7 @@ async function loadGlobalActivityLog(scopedLeads,start,end){
     .limit(200);
   if(error){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load activity log — has activity_log been created in Supabase yet?</div>';return;}
   if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">No activity recorded in this period yet.</div>';return;}
-  const icons={created:'✨',imported:'📥',status_change:'🔄',reassigned:'👤',field_edit:'✏️'};
+  const icons={created:'✨',imported:'📥',status_change:'🔄',reassigned:'👤',field_edit:'✏️',viewed:'👁️'};
   el.innerHTML=data.map(e=>`<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;cursor:pointer" onclick="openLeadDetail('${e.lead_id}')">
     <span>${icons[e.event_type]||'•'}</span>
     <div style="flex:1">
@@ -3457,7 +3510,7 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
   const DEFAULT_DOCS=['Passport Copy','Academic Transcripts','English Test Scores','Bank Statements','SOP Draft','References / LOR','Photo','CV / Resume'];
 async function loadDocs(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data){renderDocs(data);}else{renderDocs([]);}}
 function renderDocs(docs){const el=document.getElementById('d-doc-list');if(!el)return;if(!docs.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet. Click Init checklist to start.</div>';return;}el.innerHTML=docs.map(d=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}</div><button onclick="setDocExpiry('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`).join('');}
-function setDocExpiry(id,current){const val=prompt('Expiry date (YYYY-MM-DD), blank to clear:',current||'');if(val===null)return;sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocs(curId);toast('Expiry date updated.');});}
+function setDocExpiry(id,current){openQuickInput('Set expiry date','Expiry date','date',current,(val)=>{sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocs(curId);toast('Expiry date updated.');});});}
 async function initDocs(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=DEFAULT_DOCS.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocs(curId);toast('Checklist created!');}
 async function toggleDoc(id,checked){await sb.from('documents').update({status:checked?'Done':'Pending'}).eq('id',id);const el=document.getElementById('d-doc-list');if(el){const spans=el.querySelectorAll('span');spans.forEach(s=>{if(s.style)s.style.textDecoration=checked?'line-through':''});}toast(checked?'✅ Marked done':'↩ Marked pending');}
 
@@ -3508,7 +3561,7 @@ async function loadActivityTimeline(leadId,statElId,listElId){
   } else {
     statEl.textContent='';
   }
-  const icons={created:'✨',imported:'📥',status_change:'🔄',reassigned:'👤',field_edit:'✏️'};
+  const icons={created:'✨',imported:'📥',status_change:'🔄',reassigned:'👤',field_edit:'✏️',viewed:'👁️'};
   listEl.innerHTML=data.map(e=>`<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:12px">
     <span>${icons[e.event_type]||'•'}</span>
     <div style="flex:1">
@@ -3782,11 +3835,11 @@ function getDailyReminderTime(){
 }
 function setDailyReminderTime(){
   const current=getDailyReminderTime();
-  const val=prompt('Set your daily follow-up reminder time (24hr, HH:MM):',current);
-  if(!val)return;
-  if(!/^\d{2}:\d{2}$/.test(val)){toast('Please use HH:MM format, e.g. 09:30');return;}
-  localStorage.setItem('s4p_daily_reminder_time_'+(currentUser?.id||''),val);
-  toast('Daily reminder time set to '+val);
+  openQuickInput('Daily reminder time','What time should your daily follow-up reminder appear?','time',current,(val)=>{
+    if(!val){toast('Please pick a time.');return;}
+    localStorage.setItem('s4p_daily_reminder_time_'+(currentUser?.id||''),val);
+    toast('Daily reminder time set to '+val);
+  });
 }
 function checkDailyFollowupPopup(){
   if(!currentUser)return;

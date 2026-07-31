@@ -1157,6 +1157,40 @@ What would you like help with today?</div>
   </div>
 </div>
 
+<!-- Task Modal -->
+<div class="mover" id="modal-task">
+  <div class="modal" style="width:460px">
+    <div class="mhead"><span class="mtitle">Add task</span><button class="mclose" onclick="closeModal('modal-task')">×</button></div>
+    <div class="fg">
+      <div class="ff full"><label>Task title *</label><input id="task-title" placeholder="e.g. Send university shortlist to student"></div>
+      <div class="ff full"><label>Due date (optional)</label><input type="date" id="task-due"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeModal('modal-task')">Cancel</button>
+      <button class="btn btn-p" id="save-task-btn" onclick="saveTaskModal()"><i class="ti ti-check"></i>Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Event Modal -->
+<div class="mover" id="modal-event">
+  <div class="modal" style="width:480px">
+    <div class="mhead"><span class="mtitle" id="event-modal-title">Add event</span><button class="mclose" onclick="closeModal('modal-event')">×</button></div>
+    <div class="fg">
+      <div class="ff full"><label>Event title *</label><input id="event-title" placeholder="e.g. UK Universities Seminar"></div>
+      <div class="ff"><label>Date *</label><input type="date" id="event-date"></div>
+      <div class="ff"><label>Type</label>
+        <select id="event-type"><option>Seminar</option><option>Webinar</option><option>Application Deadline</option><option>Follow-up</option><option>Other</option></select>
+      </div>
+      <div class="ff full"><label>Description or link (optional)</label><input id="event-desc" placeholder="https://... or a short note"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeModal('modal-event')">Cancel</button>
+      <button class="btn btn-p" id="save-event-btn" onclick="saveEventModal()"><i class="ti ti-check"></i>Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Invite User Modal -->
 <div class="mover" id="modal-invite">
   <div class="modal" style="width:460px">
@@ -1809,7 +1843,30 @@ document.getElementById('login-btn').disabled=false;
   document.getElementById('login-btn').textContent='Sign in →';
 }
 
-let events=[]; async function loadEvents(){   const{data}=await sb.from('events').select('*').order('event_date',{ascending:true});   if(data){events=data;renderEvents();renderEventsTicker();} } function renderEvents(){   const cal=document.getElementById('events-calendar');   const list=document.getElementById('events-list');   if(!cal)return;   const now=new Date();   const thisMonth=events.filter(e=>new Date(e.event_date).getMonth()===now.getMonth()&&new Date(e.event_date).getFullYear()===now.getFullYear());   const upcoming=events.filter(e=>new Date(e.event_date)>=now).slice(0,10);   const typeColors={'Seminar':"var(--sky-1)",'Webinar':"var(--sky-1)",'Application Deadline':"var(--rose-1)",'Follow-up':"var(--sage-1)",'Other':"var(--gold-1)"};   cal.innerHTML=events.length?events.map(e=>{     const d=new Date(e.event_date);     const isPast=d<now;     const bg=typeColors[e.event_type]||"var(--gold-1)";     return`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);opacity:${isPast?0.5:1}">     <div style="min-width:48px;text-align:center;background:${bg};border-radius:8px;padding:6px 4px">     <div style="font-size:18px;font-weight:600;color:var(--ink);line-height:1">${d.getDate()}</div>     <div style="font-size:10px;color:var(--ink2)">${d.toLocaleString('default',{month:'short'})}</div>     </div>     <div style="flex:1">     <div style="font-weight:500;font-size:14px;color:var(--ink)">${esc(e.title)}</div>     <div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(e.event_type||'')}${e.description?` · <a href="${e.description}" target="_blank" style="color:var(--pine2)">${esc(e.description)}</a>`:''}</div>     </div>     <button onclick="openAddEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px">✏️</button><button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">&times;</button>     </div>`;}).join(''):'<p style="color:var(--ink3);font-style:italic;font-size:13px">No events yet. Click Add event to get started.</p>';   list.innerHTML=thisMonth.length?thisMonth.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink2)"><b style="color:var(--ink)">${new Date(e.event_date).getDate()} ${new Date(e.event_date).toLocaleString('default',{month:'short'})}</b> · ${esc(e.title)}</div>`).join(''):'<p style="color:var(--ink3);font-style:italic;font-size:13px">No events this month.</p>'; } function renderEventsTicker(){   const ticker=document.getElementById('events-ticker');   const badge=document.getElementById('events-badge');   if(!ticker)return;   const now=new Date();   const soon=events.filter(e=>{const d=new Date(e.event_date);return d>=now&&(d-now)<=7*86400000;});   const upcoming=events.filter(e=>new Date(e.event_date)>=now).slice(0,5);   if(badge){if(soon.length>0){badge.textContent=soon.length;badge.style.display='flex';}else{badge.style.display='none';}}   ticker.innerHTML=upcoming.length?upcoming.map(e=>`<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.1)"><span style="opacity:0.7;font-size:11px">${new Date(e.event_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span><br>${esc(e.title)}</div>`).join(''):'<div style="opacity:0.7">No upcoming events</div>'; } function toggleEventsWidget(){   const w=document.getElementById('events-widget');   w.style.display=w.style.display==='none'?'block':'none'; } function toggleOther(selectId,inputId){   const sel=document.getElementById(selectId);   const inp=document.getElementById(inputId);   if(inp)inp.style.display=sel.value==='Other'?'block':'none'; } function openAddEvent(id){   const ev=id?events.find(e=>e.id===id):null;   const title=prompt('Event title:',ev?.title||'');   if(!title)return;   const date=prompt('Event date (YYYY-MM-DD):',ev?.event_date||'');   if(!date)return;   const type=prompt('Type (Seminar/Webinar/Application Deadline/Follow-up/Other):',ev?.event_type||'Other');   const desc=prompt('Description or link (optional):',ev?.description||'');   if(id){updateEvent(id,title,date,type||'Other',desc||'');}else{saveEvent(title,date,type||'Other',desc||'');} } async function updateEvent(id,title,date,type,desc){   const{error}=await sb.from('events').update({title,event_date:date,event_type:type,description:desc}).eq('id',id);   if(!error){await loadEvents();toast('Event updated!');} } async function saveEvent(title,date,type,desc){   const{error}=await sb.from('events').insert({title,event_date:date,event_type:type,description:desc,created_by:currentUser.id});   if(!error){await loadEvents();toast('Event added!');} } async function deleteEvent(id){   if(!confirm('Delete this event?'))return;   await sb.from('events').delete().eq('id',id);   await loadEvents();   toast('Event deleted.'); } // check existing session
+let events=[]; async function loadEvents(){   const{data}=await sb.from('events').select('*').order('event_date',{ascending:true});   if(data){events=data;renderEvents();renderEventsTicker();} } function renderEvents(){   const cal=document.getElementById('events-calendar');   const list=document.getElementById('events-list');   if(!cal)return;   const now=new Date();   const thisMonth=events.filter(e=>new Date(e.event_date).getMonth()===now.getMonth()&&new Date(e.event_date).getFullYear()===now.getFullYear());   const upcoming=events.filter(e=>new Date(e.event_date)>=now).slice(0,10);   const typeColors={'Seminar':"var(--sky-1)",'Webinar':"var(--sky-1)",'Application Deadline':"var(--rose-1)",'Follow-up':"var(--sage-1)",'Other':"var(--gold-1)"};   cal.innerHTML=events.length?events.map(e=>{     const d=new Date(e.event_date);     const isPast=d<now;     const bg=typeColors[e.event_type]||"var(--gold-1)";     return`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);opacity:${isPast?0.5:1}">     <div style="min-width:48px;text-align:center;background:${bg};border-radius:8px;padding:6px 4px">     <div style="font-size:18px;font-weight:600;color:var(--ink);line-height:1">${d.getDate()}</div>     <div style="font-size:10px;color:var(--ink2)">${d.toLocaleString('default',{month:'short'})}</div>     </div>     <div style="flex:1">     <div style="font-weight:500;font-size:14px;color:var(--ink)">${esc(e.title)}</div>     <div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(e.event_type||'')}${e.description?` · <a href="${e.description}" target="_blank" style="color:var(--pine2)">${esc(e.description)}</a>`:''}</div>     </div>     <button onclick="openAddEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px">✏️</button><button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">&times;</button>     </div>`;}).join(''):'<p style="color:var(--ink3);font-style:italic;font-size:13px">No events yet. Click Add event to get started.</p>';   list.innerHTML=thisMonth.length?thisMonth.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink2)"><b style="color:var(--ink)">${new Date(e.event_date).getDate()} ${new Date(e.event_date).toLocaleString('default',{month:'short'})}</b> · ${esc(e.title)}</div>`).join(''):'<p style="color:var(--ink3);font-style:italic;font-size:13px">No events this month.</p>'; } function renderEventsTicker(){   const ticker=document.getElementById('events-ticker');   const badge=document.getElementById('events-badge');   if(!ticker)return;   const now=new Date();   const soon=events.filter(e=>{const d=new Date(e.event_date);return d>=now&&(d-now)<=7*86400000;});   const upcoming=events.filter(e=>new Date(e.event_date)>=now).slice(0,5);   if(badge){if(soon.length>0){badge.textContent=soon.length;badge.style.display='flex';}else{badge.style.display='none';}}   ticker.innerHTML=upcoming.length?upcoming.map(e=>`<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.1)"><span style="opacity:0.7;font-size:11px">${new Date(e.event_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span><br>${esc(e.title)}</div>`).join(''):'<div style="opacity:0.7">No upcoming events</div>'; } function toggleEventsWidget(){   const w=document.getElementById('events-widget');   w.style.display=w.style.display==='none'?'block':'none'; } function toggleOther(selectId,inputId){   const sel=document.getElementById(selectId);   const inp=document.getElementById(inputId);   if(inp)inp.style.display=sel.value==='Other'?'block':'none'; } let editingEventId=null;
+function openAddEvent(id){
+  editingEventId=id||null;
+  const ev=id?events.find(e=>e.id===id):null;
+  document.getElementById('event-modal-title').textContent=id?'Edit event':'Add event';
+  document.getElementById('event-title').value=ev?.title||'';
+  document.getElementById('event-date').value=ev?.event_date||'';
+  document.getElementById('event-type').value=ev?.event_type||'Seminar';
+  document.getElementById('event-desc').value=ev?.description||'';
+  document.getElementById('modal-event').classList.add('open');
+}
+async function saveEventModal(){
+  const title=document.getElementById('event-title').value.trim();
+  if(!title){document.getElementById('event-title').focus();toast('Please enter an event title.');return;}
+  const date=document.getElementById('event-date').value;
+  if(!date){document.getElementById('event-date').focus();toast('Please pick a date.');return;}
+  const type=document.getElementById('event-type').value;
+  const desc=document.getElementById('event-desc').value.trim();
+  const btn=document.getElementById('save-event-btn');
+  btn.disabled=true;btn.textContent='Saving…';
+  if(editingEventId){await updateEvent(editingEventId,title,date,type,desc);}else{await saveEvent(title,date,type,desc);}
+  btn.disabled=false;btn.textContent='Save';
+  closeModal('modal-event');
+} async function updateEvent(id,title,date,type,desc){   const{error}=await sb.from('events').update({title,event_date:date,event_type:type,description:desc}).eq('id',id);   if(!error){await loadEvents();toast('Event updated!');} } async function saveEvent(title,date,type,desc){   const{error}=await sb.from('events').insert({title,event_date:date,event_type:type,description:desc,created_by:currentUser.id});   if(!error){await loadEvents();toast('Event added!');} } async function deleteEvent(id){   if(!confirm('Delete this event?'))return;   await sb.from('events').delete().eq('id',id);   await loadEvents();   toast('Event deleted.'); } // check existing session
 
  
 sb.auth.getSession().then(({data:{session}})=>{
@@ -2241,14 +2298,7 @@ async function loadTasksFS(leadId){
   }).join('');
 }
 function openAddTaskFS(){
-  if(!curId)return;
-  const title=prompt('Task title:');if(!title)return;
-  const dueDate=prompt('Due date (YYYY-MM-DD), blank if none:','')||null;
-  const l=leads.find(x=>x.id===curId);
-  sb.from('tasks').insert({lead_id:curId,title,due_date:dueDate,assigned_to:l?.counsellor||null,status:'Open',source:'manual'}).then(({error})=>{
-    if(error){toast('Error: '+error.message);return;}
-    loadTasksFS(curId);loadMyTasks();toast('Task added!');
-  });
+  openTaskModal();
 }
 async function toggleTaskFS(id,checked){
   await sb.from('tasks').update({status:checked?'Done':'Open',completed_at:checked?new Date().toISOString():null}).eq('id',id);
@@ -2353,6 +2403,31 @@ async function saveReminderModal(){
   loadRemindersFS(curId);
   loadDashReminders();
   toast(isReminder?'Reminder set!':'Comment added!');
+}
+
+// ── Task modal — title + due date together, no sequential prompts ──
+function openTaskModal(){
+  if(!curId){toast('Open a lead first.');return;}
+  document.getElementById('task-title').value='';
+  document.getElementById('task-due').value='';
+  document.getElementById('modal-task').classList.add('open');
+}
+async function saveTaskModal(){
+  if(!curId){toast('No lead selected.');return;}
+  const title=document.getElementById('task-title').value.trim();
+  if(!title){document.getElementById('task-title').focus();toast('Please enter a task title.');return;}
+  const dueDate=document.getElementById('task-due').value||null;
+  const l=leads.find(x=>x.id===curId);
+  const btn=document.getElementById('save-task-btn');
+  btn.disabled=true;btn.textContent='Saving…';
+  const{error}=await sb.from('tasks').insert({lead_id:curId,title,due_date:dueDate,assigned_to:l?.counsellor||null,status:'Open',source:'manual'});
+  btn.disabled=false;btn.textContent='Save';
+  if(error){toast('Error: '+error.message);return;}
+  closeModal('modal-task');
+  loadTasks(curId);
+  loadTasksFS(curId);
+  loadMyTasks();
+  toast('Task added!');
 }
 
 async function updateStatus(){
@@ -3465,14 +3540,7 @@ function renderTasks(list){
   }).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No tasks yet.</div>';
 }
 function openAddTask(){
-  if(!curId)return;
-  const title=prompt('Task title:');if(!title)return;
-  const dueDate=prompt('Due date (YYYY-MM-DD), blank if none:','')||null;
-  const l=leads.find(x=>x.id===curId);
-  sb.from('tasks').insert({lead_id:curId,title,due_date:dueDate,assigned_to:l?.counsellor||null,status:'Open',source:'manual'}).then(({error})=>{
-    if(error){toast('Error: '+error.message);return;}
-    loadTasks(curId);loadMyTasks();toast('Task added!');
-  });
+  openTaskModal();
 }
 async function toggleTask(id,checked){
   await sb.from('tasks').update({status:checked?'Done':'Open',completed_at:checked?new Date().toISOString():null}).eq('id',id);

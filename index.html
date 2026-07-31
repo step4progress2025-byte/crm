@@ -449,6 +449,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div class="sb-av" id="sb-av">?</div>
         <div><div class="sb-uname" id="sb-uname">—</div><div class="sb-urole" id="sb-urole">—</div></div>
       </div>
+      <button class="sb-logout" id="notif-toggle-btn" onclick="toggleGlobalNotifications()" style="display:none"></button>
       <button class="sb-logout" onclick="setDailyReminderTime()"><i class="ti ti-clock" style="font-size:15px"></i>Set daily reminder time</button>
       <button class="sb-logout" onclick="doLogout()"><i class="ti ti-logout" style="font-size:15px"></i>Sign out</button>
     </div>
@@ -1851,6 +1852,7 @@ async function onLogin(user){
   loadDashReminders();
   loadExpiryAlerts();
   loadMyTasks();
+  await loadNotificationSettings();
   startNotificationEngine();
   // realtime subscription
   sb.channel('leads-changes').on('postgres_changes',{event:'*',schema:'public',table:'leads'},()=>{
@@ -3717,6 +3719,32 @@ const escalationLastShown10=new Map();
 const escalationLastShown15=new Map();
 const RENOTIFY_MS=5*60*1000; // re-nag every 5 minutes while still unattended
 
+// ── Global notifications toggle ─────────────────────────────────────
+// Shared across the whole team via Supabase (not a per-browser setting) —
+// Super Admin can temporarily switch off escalation popups for everyone,
+// e.g. while reassigning leads from a counsellor who's on leave.
+let notificationsEnabled=true;
+async function loadNotificationSettings(){
+  const{data,error}=await sb.from('app_settings').select('*').eq('key','notifications_enabled').maybeSingle();
+  if(!error&&data) notificationsEnabled=(data.value==='true');
+  renderNotificationsToggle();
+}
+async function toggleGlobalNotifications(){
+  if(!isSuperAdmin){toast('Only the Super Admin can change this.');return;}
+  notificationsEnabled=!notificationsEnabled;
+  const{error}=await sb.from('app_settings').upsert({key:'notifications_enabled',value:String(notificationsEnabled)});
+  if(error){toast('Error saving setting: '+error.message);notificationsEnabled=!notificationsEnabled;return;}
+  renderNotificationsToggle();
+  toast(notificationsEnabled?'🔔 Lead notifications turned ON for everyone':'🔕 Lead notifications turned OFF for everyone');
+}
+function renderNotificationsToggle(){
+  const el=document.getElementById('notif-toggle-btn');
+  if(!el)return;
+  if(!isSuperAdmin){el.style.display='none';return;}
+  el.style.display='flex';
+  el.innerHTML=`<i class="ti ${notificationsEnabled?'ti-bell':'ti-bell-off'}" style="font-size:15px"></i>${notificationsEnabled?'Notifications ON':'Notifications OFF'}`;
+}
+
 function startNotificationEngine(){
   checkEscalations();
   checkDailyFollowupPopup();
@@ -3797,7 +3825,7 @@ function showUrgentPopup(lead,level){
 }
 
 function checkEscalations(){
-  if(!currentUser)return;
+  if(!currentUser||!notificationsEnabled)return;
   const now=Date.now();
   leads.forEach(l=>{
     if(l.status!=='New Enquiry')return; // status changed = attended = stop nagging entirely

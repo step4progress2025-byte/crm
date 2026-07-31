@@ -396,6 +396,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <option style="background:#0D4A3C">Counsellor</option>
             <option style="background:#0D4A3C">Admin</option>
             <option style="background:#0D4A3C">Manager</option>
+            <option style="background:#0D4A3C">Director</option>
           </select>
         </div>
         <div class="auth-field"><label>Country</label>
@@ -1029,7 +1030,7 @@ What would you like help with today?</div>
         </select>
       </div>
       <div class="ff"><label>Office</label>
-        <select id="f-office" onchange="populateCounsellorDropdown()"></select>
+        <select id="f-office" onchange="populateCounsellorDropdown();populateSubTeamDropdowns()"></select>
       </div>
       <div class="ff full" id="f-assign-mode-wrap" style="display:none">
         <label>Counsellor assignment</label>
@@ -1046,6 +1047,10 @@ What would you like help with today?</div>
         <label>Counsellor</label>
         <select id="f-counsel"><option value="">Auto-assign (round robin)</option></select>
       </div>
+      <div class="ff full sdiv" style="border-top:1px solid var(--line);margin-top:4px;padding-top:10px">Sub-team assignment (optional)</div>
+      <div class="ff"><label>Application Team</label><select id="f-application-team"><option value="">Unassigned</option></select></div>
+      <div class="ff"><label>Visa Team</label><select id="f-visa-team"><option value="">Unassigned</option></select></div>
+      <div class="ff"><label>SOP Team</label><select id="f-sop-team"><option value="">Unassigned</option></select></div>
       <div class="ff"><label>Next follow-up</label><input type="date" id="f-fu"></div>
       <div class="ff"><label>Visa deadline</label><input type="date" id="f-visa-deadline"></div>
       <div class="sdiv">Additional Details</div>       <div class="ff"><label>Intake Month</label>         <select id="f-intake"><option value="">Select intake</option><option>January 2026</option><option>May 2026</option><option>September 2026</option><option>January 2027</option><option>May 2027</option><option>September 2027</option></select>       </div>       <div class="ff"><label>IELTS Status</label>         <select id="f-ielts-status"><option value="">Select status</option><option>Not taken</option><option>Appearing soon</option><option>Score available</option><option>Exempt</option></select>       </div>       <div class="ff"><label>IELTS / PTE Score</label><input id="f-ielts-score" placeholder="e.g. 6.5"></div>       <div class="ff"><label>Budget Range</label>         <select id="f-budget"><option value="">Select budget</option><option>Under £10,000</option><option>£10,000 - £15,000</option><option>£15,000 - £20,000</option><option>£20,000 - £30,000</option><option>Above £30,000</option></select>       </div>       <div class="ff"><label>English Proficiency</label>         <select id="f-english"><option value="">Select status</option><option>Native</option><option>Fluent</option><option>Intermediate</option><option>Basic</option></select>       </div>       <div class="ff"><label>WhatsApp Group Link</label><input id="f-walink" placeholder="https://chat.whatsapp.com/..."></div> <div class="ff"><label>Documents Folder Link</label><input id="f-doclink" placeholder="https://drive.google.com/..."></div>       <div class="ff full"><label>Notes / remarks</label><textarea id="f-notes" placeholder="Call notes, documents shared, student context…"></textarea></div>
@@ -1208,6 +1213,35 @@ What would you like help with today?</div>
   </div>
 </div>
 
+<!-- Activity Log Modal — the full per-lead history, as its own dialog -->
+<div class="mover" id="modal-activity-log">
+  <div class="modal" style="width:560px;max-height:80vh">
+    <div class="mhead"><span class="mtitle">Activity log</span><button class="mclose" onclick="closeModal('modal-activity-log')">×</button></div>
+    <div id="activity-log-modal-stat" style="font-size:13px;color:var(--ink3);margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)"></div>
+    <div id="activity-log-modal-list" style="max-height:55vh;overflow-y:auto"></div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeModal('modal-activity-log')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mark Unavailable Modal — Manager/Admin/Director/Super Admin only -->
+<div class="mover" id="modal-unavailability">
+  <div class="modal" style="width:420px">
+    <div class="mhead"><span class="mtitle">Mark unavailable</span><button class="mclose" onclick="closeModal('modal-unavailability')">×</button></div>
+    <p id="unavail-name" style="font-size:13px;color:var(--ink3);margin-bottom:16px"></p>
+    <div class="fg">
+      <div class="ff"><label>From date *</label><input type="date" id="unavail-from"></div>
+      <div class="ff"><label>To date *</label><input type="date" id="unavail-to"></div>
+      <div class="ff full"><label>Reason (optional)</label><input id="unavail-reason" placeholder="e.g. Annual leave"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeModal('modal-unavailability')">Cancel</button>
+      <button class="btn btn-p" id="save-unavail-btn" onclick="saveUnavailability()"><i class="ti ti-check"></i>Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Invite User Modal -->
 <div class="mover" id="modal-invite">
   <div class="modal" style="width:460px">
@@ -1216,7 +1250,7 @@ What would you like help with today?</div>
     <div class="fg">
       <div class="ff full"><label>Name (optional, for your reference)</label><input id="inv-name" placeholder="e.g. Priya Sharma"></div>
       <div class="ff"><label>Role</label>
-        <select id="inv-role"><option>Counsellor</option><option>Admin</option><option>Manager</option></select>
+        <select id="inv-role"><option>Counsellor</option><option>Admin</option><option>Manager</option><option>Director</option></select>
       </div>
       <div class="ff"><label>Country</label>
         <select id="inv-country" onchange="syncInviteOffice()"><option value="India">India</option><option value="UK">UK</option><option value="Pakistan">Pakistan</option><option value="Bangladesh">Bangladesh</option></select>
@@ -1289,6 +1323,12 @@ What would you like help with today?</div>
             <div class="dfield"><div class="dlabel">Intake month</div><div class="dvalue" id="ld-intake"></div></div>
             <div class="dfield"><div class="dlabel">Budget</div><div class="dvalue" id="ld-budget"></div></div>
           </div>
+          <div class="card" style="margin-top:0">
+            <div class="card-h"><span class="card-t">Sub-team assignment</span></div>
+            <div class="dfield"><div class="dlabel">Application Team</div><div class="dvalue" id="ld-application-team"></div></div>
+            <div class="dfield"><div class="dlabel">Visa Team</div><div class="dvalue" id="ld-visa-team"></div></div>
+            <div class="dfield"><div class="dlabel">SOP Team</div><div class="dvalue" id="ld-sop-team"></div></div>
+          </div>
         </div>
         <!-- Col 2: Academic + Links + Notes -->
         <div>
@@ -1307,7 +1347,9 @@ What would you like help with today?</div>
           </div>
           <div class="card" style="margin-top:0">
             <div class="card-h"><span class="card-t">Notes</span></div>
-            <div class="dvalue" id="ld-notes" style="white-space:pre-wrap;line-height:1.65;font-size:13px;color:var(--ink2)"></div>
+            <div class="dvalue" id="ld-notes" style="white-space:pre-wrap;line-height:1.65;font-size:13px;color:var(--ink2);margin-bottom:10px"></div>
+            <textarea id="ld-quick-note" placeholder="Add a note directly — no need to open Edit..." style="width:100%;min-height:60px;padding:8px;border:1px solid var(--line);border-radius:var(--r);font-family:var(--font-b);font-size:12px;resize:vertical"></textarea>
+            <button onclick="quickAddNote(true)" style="margin-top:6px;font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer">Add note</button>
           </div>
         </div>
         <!-- Col 3: Docs, Reminders, Universities -->
@@ -1333,9 +1375,9 @@ What would you like help with today?</div>
             <button onclick="openAddUniAppFS()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-plus" style="font-size:13px"></i>Add university</button>
           </div>
           <div class="card" style="margin-top:0">
-            <div class="card-h"><span class="card-t">🕐 Activity timeline</span></div>
-            <div id="ld-activity-stat" style="font-size:12px;color:var(--ink3);margin-bottom:8px"></div>
-            <div id="ld-activity-list"></div>
+            <div class="card-h"><span class="card-t">🕐 Activity</span></div>
+            <div id="ld-activity-stat" style="font-size:12px;color:var(--ink3);margin-bottom:10px"></div>
+            <button onclick="openActivityLogModal()" style="font-size:12px;padding:6px 12px;background:var(--paper);color:var(--pine);border:1px solid var(--line2);border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-history" style="font-size:13px"></i>View full activity log</button>
           </div>
         </div>
       </div>
@@ -1377,6 +1419,9 @@ What would you like help with today?</div>
       <div class="dfield"><div class="dlabel">Country / Office</div><div class="dvalue" id="d-office"></div></div>
       <div class="dfield"><div class="dlabel">Counsellor</div><div class="dvalue" id="d-counsel"></div></div>
       <div class="dfield"><div class="dlabel">Assigned on</div><div class="dvalue" id="d-assigned-at"></div></div>
+      <div class="dfield"><div class="dlabel">Application Team</div><div class="dvalue" id="d-application-team"></div></div>
+      <div class="dfield"><div class="dlabel">Visa Team</div><div class="dvalue" id="d-visa-team"></div></div>
+      <div class="dfield"><div class="dlabel">SOP Team</div><div class="dvalue" id="d-sop-team"></div></div>
       <div class="dfield"><div class="dlabel">Next follow-up</div><div class="dvalue" id="d-fu"></div></div>
       <div class="dfield"><div class="dlabel">Visa deadline</div><div class="dvalue" id="d-visa-deadline"></div></div>
       <div class="dsec">Additional Details</div>
@@ -1398,11 +1443,15 @@ What would you like help with today?</div>
       <div class="dsec">University Applications</div>
           <div id="d-uni-list" style="margin-bottom:8px"></div>
           <button onclick="openAddUniApp()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px"><i class="ti ti-plus" style="font-size:13px"></i>Add university</button>
-          <div class="dsec">Activity Timeline</div>
+          <div class="dsec">Activity</div>
           <div id="d-activity-stat" style="font-size:12px;color:var(--ink3);margin-bottom:8px"></div>
-          <div id="d-activity-list" style="margin-bottom:16px"></div>
+          <button onclick="openActivityLogModal()" style="font-size:12px;padding:6px 12px;background:var(--paper);color:var(--pine);border:1px solid var(--line2);border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px"><i class="ti ti-history" style="font-size:13px"></i>View full activity log</button>
           <div class="dsec">Notes</div>
-      <div class="dfield"><div class="dvalue" id="d-notes" style="white-space:pre-wrap;line-height:1.65;font-size:13px;color:var(--ink2)"></div></div>
+          <div class="dfield"><div class="dvalue" id="d-notes" style="white-space:pre-wrap;line-height:1.65;font-size:13px;color:var(--ink2)"></div></div>
+          <div style="margin-top:10px">
+            <textarea id="d-quick-note" placeholder="Add a note directly — no need to open Edit..." style="width:100%;min-height:60px;padding:8px;border:1px solid var(--line);border-radius:var(--r);font-family:var(--font-b);font-size:12px;resize:vertical"></textarea>
+            <button onclick="quickAddNote(false)" style="margin-top:6px;font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer">Add note</button>
+          </div>
     </div>
     <div class="dfoot">
       <button class="btn btn-ai" style="flex:1" onclick="aiAboutLead()"><i class="ti ti-robot"></i>Ask AI</button>       <button class="btn" style="background:#25D366;color:#fff;border-color:#25D366" onclick="waFollowUp()"><i class="ti ti-brand-whatsapp"></i></button>
@@ -1582,7 +1631,25 @@ async function loadRoundRobinState(){
   if(!error&&data){rrStateByOffice={};data.forEach(r=>{rrStateByOffice[r.office]=r.last_index||0;});}
   else if(error) console.error('Failed to load round_robin_state:',error);
 }
-function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===office&&(t.role||'Counsellor')==='Counsellor');}
+// ── Staff availability ───────────────────────────────────────────────
+// Loaded once at login. A team member is "unavailable" if today's date
+// falls within any of their marked leave/absence ranges — round-robin
+// skips them entirely for that window, without anyone needing to
+// remember to manually exclude them.
+let unavailabilityList=[];
+async function loadUnavailability(){
+  const{data,error}=await sb.from('staff_unavailability').select('*');
+  if(!error&&data) unavailabilityList=data;
+}
+function isUnavailableToday(teamId){
+  const today=new Date().toISOString().substring(0,10);
+  return unavailabilityList.some(u=>u.team_id===teamId&&u.from_date<=today&&today<=u.to_date);
+}
+function currentUnavailability(teamId){
+  const today=new Date().toISOString().substring(0,10);
+  return unavailabilityList.find(u=>u.team_id===teamId&&u.from_date<=today&&today<=u.to_date)||null;
+}
+function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===office&&(t.role||'Counsellor')==='Counsellor'&&!isUnavailableToday(t.id));}
 async function getNextCounsellorForOffice(office){
   const pool=getOfficeCounsellors(office);
   if(!pool.length)return{name:'',country:'',office};
@@ -1749,6 +1816,23 @@ function populateCounsellorDropdown(){
   if(pool.some(c=>c.full_name===current)) sel.value=current;
 }
 
+// ── Sub-team dropdowns (Application/Visa/SOP) ──────────────────────
+// Populated from every staff member in the lead's office, not just
+// Counsellors — since a Manager or Admin often personally handles Visa/SOP
+// work too, and there's no separate "sub-team role" in the data model.
+function populateSubTeamDropdowns(){
+  const office=document.getElementById('f-office').value;
+  const pool=(teamList||[]).filter(t=>t.office===office);
+  ['f-application-team','f-visa-team','f-sop-team'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel)return;
+    const current=sel.value;
+    sel.innerHTML='<option value="">Unassigned</option>'+
+      pool.map(t=>`<option value="${esc(t.full_name)}">${esc(t.full_name)}</option>`).join('');
+    if(pool.some(t=>t.full_name===current)) sel.value=current;
+  });
+}
+
 function syncInviteOffice(){
   const c=document.getElementById('inv-country').value;
   const sel=document.getElementById('inv-office');
@@ -1846,7 +1930,7 @@ async function onLogin(user){
   document.getElementById('sb-av').textContent=ini(name);
   document.getElementById('sb-uname').textContent=name;
   document.getElementById('sb-urole').textContent=role+(isSuperAdmin?' (Super Admin)':'');
-  await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents(),loadResumes(),loadRoundRobinState()]);
+  await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents(),loadResumes(),loadRoundRobinState(),loadUnavailability()]);
  initPresence(user, profile);
   renderDash();renderLeads();renderFU();badges();checkNoActivity();applyRoleUI();setTimeout(()=>{applyRoleUI();renderDash();},2000);
   loadDashReminders();
@@ -2240,6 +2324,9 @@ function openDetail(id){
   document.getElementById('d-prio').textContent=l.priority||'—';
   document.getElementById('d-office').textContent=(l.country||'—')+(l.office?' · '+l.office:'');
   document.getElementById('d-counsel').textContent=l.counsellor||'Unassigned';
+  document.getElementById('d-application-team').textContent=l.application_team||'Unassigned';
+  document.getElementById('d-visa-team').textContent=l.visa_team||'Unassigned';
+  document.getElementById('d-sop-team').textContent=l.sop_team||'Unassigned';
   document.getElementById('d-assigned-at').textContent=l.assigned_at?new Date(l.assigned_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'Not yet assigned';
   document.getElementById('d-fu').textContent=l.next_followup||'Not set';
   document.getElementById('d-visa-deadline').innerHTML=formatExpiryDisplay(l.visa_deadline,7);
@@ -2279,6 +2366,9 @@ function openLeadDetail(id){
   document.getElementById('ld-prog').textContent=l.program||'—';
   document.getElementById('ld-dest').textContent=l.destination||'—';
   document.getElementById('ld-src').textContent=l.source||'—';
+  document.getElementById('ld-application-team').textContent=l.application_team||'Unassigned';
+  document.getElementById('ld-visa-team').textContent=l.visa_team||'Unassigned';
+  document.getElementById('ld-sop-team').textContent=l.sop_team||'Unassigned';
   document.getElementById('ld-assigned-at').textContent=l.assigned_at?new Date(l.assigned_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'Not yet assigned';
   document.getElementById('ld-intake').textContent=l.intake_month||'—';
   document.getElementById('ld-budget').textContent=l.budget_range||'—';
@@ -2326,8 +2416,8 @@ async function updateStatusFS(){
   loadTasksFS(curId);
   loadActivityLogFS(curId);
 }
-function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-office').value=l.office||'India HQ';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;},100);}
-async function deleteLeadFS(){if(!curId)return;if(!isSuperAdmin&&myRole!=='Admin'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
+function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;},100);}
+async function deleteLeadFS(){if(!curId)return;if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
 // FS versions of doc/reminder/uni functions
@@ -2547,7 +2637,7 @@ async function updateStatus(){
 }
 async function deleteLead(){
   if(!curId)return;
-  if(!isSuperAdmin&&myRole!=='Admin'){toast('Only Admins can delete leads.');return;}
+  if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}
   if(!confirm('Delete this lead? This cannot be undone.'))return;
   setSyncing();
   const{error}=await sb.from('leads').delete().eq('id',curId);
@@ -2574,6 +2664,10 @@ function editLead(){
   document.getElementById('f-country').value=l.country||'';
   syncLeadOffice();
   document.getElementById('f-office').value=l.office||'India HQ';
+  populateSubTeamDropdowns();
+  document.getElementById('f-application-team').value=l.application_team||'';
+  document.getElementById('f-visa-team').value=l.visa_team||'';
+  document.getElementById('f-sop-team').value=l.sop_team||'';
   {
     populateCounsellorDropdown();
     const cf=document.getElementById('f-counsel');
@@ -2614,6 +2708,7 @@ function openAddLead(){
   document.getElementById('f-status').value='New Enquiry';
   document.getElementById('f-prio').value='Medium';
   populateCounsellorDropdown();
+  populateSubTeamDropdowns();
   setupAssignModeUI();
   const counselField=document.getElementById('f-counsel');
   if(myRole==='Counsellor'&&!isSuperAdmin){
@@ -2696,6 +2791,9 @@ async function saveLead(){
     status:document.getElementById('f-status').value,
     priority:document.getElementById('f-prio').value,
     counsellor:document.getElementById('f-counsel').value,
+    application_team:document.getElementById('f-application-team').value||null,
+    visa_team:document.getElementById('f-visa-team').value||null,
+    sop_team:document.getElementById('f-sop-team').value||null,
     office:document.getElementById('f-office').value,
     country:countryFinal,
     next_followup:document.getElementById('f-fu').value||null,
@@ -2723,7 +2821,8 @@ async function saveLead(){
         program:'Program',destination:'Destination',priority:'Priority',
         next_followup:'Next follow-up',visa_deadline:'Visa deadline',
         budget_range:'Budget',ielts_status:'IELTS status',qualification:'Qualification',
-        intake_month:'Intake month',office:'Office',country:'Country'};
+        intake_month:'Intake month',office:'Office',country:'Country',
+        application_team:'Application Team',visa_team:'Visa Team',sop_team:'SOP Team'};
       Object.entries(trackedFields).forEach(([key,label])=>{
         if((existing[key]||'')!==(data[key]||'')){
           logEvents.push(['field_edit',`${label}: ${existing[key]||'—'} → ${data[key]||'—'}`]);
@@ -2864,6 +2963,40 @@ async function deleteTeamMember(id,name){
   renderTeam(teamList);
   toast(name+' removed from the team.');
 }
+
+// ── Mark unavailable — Manager/Admin/Director/Super Admin only ──────
+// Counsellors never see this control at all, on their own card or anyone
+// else's — matches "counsellors cannot enable/disable their own."
+let unavailTargetId=null;
+function openUnavailabilityModal(teamId,name){
+  if(myRole==='Counsellor'&&!isSuperAdmin){toast('Only Manager/Admin/Director/Super Admin can set this.');return;}
+  unavailTargetId=teamId;
+  document.getElementById('unavail-name').textContent=`Marking ${name} unavailable — round-robin will skip them for this date range.`;
+  document.getElementById('unavail-from').value=new Date().toISOString().substring(0,10);
+  document.getElementById('unavail-to').value='';
+  document.getElementById('unavail-reason').value='';
+  document.getElementById('modal-unavailability').classList.add('open');
+}
+async function saveUnavailability(){
+  if(!unavailTargetId)return;
+  const from=document.getElementById('unavail-from').value;
+  const to=document.getElementById('unavail-to').value;
+  if(!from||!to){toast('Please pick both a from and to date.');return;}
+  if(to<from){toast('"To" date must be on or after the "From" date.');return;}
+  const reason=document.getElementById('unavail-reason').value.trim();
+  const btn=document.getElementById('save-unavail-btn');
+  btn.disabled=true;btn.textContent='Saving…';
+  const{data,error}=await sb.from('staff_unavailability').insert({
+    team_id:unavailTargetId,from_date:from,to_date:to,reason,created_by:currentUser?.id
+  }).select();
+  btn.disabled=false;btn.textContent='Save';
+  if(error){toast('Error: '+error.message);return;}
+  if(data)unavailabilityList.push(data[0]);
+  closeModal('modal-unavailability');
+  renderTeam(teamList);
+  toast('Marked unavailable.');
+}
+
 function renderTeam(team){
   const tg=document.getElementById('team-grid');
   const tl=document.querySelector('#sc-team .loading');
@@ -2897,11 +3030,21 @@ function renderTeam(team){
     const counsellors=members.filter(m=>(m.role||'Counsellor')==='Counsellor');
     const nextUp=counsellors.length?counsellors[(rrStateByOffice[office]||0)%counsellors.length]?.full_name||'—':'None';
     const cards=members.length
-      ? members.map(t=>`<div class="tcard">
+      ? members.map(t=>{
+          const unavail=currentUnavailability(t.id);
+          const canManage=!(myRole==='Counsellor'&&!isSuperAdmin);
+          return `<div class="tcard" style="${unavail?'opacity:.7':''}">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role||'Counsellor')}</div><div class="tcard-email">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0">
+            <div class="tcard-name">${esc(t.full_name||'—')}</div>
+            <div class="tcard-role">${esc(t.role||'Counsellor')}</div>
+            <div class="tcard-email">${esc(t.email||'')}</div>
+            ${unavail?`<div style="font-size:10px;color:var(--rose);font-weight:600;margin-top:3px">🚫 Unavailable until ${new Date(unavail.to_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${unavail.reason?' — '+esc(unavail.reason):''}</div>`:''}
+          </div>
+          ${canManage?`<button onclick="openUnavailabilityModal('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Mark unavailable" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-calendar-off"></i></button>`:''}
           ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc(t.full_name||t.email||'').replace(/'/g,"\\'")}')" title="Remove team member" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
-        </div>`).join('')
+        </div>`;
+        }).join('')
       : `<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:8px 0">No members yet — share an invite link to add counsellors to this office.</div>`;
     return `<div style="margin-bottom:20px;background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:18px 20px;box-shadow:var(--sh)">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--line)">
@@ -3442,7 +3585,7 @@ async function loadGlobalActivityLog(scopedLeads,start,end){
 function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){if(!confirm('Remove this university?'))return;await sb.from('university_applications').delete().eq('id',id);loadUniApps(curId);toast('Removed.');}
   function applyRoleUI(){
     const role=(document.getElementById('sb-urole').textContent||'').trim();
-    const isAdminLike=role.startsWith('Admin')||isSuperAdmin;
+    const isAdminLike=role.startsWith('Admin')||role.startsWith('Director')||isSuperAdmin;
     const isCounsellor=myRole==='Counsellor'&&!isSuperAdmin;
 
     // "Add team member" — Super Admin only, god access.
@@ -3544,11 +3687,11 @@ function renderReminders(list){
 async function loadActivityTimeline(leadId,statElId,listElId){
   const{data,error}=await sb.from('activity_log').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});
   const statEl=document.getElementById(statElId);
-  const listEl=document.getElementById(listElId);
-  if(!statEl||!listEl)return;
+  const listEl=listElId?document.getElementById(listElId):null;
+  if(!statEl)return;
   if(error||!data||!data.length){
     statEl.textContent='';
-    listEl.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No activity recorded yet.</div>';
+    if(listEl)listEl.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No activity recorded yet.</div>';
     return;
   }
   // Time to first action: gap between lead creation and whatever happened next.
@@ -3557,12 +3700,13 @@ async function loadActivityTimeline(leadId,statElId,listElId){
   if(created&&next){
     const mins=Math.round((new Date(next.created_at).getTime()-new Date(created.created_at).getTime())/60000);
     const label=mins<60?`${mins} minute${mins!==1?'s':''}`:mins<1440?`${Math.round(mins/60)} hour${Math.round(mins/60)!==1?'s':''}`:`${Math.round(mins/1440)} day${Math.round(mins/1440)!==1?'s':''}`;
-    statEl.innerHTML=`⏱ <b>Time to first action: ${label}</b>`;
+    statEl.innerHTML=`⏱ <b>Time to first action: ${label}</b> · ${data.length} event${data.length!==1?'s':''} logged`;
   } else if(created){
-    statEl.innerHTML=`⏱ <b style="color:var(--gold)">Not yet actioned since creation</b>`;
+    statEl.innerHTML=`⏱ <b style="color:var(--gold)">Not yet actioned since creation</b> · ${data.length} event${data.length!==1?'s':''} logged`;
   } else {
-    statEl.textContent='';
+    statEl.textContent=`${data.length} event${data.length!==1?'s':''} logged`;
   }
+  if(!listEl)return;
   const icons={created:'✨',imported:'📥',status_change:'🔄',reassigned:'👤',field_edit:'✏️',viewed:'👁️'};
   listEl.innerHTML=data.map(e=>`<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:12px">
     <span>${icons[e.event_type]||'•'}</span>
@@ -3574,6 +3718,35 @@ async function loadActivityTimeline(leadId,statElId,listElId){
 }
 function loadActivityLog(leadId){loadActivityTimeline(leadId,'d-activity-stat','d-activity-list');}
 function loadActivityLogFS(leadId){loadActivityTimeline(leadId,'ld-activity-stat','ld-activity-list');}
+
+// ── Activity log dialog — full history in its own window, not cluttering the panel ──
+function openActivityLogModal(){
+  if(!curId){toast('Open a lead first.');return;}
+  loadActivityTimeline(curId,'activity-log-modal-stat','activity-log-modal-list');
+  document.getElementById('modal-activity-log').classList.add('open');
+}
+
+// ── Direct note-adding — no need to open the full Edit form ──
+async function quickAddNote(isFS){
+  if(!curId){toast('No lead selected.');return;}
+  const boxId=isFS?'ld-quick-note':'d-quick-note';
+  const box=document.getElementById(boxId);
+  const newText=box.value.trim();
+  if(!newText){toast('Write something first.');return;}
+  const l=leads.find(x=>x.id===curId);
+  const timestamp=new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  const stamped=`[${timestamp} · ${myName||'someone'}] ${newText}`;
+  const combined=l&&l.notes?`${l.notes}\n${stamped}`:stamped;
+  const{error}=await sb.from('leads').update({notes:combined}).eq('id',curId);
+  if(error){toast('Error: '+error.message);return;}
+  if(l)l.notes=combined;
+  box.value='';
+  document.getElementById('d-notes').textContent=combined;
+  const ldNotes=document.getElementById('ld-notes');
+  if(ldNotes)ldNotes.textContent=combined;
+  logActivity(curId,'field_edit','Note added: '+newText.substring(0,80)+(newText.length>80?'…':''));
+  toast('Note added!');
+}
 
 async function loadTasks(leadId){
   const{data,error}=await sb.from('tasks').select('*').eq('lead_id',leadId).order('due_date',{ascending:true});
@@ -4096,7 +4269,7 @@ function renderResumesAdmin(){
   }
   empty.style.display = 'none';
   content.style.display = 'block';
-  const canDelete = isSuperAdmin || myRole==='Admin';
+  const canDelete = isSuperAdmin || myRole==='Admin' || myRole==='Director';
   document.getElementById('resumes-count').textContent = resumesList.length + ' resume' + (resumesList.length!==1?'s':'') + ' submitted';
   document.getElementById('resumes-tbody').innerHTML = resumesList.map(r => {
     const dt = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—';
@@ -4115,7 +4288,7 @@ function renderResumesAdmin(){
   }).join('');
 }
 async function deleteResume(id){
-  if(!isSuperAdmin&&myRole!=='Admin'){toast('Only Admins can delete resumes.');return;}
+  if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete resumes.');return;}
   if(!confirm('Delete this resume submission? This cannot be undone.'))return;
   const{error}=await sb.from('resume_submissions').delete().eq('id',id);
   if(error){toast('Error deleting resume: '+error.message);return;}
@@ -4140,7 +4313,7 @@ function renderCallLogs(){
   if(!empty||!content)return;
   if(!callLogs.length){empty.style.display='flex';content.style.display='none';return;}
   empty.style.display='none';content.style.display='block';
-  const canDelete=isSuperAdmin||myRole==='Admin';
+  const canDelete=isSuperAdmin||myRole==='Admin'||myRole==='Director';
   document.getElementById('cl-count').textContent=callLogs.length+' call'+(callLogs.length!==1?'s':'')+' logged';
   document.getElementById('cl-tbody').innerHTML=callLogs.map(c=>{
     const dt=c.call_date?new Date(c.call_date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
@@ -4157,7 +4330,7 @@ function renderCallLogs(){
   }).join('');
 }
 async function saveCallLog(){
-  if(!isSuperAdmin&&myRole!=='Admin'){toast('Only Admins can log calls.');return;}
+  if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can log calls.');return;}
   const lead=document.getElementById('cl-lead').value.trim();
   if(!lead){toast('Enter the lead name or mobile.');return;}
   const counsellor=document.getElementById('cl-counsellor').value.trim()||myName||'';
@@ -4190,7 +4363,7 @@ async function saveCallLog(){
   toast('Call logged.');
 }
 async function deleteCallLog(id){
-  if(!isSuperAdmin&&myRole!=='Admin'){toast('Only Admins can delete call logs.');return;}
+  if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete call logs.');return;}
   if(!confirm('Delete this call log? This cannot be undone.'))return;
   const{error}=await sb.from('call_logs').delete().eq('id',id);
   if(error){toast('Error deleting log: '+error.message);return;}

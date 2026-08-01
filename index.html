@@ -288,6 +288,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 /* Live editing badge on lead rows */
 .editing-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:var(--pine2);background:#d1fae5;border:1px solid #a7f3d0;border-radius:99px;padding:2px 7px;margin-left:6px;animation:pulse-badge 2s infinite}
 @keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:.6}}
+@keyframes pulseUnread{0%,100%{box-shadow:0 0 0 3px var(--gold)}50%{box-shadow:0 0 0 6px rgba(224,132,41,.35)}}
 
 /* Lead row: highlight if someone else is editing */
 .tbl tbody tr.being-edited td{background:#f0fdf4 !important}
@@ -4179,6 +4180,9 @@ function renderDmInbox(){
     .filter(t=>t.id!==currentUser?.id)
     .filter(t=>!q||(t.full_name||'').toLowerCase().includes(q)||(t.role||'').toLowerCase().includes(q))
     .sort((a,b)=>{
+      // Unread messages float to the very top, above even online status.
+      const aUn=unreadDmSenders.has(a.id)?0:1, bUn=unreadDmSenders.has(b.id)?0:1;
+      if(aUn!==bUn)return aUn-bUn;
       const aOn=onlineIds.has(a.id)?0:1, bOn=onlineIds.has(b.id)?0:1;
       if(aOn!==bOn)return aOn-bOn;
       return (a.full_name||'').localeCompare(b.full_name||'');
@@ -4186,9 +4190,10 @@ function renderDmInbox(){
   if(!contacts.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;text-align:center;padding:20px">No one found.</div>';return;}
   el.innerHTML=contacts.map(t=>{
     const isOnline=onlineIds.has(t.id);
-    return `<div onclick="openDmChat('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" style="display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--line);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-      <div style="position:relative;flex-shrink:0"><div class="tcard-av" style="width:36px;height:36px;font-size:13px">${ini(t.full_name||t.email)}</div>${isOnline?'<div style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#22C55E;border:2px solid #fff"></div>':''}</div>
-      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${esc(t.full_name||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(t.role||'')}${isOnline?' · online now':''}</div></div>
+    const hasUnread=unreadDmSenders.has(t.id);
+    return `<div onclick="openDmChat('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" style="display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--line);cursor:pointer;${hasUnread?'background:var(--gold-l)':''}" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background='${hasUnread?'var(--gold-l)':''}'">
+      <div style="position:relative;flex-shrink:0"><div class="tcard-av" style="width:36px;height:36px;font-size:13px${hasUnread?';box-shadow:0 0 0 2px var(--gold)':''}">${ini(t.full_name||t.email)}</div>${isOnline?'<div style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#22C55E;border:2px solid #fff"></div>':''}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:${hasUnread?'700':'600'}">${esc(t.full_name||'—')}${hasUnread?' 🔴':''}</div><div style="font-size:11px;color:${hasUnread?'var(--gold)':'var(--ink3)'};font-weight:${hasUnread?'600':'400'}">${hasUnread?'New message':(isOnline?'online now':esc(t.role||''))}</div></div>
     </div>`;
   }).join('');
 }
@@ -4232,13 +4237,17 @@ async function sendDmMessage(){
   if(error){toast('Error sending message: '+error.message);input.value=message;return;}
   await loadDmMessages();
 }
+let unreadDmSenders=new Set();
 async function checkUnreadDmCount(){
   if(!currentUser)return;
-  const{count,error}=await sb.from('direct_messages').select('*',{count:'exact',head:true}).eq('recipient_id',currentUser.id).eq('read',false);
+  const{data,error}=await sb.from('direct_messages').select('sender_id').eq('recipient_id',currentUser.id).eq('read',false);
   const badge=document.getElementById('dm-badge');
   if(!badge||error)return;
+  unreadDmSenders=new Set((data||[]).map(m=>m.sender_id));
+  const count=data?.length||0;
   if(count>0){badge.textContent=count>9?'9+':count;badge.style.display='flex';}
   else{badge.style.display='none';}
+  renderOnlineUsers(presenceChannel?presenceChannel.presenceState():{});
 }
 
 // ── Activity log dialog — full history in its own window, not cluttering the panel ──
@@ -5018,13 +5027,16 @@ function renderOnlineUsers(state) {
     return;
   }
 
-  avContainer.innerHTML = users.map(u => `
-    <div class="presence-av" onclick="openDmChat('${u.userId}','${esc(u.name||u.email)}')" style="background:${u.color||'#1B998B'};cursor:pointer" title="${esc(u.name||u.email)} — click to message">
+  avContainer.innerHTML = users.map(u => {
+    const hasUnread = unreadDmSenders.has(u.userId);
+    return `
+    <div class="presence-av" onclick="openDmChat('${u.userId}','${esc(u.name||u.email)}')" style="background:${u.color||'#1B998B'};cursor:pointer;position:relative;${hasUnread?'box-shadow:0 0 0 3px var(--gold);animation:pulseUnread 1.4s ease-in-out infinite':''}" title="${esc(u.name||u.email)}${hasUnread?' — new message!':' — click to message'}">
       ${ini2(u.name||u.email||'?')}
       <div class="online-dot"></div>
-      <div class="tooltip">${esc(u.name||u.email)} — click to message</div>
+      ${hasUnread?'<div style="position:absolute;top:-4px;right:-4px;width:14px;height:14px;background:var(--rose);border:2px solid var(--pine);border-radius:50%;display:flex;align-items:center;justify-content:center"><i class="ti ti-message-dots" style="font-size:8px;color:#fff"></i></div>':''}
+      <div class="tooltip">${esc(u.name||u.email)}${hasUnread?' — new message!':' — click to message'}</div>
     </div>
-  `).join('');
+  `;}).join('');
 }
 
 function refreshEditingUI() {

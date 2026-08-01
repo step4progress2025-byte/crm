@@ -193,7 +193,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
 /* Team */
 .team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
-.tcard{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:18px;box-shadow:var(--sh);display:flex;align-items:center;gap:14px}
+.tcard{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:18px;box-shadow:var(--sh);display:flex;align-items:flex-start;gap:14px}
 .tcard-av{width:42px;height:42px;border-radius:50%;background:var(--pine3);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff;flex-shrink:0}
 .tcard-name{font-size:14px;font-weight:600}
 .tcard-role{font-size:12px;color:var(--ink3);font-style:italic;margin-top:2px}
@@ -690,7 +690,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div id="management-team-section"></div>
         <div id="operations-team-section"></div>
         <div id="team-members-card" style="display:none">
-          <div class="dsec" style="margin-bottom:10px">By office / branch</div>
+          <div class="dsec" style="margin-bottom:2px">By office / branch</div>
+          <div id="team-icon-legend" style="font-size:11px;color:var(--ink3);margin-bottom:10px"></div>
           <div id="team-grid"></div>
         </div>
         <button class="btn btn-p" id="create-user-btn" onclick="openCreateUser()" style="display:none;margin-top:12px;font-size:12px;padding:5px 10px"><i class="ti ti-user-plus"></i>Create user</button>
@@ -1255,6 +1256,18 @@ What would you like help with today?</div>
   </div>
 </div>
 
+<!-- Team Chat Modal — per-lead conversation thread -->
+<div class="mover" id="modal-lead-chat">
+  <div class="modal" style="width:520px;max-height:82vh;display:flex;flex-direction:column">
+    <div class="mhead"><span class="mtitle">💬 Team chat — <span id="chat-modal-lead-name"></span></span><button class="mclose" onclick="closeModal('modal-lead-chat')">×</button></div>
+    <div id="chat-modal-list" style="flex:1;overflow-y:auto;max-height:50vh;min-height:120px;padding:4px 2px;margin-bottom:12px"></div>
+    <div style="display:flex;gap:8px;border-top:1px solid var(--line);padding-top:12px">
+      <input id="chat-modal-input" placeholder="Write a message…" style="flex:1;padding:10px 12px;border:1px solid var(--line2);border-radius:99px;font-family:var(--font-b);font-size:13px" onkeydown="if(event.key==='Enter')sendLeadChatMessage()">
+      <button class="btn btn-p" onclick="sendLeadChatMessage()" style="border-radius:99px;padding:10px 18px"><i class="ti ti-send"></i></button>
+    </div>
+  </div>
+</div>
+
 <!-- Mark Unavailable Modal — Manager/Admin/Director/Super Admin only -->
 <div class="mover" id="modal-unavailability">
   <div class="modal" style="width:420px">
@@ -1409,6 +1422,11 @@ What would you like help with today?</div>
             <div id="ld-activity-stat" style="font-size:12px;color:var(--ink3);margin-bottom:10px"></div>
             <button onclick="openActivityLogModal()" style="font-size:12px;padding:6px 12px;background:var(--paper);color:var(--pine);border:1px solid var(--line2);border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-history" style="font-size:13px"></i>View full activity log</button>
           </div>
+          <div class="card" style="margin-top:0">
+            <div class="card-h"><span class="card-t">💬 Team Chat</span></div>
+            <div id="ld-chat-stat" style="font-size:12px;color:var(--ink3);margin-bottom:10px"></div>
+            <button onclick="openLeadChatModal()" style="font-size:12px;padding:6px 12px;background:var(--paper);color:var(--pine);border:1px solid var(--line2);border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-messages" style="font-size:13px"></i>Open chat</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1476,6 +1494,9 @@ What would you like help with today?</div>
           <div class="dsec">Activity</div>
           <div id="d-activity-stat" style="font-size:12px;color:var(--ink3);margin-bottom:8px"></div>
           <button onclick="openActivityLogModal()" style="font-size:12px;padding:6px 12px;background:var(--paper);color:var(--pine);border:1px solid var(--line2);border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px"><i class="ti ti-history" style="font-size:13px"></i>View full activity log</button>
+          <div class="dsec">Team Chat</div>
+          <div id="d-chat-stat" style="font-size:12px;color:var(--ink3);margin-bottom:8px"></div>
+          <button onclick="openLeadChatModal()" style="font-size:12px;padding:6px 12px;background:var(--paper);color:var(--pine);border:1px solid var(--line2);border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px"><i class="ti ti-messages" style="font-size:13px"></i>Open chat</button>
           <div class="dsec">Notes</div>
           <div class="dfield"><div class="dvalue" id="d-notes" style="white-space:pre-wrap;line-height:1.65;font-size:13px;color:var(--ink2)"></div></div>
           <div style="margin-top:10px">
@@ -1858,26 +1879,37 @@ async function quickReassignLead(leadId,newCounsellor){
 function renderSubTeamCell(l,field,roleName){
   const pool=getGlobalRolePool(roleName);
   const current=l[field];
-  const options=['<option value="">Unassigned</option>']
-    .concat(pool.map(t=>`<option value="${esc(t.full_name)}"${t.full_name===current?' selected':''}>${esc(t.full_name)}</option>`));
+  const options=[
+    `<option value="__AUTO__">🔄 Assign via round-robin</option>`,
+    `<option value=""${current?'':' selected'}>${current?'— Unassign —':'Unassigned'}</option>`
+  ].concat(pool.map(t=>`<option value="${esc(t.full_name)}"${t.full_name===current?' selected':''}>${esc(t.full_name)}</option>`));
   if(current&&!pool.some(t=>t.full_name===current)){
     options.push(`<option value="${esc(current)}" selected>${esc(current)} (not in ${esc(roleName)})</option>`);
   }
-  return `<select onchange="quickReassignSubTeam('${l.id}','${field}',this.value)" style="font-size:12px;padding:4px 6px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);max-width:140px">${options.join('')}</select>`;
+  return `<select onchange="quickReassignSubTeam('${l.id}','${field}',this.value)" style="font-size:12px;padding:4px 6px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);max-width:150px">${options.join('')}</select>`;
 }
 async function quickReassignSubTeam(leadId,field,newValue){
   const l=leads.find(x=>x.id===leadId);
-  if(!l||l[field]===newValue)return;
-  const old=l[field];
-  setSyncing();
-  const{error}=await sb.from('leads').update({[field]:newValue||null}).eq('id',leadId);
-  if(error){setSyncErr();toast('Error reassigning: '+error.message);renderLeads();return;}
-  l[field]=newValue||null;
-  setSynced();
+  if(!l)return;
   const labels={application_team:'Application Team',visa_team:'Visa Team',sop_team:'SOP Team'};
-  logActivity(leadId,'reassigned',`${labels[field]}: ${old||'Unassigned'} → ${newValue||'Unassigned'}`);
-  toast(newValue?`${labels[field]} → ${newValue}`:`${labels[field]} unassigned`);
+  const roleName=labels[field];
+  const old=l[field];
+  let finalValue=newValue;
+  if(newValue==='__AUTO__'){
+    setSyncing();
+    finalValue=await getNextForGlobalRole(roleName);
+    if(!finalValue){setSynced();toast(`No one holds the ${roleName} role yet — nothing to round-robin to.`);renderLeads();return;}
+  }
+  if(old===finalValue){renderLeads();return;}
+  setSyncing();
+  const{error}=await sb.from('leads').update({[field]:finalValue||null}).eq('id',leadId);
+  if(error){setSyncErr();toast('Error reassigning: '+error.message);renderLeads();return;}
+  l[field]=finalValue||null;
+  setSynced();
+  logActivity(leadId,'reassigned',`${roleName}: ${old||'Unassigned'} → ${finalValue||'Unassigned'}`);
+  toast(finalValue?`${roleName} → ${finalValue}`:`${roleName} unassigned`);
   renderDash();
+  renderLeads();
 }
 function populateCounsellorDropdown(){
   const office=document.getElementById('f-office').value;
@@ -2513,6 +2545,7 @@ function openDetail(id){
   loadDocs(id);
   loadTasks(id);
   loadActivityLog(id);
+  loadChatStat(id,'d-chat-stat');
   loadReminders(id);
   broadcastStartEditing(id);
   updateDetailEditingNotice(id);
@@ -2567,6 +2600,7 @@ function openLeadDetail(id){
   loadDocsFS(id);
   loadTasksFS(id);
   loadActivityLogFS(id);
+  loadChatStat(id,'ld-chat-stat');
   loadRemindersFS(id);
   loadUniAppsFS(id);
   broadcastStartEditing(id);
@@ -3260,6 +3294,13 @@ function renderTeam(team){
   if(tl) tl.style.display='none';
   const card=document.getElementById('team-members-card');
   if(card) card.style.display='block';
+  const legend=document.getElementById('team-icon-legend');
+  if(legend){
+    const parts=[];
+    if(!isRestrictedStaffRole()) parts.push('📅 = mark unavailable');
+    if(isSuperAdmin) parts.push('🗑️ = remove from team');
+    legend.textContent=parts.join(' · ');
+  }
 
   // Build all offices from OFFICE_MAP, then group real team members into them
   const allOffices=[];
@@ -3993,6 +4034,53 @@ async function loadActivityTimeline(leadId,statElId,listElId){
 }
 function loadActivityLog(leadId){loadActivityTimeline(leadId,'d-activity-stat','d-activity-list');}
 function loadActivityLogFS(leadId){loadActivityTimeline(leadId,'ld-activity-stat','ld-activity-list');}
+
+// ── Team Chat — a real conversation thread per lead ─────────────────
+// Separate from Notes (single quick add, no back-and-forth) and Activity
+// Log (auto-generated system events) — this is genuinely multi-person.
+async function loadChatStat(leadId,elId){
+  const el=document.getElementById(elId);
+  if(!el)return;
+  const{count,error}=await sb.from('lead_comments').select('*',{count:'exact',head:true}).eq('lead_id',leadId);
+  if(error){el.textContent='';return;}
+  el.textContent=count?`${count} message${count!==1?'s':''}`:'No messages yet';
+}
+function openLeadChatModal(){
+  if(!curId){toast('Open a lead first.');return;}
+  const l=leads.find(x=>x.id===curId);
+  document.getElementById('chat-modal-lead-name').textContent=l?.name||'';
+  document.getElementById('chat-modal-input').value='';
+  loadLeadChatMessages(curId);
+  document.getElementById('modal-lead-chat').classList.add('open');
+  setTimeout(()=>document.getElementById('chat-modal-input').focus(),100);
+}
+async function loadLeadChatMessages(leadId){
+  const el=document.getElementById('chat-modal-list');
+  if(!el)return;
+  const{data,error}=await sb.from('lead_comments').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});
+  if(error){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;text-align:center;padding:20px">Could not load messages — has lead_comments been created in Supabase yet?</div>';return;}
+  if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;text-align:center;padding:20px">No messages yet — start the conversation below.</div>';el.scrollTop=0;return;}
+  el.innerHTML=data.map(m=>{
+    const isMine=m.author_id===currentUser?.id;
+    return `<div style="display:flex;flex-direction:column;align-items:${isMine?'flex-end':'flex-start'};margin-bottom:10px">
+      <div style="max-width:78%;background:${isMine?'var(--pine)':'var(--paper)'};color:${isMine?'#fff':'var(--ink)'};border:${isMine?'none':'1px solid var(--line)'};padding:9px 13px;border-radius:14px;${isMine?'border-bottom-right-radius:3px':'border-bottom-left-radius:3px'};font-size:13px;line-height:1.5">${esc(m.message)}</div>
+      <div style="font-size:10px;color:var(--ink3);margin-top:3px;padding:0 4px">${isMine?'You':esc(m.author_name||'Someone')} · ${new Date(m.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+    </div>`;
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+async function sendLeadChatMessage(){
+  if(!curId)return;
+  const input=document.getElementById('chat-modal-input');
+  const message=input.value.trim();
+  if(!message)return;
+  input.value='';
+  const{error}=await sb.from('lead_comments').insert({lead_id:curId,author_id:currentUser?.id,author_name:myName,message});
+  if(error){toast('Error sending message: '+error.message);input.value=message;return;}
+  await loadLeadChatMessages(curId);
+  loadChatStat(curId,'d-chat-stat');
+  loadChatStat(curId,'ld-chat-stat');
+}
 
 // ── Activity log dialog — full history in its own window, not cluttering the panel ──
 function openActivityLogModal(){

@@ -1268,6 +1268,31 @@ What would you like help with today?</div>
   </div>
 </div>
 
+<!-- Direct Message Inbox — contact list, click anyone to open a 1-to-1 chat -->
+<div class="mover" id="modal-dm-inbox">
+  <div class="modal" style="width:400px;max-height:78vh;display:flex;flex-direction:column">
+    <div class="mhead"><span class="mtitle">💬 Messages</span><button class="mclose" onclick="closeModal('modal-dm-inbox')">×</button></div>
+    <input id="dm-inbox-search" placeholder="Search people…" oninput="renderDmInbox()" style="width:100%;padding:9px 12px;border:1px solid var(--line2);border-radius:99px;font-family:var(--font-b);font-size:13px;margin-bottom:12px">
+    <div id="dm-inbox-list" style="flex:1;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- Direct Message Chat — the actual 1-to-1 thread -->
+<div class="mover" id="modal-dm-chat">
+  <div class="modal" style="width:480px;max-height:82vh;display:flex;flex-direction:column">
+    <div class="mhead">
+      <button onclick="closeModal('modal-dm-chat');openDmInbox()" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;margin-right:6px"><i class="ti ti-arrow-left"></i></button>
+      <span class="mtitle" id="dm-chat-title">💬</span>
+      <button class="mclose" onclick="closeModal('modal-dm-chat')">×</button>
+    </div>
+    <div id="dm-chat-list" style="flex:1;overflow-y:auto;max-height:50vh;min-height:120px;padding:4px 2px;margin-bottom:12px"></div>
+    <div style="display:flex;gap:8px;border-top:1px solid var(--line);padding-top:12px">
+      <input id="dm-chat-input" placeholder="Write a message…" style="flex:1;padding:10px 12px;border:1px solid var(--line2);border-radius:99px;font-family:var(--font-b);font-size:13px" onkeydown="if(event.key==='Enter')sendDmMessage()">
+      <button class="btn btn-p" onclick="sendDmMessage()" style="border-radius:99px;padding:10px 18px"><i class="ti ti-send"></i></button>
+    </div>
+  </div>
+</div>
+
 <!-- Mark Unavailable Modal — Manager/Admin/Director/Super Admin only -->
 <div class="mover" id="modal-unavailability">
   <div class="modal" style="width:420px">
@@ -1314,7 +1339,7 @@ What would you like help with today?</div>
 </div>
 
 <!-- Full-Screen Lead Detail Modal -->
-<div class="mover" id="modal-lead-detail" style="align-items:flex-start;padding:0;background:rgba(28,25,23,.6)">
+<div class="mover" id="modal-lead-detail" style="align-items:flex-start;padding:0;background:rgba(28,25,23,.6);z-index:150">
   <div style="width:100%;height:100vh;overflow-y:auto;background:var(--cream);display:flex;flex-direction:column">
     <!-- Header bar -->
     <div style="background:var(--pine);padding:18px 32px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:10">
@@ -1512,7 +1537,8 @@ What would you like help with today?</div>
   </div>
 </div>
 
-<div id="events-widget" style="position:fixed;bottom:80px;right:18px;width:260px;background:var(--pine);border-radius:12px;padding:12px 14px;z-index:400;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.2)"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"> <span style="color:#fff;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Upcoming events</span> <span onclick="document.getElementById('events-widget').style.display='none'" style="color:rgba(255,255,255,0.6);cursor:pointer;font-size:18px;line-height:1">&times;</span> </div> <div id="events-ticker" style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.6"></div> </div> <div id="events-bell" onclick="toggleEventsWidget()" style="position:fixed;bottom:24px;right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> <span id="events-badge" style="position:absolute;top:-2px;right:-2px;background:#F1239;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="super-admin-notif-list" style="position:fixed;bottom:24px;left:18px;z-index:500;display:flex;flex-direction:column-reverse;gap:8px;max-width:320px"></div>
+<div id="events-widget" style="position:fixed;bottom:80px;right:18px;width:260px;background:var(--pine);border-radius:12px;padding:12px 14px;z-index:400;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.2)"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"> <span style="color:#fff;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Upcoming events</span> <span onclick="document.getElementById('events-widget').style.display='none'" style="color:rgba(255,255,255,0.6);cursor:pointer;font-size:18px;line-height:1">&times;</span> </div> <div id="events-ticker" style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.6"></div> </div> <div id="dm-bell" onclick="openDmInbox()" style="position:fixed;bottom:24px;right:74px;width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-message-circle-2" style="color:#fff;font-size:20px"></i> <span id="dm-badge" style="position:absolute;top:-2px;right:-2px;background:var(--rose);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div>
+<div id="events-bell" onclick="toggleEventsWidget()" style="position:fixed;bottom:24px;right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> <span id="events-badge" style="position:absolute;top:-2px;right:-2px;background:#F1239;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="super-admin-notif-list" style="position:fixed;bottom:24px;left:18px;z-index:500;display:flex;flex-direction:column-reverse;gap:8px;max-width:320px"></div>
 <div id="urgent-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,20,20,.6);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
   <div id="urgent-popup-card" style="background:#fff;border-radius:18px;padding:0;max-width:460px;width:92%;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden"></div>
 </div>
@@ -2053,6 +2079,7 @@ async function onLogin(user){
   loadExpiryAlerts();
   loadMyTasks();
   await loadNotificationSettings();
+  checkUnreadDmCount();
   startNotificationEngine();
   // realtime subscription
   sb.channel('leads-changes').on('postgres_changes',{event:'*',schema:'public',table:'leads'},()=>{
@@ -4082,6 +4109,90 @@ async function sendLeadChatMessage(){
   loadChatStat(curId,'ld-chat-stat');
 }
 
+// ── 1-to-1 Direct Messages — separate from per-lead Team Chat ──────
+// Click anyone in "Online Now", or browse the full contact list, to open
+// a private conversation not tied to any specific student.
+let dmActiveRecipient=null;
+function openDmInbox(){
+  document.getElementById('dm-inbox-search').value='';
+  renderDmInbox();
+  document.getElementById('modal-dm-inbox').classList.add('open');
+}
+function renderDmInbox(){
+  const el=document.getElementById('dm-inbox-list');
+  if(!el)return;
+  const q=(document.getElementById('dm-inbox-search').value||'').trim().toLowerCase();
+  const onlineIds=new Set(currentOnlineUsers.map(u=>u.userId));
+  const contacts=(teamList||[])
+    .filter(t=>t.id!==currentUser?.id)
+    .filter(t=>!q||(t.full_name||'').toLowerCase().includes(q)||(t.role||'').toLowerCase().includes(q))
+    .sort((a,b)=>{
+      const aOn=onlineIds.has(a.id)?0:1, bOn=onlineIds.has(b.id)?0:1;
+      if(aOn!==bOn)return aOn-bOn;
+      return (a.full_name||'').localeCompare(b.full_name||'');
+    });
+  if(!contacts.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;text-align:center;padding:20px">No one found.</div>';return;}
+  el.innerHTML=contacts.map(t=>{
+    const isOnline=onlineIds.has(t.id);
+    return `<div onclick="openDmChat('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" style="display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--line);cursor:pointer" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+      <div style="position:relative;flex-shrink:0"><div class="tcard-av" style="width:36px;height:36px;font-size:13px">${ini(t.full_name||t.email)}</div>${isOnline?'<div style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#22C55E;border:2px solid #fff"></div>':''}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${esc(t.full_name||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(t.role||'')}${isOnline?' · online now':''}</div></div>
+    </div>`;
+  }).join('');
+}
+function openDmChat(userId,name){
+  dmActiveRecipient={id:userId,name};
+  document.getElementById('dm-chat-title').textContent='💬 '+name;
+  document.getElementById('dm-chat-input').value='';
+  closeModal('modal-dm-inbox');
+  loadDmMessages();
+  document.getElementById('modal-dm-chat').classList.add('open');
+  setTimeout(()=>document.getElementById('dm-chat-input').focus(),100);
+}
+async function loadDmMessages(){
+  const el=document.getElementById('dm-chat-list');
+  if(!el||!dmActiveRecipient||!currentUser)return;
+  const me=currentUser.id, them=dmActiveRecipient.id;
+  const{data,error}=await sb.from('direct_messages').select('*')
+    .or(`and(sender_id.eq.${me},recipient_id.eq.${them}),and(sender_id.eq.${them},recipient_id.eq.${me})`)
+    .order('created_at',{ascending:true});
+  if(error){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;text-align:center;padding:20px">Could not load messages — has direct_messages been created in Supabase yet?</div>';return;}
+  // Mark any messages sent TO me as read now that I've opened this thread.
+  const unreadIds=(data||[]).filter(m=>m.recipient_id===me&&!m.read).map(m=>m.id);
+  if(unreadIds.length){sb.from('direct_messages').update({read:true}).in('id',unreadIds).then(checkUnreadDmCount);}
+  if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;text-align:center;padding:20px">No messages yet — say hello.</div>';return;}
+  el.innerHTML=data.map(m=>{
+    const isMine=m.sender_id===me;
+    return `<div style="display:flex;flex-direction:column;align-items:${isMine?'flex-end':'flex-start'};margin-bottom:10px">
+      <div style="max-width:78%;background:${isMine?'var(--pine)':'var(--paper)'};color:${isMine?'#fff':'var(--ink)'};border:${isMine?'none':'1px solid var(--line)'};padding:9px 13px;border-radius:14px;${isMine?'border-bottom-right-radius:3px':'border-bottom-left-radius:3px'};font-size:13px;line-height:1.5">${esc(m.message)}</div>
+      <div style="font-size:10px;color:var(--ink3);margin-top:3px;padding:0 4px">${new Date(m.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+    </div>`;
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+async function sendDmMessage(){
+  if(!dmActiveRecipient||!currentUser)return;
+  const input=document.getElementById('dm-chat-input');
+  const message=input.value.trim();
+  if(!message)return;
+  input.value='';
+  const{error}=await sb.from('direct_messages').insert({
+    sender_id:currentUser.id,sender_name:myName,
+    recipient_id:dmActiveRecipient.id,recipient_name:dmActiveRecipient.name,
+    message,read:false
+  });
+  if(error){toast('Error sending message: '+error.message);input.value=message;return;}
+  await loadDmMessages();
+}
+async function checkUnreadDmCount(){
+  if(!currentUser)return;
+  const{count,error}=await sb.from('direct_messages').select('*',{count:'exact',head:true}).eq('recipient_id',currentUser.id).eq('read',false);
+  const badge=document.getElementById('dm-badge');
+  if(!badge||error)return;
+  if(count>0){badge.textContent=count>9?'9+':count;badge.style.display='flex';}
+  else{badge.style.display='none';}
+}
+
 // ── Activity log dialog — full history in its own window, not cluttering the panel ──
 function openActivityLogModal(){
   if(!curId){toast('Open a lead first.');return;}
@@ -4285,10 +4396,12 @@ function startNotificationEngine(){
   checkEscalations();
   checkDailyFollowupPopup();
   checkEventReminders();
+  checkUnreadDmCount();
   notificationInterval=setInterval(()=>{
     checkEscalations();
     checkDailyFollowupPopup();
     checkEventReminders();
+    checkUnreadDmCount();
   },60000); // every 60 seconds
 }
 function stopNotificationEngine(){
@@ -4844,10 +4957,12 @@ function initPresence(user, profile) {
     .subscribe();
 }
 
+let currentOnlineUsers = [];
 function renderOnlineUsers(state) {
   const avContainer = document.getElementById('presence-avatars');
   const countEl = document.getElementById('online-num');
   const users = Object.values(state).flat();
+  currentOnlineUsers = users;
   countEl.textContent = users.length;
 
   if (!users.length) {
@@ -4856,10 +4971,10 @@ function renderOnlineUsers(state) {
   }
 
   avContainer.innerHTML = users.map(u => `
-    <div class="presence-av" style="background:${u.color||'#1B998B'}" title="${esc(u.name||u.email)}">
+    <div class="presence-av" onclick="openDmChat('${u.userId}','${esc(u.name||u.email)}')" style="background:${u.color||'#1B998B'};cursor:pointer" title="${esc(u.name||u.email)} — click to message">
       ${ini2(u.name||u.email||'?')}
       <div class="online-dot"></div>
-      <div class="tooltip">${esc(u.name||u.email)}</div>
+      <div class="tooltip">${esc(u.name||u.email)} — click to message</div>
     </div>
   `).join('');
 }

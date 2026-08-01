@@ -397,6 +397,9 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <option style="background:#0D4A3C">Admin</option>
             <option style="background:#0D4A3C">Manager</option>
             <option style="background:#0D4A3C">Director</option>
+            <option style="background:#0D4A3C">Application Team</option>
+            <option style="background:#0D4A3C">Visa Team</option>
+            <option style="background:#0D4A3C">SOP Team</option>
           </select>
         </div>
         <div class="auth-field"><label>Country</label>
@@ -579,7 +582,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <table class="tbl">
               <thead><tr>
                 <th>#</th><th>ID</th><th>Name</th><th>Mobile</th><th>Program</th>
-                <th>Destination</th><th>Captured</th><th>Status</th><th>Priority</th><th>Counsellor</th>
+                <th>Destination</th><th>Captured</th><th>Status</th><th>Priority</th><th>Counsellor</th><th>Application</th><th>Visa</th><th>SOP</th>
               </tr></thead>
               <tbody id="lead-tbody"></tbody>
             </table>
@@ -684,7 +687,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
       <!-- Team -->
       <section id="sc-team" class="screen">
+        <div id="management-team-section"></div>
+        <div id="operations-team-section"></div>
         <div id="team-members-card" style="display:none">
+          <div class="dsec" style="margin-bottom:10px">By office / branch</div>
           <div id="team-grid"></div>
         </div>
         <button class="btn btn-p" id="create-user-btn" onclick="openCreateUser()" style="display:none;margin-top:12px;font-size:12px;padding:5px 10px"><i class="ti ti-user-plus"></i>Create user</button>
@@ -1274,7 +1280,7 @@ What would you like help with today?</div>
     <div class="fg">
       <div class="ff full"><label>Name (optional, for your reference)</label><input id="inv-name" placeholder="e.g. Priya Sharma"></div>
       <div class="ff"><label>Role</label>
-        <select id="inv-role"><option>Counsellor</option><option>Admin</option><option>Manager</option><option>Director</option></select>
+        <select id="inv-role"><option>Counsellor</option><option>Admin</option><option>Manager</option><option>Director</option><option>Application Team</option><option>Visa Team</option><option>SOP Team</option></select>
       </div>
       <div class="ff"><label>Country</label>
         <select id="inv-country" onchange="syncInviteOffice()"><option value="India">India</option><option value="UK">UK</option><option value="Pakistan">Pakistan</option><option value="Bangladesh">Bangladesh</option></select>
@@ -1675,6 +1681,30 @@ function currentUnavailability(teamId){
   return unavailabilityList.find(u=>u.team_id===teamId&&u.from_date<=today&&today<=u.to_date)||null;
 }
 function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===office&&(t.role||'Counsellor')==='Counsellor'&&!isUnavailableToday(t.id));}
+// Application/Visa/SOP Team are operational staff, same restricted access
+// tier as Counsellor — not management. Used everywhere access is scoped.
+function isRestrictedStaffRole(){return['Counsellor','Application Team','Visa Team','SOP Team'].includes(myRole)&&!isSuperAdmin;}
+
+// ── Sub-team pools (Application/Visa/SOP) — NOT limited to country ──
+// These are real role categories (set at signup/invite, same as
+// Counsellor/Admin/Manager/Director), pooled globally across every office
+// for round-robin — a Pakistan-based lead's Visa Team member can be
+// anyone with the "Visa Team" role anywhere, not just Pakistan staff.
+function getGlobalRolePool(roleName){
+  return (teamList||[]).filter(t=>t.role===roleName&&!isUnavailableToday(t.id));
+}
+async function getNextForGlobalRole(roleName){
+  const pool=getGlobalRolePool(roleName);
+  if(!pool.length)return '';
+  const key='GLOBAL:'+roleName; // reuses round_robin_state — a pseudo-office key, kept
+  const idx=(rrStateByOffice[key]||0)%pool.length;   // separate from any real office name
+  const chosen=pool[idx];
+  const nextIndex=idx+1;
+  rrStateByOffice[key]=nextIndex;
+  const{error}=await sb.from('round_robin_state').upsert({office:key,last_index:nextIndex},{onConflict:'office'});
+  if(error)console.error('Failed to persist global round-robin state:',error);
+  return chosen?.full_name||'';
+}
 async function getNextCounsellorForOffice(office){
   const pool=getOfficeCounsellors(office);
   if(!pool.length)return{name:'',country:'',office};
@@ -1821,6 +1851,34 @@ async function quickReassignLead(leadId,newCounsellor){
   toast(newCounsellor?`Reassigned to ${newCounsellor}`:'Unassigned');
   renderDash();
 }
+
+// ── Inline Application/Visa/SOP quick-assign, directly in the Leads table ──
+// Pooled globally (not by office) since these are role categories, not
+// country-scoped staff.
+function renderSubTeamCell(l,field,roleName){
+  const pool=getGlobalRolePool(roleName);
+  const current=l[field];
+  const options=['<option value="">Unassigned</option>']
+    .concat(pool.map(t=>`<option value="${esc(t.full_name)}"${t.full_name===current?' selected':''}>${esc(t.full_name)}</option>`));
+  if(current&&!pool.some(t=>t.full_name===current)){
+    options.push(`<option value="${esc(current)}" selected>${esc(current)} (not in ${esc(roleName)})</option>`);
+  }
+  return `<select onchange="quickReassignSubTeam('${l.id}','${field}',this.value)" style="font-size:12px;padding:4px 6px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);max-width:140px">${options.join('')}</select>`;
+}
+async function quickReassignSubTeam(leadId,field,newValue){
+  const l=leads.find(x=>x.id===leadId);
+  if(!l||l[field]===newValue)return;
+  const old=l[field];
+  setSyncing();
+  const{error}=await sb.from('leads').update({[field]:newValue||null}).eq('id',leadId);
+  if(error){setSyncErr();toast('Error reassigning: '+error.message);renderLeads();return;}
+  l[field]=newValue||null;
+  setSynced();
+  const labels={application_team:'Application Team',visa_team:'Visa Team',sop_team:'SOP Team'};
+  logActivity(leadId,'reassigned',`${labels[field]}: ${old||'Unassigned'} → ${newValue||'Unassigned'}`);
+  toast(newValue?`${labels[field]} → ${newValue}`:`${labels[field]} unassigned`);
+  renderDash();
+}
 function populateCounsellorDropdown(){
   const office=document.getElementById('f-office').value;
   const sel=document.getElementById('f-counsel');
@@ -1846,13 +1904,14 @@ function populateCounsellorDropdown(){
 // Counsellors — since a Manager or Admin often personally handles Visa/SOP
 // work too, and there's no separate "sub-team role" in the data model.
 function populateSubTeamDropdowns(){
-  const office=document.getElementById('f-office').value;
-  const pool=(teamList||[]).filter(t=>t.office===office);
-  ['f-application-team','f-visa-team','f-sop-team'].forEach(id=>{
+  // Global pools, not office-scoped — a lead's country/office has no
+  // bearing on who can be its Application/Visa/SOP Team member.
+  [['f-application-team','Application Team'],['f-visa-team','Visa Team'],['f-sop-team','SOP Team']].forEach(([id,roleName])=>{
     const sel=document.getElementById(id);
     if(!sel)return;
     const current=sel.value;
-    sel.innerHTML='<option value="">Unassigned</option>'+
+    const pool=getGlobalRolePool(roleName);
+    sel.innerHTML='<option value="">Auto-assign (round robin)</option>'+
       pool.map(t=>`<option value="${esc(t.full_name)}">${esc(t.full_name)}</option>`).join('');
     if(pool.some(t=>t.full_name===current)) sel.value=current;
   });
@@ -1984,7 +2043,7 @@ document.getElementById('login-btn').disabled=false;
   document.getElementById('login-btn').textContent='Sign in →';
 }
 
-let events=[]; async function loadEvents(){   const{data}=await sb.from('events').select('*').order('event_date',{ascending:true});   if(data){events=data;renderEvents();renderEventsTicker();} } function renderEvents(){   const cal=document.getElementById('events-calendar');   const list=document.getElementById('events-list');   if(!cal)return;   const now=new Date();   const thisMonth=events.filter(e=>new Date(e.event_date).getMonth()===now.getMonth()&&new Date(e.event_date).getFullYear()===now.getFullYear());   const upcoming=events.filter(e=>new Date(e.event_date)>=now).slice(0,10);   const typeColors={'Seminar':"var(--sky-1)",'Webinar':"var(--sky-1)",'Application Deadline':"var(--rose-1)",'Follow-up':"var(--sage-1)",'Other':"var(--gold-1)"};   cal.innerHTML=events.length?events.map(e=>{     const d=new Date(e.event_date);     const isPast=d<now;     const bg=typeColors[e.event_type]||"var(--gold-1)";     return`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);opacity:${isPast?0.5:1}">     <div style="min-width:48px;text-align:center;background:${bg};border-radius:8px;padding:6px 4px">     <div style="font-size:18px;font-weight:600;color:var(--ink);line-height:1">${d.getDate()}</div>     <div style="font-size:10px;color:var(--ink2)">${d.toLocaleString('default',{month:'short'})}</div>     </div>     <div style="flex:1">     <div style="font-weight:500;font-size:14px;color:var(--ink)">${esc(e.title)}</div>     <div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(e.event_type||'')}${e.description?` · <a href="${e.description}" target="_blank" style="color:var(--pine2)">${esc(e.description)}</a>`:''}</div>     </div>     <button onclick="openAddEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px">✏️</button>${(e.created_by===currentUser?.id||isSuperAdmin)?`<button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">&times;</button>`:''}     </div>`;}).join(''):'<p style="color:var(--ink3);font-style:italic;font-size:13px">No events yet. Click Add event to get started.</p>';   list.innerHTML=thisMonth.length?thisMonth.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink2)"><b style="color:var(--ink)">${new Date(e.event_date).getDate()} ${new Date(e.event_date).toLocaleString('default',{month:'short'})}</b> · ${esc(e.title)}</div>`).join(''):'<p style="color:var(--ink3);font-style:italic;font-size:13px">No events this month.</p>'; } function renderEventsTicker(){   const ticker=document.getElementById('events-ticker');   const badge=document.getElementById('events-badge');   if(!ticker)return;   const now=new Date();   const soon=events.filter(e=>{const d=new Date(e.event_date);return d>=now&&(d-now)<=7*86400000;});   const upcoming=events.filter(e=>new Date(e.event_date)>=now).slice(0,5);   if(badge){if(soon.length>0){badge.textContent=soon.length;badge.style.display='flex';}else{badge.style.display='none';}}   ticker.innerHTML=upcoming.length?upcoming.map(e=>`<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.1)"><span style="opacity:0.7;font-size:11px">${new Date(e.event_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span><br>${esc(e.title)}</div>`).join(''):'<div style="opacity:0.7">No upcoming events</div>'; } function toggleEventsWidget(){   const w=document.getElementById('events-widget');   w.style.display=w.style.display==='none'?'block':'none'; } function toggleOther(selectId,inputId){   const sel=document.getElementById(selectId);   const inp=document.getElementById(inputId);   if(inp)inp.style.display=sel.value==='Other'?'block':'none'; } let editingEventId=null;
+let events=[]; async function loadEvents(){   const{data}=await sb.from('events').select('*').order('event_date',{ascending:true});   if(data){events=data;renderEvents();renderEventsTicker();} } function renderEvents(){   const cal=document.getElementById('events-calendar');   const list=document.getElementById('events-list');   if(!cal)return;   const now=new Date();   const thisMonth=events.filter(e=>new Date(e.event_date).getMonth()===now.getMonth()&&new Date(e.event_date).getFullYear()===now.getFullYear());   const upcoming=events.filter(e=>new Date(e.event_date)>=now).slice(0,10);   const typeColors={'Seminar':"var(--sky-1)",'Webinar':"var(--sky-1)",'Application Deadline':"var(--rose-1)",'Follow-up':"var(--sage-1)",'Other':"var(--gold-1)"};   cal.innerHTML=events.length?events.map(e=>{     const d=new Date(e.event_date);     const isPast=d<now;     const bg=typeColors[e.event_type]||"var(--gold-1)";     return`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);opacity:${isPast?0.5:1}">     <div style="min-width:48px;text-align:center;background:${bg};border-radius:8px;padding:6px 4px">     <div style="font-size:18px;font-weight:600;color:var(--ink);line-height:1">${d.getDate()}</div>     <div style="font-size:10px;color:var(--ink2)">${d.toLocaleString('default',{month:'short'})}</div>     </div>     <div style="flex:1">     <div style="font-weight:500;font-size:14px;color:var(--ink)">${esc(e.title)}</div>     <div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(e.event_type||'')}${e.description?` · <a href="${e.description}" target="_blank" style="color:var(--pine2)">${esc(e.description)}</a>`:''}</div>     </div>     <button onclick="openAddEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px">✏️</button>${(!e.created_by||e.created_by===currentUser?.id||isSuperAdmin)?`<button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">&times;</button>`:''}     </div>`;}).join(''):'<p style="color:var(--ink3);font-style:italic;font-size:13px">No events yet. Click Add event to get started.</p>';   list.innerHTML=thisMonth.length?thisMonth.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink2)"><b style="color:var(--ink)">${new Date(e.event_date).getDate()} ${new Date(e.event_date).toLocaleString('default',{month:'short'})}</b> · ${esc(e.title)}</div>`).join(''):'<p style="color:var(--ink3);font-style:italic;font-size:13px">No events this month.</p>'; } function renderEventsTicker(){   const ticker=document.getElementById('events-ticker');   const badge=document.getElementById('events-badge');   if(!ticker)return;   const now=new Date();   const soon=events.filter(e=>{const d=new Date(e.event_date);return d>=now&&(d-now)<=7*86400000;});   const upcoming=events.filter(e=>new Date(e.event_date)>=now).slice(0,5);   if(badge){if(soon.length>0){badge.textContent=soon.length;badge.style.display='flex';}else{badge.style.display='none';}}   ticker.innerHTML=upcoming.length?upcoming.map(e=>`<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.1)"><span style="opacity:0.7;font-size:11px">${new Date(e.event_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span><br>${esc(e.title)}</div>`).join(''):'<div style="opacity:0.7">No upcoming events</div>'; } function toggleEventsWidget(){   const w=document.getElementById('events-widget');   w.style.display=w.style.display==='none'?'block':'none'; } function toggleOther(selectId,inputId){   const sel=document.getElementById(selectId);   const inp=document.getElementById(inputId);   if(inp)inp.style.display=sel.value==='Other'?'block':'none'; } let editingEventId=null;
 function openAddEvent(id){
   editingEventId=id||null;
   const ev=id?events.find(e=>e.id===id):null;
@@ -2032,7 +2091,7 @@ function saveQuickInput(){
   if(cb)cb(val);
 }
 
-async function updateEvent(id,title,date,type,desc,time,participants){   const{error}=await sb.from('events').update({title,event_date:date,event_type:type,description:desc,event_time:time,participants}).eq('id',id);   if(!error){await loadEvents();toast('Event updated!');} } async function saveEvent(title,date,type,desc,time,participants){   const{error}=await sb.from('events').insert({title,event_date:date,event_type:type,description:desc,event_time:time,participants,created_by:currentUser.id});   if(!error){await loadEvents();toast('Event added!');} } async function deleteEvent(id){   const ev=events.find(e=>e.id===id);   if(ev&&ev.created_by!==currentUser?.id&&!isSuperAdmin){toast('Only the person who created this event can delete it.');return;}   if(!confirm('Delete this event?'))return;   await sb.from('events').delete().eq('id',id);   await loadEvents();   toast('Event deleted.'); } // check existing session
+async function updateEvent(id,title,date,type,desc,time,participants){   const{error}=await sb.from('events').update({title,event_date:date,event_type:type,description:desc,event_time:time,participants}).eq('id',id);   if(!error){await loadEvents();toast('Event updated!');} } async function saveEvent(title,date,type,desc,time,participants){   const{error}=await sb.from('events').insert({title,event_date:date,event_type:type,description:desc,event_time:time,participants,created_by:currentUser.id});   if(!error){await loadEvents();toast('Event added!');} } async function deleteEvent(id){   const ev=events.find(e=>e.id===id);   if(ev&&ev.created_by&&ev.created_by!==currentUser?.id&&!isSuperAdmin){toast('Only the person who created this event can delete it.');return;}   if(!confirm('Delete this event?'))return;   await sb.from('events').delete().eq('id',id);   await loadEvents();   toast('Event deleted.'); } // check existing session
 
  
 sb.auth.getSession().then(({data:{session}})=>{
@@ -2199,7 +2258,7 @@ function renderDash(){
 
   // Revenue Pipeline / Commission Outstanding — hidden from Counsellors, matching
   // the same "no finance visibility" rule already applied to the Finance tab.
-  const showFinanceTiles=!(myRole==='Counsellor'&&!isSuperAdmin);
+  const showFinanceTiles=!isRestrictedStaffRole();
   ['k-revenue-tile','k-outstanding-tile'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=showFinanceTiles?'':'none';});
   if(showFinanceTiles){
     loadCommissions().then(()=>{
@@ -2246,7 +2305,7 @@ let currentSubTeamView=null;
 function renderSubTeamSummaryCards(){
   const el=document.getElementById('subteam-cards-row');
   if(!el)return;
-  const showAll=!(myRole==='Counsellor'&&!isSuperAdmin);
+  const showAll=!isRestrictedStaffRole();
   const cards=[];
   Object.entries(SUBTEAM_CONFIG).forEach(([key,cfg])=>{
     const assigned=leads.filter(l=>l[cfg.field]);
@@ -2269,7 +2328,7 @@ function openSubTeamDetail(teamType){
 function renderSubTeamDetail(){
   const cfg=SUBTEAM_CONFIG[currentSubTeamView];
   if(!cfg)return;
-  const showAll=!(myRole==='Counsellor'&&!isSuperAdmin);
+  const showAll=!isRestrictedStaffRole();
   const scoped=leads.filter(l=>l[cfg.field]&&(showAll||l[cfg.field]===myName));
   document.getElementById('subteam-detail-title').textContent=`${cfg.icon} ${cfg.label} — assigned leads`;
   document.getElementById('subteam-detail-count').textContent=`${scoped.length} lead${scoped.length!==1?'s':''}`;
@@ -2337,7 +2396,7 @@ function renderLeads(){
   if(empty)return;
   document.getElementById('lcount').textContent=`Showing ${f.length} of ${leads.length} leads`;
   const tb=document.getElementById('lead-tbody');tb.innerHTML='';
-  if(!f.length){tb.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:36px;color:var(--ink3);font-style:italic">No leads match your filters.</td></tr>`;return;}
+  if(!f.length){tb.innerHTML=`<tr><td colspan="13" style="text-align:center;padding:36px;color:var(--ink3);font-style:italic">No leads match your filters.</td></tr>`;return;}
   f.forEach((l,i)=>{
     const[abg,atx]=AVC[i%AVC.length];
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
@@ -2354,6 +2413,9 @@ function renderLeads(){
       <td><span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span></td>
       <td><span class="pill" style="background:${ps.bg};color:${ps.tx}">${l.priority||'—'}</span></td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderCounsellorCell(l)}</td>
+      <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'application_team','Application Team')}</td>
+      <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'visa_team','Visa Team')}</td>
+      <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'sop_team','SOP Team')}</td>
     </tr>`;
   });
 }
@@ -2936,6 +2998,14 @@ async function saveLead(){
     notes:document.getElementById('f-notes').value,     intake_month:document.getElementById('f-intake').value,     ielts_status:document.getElementById('f-ielts-status').value,     ielts_score:document.getElementById('f-ielts-score').value,     budget_range:document.getElementById('f-budget').value,     english_status:document.getElementById('f-english').value,     whatsapp_group_link:document.getElementById('f-walink').value,     doc_folder_link:document.getElementById('f-doclink').value,
     added_by:currentUser?.id
   };
+  // Auto round-robin for any of the three sub-teams left on "Auto-assign" —
+  // pooled globally (getNextForGlobalRole), not scoped to this lead's office.
+  for(const[field,roleName]of[['application_team','Application Team'],['visa_team','Visa Team'],['sop_team','SOP Team']]){
+    if(!data[field]){
+      const picked=await getNextForGlobalRole(roleName);
+      if(picked)data[field]=picked;
+    }
+  }
   let error;
   let logEvents=[];
   if(editMode&&curId){       delete data.lead_id;
@@ -3111,7 +3181,7 @@ async function deleteTeamMember(id,name){
 // else's — matches "counsellors cannot enable/disable their own."
 let unavailTargetId=null;
 function openUnavailabilityModal(teamId,name){
-  if(myRole==='Counsellor'&&!isSuperAdmin){toast('Only Manager/Admin/Director/Super Admin can set this.');return;}
+  if(isRestrictedStaffRole()){toast('Only Manager/Admin/Director/Super Admin can set this.');return;}
   unavailTargetId=teamId;
   document.getElementById('unavail-name').textContent=`Marking ${name} unavailable — round-robin will skip them for this date range.`;
   document.getElementById('unavail-from').value=new Date().toISOString().substring(0,10);
@@ -3139,7 +3209,52 @@ async function saveUnavailability(){
   toast('Marked unavailable.');
 }
 
+// ── Management Team & Operations Team groupings ─────────────────────
+// Two additional groupings shown above the country/office breakdown:
+// Management (Manager/Admin/Director, across every country) and
+// Operations (Application/Visa/SOP Team members, each shown as their own
+// column with the shared global round-robin's "next up" indicator).
+function renderManagementAndOperationsTeams(team){
+  const mgmtEl=document.getElementById('management-team-section');
+  const opsEl=document.getElementById('operations-team-section');
+  if(!mgmtEl||!opsEl)return;
+
+  const mgmtRoles=['Manager','Admin','Director'];
+  const mgmt=(team||[]).filter(t=>mgmtRoles.includes(t.role));
+  mgmtEl.innerHTML=`<div class="card" style="margin-bottom:16px">
+    <div class="card-h"><span class="card-t">🏛️ Management Team</span><span style="font-size:11px;color:var(--ink3)">${mgmt.length} member${mgmt.length!==1?'s':''} — Manager, Admin & Director, across every country</span></div>
+    <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard">
+        <div class="tcard-av">${ini(t.full_name||t.email)}</div>
+        <div style="flex:1;min-width:0"><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email">${esc(t.email||'')}</div></div>
+        ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+      </div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:8px 0">No Management Team members yet.</div>'}</div>
+  </div>`;
+
+  const opsRoles=[['Application Team','📝'],['Visa Team','🛂'],['SOP Team','✍️']];
+  const opsCols=opsRoles.map(([roleName,icon])=>{
+    const members=(team||[]).filter(t=>t.role===roleName);
+    const key='GLOBAL:'+roleName;
+    const nextUp=members.length?members[(rrStateByOffice[key]||0)%members.length]?.full_name||'—':'None';
+    return `<div style="flex:1;min-width:220px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line)">
+        <span style="font-weight:600;font-size:13px;color:var(--pine)">${icon} ${roleName}</span>
+        <span style="font-size:10px;color:var(--ink3);font-style:italic">Next: <b style="color:var(--pine3)">${esc(nextUp)}</b></span>
+      </div>
+      ${members.length?members.map(t=>`<div class="tcard" style="margin-bottom:8px">
+          <div class="tcard-av">${ini(t.full_name||t.email)}</div>
+          <div style="flex:1;min-width:0"><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-email">${esc(t.email||'')}</div></div>
+          ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+        </div>`).join(''):'<div style="font-size:12px;color:var(--ink3);font-style:italic;padding:6px 0">No one assigned to this team yet.</div>'}
+    </div>`;
+  }).join('');
+  opsEl.innerHTML=`<div class="card" style="margin-bottom:16px">
+    <div class="card-h"><span class="card-t">⚙️ Operations Team</span><span style="font-size:11px;color:var(--ink3)">Application, Visa & SOP — pooled globally, not limited to any one country</span></div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap">${opsCols}</div>
+  </div>`;
+}
+
 function renderTeam(team){
+  renderManagementAndOperationsTeams(team);
   const tg=document.getElementById('team-grid');
   const tl=document.querySelector('#sc-team .loading');
   if(tl) tl.style.display='none';
@@ -3154,7 +3269,8 @@ function renderTeam(team){
 
   const byOffice={};
   allOffices.forEach(({office})=>{byOffice[office]=[];});
-  (team||[]).forEach(t=>{
+  const officeExcludedRoles=['Manager','Admin','Director','Application Team','Visa Team','SOP Team'];
+  (team||[]).filter(t=>!officeExcludedRoles.includes(t.role)).forEach(t=>{
     // If office is blank, or doesn't match a known office for their country
     // (e.g. a stale value from before offices were consolidated), derive the
     // correct office from country instead of showing a phantom "Unassigned"
@@ -3174,7 +3290,7 @@ function renderTeam(team){
     const cards=members.length
       ? members.map(t=>{
           const unavail=currentUnavailability(t.id);
-          const canManage=!(myRole==='Counsellor'&&!isSuperAdmin);
+          const canManage=!isRestrictedStaffRole();
           return `<div class="tcard" style="${unavail?'opacity:.7':''}">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0">
@@ -3728,7 +3844,7 @@ async function loadGlobalActivityLog(scopedLeads,start,end){
 function renderSubTeamReportsBreakdown(scoped){
   const el=document.getElementById('rpt-subteam-breakdown');
   if(!el)return;
-  const showAll=!(myRole==='Counsellor'&&!isSuperAdmin);
+  const showAll=!isRestrictedStaffRole();
   const rows=[];
   Object.entries(SUBTEAM_CONFIG).forEach(([key,cfg])=>{
     const assigned=scoped.filter(l=>l[cfg.field]);
@@ -3745,7 +3861,7 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
   function applyRoleUI(){
     const role=(document.getElementById('sb-urole').textContent||'').trim();
     const isAdminLike=role.startsWith('Admin')||role.startsWith('Director')||isSuperAdmin;
-    const isCounsellor=myRole==='Counsellor'&&!isSuperAdmin;
+    const isCounsellor=isRestrictedStaffRole();
 
     // "Add team member" — Super Admin only, god access.
     const cu=document.getElementById('create-user-btn');
@@ -3809,8 +3925,8 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
       return `<div class="prow" onclick="navFilter('ls-st','')" style="cursor:pointer"><span class="pill" style="background:var(--gold-l);color:var(--gold);min-width:130px">${esc(intake)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--gold)"></div></div><span class="pn" style="color:var(--gold)">${n}</span></div>`;
     }).join('');
   }
-  function renderCountryBreakdown(){const card=document.getElementById('country-breakdown-card');const el=document.getElementById('country-breakdown');if(!el||!card)return;if(myRole==='Counsellor'&&!isSuperAdmin){card.style.display='none';return;}card.style.display='block';const titleEl=card.querySelector('.card-t');if(titleEl)titleEl.textContent=isSuperAdmin?'🌍 Country breakdown':'🌍 '+(myCountry||'Your country')+' breakdown';const map={};leads.forEach(l=>{const c=l.country||'Unspecified';if(!map[c])map[c]={country:c,total:0,enrolled:0};map[c].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[c].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.total-a.total);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}const flagMap={India:'🇮🇳',UK:'🇬🇧',Pakistan:'🇵🇰',Bangladesh:'🇧🇩'};const tot=leads.length||1;el.innerHTML=sorted.map(c=>{const w=Math.round(c.total/tot*100);const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;return`<div class="prow" onclick="navFilter('ls-country','${c.country}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:110px">${flagMap[c.country]||''} ${esc(c.country)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${c.total}</span><span style="font-size:11px;color:var(--ink3);min-width:60px;text-align:right">${pct}% enr.</span></div>`;}).join('');}
-  function renderCounsellorRank(){const el=document.getElementById('counsel-rank');const card=document.getElementById('counsel-rank-card');if(!el)return;if(myRole==='Counsellor'&&!isSuperAdmin){if(card)card.style.display='none';return;}if(card)card.style.display='block';const map={};leads.forEach(l=>{if(!l.counsellor)return;if(!map[l.counsellor])map[l.counsellor]={name:l.counsellor,total:0,enrolled:0};map[l.counsellor].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[l.counsellor].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.enrolled-a.enrolled);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="border-bottom:2px solid var(--line)"><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">#</th><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Counsellor</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Leads</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Enrolled</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Conversion %</th></tr></thead><tbody>${sorted.map((c,i)=>{const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';return`<tr style="border-bottom:1px solid var(--line)"><td style="padding:10px 8px;font-weight:600;color:var(--ink3)">${medal||i+1}</td><td style="padding:10px 8px;font-weight:600">${esc(c.name)}</td><td style="padding:10px 8px;text-align:center">${c.total}</td><td style="padding:10px 8px;text-align:center;color:var(--sage);font-weight:600">${c.enrolled}</td><td style="padding:10px 8px;text-align:center"><span style="background:${pct>=50?'#DCFCE7':pct>=25?'#FEF9C3':'#FFE4E6'};color:${pct>=50?'#166534':pct>=25?'#854D0E':'#9F1239'};padding:3px 10px;border-radius:99px;font-weight:600;font-size:11px">${pct}%</span></td></tr>`;}).join('')}</tbody></table>`;}
+  function renderCountryBreakdown(){const card=document.getElementById('country-breakdown-card');const el=document.getElementById('country-breakdown');if(!el||!card)return;if(isRestrictedStaffRole()){card.style.display='none';return;}card.style.display='block';const titleEl=card.querySelector('.card-t');if(titleEl)titleEl.textContent=isSuperAdmin?'🌍 Country breakdown':'🌍 '+(myCountry||'Your country')+' breakdown';const map={};leads.forEach(l=>{const c=l.country||'Unspecified';if(!map[c])map[c]={country:c,total:0,enrolled:0};map[c].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[c].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.total-a.total);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}const flagMap={India:'🇮🇳',UK:'🇬🇧',Pakistan:'🇵🇰',Bangladesh:'🇧🇩'};const tot=leads.length||1;el.innerHTML=sorted.map(c=>{const w=Math.round(c.total/tot*100);const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;return`<div class="prow" onclick="navFilter('ls-country','${c.country}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:110px">${flagMap[c.country]||''} ${esc(c.country)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${c.total}</span><span style="font-size:11px;color:var(--ink3);min-width:60px;text-align:right">${pct}% enr.</span></div>`;}).join('');}
+  function renderCounsellorRank(){const el=document.getElementById('counsel-rank');const card=document.getElementById('counsel-rank-card');if(!el)return;if(isRestrictedStaffRole()){if(card)card.style.display='none';return;}if(card)card.style.display='block';const map={};leads.forEach(l=>{if(!l.counsellor)return;if(!map[l.counsellor])map[l.counsellor]={name:l.counsellor,total:0,enrolled:0};map[l.counsellor].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[l.counsellor].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.enrolled-a.enrolled);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="border-bottom:2px solid var(--line)"><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">#</th><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Counsellor</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Leads</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Enrolled</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Conversion %</th></tr></thead><tbody>${sorted.map((c,i)=>{const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';return`<tr style="border-bottom:1px solid var(--line)"><td style="padding:10px 8px;font-weight:600;color:var(--ink3)">${medal||i+1}</td><td style="padding:10px 8px;font-weight:600">${esc(c.name)}</td><td style="padding:10px 8px;text-align:center">${c.total}</td><td style="padding:10px 8px;text-align:center;color:var(--sage);font-weight:600">${c.enrolled}</td><td style="padding:10px 8px;text-align:center"><span style="background:${pct>=50?'#DCFCE7':pct>=25?'#FEF9C3':'#FFE4E6'};color:${pct>=50?'#166534':pct>=25?'#854D0E':'#9F1239'};padding:3px 10px;border-radius:99px;font-weight:600;font-size:11px">${pct}%</span></td></tr>`;}).join('')}</tbody></table>`;}
   const DEFAULT_DOCS=['Passport Copy','Academic Transcripts','English Test Scores','Bank Statements','SOP Draft','References / LOR','Photo','CV / Resume'];
 async function loadDocs(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data){renderDocs(data);}else{renderDocs([]);}}
 function renderDocs(docs){const el=document.getElementById('d-doc-list');if(!el)return;if(!docs.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet. Click Init checklist to start.</div>';return;}el.innerHTML=docs.map(d=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${d.attachment_url?`<div style="font-size:11px;margin-top:1px"><a href="${d.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(d.attachment_filename||'View file')}</a></div>`:''}</div><button onclick="triggerDocUpload('${d.id}',false)" title="Upload file" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiry('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`).join('');}

@@ -2052,9 +2052,20 @@ async function onLoginGuarded(user){
 }
 async function onLogin(user){
   currentUser=user;
+  const{data:profile}=await sb.from('team').select('*').eq('id',user.id).single();
+  if(!profile){
+    // Deleting someone from Team only removes their profile row — it does
+    // NOT revoke their actual Supabase Auth login. Without this check,
+    // they could still sign in and silently get default Counsellor access
+    // with no real team record at all. No profile = no access, full stop.
+    await sb.auth.signOut();
+    document.getElementById('login-err').textContent='This account has no active team profile — access has been removed. Contact your Super Admin.';
+    document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('app').classList.remove('visible');
+    return;
+  }
   document.getElementById('auth-screen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
-  const{data:profile}=await sb.from('team').select('*').eq('id',user.id).single();
   const name=profile?.full_name||user.email.split('@')[0];
   const role=profile?.role||'Counsellor';
   myOffice=profile?.office||null;
@@ -2161,21 +2172,34 @@ sb.auth.onAuthStateChange((event,session)=>{
 // ── DATA LOADING ─────────────────────────────────────────────────
 async function loadLeads(){
   let q=sb.from('leads').select('*').order('lead_id',{ascending:false});
-  if(!isSuperAdmin&&myCountry){
-    // Direct country-level scoping: India leads only ever go to India, UK
-    // leads only to UK, etc. This is deliberately based on the lead's own
-    // `country` column rather than derived from office, so it can't drift
-    // even if office data is inconsistent or missing.
-    q=q.eq('country',myCountry);
-  } else if(!isSuperAdmin&&myOffice){
-    q=q.eq('office',myOffice);
+  const subTeamFieldMap={'Application Team':'application_team','Visa Team':'visa_team','SOP Team':'sop_team'};
+
+  if(isSuperAdmin){
+    // no restriction — sees everything
+  } else if(subTeamFieldMap[myRole]){
+    // Application/Visa/SOP Team: their round-robin pool is deliberately
+    // global, not country-scoped — so visibility has to match that. They
+    // see ONLY leads assigned to them in their specific sub-team field,
+    // with no country filter on top. A country filter here would make a
+    // lead they were legitimately assigned (via the global round-robin)
+    // invisible to them just because it came from a different country —
+    // that would break the whole point of pooling globally.
+    q=q.eq(subTeamFieldMap[myRole],myName);
+  } else if(myRole==='Counsellor'){
+    // Counsellors: their own country, and only leads assigned to them or
+    // that they personally added.
+    if(myCountry) q=q.eq('country',myCountry);
+    else if(myOffice) q=q.eq('office',myOffice);
+    if(currentUser){
+      const nameFilter=myName?`counsellor.eq.${myName},`:'';
+      q=q.or(`${nameFilter}added_by.eq.${currentUser.id}`);
+    }
+  } else {
+    // Manager/Admin/Director: everything within their own country/office.
+    if(myCountry) q=q.eq('country',myCountry);
+    else if(myOffice) q=q.eq('office',myOffice);
   }
-  // Counsellors only see leads assigned to them or that they personally added.
-  // Admins and Super Admin see everything in scope above.
-  if(myRole==='Counsellor'&&!isSuperAdmin&&currentUser){
-    const nameFilter=myName?`counsellor.eq.${myName},`:'';
-    q=q.or(`${nameFilter}added_by.eq.${currentUser.id}`);
-  }
+
   const{data,error}=await q;
   if(!error&&data) leads=data;
 }

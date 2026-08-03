@@ -154,6 +154,11 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .tw::-webkit-scrollbar-track{background:var(--cream);border-radius:0 0 var(--rl) var(--rl)}
 .tw::-webkit-scrollbar-thumb{background:var(--pine3);border-radius:99px;border:3px solid var(--cream)}
 .tw::-webkit-scrollbar-thumb:hover{background:var(--pine)}
+#leads-top-scroll{scrollbar-width:auto;scrollbar-color:var(--pine3) var(--cream);border-radius:var(--r);border:1px solid var(--line2)}
+#leads-top-scroll::-webkit-scrollbar{height:14px}
+#leads-top-scroll::-webkit-scrollbar-track{background:var(--cream);border-radius:var(--r)}
+#leads-top-scroll::-webkit-scrollbar-thumb{background:var(--pine3);border-radius:99px;border:3px solid var(--cream)}
+#leads-top-scroll::-webkit-scrollbar-thumb:hover{background:var(--pine)}
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
 .tbl th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--cream);white-space:nowrap}
 .tbl td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle;color:var(--ink)}
@@ -605,7 +610,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div style="display:flex;justify-content:flex-end;margin-bottom:10px;margin-top:-6px">
             <button class="btn" onclick="exportCurrentView()" style="font-size:12px;padding:5px 12px"><i class="ti ti-download"></i>Export this view</button>
           </div>
-          <div class="tw">
+          <div id="leads-top-scroll" style="overflow-x:auto;overflow-y:hidden;height:16px;margin-bottom:2px" onscroll="document.getElementById('leads-table-wrap').scrollLeft=this.scrollLeft">
+            <div id="leads-top-scroll-inner" style="height:1px"></div>
+          </div>
+          <div class="tw" id="leads-table-wrap" onscroll="document.getElementById('leads-top-scroll').scrollLeft=this.scrollLeft">
             <table class="tbl">
               <thead><tr>
                 <th style="width:36px"><input type="checkbox" id="bulk-select-all" onchange="toggleSelectAllLeads(this.checked)" style="cursor:pointer"></th>
@@ -1832,6 +1840,12 @@ function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===
 // Application/Visa/SOP Team are operational staff, same restricted access
 // tier as Counsellor — not management. Used everywhere access is scoped.
 function isRestrictedStaffRole(){return['Counsellor','Application Team','Visa Team','SOP Team'].includes(myRole)&&!isSuperAdmin;}
+// Application/Visa/SOP Team members cannot touch their own assignment —
+// only the Counsellor handling the lead, or Manager/Admin/Director/Super
+// Admin, can hand a lead off to these teams. This is a narrower check
+// than isRestrictedStaffRole(), which also blocks Counsellors — here,
+// Counsellors are deliberately allowed through.
+function isSubTeamRoleOnly(){return['Application Team','Visa Team','SOP Team'].includes(myRole)&&!isSuperAdmin;}
 
 // ── Sub-team pools (Application/Visa/SOP) — NOT limited to country ──
 // These are real role categories (set at signup/invite, same as
@@ -1974,12 +1988,15 @@ function setupAssignModeUI(){
 // from the list, without opening the full edit panel. Counsellors just
 // see plain text — same restriction as everywhere else in the CRM.
 function renderCounsellorCell(l){
-  if(myRole==='Counsellor'&&!isSuperAdmin){
+  if(isRestrictedStaffRole()){
     return esc(l.counsellor||'—');
   }
   const pool=getOfficeCounsellors(l.office);
-  const options=['<option value="">Unassigned</option>']
-    .concat(pool.map(c=>`<option value="${esc(c.full_name)}"${c.full_name===l.counsellor?' selected':''}>${esc(c.full_name)}</option>`));
+  // No "Unassigned" option once someone's actually assigned — only ever
+  // hand off to a different specific counsellor, matching the same rule
+  // as Application/Visa/SOP.
+  const options=l.counsellor?[]:['<option value="" selected>Unassigned</option>'];
+  options.push(...pool.map(c=>`<option value="${esc(c.full_name)}"${c.full_name===l.counsellor?' selected':''}>${esc(c.full_name)}</option>`));
   if(l.counsellor&&!pool.some(c=>c.full_name===l.counsellor)){
     options.push(`<option value="${esc(l.counsellor)}" selected>${esc(l.counsellor)} (not in ${esc(l.office||'this office')})</option>`);
   }
@@ -2004,12 +2021,20 @@ async function quickReassignLead(leadId,newCounsellor){
 // Pooled globally (not by office) since these are role categories, not
 // country-scoped staff.
 function renderSubTeamCell(l,field,roleName){
+  // Application/Visa/SOP Team members cannot touch this — only the
+  // Counsellor handling the lead, or Management, can hand off to a team.
+  if(isSubTeamRoleOnly()){
+    return esc(l[field]||'—');
+  }
   const pool=getGlobalRolePool(roleName);
   const current=l[field];
-  const options=[
-    `<option value="__AUTO__">🔄 Assign via round-robin</option>`,
-    `<option value=""${current?'':' selected'}>${current?'— Unassign —':'Unassigned'}</option>`
-  ].concat(pool.map(t=>`<option value="${esc(t.full_name)}"${t.full_name===current?' selected':''}>${esc(t.full_name)}</option>`));
+  // No round-robin option here — manual pick only, by design. No option
+  // to revert to Unassigned either, once someone's actually assigned —
+  // only ever hand off to a different specific person.
+  const options=current
+    ? []
+    : [`<option value="" selected>Unassigned</option>`];
+  options.push(...pool.map(t=>`<option value="${esc(t.full_name)}"${t.full_name===current?' selected':''}>${esc(t.full_name)}</option>`));
   if(current&&!pool.some(t=>t.full_name===current)){
     options.push(`<option value="${esc(current)}" selected>${esc(current)} (not in ${esc(roleName)})</option>`);
   }
@@ -2021,20 +2046,14 @@ async function quickReassignSubTeam(leadId,field,newValue){
   const labels={application_team:'Application Team',visa_team:'Visa Team',sop_team:'SOP Team'};
   const roleName=labels[field];
   const old=l[field];
-  let finalValue=newValue;
-  if(newValue==='__AUTO__'){
-    setSyncing();
-    finalValue=await getNextForGlobalRole(roleName);
-    if(!finalValue){setSynced();toast(`No one holds the ${roleName} role yet — nothing to round-robin to.`);renderLeads();return;}
-  }
-  if(old===finalValue){renderLeads();return;}
+  if(old===newValue){renderLeads();return;}
   setSyncing();
-  const{error}=await sb.from('leads').update({[field]:finalValue||null}).eq('id',leadId);
+  const{error}=await sb.from('leads').update({[field]:newValue||null}).eq('id',leadId);
   if(error){setSyncErr();toast('Error reassigning: '+error.message);renderLeads();return;}
-  l[field]=finalValue||null;
+  l[field]=newValue||null;
   setSynced();
-  logActivity(leadId,'reassigned',`${roleName}: ${old||'Unassigned'} → ${finalValue||'Unassigned'}`);
-  toast(finalValue?`${roleName} → ${finalValue}`:`${roleName} unassigned`);
+  logActivity(leadId,'reassigned',`${roleName}: ${old||'Unassigned'} → ${newValue||'Unassigned'}`);
+  toast(newValue?`${roleName} → ${newValue}`:`${roleName} unassigned`);
   renderDash();
   renderLeads();
 }
@@ -2064,13 +2083,14 @@ function populateCounsellorDropdown(){
 // work too, and there's no separate "sub-team role" in the data model.
 function populateSubTeamDropdowns(){
   // Global pools, not office-scoped — a lead's country/office has no
-  // bearing on who can be its Application/Visa/SOP Team member.
+  // bearing on who can be its Application/Visa/SOP Team member. Manual
+  // pick only — no auto-assign option, round-robin doesn't apply here.
   [['f-application-team','Application Team'],['f-visa-team','Visa Team'],['f-sop-team','SOP Team']].forEach(([id,roleName])=>{
     const sel=document.getElementById(id);
     if(!sel)return;
     const current=sel.value;
     const pool=getGlobalRolePool(roleName);
-    sel.innerHTML='<option value="">Auto-assign (round robin)</option>'+
+    sel.innerHTML='<option value="">Unassigned</option>'+
       pool.map(t=>`<option value="${esc(t.full_name)}">${esc(t.full_name)}</option>`).join('');
     if(pool.some(t=>t.full_name===current)) sel.value=current;
   });
@@ -2800,6 +2820,14 @@ function renderLeads(){
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'sop_team','SOP Team')}</td>
     </tr>`;
   });
+  // Keep the top scrollbar's width matched to the real table, so dragging
+  // it near the top of the screen scrolls exactly as far as the real one —
+  // no need to scroll all the way down to reach a scrollbar at all.
+  setTimeout(()=>{
+    const wrap=document.getElementById('leads-table-wrap');
+    const inner=document.getElementById('leads-top-scroll-inner');
+    if(wrap&&inner)inner.style.width=wrap.scrollWidth+'px';
+  },0);
 }
 
 // ── TOOL LEADS (filtered view of the same Leads table) ────────────
@@ -3469,14 +3497,9 @@ async function saveLead(){
     notes:document.getElementById('f-notes').value,     intake_month:document.getElementById('f-intake').value,     ielts_status:document.getElementById('f-ielts-status').value,     ielts_score:document.getElementById('f-ielts-score').value,     budget_range:document.getElementById('f-budget').value,     english_status:document.getElementById('f-english').value,     whatsapp_group_link:document.getElementById('f-walink').value,     doc_folder_link:document.getElementById('f-doclink').value,
     added_by:currentUser?.id
   };
-  // Auto round-robin for any of the three sub-teams left on "Auto-assign" —
-  // pooled globally (getNextForGlobalRole), not scoped to this lead's office.
-  for(const[field,roleName]of[['application_team','Application Team'],['visa_team','Visa Team'],['sop_team','SOP Team']]){
-    if(!data[field]){
-      const picked=await getNextForGlobalRole(roleName);
-      if(picked)data[field]=picked;
-    }
-  }
+  // No auto round-robin for Application/Visa/SOP — manual hand-off only,
+  // by the Counsellor or Management. If left blank, it just stays
+  // Unassigned until someone deliberately picks a person.
   let error;
   let logEvents=[];
   if(editMode&&curId){       delete data.lead_id;
@@ -3704,12 +3727,10 @@ function renderManagementAndOperationsTeams(team){
   const opsRoles=[['Application Team','📝'],['Visa Team','🛂'],['SOP Team','✍️']];
   const opsCols=opsRoles.map(([roleName,icon])=>{
     const members=(team||[]).filter(t=>t.role===roleName);
-    const key='GLOBAL:'+roleName;
-    const nextUp=members.length?members[(rrStateByOffice[key]||0)%members.length]?.full_name||'—':'None';
     return `<div style="flex:1;min-width:220px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line)">
         <span style="font-weight:600;font-size:13px;color:var(--pine)">${icon} ${roleName}</span>
-        <span style="font-size:10px;color:var(--ink3);font-style:italic">Next: <b style="color:var(--pine3)">${esc(nextUp)}</b></span>
+        <span style="font-size:10px;color:var(--ink3);font-style:italic">${members.length} member${members.length!==1?'s':''} — manual hand-off</span>
       </div>
       ${members.length?members.map(t=>`<div class="tcard" style="margin-bottom:8px">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>

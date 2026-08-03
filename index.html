@@ -456,7 +456,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <div class="sng">Workspace</div>
       <button class="ni" data-nav="team" onclick="nav('team',this)"><i class="ti ti-id-badge"></i>Team</button>
       <button class="ni" data-nav="events" onclick="nav('events',this)"><i class="ti ti-calendar-event"></i>Events</button><button class="ni" data-nav="import" onclick="nav('import',this)"><i class="ti ti-file-import"></i>Import data</button>
-      <button class="ni" data-nav="finance" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic"></i>Reports</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
+      <button class="ni" data-nav="finance" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
     </div>
     <div class="sb-foot">
       <div class="sb-user">
@@ -547,7 +547,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div class="card-h"><span class="card-t">⚠️ Expiring soon — offers, visa deadlines & documents</span></div>
           <div id="expiry-alerts-list"></div>
         </div>
-        <div class="rpt-hero-grid" id="subteam-cards-row" style="grid-template-columns:repeat(3,1fr);margin-top:4px"></div>
+        <!-- Application/Visa/SOP dashboards moved to their own "Team Dashboards" tab, no longer embedded here -->
         <div id="dash-content" style="display:none">
           <div class="two-col">
             <div class="card"><div class="card-h"><span class="card-t">🔻 Conversion funnel</span></div><div id="conversion-funnel"></div></div>
@@ -618,7 +618,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <thead><tr>
                 <th style="width:36px"><input type="checkbox" id="bulk-select-all" onchange="toggleSelectAllLeads(this.checked)" style="cursor:pointer"></th>
                 <th>#</th><th>ID</th><th>Name</th><th>Mobile</th><th>Program</th>
-                <th>Destination</th><th>Captured</th><th>Status</th><th>Priority</th><th>Counsellor</th><th>Application</th><th>Visa</th><th>SOP</th>
+                <th>Destination</th><th>Captured</th><th>Status</th><th>Priority</th><th>Counsellor</th>
               </tr></thead>
               <tbody id="lead-tbody"></tbody>
             </table>
@@ -690,7 +690,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
       <!-- Sub-team Detail (Application / Visa / SOP) — one shared subpage -->
       <section id="sc-subteam-detail" class="screen">
-        <button class="btn" onclick="nav('dashboard',document.querySelector('.ni[data-nav=&quot;dashboard&quot;]'))" style="margin-bottom:16px"><i class="ti ti-arrow-left"></i>Back to Dashboard</button>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+          <div class="rpt-toggle" id="subteam-tab-switcher" style="display:flex;gap:6px"></div>
+          <select id="subteam-country-filter" onchange="setSubteamCountryFilter(this.value)" style="display:none;font-size:12px;padding:6px 10px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b)"></select>
+        </div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
           <div class="rpt-toggle" style="display:flex;gap:6px">
             <button class="rpt-toggle-btn active" data-period="all" onclick="setSubteamPeriod('all',this)">All time</button>
@@ -1984,21 +1987,34 @@ function setupAssignModeUI(){
   }
 }
 // ── Quick per-row reassign, directly from the Leads table ──────────
-// Manager/Admin/Super Admin can change who a lead is assigned to right
-// from the list, without opening the full edit panel. Counsellors just
-// see plain text — same restriction as everywhere else in the CRM.
+// Manager/Admin/Director/Super Admin can freely change who a lead is
+// assigned to. A Counsellor gets a restricted "transfer" picker ONLY on
+// their own lead (hand off to a colleague) — never an unassigned lead,
+// never someone else's lead, never blank/unassign. Application/Visa/SOP
+// Team members see plain read-only text always, no exceptions.
 function renderCounsellorCell(l){
-  if(isRestrictedStaffRole()){
+  const isMyOwnLead=myRole==='Counsellor'&&!isSuperAdmin&&l.counsellor===myName;
+  if(isRestrictedStaffRole()&&!isMyOwnLead){
     return esc(l.counsellor||'—');
   }
-  const pool=getOfficeCounsellors(l.office);
+  // A Counsellor viewing their OWN lead gets a restricted "transfer" picker:
+  // every other counsellor in the office, but never "Unassigned" and never
+  // a lead that isn't already theirs — that's the whole difference between
+  // "transfer" and "assign/unassign". Management (Admin/Manager/Director/
+  // Super Admin) keeps the full pick, same as before.
+  const pool=getOfficeCounsellors(l.office).filter(c=>!isMyOwnLead||c.full_name!==myName);
   // No "Unassigned" option once someone's actually assigned — only ever
   // hand off to a different specific counsellor, matching the same rule
   // as Application/Visa/SOP.
   const options=l.counsellor?[]:['<option value="" selected>Unassigned</option>'];
   options.push(...pool.map(c=>`<option value="${esc(c.full_name)}"${c.full_name===l.counsellor?' selected':''}>${esc(c.full_name)}</option>`));
-  if(l.counsellor&&!pool.some(c=>c.full_name===l.counsellor)){
+  if(l.counsellor&&!pool.some(c=>c.full_name===l.counsellor)&&l.counsellor!==myName){
     options.push(`<option value="${esc(l.counsellor)}" selected>${esc(l.counsellor)} (not in ${esc(l.office||'this office')})</option>`);
+  }
+  if(isMyOwnLead){
+    // Keep their own name selectable as the "current" value so the select
+    // shows the right starting state, without it being a real destination.
+    options.unshift(`<option value="${esc(myName)}" selected disabled hidden>${esc(myName)} (you)</option>`);
   }
   return `<select onchange="quickReassignLead('${l.id}',this.value)" style="font-size:12px;padding:4px 6px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);max-width:150px">${options.join('')}</select>`;
 }
@@ -2017,46 +2033,9 @@ async function quickReassignLead(leadId,newCounsellor){
   renderDash();
 }
 
-// ── Inline Application/Visa/SOP quick-assign, directly in the Leads table ──
-// Pooled globally (not by office) since these are role categories, not
-// country-scoped staff.
-function renderSubTeamCell(l,field,roleName){
-  // Application/Visa/SOP Team members cannot touch this — only the
-  // Counsellor handling the lead, or Management, can hand off to a team.
-  if(isSubTeamRoleOnly()){
-    return esc(l[field]||'—');
-  }
-  const pool=getGlobalRolePool(roleName);
-  const current=l[field];
-  // No round-robin option here — manual pick only, by design. No option
-  // to revert to Unassigned either, once someone's actually assigned —
-  // only ever hand off to a different specific person.
-  const options=current
-    ? []
-    : [`<option value="" selected>Unassigned</option>`];
-  options.push(...pool.map(t=>`<option value="${esc(t.full_name)}"${t.full_name===current?' selected':''}>${esc(t.full_name)}</option>`));
-  if(current&&!pool.some(t=>t.full_name===current)){
-    options.push(`<option value="${esc(current)}" selected>${esc(current)} (not in ${esc(roleName)})</option>`);
-  }
-  return `<select onchange="quickReassignSubTeam('${l.id}','${field}',this.value)" style="font-size:12px;padding:4px 6px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);max-width:150px">${options.join('')}</select>`;
-}
-async function quickReassignSubTeam(leadId,field,newValue){
-  const l=leads.find(x=>x.id===leadId);
-  if(!l)return;
-  const labels={application_team:'Application Team',visa_team:'Visa Team',sop_team:'SOP Team'};
-  const roleName=labels[field];
-  const old=l[field];
-  if(old===newValue){renderLeads();return;}
-  setSyncing();
-  const{error}=await sb.from('leads').update({[field]:newValue||null}).eq('id',leadId);
-  if(error){setSyncErr();toast('Error reassigning: '+error.message);renderLeads();return;}
-  l[field]=newValue||null;
-  setSynced();
-  logActivity(leadId,'reassigned',`${roleName}: ${old||'Unassigned'} → ${newValue||'Unassigned'}`);
-  toast(newValue?`${roleName} → ${newValue}`:`${roleName} unassigned`);
-  renderDash();
-  renderLeads();
-}
+// Application/Visa/SOP Team assignment now happens exclusively through the
+// Edit Lead modal's dedicated fields (f-application-team/f-visa-team/
+// f-sop-team) — no inline table controls, per spec.
 function populateCounsellorDropdown(){
   const office=document.getElementById('f-office').value;
   const sel=document.getElementById('f-counsel');
@@ -2473,10 +2452,10 @@ function nav(id,btn){
   if(id==='resumes'){loadResumes().then(renderResumesAdmin);}
   if(id==='finance')renderFinance();
   if(id==='reports'){if(roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}initReports();}
+  if(id==='subteam-detail'){if(isRestrictedStaffRole()){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Team Dashboards is restricted to management.');return;}renderSubTeamDetail();}
   if(id==='productivity'){loadCallLogs().then(renderCallLogs);}
   if(id==='coaching')renderCoaching();
   if(id==='followup')renderFU();
-  if(id==='subteam-detail')renderSubTeamDetail();
 }
 function navFilter(filterId,value){nav('leads',document.querySelector('.ni[data-nav="leads"]'));setTimeout(()=>{const el=document.getElementById(filterId);if(el){el.value=value;renderLeads();}},300);}
 
@@ -2600,7 +2579,7 @@ function renderDash(){
   });
   renderCountryBreakdown();
   renderCounsellorRank();
-  renderSubTeamSummaryCards();
+  // Sub-team cards moved to their own "Team Dashboards" tab
 }
 
 // ── Sub-team (Application / Visa / SOP) summary cards + detail subpage ──
@@ -2612,6 +2591,7 @@ const SUBTEAM_CONFIG={
   application:{label:'Application Team',field:'application_team',icon:'📝',cls:'c3'},
   visa:{label:'Visa Team',field:'visa_team',icon:'🛂',cls:'c4'},
   sop:{label:'SOP Team',field:'sop_team',icon:'✍️',cls:'c6'},
+  counsellor:{label:'Counsellors',field:'counsellor',icon:'🧑‍🎓',cls:'c1'},
 };
 let currentSubTeamView=null;
 // Which leads have at least one SOP document uploaded — used to compute
@@ -2621,31 +2601,39 @@ async function loadSopUploadedLeadIds(){
   const{data,error}=await sb.from('sop_documents').select('lead_id');
   if(!error&&data) sopUploadedLeadIds=new Set(data.map(r=>r.lead_id));
 }
-function renderSubTeamSummaryCards(){
-  const el=document.getElementById('subteam-cards-row');
-  if(!el)return;
-  const showAll=!isRestrictedStaffRole();
-  const cards=[];
-  Object.entries(SUBTEAM_CONFIG).forEach(([key,cfg])=>{
-    const assigned=leads.filter(l=>l[cfg.field]);
-    const mine=leads.filter(l=>l[cfg.field]===myName);
-    // Visible if you're management tier, OR if this is genuinely YOUR
-    // role — regardless of whether you have 0 leads yet. Otherwise a
-    // brand-new sub-team member with nothing assigned yet would never
-    // even see their own dashboard exists.
-    const isMyOwnRole=myRole===cfg.label;
-    const visible=showAll||isMyOwnRole;
-    if(!visible)return;
-    const count=showAll?assigned.length:mine.length;
-    cards.push(`<div class="rpt-hero ${cfg.cls}" onclick="openSubTeamDetail('${key}')" style="cursor:pointer">
-      <div class="rpt-hero-l">${cfg.icon} ${cfg.label}</div>
-      <div class="rpt-hero-v">${count}</div>
-      <div class="rpt-hero-sub">${showAll?'Total assigned':'Assigned to you'} — click for details</div>
-    </div>`);
-  });
-  el.innerHTML=cards.join('');
-}
+// (Summary cards were deliberately removed from the main Dashboard — Team
+// Dashboards is its own dedicated, management-only screen now, reached via
+// the sidebar tab switcher below, not via clickable cards on the Dashboard.)
 let subteamPeriod='all';
+let subteamCountryFilter='';
+function renderSubteamTabSwitcher(){
+  const el=document.getElementById('subteam-tab-switcher');
+  if(!el)return;
+  el.innerHTML=Object.entries(SUBTEAM_CONFIG).map(([key,cfg])=>
+    `<button class="rpt-toggle-btn${currentSubTeamView===key?' active':''}" onclick="switchSubteamTab('${key}')">${cfg.icon} ${cfg.label}</button>`
+  ).join('');
+  // Super Admin only: a country filter, since their `leads` array spans
+  // every country. Admin/Manager/Director never see this — their `leads`
+  // array is already scoped to just their own country by loadLeads(), so
+  // there's nothing for them to filter.
+  const countryEl=document.getElementById('subteam-country-filter');
+  if(countryEl){
+    countryEl.style.display=isSuperAdmin?'inline-block':'none';
+    if(isSuperAdmin&&!countryEl.dataset.built){
+      countryEl.innerHTML='<option value="">All countries</option>'+Object.keys(OFFICE_MAP).map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      countryEl.dataset.built='1';
+    }
+  }
+}
+function switchSubteamTab(key){
+  currentSubTeamView=key;
+  renderSubteamTabSwitcher();
+  renderSubTeamDetail();
+}
+function setSubteamCountryFilter(val){
+  subteamCountryFilter=val;
+  renderSubTeamDetail();
+}
 function openSubTeamDetail(teamType){
   currentSubTeamView=teamType;
   subteamPeriod='all';
@@ -2674,10 +2662,18 @@ function setSubteamPeriod(period,btn){
   renderSubTeamDetail();
 }
 function renderSubTeamDetail(){
+  if(!currentSubTeamView) currentSubTeamView='application';
+  renderSubteamTabSwitcher();
   const cfg=SUBTEAM_CONFIG[currentSubTeamView];
   if(!cfg)return;
   const showAll=!isRestrictedStaffRole();
   let scoped=leads.filter(l=>l[cfg.field]&&(showAll||l[cfg.field]===myName));
+  // Super Admin's country filter — everyone else's `leads` array is already
+  // scoped to their own country by loadLeads(), so this only ever does
+  // anything for the Super Admin.
+  if(isSuperAdmin&&subteamCountryFilter){
+    scoped=scoped.filter(l=>l.country===subteamCountryFilter);
+  }
 
   // Date-range filter, based on when they were actually assigned to this
   // sub-team — daily/weekly/monthly/custom, same toggle pattern as Reports.
@@ -2720,6 +2716,13 @@ function renderSubTeamDetail(){
       ['Visa submitted',c['Visa Application Submitted']||0,'c4'],
       ['Visa accepted',c['Visa Application Accepted']||0,'c2'],
     ];
+  } else if(currentSubTeamView==='counsellor'){
+    const enrolled=scoped.filter(l=>['Enrolled','Fees Paid','Commission Received','Process Completed'].includes(l.status)).length;
+    kpis=[
+      ['Total assigned',scoped.length,'c1'],
+      ['Counselling done',c['Counselling Done']||0,'c3'],
+      ['Enrolled',enrolled,'c2'],
+    ];
   } else {
     kpis=[
       ['Total assigned',scoped.length,'c1'],
@@ -2742,6 +2745,10 @@ function renderSubTeamDetail(){
   } else if(currentSubTeamView==='visa'){
     submitted=scoped.filter(l=>reachedStage(l.status,'Visa Application Submitted')).length;
     completed=c['Visa Application Accepted']||0;
+    pending=scoped.length-submitted;
+  } else if(currentSubTeamView==='counsellor'){
+    submitted=scoped.filter(l=>reachedStage(l.status,'Counselling Done')).length;
+    completed=scoped.filter(l=>reachedStage(l.status,'Enrolled')).length;
     pending=scoped.length-submitted;
   } else {
     // SOP: "submitted" = at least one SOP document uploaded for them.
@@ -2777,6 +2784,17 @@ function renderSubTeamDetail(){
 }
 function renderLeads(){
   document.getElementById('leads-loading').style.display='none';
+  // Bulk actions (select, reassign, status/priority change) are Management
+  // tier only — Counsellors and Application/Visa/SOP Team never see the
+  // checkbox column or the actions bar at all, not just a restricted version
+  // of it.
+  const canBulkAct=!isRestrictedStaffRole();
+  const bulkColHeader=document.getElementById('bulk-select-all');
+  if(bulkColHeader) bulkColHeader.closest('th').style.display=canBulkAct?'':'none';
+  if(!canBulkAct){
+    const bar=document.getElementById('bulk-actions-bar');
+    if(bar) bar.style.display='none';
+  }
   // Populate counsellor filter dropdown from live leads
   const counselSel=document.getElementById('ls-counsel');
   const existingC=Array.from(counselSel.options).map(o=>o.value);
@@ -2804,7 +2822,7 @@ function renderLeads(){
     const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
     const capturedStr=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
     tb.innerHTML+=`<tr onclick="openLeadDetail('${l.id}')">
-      <td onclick="event.stopPropagation()"><input type="checkbox" class="bulk-lead-checkbox" data-id="${l.id}" onchange="onBulkCheckboxChange()" style="cursor:pointer"></td>
+      ${canBulkAct?`<td onclick="event.stopPropagation()"><input type="checkbox" class="bulk-lead-checkbox" data-id="${l.id}" onchange="onBulkCheckboxChange()" style="cursor:pointer"></td>`:''}
       <td style="font-size:12px;color:var(--ink3);font-weight:600">${i+1}</td>
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
       <td><div class="nc"><div class="av" style="background:${abg};color:${atx}">${ini(l.name)}</div><div><div class="ln">${esc(l.name)}</div><div class="lc">${esc(l.city||'—')}</div></div></div></td>
@@ -2815,9 +2833,6 @@ function renderLeads(){
       <td><span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span></td>
       <td><span class="pill" style="background:${ps.bg};color:${ps.tx}">${l.priority||'—'}</span></td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderCounsellorCell(l)}</td>
-      <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'application_team','Application Team')}</td>
-      <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'visa_team','Visa Team')}</td>
-      <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'sop_team','SOP Team')}</td>
     </tr>`;
   });
   // Keep the top scrollbar's width matched to the real table, so dragging
@@ -4474,7 +4489,7 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
 
     // Counsellors: hide Finance & Team nav entirely; Productivity is Admin/Super Admin only.
     if(isCounsellor){
-      const restricted=['finance','team','productivity','reports'];
+      const restricted=['finance','team','productivity','reports','subteam-detail'];
       document.querySelectorAll('.ni').forEach(btn=>{
         const onclick=btn.getAttribute('onclick')||'';
         restricted.forEach(r=>{if(onclick.includes("nav('"+r+"'"))btn.style.display='none';});

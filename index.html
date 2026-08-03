@@ -689,8 +689,14 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="rpt-toggle-btn" data-period="daily" onclick="setSubteamPeriod('daily',this)">☀️ Daily</button>
             <button class="rpt-toggle-btn" data-period="weekly" onclick="setSubteamPeriod('weekly',this)">📆 Weekly</button>
             <button class="rpt-toggle-btn" data-period="monthly" onclick="setSubteamPeriod('monthly',this)">🗓️ Monthly</button>
+            <button class="rpt-toggle-btn" data-period="custom" onclick="setSubteamPeriod('custom',this)">↔️ Custom range</button>
           </div>
-          <input type="date" id="subteam-detail-date" onchange="renderSubTeamDetail()">
+          <input type="date" id="subteam-detail-date" onchange="renderSubTeamDetail()" style="display:none">
+          <div id="subteam-detail-custom-range" style="display:none;align-items:center;gap:6px">
+            <input type="date" id="subteam-detail-from" onchange="renderSubTeamDetail()">
+            <span style="font-size:12px;color:var(--ink3)">to</span>
+            <input type="date" id="subteam-detail-to" onchange="renderSubTeamDetail()">
+          </div>
         </div>
         <div class="rpt-hero-grid" id="subteam-detail-kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px"></div>
         <div class="rpt-hero-grid" id="subteam-detail-status-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px"></div>
@@ -1471,9 +1477,13 @@ What would you like help with today?</div>
             <button onclick="initDocsFS()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-clipboard-list" style="font-size:13px"></i>Init checklist</button>
           </div>
           <div class="card" style="margin-top:0">
-            <div class="card-h"><span class="card-t">📋 Tasks</span></div>
-            <div id="ld-task-list" style="margin-bottom:10px"></div>
-            <button onclick="openAddTaskFS()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-checklist" style="font-size:13px"></i>Add task</button>
+            <div class="card-h"><span class="card-t">🎓 University Link (for SOP)</span></div>
+            <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:3px">University name</label>
+            <input id="ld-uni-link-name" placeholder="e.g. University of Manchester" style="width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;margin-bottom:8px;font-family:var(--font-b)">
+            <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:3px">Link — SOP requirements / university page</label>
+            <input id="ld-uni-link-url" placeholder="https://..." style="width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;margin-bottom:10px;font-family:var(--font-b)">
+            <button onclick="saveUniversityLink(true)" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer"><i class="ti ti-check"></i> Save</button>
+            <div id="ld-uni-link-display" style="margin-top:10px"></div>
           </div>
           <div class="card" style="margin-top:0">
             <div class="card-h"><span class="card-t">Reminders</span></div>
@@ -1559,9 +1569,13 @@ What would you like help with today?</div>
           <div class="dsec">Document Checklist</div>
       <div id="d-doc-list" style="margin-bottom:8px"></div>
       <button onclick="initDocs()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px"><i class="ti ti-clipboard-list" style="font-size:13px"></i>Init checklist</button>
-      <div class="dsec">Tasks</div>
-          <div id="d-task-list" style="margin-bottom:8px"></div>
-          <button onclick="openAddTask()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px"><i class="ti ti-checklist" style="font-size:13px"></i>Add task</button>
+      <div class="dsec">University Link (for SOP)</div>
+          <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:3px">University name</label>
+          <input id="d-uni-link-name" placeholder="e.g. University of Manchester" style="width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;margin-bottom:8px;font-family:var(--font-b)">
+          <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:3px">Link — SOP requirements / university page</label>
+          <input id="d-uni-link-url" placeholder="https://..." style="width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;margin-bottom:8px;font-family:var(--font-b)">
+          <button onclick="saveUniversityLink(false)" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;margin-bottom:8px"><i class="ti ti-check"></i> Save</button>
+          <div id="d-uni-link-display" style="margin-bottom:16px"></div>
       <div class="dsec">Reminders</div>
           <div id="d-reminder-list" style="margin-bottom:8px"></div>
           <button onclick="openAddReminder()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px"><i class="ti ti-bell-plus" style="font-size:13px"></i>Add reminder</button>
@@ -2595,7 +2609,12 @@ function renderSubTeamSummaryCards(){
   Object.entries(SUBTEAM_CONFIG).forEach(([key,cfg])=>{
     const assigned=leads.filter(l=>l[cfg.field]);
     const mine=leads.filter(l=>l[cfg.field]===myName);
-    const visible=showAll||mine.length>0;
+    // Visible if you're management tier, OR if this is genuinely YOUR
+    // role — regardless of whether you have 0 leads yet. Otherwise a
+    // brand-new sub-team member with nothing assigned yet would never
+    // even see their own dashboard exists.
+    const isMyOwnRole=myRole===cfg.label;
+    const visible=showAll||isMyOwnRole;
     if(!visible)return;
     const count=showAll?assigned.length:mine.length;
     cards.push(`<div class="rpt-hero ${cfg.cls}" onclick="openSubTeamDetail('${key}')" style="cursor:pointer">
@@ -2616,13 +2635,21 @@ function setSubteamPeriod(period,btn){
   subteamPeriod=period;
   document.querySelectorAll('#sc-subteam-detail .rpt-toggle-btn').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
+  const dateEl=document.getElementById('subteam-detail-date');
+  const rangeEl=document.getElementById('subteam-detail-custom-range');
   if(period==='all'){
-    document.getElementById('subteam-detail-date').style.display='none';
+    dateEl.style.display='none';
+    rangeEl.style.display='none';
+  } else if(period==='custom'){
+    dateEl.style.display='none';
+    rangeEl.style.display='flex';
+    const todayStr=new Date().toISOString().substring(0,10);
+    if(!document.getElementById('subteam-detail-from').value)document.getElementById('subteam-detail-from').value=todayStr;
+    if(!document.getElementById('subteam-detail-to').value)document.getElementById('subteam-detail-to').value=todayStr;
   } else {
-    document.getElementById('subteam-detail-date').style.display='inline-block';
-    if(!document.getElementById('subteam-detail-date').value){
-      document.getElementById('subteam-detail-date').value=new Date().toISOString().substring(0,10);
-    }
+    dateEl.style.display='inline-block';
+    rangeEl.style.display='none';
+    if(!dateEl.value)dateEl.value=new Date().toISOString().substring(0,10);
   }
   renderSubTeamDetail();
 }
@@ -2633,8 +2660,20 @@ function renderSubTeamDetail(){
   let scoped=leads.filter(l=>l[cfg.field]&&(showAll||l[cfg.field]===myName));
 
   // Date-range filter, based on when they were actually assigned to this
-  // sub-team — daily/weekly/monthly, same toggle pattern as Reports.
-  if(subteamPeriod!=='all'){
+  // sub-team — daily/weekly/monthly/custom, same toggle pattern as Reports.
+  if(subteamPeriod==='custom'){
+    const from=document.getElementById('subteam-detail-from').value;
+    const to=document.getElementById('subteam-detail-to').value;
+    if(from||to){
+      scoped=scoped.filter(l=>{
+        const ref=(l.assigned_at||l.created_at||'').substring(0,10);
+        if(!ref)return false;
+        if(from&&ref<from)return false;
+        if(to&&ref>to)return false;
+        return true;
+      });
+    }
+  } else if(subteamPeriod!=='all'){
     const dateVal=document.getElementById('subteam-detail-date').value||new Date().toISOString().substring(0,10);
     const{start,end}=dateRangeFor(subteamPeriod,dateVal);
     scoped=scoped.filter(l=>{
@@ -2855,7 +2894,7 @@ function openDetail(id){
   loadUniApps(id);
   loadSopDocuments(id,false);
   loadDocs(id);
-  loadTasks(id);
+  loadUniversityLink(l,false);
   loadActivityLog(id);
   loadChatStat(id,'d-chat-stat');
   loadReminders(id);
@@ -2910,7 +2949,7 @@ function openLeadDetail(id){
   sel.innerHTML=STATUSES.map(s=>`<option${s===l.status?' selected':''}>${s}</option>`).join('');
   document.getElementById('modal-lead-detail').classList.add('open');
   loadDocsFS(id);
-  loadTasksFS(id);
+  loadUniversityLink(l,true);
   loadActivityLogFS(id);
   loadChatStat(id,'ld-chat-stat');
   loadRemindersFS(id);
@@ -3022,6 +3061,34 @@ async function deleteSopDocument(id,isFS){
   await sb.from('sop_documents').delete().eq('id',id);
   loadSopDocuments(curId,isFS);
   toast('Deleted.');
+}
+
+// ── University Link — replaces the per-lead Tasks card ──────────────
+// Lets whoever's drafting the SOP see exactly which university it's for,
+// with a direct link to that university's actual requirements page.
+function loadUniversityLink(lead,isFS){
+  const nameEl=document.getElementById(isFS?'ld-uni-link-name':'d-uni-link-name');
+  const urlEl=document.getElementById(isFS?'ld-uni-link-url':'d-uni-link-url');
+  const displayEl=document.getElementById(isFS?'ld-uni-link-display':'d-uni-link-display');
+  if(!nameEl)return;
+  nameEl.value=lead.university_link_name||'';
+  urlEl.value=lead.university_link_url||'';
+  if(lead.university_link_url){
+    displayEl.innerHTML=`<a href="${esc(lead.university_link_url)}" target="_blank" style="font-size:12px;color:var(--pine);text-decoration:underline;display:flex;align-items:center;gap:5px"><i class="ti ti-external-link" style="font-size:13px"></i>${esc(lead.university_link_name||'Open link')}</a>`;
+  } else {
+    displayEl.innerHTML='';
+  }
+}
+async function saveUniversityLink(isFS){
+  if(!curId){toast('No lead selected.');return;}
+  const name=document.getElementById(isFS?'ld-uni-link-name':'d-uni-link-name').value.trim();
+  const url=document.getElementById(isFS?'ld-uni-link-url':'d-uni-link-url').value.trim();
+  const{error}=await sb.from('leads').update({university_link_name:name||null,university_link_url:url||null}).eq('id',curId);
+  if(error){toast('Error: '+error.message);return;}
+  const l=leads.find(x=>x.id===curId);
+  if(l){l.university_link_name=name;l.university_link_url=url;}
+  loadUniversityLink(l||{university_link_name:name,university_link_url:url},isFS);
+  toast('University link saved!');
 }
 
 // ── Per-lead Tasks (full-screen panel) ──────────────────────────────

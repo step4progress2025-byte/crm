@@ -618,7 +618,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <thead><tr>
                 <th style="width:36px"><input type="checkbox" id="bulk-select-all" onchange="toggleSelectAllLeads(this.checked)" style="cursor:pointer"></th>
                 <th>#</th><th>ID</th><th>Name</th><th>Mobile</th><th>Program</th>
-                <th>Destination</th><th>Captured</th><th>Status</th><th>Priority</th><th>Counsellor</th>
+                <th>Destination</th><th>Captured</th><th>Status</th><th>Priority</th><th>Counsellor</th><th>Application</th><th>Visa</th><th>SOP</th>
               </tr></thead>
               <tbody id="lead-tbody"></tbody>
             </table>
@@ -1987,34 +1987,22 @@ function setupAssignModeUI(){
   }
 }
 // ── Quick per-row reassign, directly from the Leads table ──────────
-// Manager/Admin/Director/Super Admin can freely change who a lead is
-// assigned to. A Counsellor gets a restricted "transfer" picker ONLY on
-// their own lead (hand off to a colleague) — never an unassigned lead,
-// never someone else's lead, never blank/unassign. Application/Visa/SOP
-// Team members see plain read-only text always, no exceptions.
+// Manager/Admin/Director/Super Admin can change who a lead is assigned to
+// right from the list. Counsellors get zero control over this field —
+// no assign, no unassign, no transfer. They see plain read-only text,
+// same as Application/Visa/SOP Team members.
 function renderCounsellorCell(l){
-  const isMyOwnLead=myRole==='Counsellor'&&!isSuperAdmin&&l.counsellor===myName;
-  if(isRestrictedStaffRole()&&!isMyOwnLead){
+  if(isRestrictedStaffRole()){
     return esc(l.counsellor||'—');
   }
-  // A Counsellor viewing their OWN lead gets a restricted "transfer" picker:
-  // every other counsellor in the office, but never "Unassigned" and never
-  // a lead that isn't already theirs — that's the whole difference between
-  // "transfer" and "assign/unassign". Management (Admin/Manager/Director/
-  // Super Admin) keeps the full pick, same as before.
-  const pool=getOfficeCounsellors(l.office).filter(c=>!isMyOwnLead||c.full_name!==myName);
+  const pool=getOfficeCounsellors(l.office);
   // No "Unassigned" option once someone's actually assigned — only ever
   // hand off to a different specific counsellor, matching the same rule
   // as Application/Visa/SOP.
   const options=l.counsellor?[]:['<option value="" selected>Unassigned</option>'];
   options.push(...pool.map(c=>`<option value="${esc(c.full_name)}"${c.full_name===l.counsellor?' selected':''}>${esc(c.full_name)}</option>`));
-  if(l.counsellor&&!pool.some(c=>c.full_name===l.counsellor)&&l.counsellor!==myName){
+  if(l.counsellor&&!pool.some(c=>c.full_name===l.counsellor)){
     options.push(`<option value="${esc(l.counsellor)}" selected>${esc(l.counsellor)} (not in ${esc(l.office||'this office')})</option>`);
-  }
-  if(isMyOwnLead){
-    // Keep their own name selectable as the "current" value so the select
-    // shows the right starting state, without it being a real destination.
-    options.unshift(`<option value="${esc(myName)}" selected disabled hidden>${esc(myName)} (you)</option>`);
   }
   return `<select onchange="quickReassignLead('${l.id}',this.value)" style="font-size:12px;padding:4px 6px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);max-width:150px">${options.join('')}</select>`;
 }
@@ -2033,9 +2021,49 @@ async function quickReassignLead(leadId,newCounsellor){
   renderDash();
 }
 
-// Application/Visa/SOP Team assignment now happens exclusively through the
-// Edit Lead modal's dedicated fields (f-application-team/f-visa-team/
-// f-sop-team) — no inline table controls, per spec.
+// ── Inline Application/Visa/SOP quick-assign, directly in the Leads table ──
+// Pooled globally (not by office) since these are role categories, not
+// country-scoped staff. Counsellors AND Management can use this to hand
+// off work to a team — only the sub-team member themselves is blocked from
+// touching their own column (they receive and complete work, they don't
+// reassign it).
+function renderSubTeamCell(l,field,roleName){
+  // Application/Visa/SOP Team members cannot touch this — only the
+  // Counsellor handling the lead, or Management, can hand off to a team.
+  if(isSubTeamRoleOnly()){
+    return esc(l[field]||'—');
+  }
+  const pool=getGlobalRolePool(roleName);
+  const current=l[field];
+  // No round-robin option here — manual pick only, by design. No option
+  // to revert to Unassigned either, once someone's actually assigned —
+  // only ever hand off to a different specific person.
+  const options=current
+    ? []
+    : [`<option value="" selected>Unassigned</option>`];
+  options.push(...pool.map(t=>`<option value="${esc(t.full_name)}"${t.full_name===current?' selected':''}>${esc(t.full_name)}</option>`));
+  if(current&&!pool.some(t=>t.full_name===current)){
+    options.push(`<option value="${esc(current)}" selected>${esc(current)} (not in ${esc(roleName)})</option>`);
+  }
+  return `<select onchange="quickReassignSubTeam('${l.id}','${field}',this.value)" style="font-size:12px;padding:4px 6px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);max-width:150px">${options.join('')}</select>`;
+}
+async function quickReassignSubTeam(leadId,field,newValue){
+  const l=leads.find(x=>x.id===leadId);
+  if(!l)return;
+  const labels={application_team:'Application Team',visa_team:'Visa Team',sop_team:'SOP Team'};
+  const roleName=labels[field];
+  const old=l[field];
+  if(old===newValue){renderLeads();return;}
+  setSyncing();
+  const{error}=await sb.from('leads').update({[field]:newValue||null}).eq('id',leadId);
+  if(error){setSyncErr();toast('Error reassigning: '+error.message);renderLeads();return;}
+  l[field]=newValue||null;
+  setSynced();
+  logActivity(leadId,'reassigned',`${roleName}: ${old||'Unassigned'} → ${newValue||'Unassigned'}`);
+  toast(newValue?`${roleName} → ${newValue}`:`${roleName} unassigned`);
+  renderDash();
+  renderLeads();
+}
 function populateCounsellorDropdown(){
   const office=document.getElementById('f-office').value;
   const sel=document.getElementById('f-counsel');
@@ -2833,6 +2861,9 @@ function renderLeads(){
       <td><span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span></td>
       <td><span class="pill" style="background:${ps.bg};color:${ps.tx}">${l.priority||'—'}</span></td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderCounsellorCell(l)}</td>
+      <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'application_team','Application Team')}</td>
+      <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'visa_team','Visa Team')}</td>
+      <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'sop_team','SOP Team')}</td>
     </tr>`;
   });
   // Keep the top scrollbar's width matched to the real table, so dragging

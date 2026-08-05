@@ -1206,7 +1206,7 @@ What would you like help with today?</div>
         <select id="uni-status"><option>Applied</option><option>Offer Received</option><option>Conditional</option><option>Rejected</option><option>Enrolled</option></select>
       </div>
       <div class="ff full"><label>Offer expiry date (optional)</label><input type="date" id="uni-expiry"></div>
-      <div class="ff full"><label>Attachment — offer letter etc. (optional)</label><input type="file" id="uni-file"></div>
+      <div class="ff full"><label>Attachments — offer letter, portal screenshots, etc. (optional, multiple allowed)</label><input type="file" id="uni-file" multiple></div>
       <div id="uni-existing-file" style="display:none;font-size:12px;color:var(--ink3);grid-column:1/-1"></div>
     </div>
     <div class="mfoot">
@@ -1272,13 +1272,11 @@ What would you like help with today?</div>
       <div class="ff"><label>Type</label>
         <select id="event-type"><option>Seminar</option><option>Webinar</option><option>Application Deadline</option><option>Follow-up</option><option>Other</option></select>
       </div>
-      <div class="ff full"><label>Teams (optional)</label>
-        <div id="event-teams-list" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper)"></div>
+      <div class="ff full">
+        <label>Participants (optional) — leave empty for a general event visible to everyone</label>
+        <div id="event-participants-picker" style="max-height:160px;overflow-y:auto;border:1px solid var(--line2);border-radius:var(--r);padding:8px 10px"></div>
       </div>
-      <div class="ff full"><label>Individuals (optional)</label>
-        <div id="event-individuals-list" style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;padding:10px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper)"></div>
-      </div>
-      <div class="ff full" style="font-size:11px;color:var(--ink3);margin-top:-8px">If nothing is selected, the event is visible to everyone (public). If teams or individuals ARE selected, only they (and whoever created the event) can see it — including Admins and Managers who aren't included. If a time is also set, everyone included gets a pop-up reminder 10 minutes before.</div>
+      <div class="ff full" style="font-size:11px;color:var(--ink3);margin-top:-8px">If any team or person is selected, this event is only visible to them (plus you and Management). Selected people also get a pop-up reminder 10 minutes before, if a time is set.</div>
       <div class="ff full"><label>Description or link (optional)</label><input id="event-desc" placeholder="https://... or a short note"></div>
     </div>
     <div class="mfoot">
@@ -1493,13 +1491,13 @@ What would you like help with today?</div>
             <button onclick="initDocsFS()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-clipboard-list" style="font-size:13px"></i>Init checklist</button>
           </div>
           <div class="card" style="margin-top:0">
-            <div class="card-h"><span class="card-t">🎓 University Link (for SOP)</span></div>
+            <div class="card-h"><span class="card-t">🎓 University Links (for SOP)</span></div>
+            <div id="ld-uni-link-list" style="margin-bottom:10px"></div>
             <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:3px">University name</label>
             <input id="ld-uni-link-name" placeholder="e.g. University of Manchester" style="width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;margin-bottom:8px;font-family:var(--font-b)">
             <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:3px">Link — SOP requirements / university page</label>
             <input id="ld-uni-link-url" placeholder="https://..." style="width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;margin-bottom:10px;font-family:var(--font-b)">
-            <button onclick="saveUniversityLink(true)" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer"><i class="ti ti-check"></i> Save</button>
-            <div id="ld-uni-link-display" style="margin-top:10px"></div>
+            <button onclick="addUniversityLink(true)" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer"><i class="ti ti-plus"></i> Add link</button>
           </div>
           <div class="card" style="margin-top:0">
             <div class="card-h"><span class="card-t">Reminders</span></div>
@@ -1585,13 +1583,13 @@ What would you like help with today?</div>
           <div class="dsec">Document Checklist</div>
       <div id="d-doc-list" style="margin-bottom:8px"></div>
       <button onclick="initDocs()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px"><i class="ti ti-clipboard-list" style="font-size:13px"></i>Init checklist</button>
-      <div class="dsec">University Link (for SOP)</div>
+      <div class="dsec">University Links (for SOP)</div>
+          <div id="d-uni-link-list" style="margin-bottom:10px"></div>
           <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:3px">University name</label>
           <input id="d-uni-link-name" placeholder="e.g. University of Manchester" style="width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;margin-bottom:8px;font-family:var(--font-b)">
           <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:3px">Link — SOP requirements / university page</label>
           <input id="d-uni-link-url" placeholder="https://..." style="width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;margin-bottom:8px;font-family:var(--font-b)">
-          <button onclick="saveUniversityLink(false)" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;margin-bottom:8px"><i class="ti ti-check"></i> Save</button>
-          <div id="d-uni-link-display" style="margin-bottom:16px"></div>
+          <button onclick="addUniversityLink(false)" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;margin-bottom:16px"><i class="ti ti-plus"></i> Add link</button>
       <div class="dsec">Reminders</div>
           <div id="d-reminder-list" style="margin-bottom:8px"></div>
           <button onclick="openAddReminder()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px"><i class="ti ti-bell-plus" style="font-size:13px"></i>Add reminder</button>
@@ -1631,7 +1629,8 @@ What would you like help with today?</div>
 <div id="urgent-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,20,20,.6);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
   <div id="urgent-popup-card" style="background:#fff;border-radius:18px;padding:0;max-width:460px;width:92%;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden"></div>
 </div>
-<input type="file" id="doc-upload-input" style="display:none" onchange="handleDocUploadFile(this.files[0])">
+<input type="file" id="doc-upload-input" multiple style="display:none" onchange="handleDocUploadFile(this.files)">
+<input type="file" id="uni-file-upload-input" multiple style="display:none" onchange="handleUniFileUpload(this.files)">
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1996,15 +1995,40 @@ function setupAssignModeUI(){
 // right from the list. Counsellors get zero control over this field —
 // no assign, no unassign, no transfer. They see plain read-only text,
 // same as Application/Visa/SOP Team members.
+// ── Priority — inline editable in the Leads table ───────────────────
+// Available to Counsellors and Application/Visa/SOP Team, same as
+// everyone else who can already see a lead — since loadLeads() already
+// scopes visibility to "leads that are actually theirs," there's no need
+// for a separate role check here.
+function renderPriorityCell(l){
+  const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
+  return `<select onchange="quickChangePriority('${l.id}',this.value)" style="font-size:12px;padding:4px 6px;border-radius:99px;border:none;background:${ps.bg};color:${ps.tx};font-family:var(--font-b);font-weight:600;cursor:pointer">
+    ${['High','Medium','Low'].map(p=>`<option value="${p}"${p===l.priority?' selected':''}>${p}</option>`).join('')}
+  </select>`;
+}
+async function quickChangePriority(leadId,newPriority){
+  const l=leads.find(x=>x.id===leadId);
+  if(!l||l.priority===newPriority)return;
+  const old=l.priority;
+  setSyncing();
+  const{error}=await sb.from('leads').update({priority:newPriority}).eq('id',leadId);
+  if(error){setSyncErr();toast('Error: '+error.message);renderLeads();return;}
+  l.priority=newPriority;
+  setSynced();
+  logActivity(leadId,'field_edit',`Priority: ${old||'—'} → ${newPriority}`);
+  toast(`Priority → ${newPriority}`);
+  renderDash();
+  renderLeads();
+}
 function renderCounsellorCell(l){
   if(isRestrictedStaffRole()){
     return esc(l.counsellor||'—');
   }
   const pool=getOfficeCounsellors(l.office);
-  // No "Unassigned" option once someone's actually assigned — only ever
-  // hand off to a different specific counsellor, matching the same rule
-  // as Application/Visa/SOP.
-  const options=l.counsellor?[]:['<option value="" selected>Unassigned</option>'];
+  // Only Management ever reaches this dropdown (Counsellors and sub-team
+  // roles are blocked above), so it's safe to always offer Unassign here —
+  // it's never available to the people actually holding the leads.
+  const options=[`<option value=""${l.counsellor?'':' selected'}>${l.counsellor?'— Unassign —':'Unassigned'}</option>`];
   options.push(...pool.map(c=>`<option value="${esc(c.full_name)}"${c.full_name===l.counsellor?' selected':''}>${esc(c.full_name)}</option>`));
   if(l.counsellor&&!pool.some(c=>c.full_name===l.counsellor)){
     options.push(`<option value="${esc(l.counsellor)}" selected>${esc(l.counsellor)} (not in ${esc(l.office||'this office')})</option>`);
@@ -2040,11 +2064,12 @@ function renderSubTeamCell(l,field,roleName){
   }
   const pool=getGlobalRolePool(roleName);
   const current=l[field];
-  // No round-robin option here — manual pick only, by design. No option
-  // to revert to Unassigned either, once someone's actually assigned —
-  // only ever hand off to a different specific person.
+  const canUnassign=!isRestrictedStaffRole(); // Management only — a
+  // Counsellor handing a lead off can pick a different person, but can't
+  // revert it to Unassigned; only Management can do that.
+  // No round-robin option here — manual pick only, by design.
   const options=current
-    ? []
+    ? (canUnassign?['<option value="">— Unassign —</option>']:[])
     : [`<option value="" selected>Unassigned</option>`];
   options.push(...pool.map(t=>`<option value="${esc(t.full_name)}"${t.full_name===current?' selected':''}>${esc(t.full_name)}</option>`));
   if(current&&!pool.some(t=>t.full_name===current)){
@@ -2247,43 +2272,33 @@ document.getElementById('login-btn').disabled=false;
 }
 
 let events=[];
-// An event is visible to you if: you're Super Admin (no restrictions,
-// ever — matches every other permission in this CRM), OR you created it,
-// OR it has no teams/individuals set at all (public), OR your name is in
-// its individual list, OR your role/country matches one of its selected
-// teams. Note: this is a UI-level filter, not a database-level one — the
-// `events` table itself has no RLS restricting which rows a signed-in
-// user can fetch, so all rows are always pulled down; this only controls
-// what gets rendered.
-function canSeeEvent(ev){
-  if(!currentUser)return false;
-  if(isSuperAdmin)return true;
-  if(ev.created_by&&ev.created_by===currentUser.id)return true;
-  const hasTeams=!!(ev.participant_teams&&ev.participant_teams.trim());
-  const hasNames=!!(ev.participants&&ev.participants.trim());
-  if(!hasTeams&&!hasNames)return true; // public event
-  if(hasNames){
-    const names=ev.participants.split(',').map(n=>n.trim().toLowerCase());
-    if(myName&&names.includes(myName.trim().toLowerCase()))return true;
-  }
-  if(hasTeams){
-    const teams=ev.participant_teams.split(',').map(t=>t.trim());
-    if(myRole&&teams.includes(myRole))return true;
-    if(myCountry&&teams.includes(myCountry))return true;
-  }
-  return false;
+// Events with no specific participants are general/company-wide, visible
+// to everyone as before. Events WITH participants set become private —
+// only the listed people/teams, the creator, and Management can see them.
+function visibleEventsFor(){
+  if(!isRestrictedStaffRole())return events;
+  return events.filter(e=>{
+    if(!e.participants)return true;
+    if(e.created_by===currentUser?.id)return true;
+    const parts=e.participants.split(',').map(p=>p.trim()).filter(Boolean);
+    return parts.includes(myName)||parts.includes('TEAM:'+myRole);
+  });
 }
-async function loadEvents(){   const{data}=await sb.from('events').select('*').order('event_date',{ascending:true});   if(data){events=data;renderEvents();renderEventsTicker();} } function renderEvents(){   const cal=document.getElementById('events-calendar');   const list=document.getElementById('events-list');   if(!cal)return;   const now=new Date();   const visible=events.filter(canSeeEvent);   const thisMonth=visible.filter(e=>new Date(e.event_date).getMonth()===now.getMonth()&&new Date(e.event_date).getFullYear()===now.getFullYear());   const upcoming=visible.filter(e=>new Date(e.event_date)>=now).slice(0,10);   const typeColors={'Seminar':"var(--sky-1)",'Webinar':"var(--sky-1)",'Application Deadline':"var(--rose-1)",'Follow-up':"var(--sage-1)",'Other':"var(--gold-1)"};   cal.innerHTML=visible.length?visible.map(e=>{     const d=new Date(e.event_date);     const isPast=d<now;     const bg=typeColors[e.event_type]||"var(--gold-1)";     const isPrivate=!!(e.participant_teams||e.participants);     return`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);opacity:${isPast?0.5:1}">     <div style="min-width:48px;text-align:center;background:${bg};border-radius:8px;padding:6px 4px">     <div style="font-size:18px;font-weight:600;color:var(--ink);line-height:1">${d.getDate()}</div>     <div style="font-size:10px;color:var(--ink2)">${d.toLocaleString('default',{month:'short'})}</div>     </div>     <div style="flex:1">     <div style="font-weight:500;font-size:14px;color:var(--ink)">${isPrivate?'🔒 ':''}${esc(e.title)}</div>     <div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(e.event_type||'')}${e.description?` · <a href="${e.description}" target="_blank" style="color:var(--pine2)">${esc(e.description)}</a>`:''}</div>     </div>     <button onclick="openAddEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px">✏️</button>${(!e.created_by||e.created_by===currentUser?.id||isSuperAdmin)?`<button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">&times;</button>`:''}     </div>`;}).join(''):'<p style="color:var(--ink3);font-style:italic;font-size:13px">No events yet. Click Add event to get started.</p>';   list.innerHTML=thisMonth.length?thisMonth.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink2)"><b style="color:var(--ink)">${new Date(e.event_date).getDate()} ${new Date(e.event_date).toLocaleString('default',{month:'short'})}</b> · ${esc(e.title)}</div>`).join(''):'<p style="color:var(--ink3);font-style:italic;font-size:13px">No events this month.</p>'; } function renderEventsTicker(){   const ticker=document.getElementById('events-ticker');   const badge=document.getElementById('events-badge');   if(!ticker)return;   const now=new Date();   const visible=events.filter(canSeeEvent);   const soon=visible.filter(e=>{const d=new Date(e.event_date);return d>=now&&(d-now)<=7*86400000;});   const upcoming=visible.filter(e=>new Date(e.event_date)>=now).slice(0,5);   if(badge){if(soon.length>0){badge.textContent=soon.length;badge.style.display='flex';}else{badge.style.display='none';}}   ticker.innerHTML=upcoming.length?upcoming.map(e=>`<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.1)"><span style="opacity:0.7;font-size:11px">${new Date(e.event_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span><br>${esc(e.title)}</div>`).join(''):'<div style="opacity:0.7">No upcoming events</div>'; } function toggleEventsWidget(){   const w=document.getElementById('events-widget');   w.style.display=w.style.display==='none'?'block':'none'; } function toggleOther(selectId,inputId){   const sel=document.getElementById(selectId);   const inp=document.getElementById(inputId);   if(inp)inp.style.display=sel.value==='Other'?'block':'none'; } let editingEventId=null;
-const EVENT_TEAM_TAGS=[
-  {tag:'Counsellor',label:'👥 Counsellors'},
-  {tag:'Application Team',label:'📝 Application Team'},
-  {tag:'Visa Team',label:'🛂 Visa Team'},
-  {tag:'SOP Team',label:'✍️ SOP Team'},
-  {tag:'India',label:'🇮🇳 India office'},
-  {tag:'UK',label:'🇬🇧 UK office'},
-  {tag:'Pakistan',label:'🇵🇰 Pakistan office'},
-  {tag:'Bangladesh',label:'🇧🇩 Bangladesh office'},
-];
+async function loadEvents(){   const{data}=await sb.from('events').select('*').order('event_date',{ascending:true});   if(data){events=data;renderEvents();renderEventsTicker();} } function renderEvents(){   const cal=document.getElementById('events-calendar');   const list=document.getElementById('events-list');   if(!cal)return;   const vEvents=visibleEventsFor();   const now=new Date();   const thisMonth=vEvents.filter(e=>new Date(e.event_date).getMonth()===now.getMonth()&&new Date(e.event_date).getFullYear()===now.getFullYear());   const upcoming=vEvents.filter(e=>new Date(e.event_date)>=now).slice(0,10);   const typeColors={'Seminar':"var(--sky-1)",'Webinar':"var(--sky-1)",'Application Deadline':"var(--rose-1)",'Follow-up':"var(--sage-1)",'Other':"var(--gold-1)"};   cal.innerHTML=vEvents.length?vEvents.map(e=>{     const d=new Date(e.event_date);     const isPast=d<now;     const bg=typeColors[e.event_type]||"var(--gold-1)";     return`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);opacity:${isPast?0.5:1}">     <div style="min-width:48px;text-align:center;background:${bg};border-radius:8px;padding:6px 4px">     <div style="font-size:18px;font-weight:600;color:var(--ink);line-height:1">${d.getDate()}</div>     <div style="font-size:10px;color:var(--ink2)">${d.toLocaleString('default',{month:'short'})}</div>     </div>     <div style="flex:1">     <div style="font-weight:500;font-size:14px;color:var(--ink)">${esc(e.title)}</div>     <div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(e.event_type||'')}${e.description?` · <a href="${e.description}" target="_blank" style="color:var(--pine2)">${esc(e.description)}</a>`:''}</div>     </div>     <button onclick="openAddEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px">✏️</button>${(!e.created_by||e.created_by===currentUser?.id||isSuperAdmin)?`<button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">&times;</button>`:''}     </div>`;}).join(''):'<p style="color:var(--ink3);font-style:italic;font-size:13px">No events yet. Click Add event to get started.</p>';   list.innerHTML=thisMonth.length?thisMonth.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink2)"><b style="color:var(--ink)">${new Date(e.event_date).getDate()} ${new Date(e.event_date).toLocaleString('default',{month:'short'})}</b> · ${esc(e.title)}</div>`).join(''):'<p style="color:var(--ink3);font-style:italic;font-size:13px">No events this month.</p>'; } function renderEventsTicker(){   const ticker=document.getElementById('events-ticker');   const badge=document.getElementById('events-badge');   if(!ticker)return;   const vEvents=visibleEventsFor();   const now=new Date();   const soon=vEvents.filter(e=>{const d=new Date(e.event_date);return d>=now&&(d-now)<=7*86400000;});   const upcoming=vEvents.filter(e=>new Date(e.event_date)>=now).slice(0,5);   if(badge){if(soon.length>0){badge.textContent=soon.length;badge.style.display='flex';}else{badge.style.display='none';}}   ticker.innerHTML=upcoming.length?upcoming.map(e=>`<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.1)"><span style="opacity:0.7;font-size:11px">${new Date(e.event_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span><br>${esc(e.title)}</div>`).join(''):'<div style="opacity:0.7">No upcoming events</div>'; } function toggleEventsWidget(){   const w=document.getElementById('events-widget');   w.style.display=w.style.display==='none'?'block':'none'; } function toggleOther(selectId,inputId){   const sel=document.getElementById(selectId);   const inp=document.getElementById(inputId);   if(inp)inp.style.display=sel.value==='Other'?'block':'none'; } let editingEventId=null;
+const EVENT_TEAM_OPTIONS=['Counsellor','Manager','Admin','Director','Application Team','Visa Team','SOP Team'];
+function renderEventParticipantsPicker(selectedParts){
+  const el=document.getElementById('event-participants-picker');
+  if(!el)return;
+  const teamHtml=EVENT_TEAM_OPTIONS.map(t=>{
+    const token='TEAM:'+t;
+    return `<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:2px 0;cursor:pointer"><input type="checkbox" class="event-part-cb" value="${esc(token)}" ${selectedParts.includes(token)?'checked':''}> 👥 ${esc(t)} (whole team)</label>`;
+  }).join('');
+  const people=(teamList||[]).filter(t=>t.full_name).sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||''));
+  const peopleHtml=people.map(p=>
+    `<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:2px 0;cursor:pointer"><input type="checkbox" class="event-part-cb" value="${esc(p.full_name)}" ${selectedParts.includes(p.full_name)?'checked':''}> ${esc(p.full_name)} <span style="color:var(--ink3)">· ${esc(p.role||'')}</span></label>`
+  ).join('');
+  el.innerHTML=`<div style="font-size:10px;color:var(--ink3);text-transform:uppercase;font-weight:600;margin-bottom:4px">Teams</div>${teamHtml}<div style="font-size:10px;color:var(--ink3);text-transform:uppercase;font-weight:600;margin:8px 0 4px">Individuals</div>${peopleHtml}`;
+}
 function openAddEvent(id){
   editingEventId=id||null;
   const ev=id?events.find(e=>e.id===id):null;
@@ -2292,14 +2307,9 @@ function openAddEvent(id){
   document.getElementById('event-date').value=ev?.event_date||'';
   document.getElementById('event-time').value=ev?.event_time?ev.event_time.substring(0,5):'';
   document.getElementById('event-type').value=ev?.event_type||'Seminar';
+  const selectedParts=ev?.participants?ev.participants.split(',').map(p=>p.trim()).filter(Boolean):[];
+  renderEventParticipantsPicker(selectedParts);
   document.getElementById('event-desc').value=ev?.description||'';
-  const selectedTeams=(ev?.participant_teams||'').split(',').map(t=>t.trim()).filter(Boolean);
-  const selectedNames=(ev?.participants||'').split(',').map(n=>n.trim()).filter(Boolean);
-  const teamsEl=document.getElementById('event-teams-list');
-  teamsEl.innerHTML=EVENT_TEAM_TAGS.map(t=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;background:${selectedTeams.includes(t.tag)?'var(--gold-l)':'transparent'};padding:4px 8px;border-radius:99px;border:1px solid var(--line2)"><input type="checkbox" class="event-team-cb" value="${esc(t.tag)}" ${selectedTeams.includes(t.tag)?'checked':''} onchange="this.parentElement.style.background=this.checked?'var(--gold-l)':'transparent'" style="cursor:pointer">${t.label}</label>`).join('');
-  const indivEl=document.getElementById('event-individuals-list');
-  const sortedTeam=[...teamList].sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||''));
-  indivEl.innerHTML=sortedTeam.length?sortedTeam.map(t=>`<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" class="event-indiv-cb" value="${esc(t.full_name)}" ${selectedNames.includes(t.full_name)?'checked':''} style="cursor:pointer">${esc(t.full_name)} <span style="color:var(--ink3);font-size:11px">(${esc(t.role||'')})</span></label>`).join(''):'<span style="font-size:12px;color:var(--ink3);font-style:italic">No team members loaded yet.</span>';
   document.getElementById('modal-event').classList.add('open');
 }
 async function saveEventModal(){
@@ -2309,14 +2319,12 @@ async function saveEventModal(){
   if(!date){document.getElementById('event-date').focus();toast('Please pick a date.');return;}
   const time=document.getElementById('event-time').value||null;
   const type=document.getElementById('event-type').value;
-  const selectedTeams=[...document.querySelectorAll('.event-team-cb:checked')].map(cb=>cb.value);
-  const selectedNames=[...document.querySelectorAll('.event-indiv-cb:checked')].map(cb=>cb.value);
-  const participants=selectedNames.length?selectedNames.join(','):null;
-  const participantTeams=selectedTeams.length?selectedTeams.join(','):null;
+  const selected=Array.from(document.querySelectorAll('.event-part-cb:checked')).map(cb=>cb.value);
+  const participants=selected.length?selected.join(', '):null;
   const desc=document.getElementById('event-desc').value.trim();
   const btn=document.getElementById('save-event-btn');
   btn.disabled=true;btn.textContent='Saving…';
-  if(editingEventId){await updateEvent(editingEventId,title,date,type,desc,time,participants,participantTeams);}else{await saveEvent(title,date,type,desc,time,participants,participantTeams);}
+  if(editingEventId){await updateEvent(editingEventId,title,date,type,desc,time,participants);}else{await saveEvent(title,date,type,desc,time,participants);}
   btn.disabled=false;btn.textContent='Save';
   closeModal('modal-event');
 }
@@ -2340,7 +2348,7 @@ function saveQuickInput(){
   if(cb)cb(val);
 }
 
-async function updateEvent(id,title,date,type,desc,time,participants,participantTeams){   const{error}=await sb.from('events').update({title,event_date:date,event_type:type,description:desc,event_time:time,participants,participant_teams:participantTeams}).eq('id',id);   if(!error){await loadEvents();toast('Event updated!');} } async function saveEvent(title,date,type,desc,time,participants,participantTeams){   const{error}=await sb.from('events').insert({title,event_date:date,event_type:type,description:desc,event_time:time,participants,participant_teams:participantTeams,created_by:currentUser.id});   if(!error){await loadEvents();toast('Event added!');} } async function deleteEvent(id){   const ev=events.find(e=>e.id===id);   if(ev&&ev.created_by&&ev.created_by!==currentUser?.id&&!isSuperAdmin){toast('Only the person who created this event can delete it.');return;}   if(!confirm('Delete this event?'))return;   await sb.from('events').delete().eq('id',id);   await loadEvents();   toast('Event deleted.'); } // ══ COMMAND PALETTE — Ctrl+K / Cmd+K, from anywhere ═══════════════
+async function updateEvent(id,title,date,type,desc,time,participants){   const{error}=await sb.from('events').update({title,event_date:date,event_type:type,description:desc,event_time:time,participants}).eq('id',id);   if(!error){await loadEvents();toast('Event updated!');} } async function saveEvent(title,date,type,desc,time,participants){   const{error}=await sb.from('events').insert({title,event_date:date,event_type:type,description:desc,event_time:time,participants,created_by:currentUser.id});   if(!error){await loadEvents();toast('Event added!');} } async function deleteEvent(id){   const ev=events.find(e=>e.id===id);   if(ev&&ev.created_by&&ev.created_by!==currentUser?.id&&!isSuperAdmin){toast('Only the person who created this event can delete it.');return;}   if(!confirm('Delete this event?'))return;   await sb.from('events').delete().eq('id',id);   await loadEvents();   toast('Event deleted.'); } // ══ COMMAND PALETTE — Ctrl+K / Cmd+K, from anywhere ═══════════════
 let cmdkSelectedIndex=0;
 let cmdkResults=[];
 document.addEventListener('keydown',(e)=>{
@@ -2531,7 +2539,7 @@ function nav(id,btn){
   if(id==='resumes'){loadResumes().then(renderResumesAdmin);}
   if(id==='finance')renderFinance();
   if(id==='reports'){if(roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}initReports();}
-  if(id==='subteam-detail'){if(isRestrictedStaffRole()){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Team Dashboards is restricted to management.');return;}renderSubTeamDetail();}
+  if(id==='subteam-detail'){if(myRole==='Counsellor'&&!isSuperAdmin){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Team Dashboards is for Application/Visa/SOP Team and management.');return;}renderSubTeamDetail();}
   if(id==='productivity'){loadCallLogs().then(renderCallLogs);}
   if(id==='coaching')renderCoaching();
   if(id==='followup')renderFU();
@@ -2910,7 +2918,7 @@ function renderLeads(){
       <td style="font-size:12px">${esc(l.destination||'—')}</td>
       <td style="font-size:11px;color:var(--ink3);white-space:nowrap">${capturedStr}</td>
       <td><span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span></td>
-      <td><span class="pill" style="background:${ps.bg};color:${ps.tx}">${l.priority||'—'}</span></td>
+      <td onclick="event.stopPropagation()">${renderPriorityCell(l)}</td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderCounsellorCell(l)}</td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'application_team','Application Team')}</td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'visa_team','Visa Team')}</td>
@@ -3019,7 +3027,7 @@ function openDetail(id){
   loadUniApps(id);
   loadSopDocuments(id,false);
   loadDocs(id);
-  loadUniversityLink(l,false);
+  loadUniversityLinks(id,false);
   loadActivityLog(id);
   loadChatStat(id,'d-chat-stat');
   loadReminders(id);
@@ -3074,7 +3082,7 @@ function openLeadDetail(id){
   sel.innerHTML=STATUSES.map(s=>`<option${s===l.status?' selected':''}>${s}</option>`).join('');
   document.getElementById('modal-lead-detail').classList.add('open');
   loadDocsFS(id);
-  loadUniversityLink(l,true);
+  loadUniversityLinks(id,true);
   loadActivityLogFS(id);
   loadChatStat(id,'ld-chat-stat');
   loadRemindersFS(id);
@@ -3107,35 +3115,44 @@ async function deleteLeadFS(){if(!curId)return;if(!isSuperAdmin&&myRole!=='Admin
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
 // FS versions of doc/reminder/uni functions
-async function loadDocsFS(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-doc-list');if(!el)return;if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet.</div>';return;}el.innerHTML=data.map(d=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${d.attachment_url?`<div style="font-size:11px;margin-top:1px"><a href="${d.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(d.attachment_filename||'View file')}</a></div>`:''}</div><button onclick="triggerDocUpload('${d.id}',true)" title="Upload file" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button>${d.attachment_url?`<button onclick="removeDocFile('${d.id}',true)" title="Remove uploaded file" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-trash"></i></button>`:''}<button onclick="setDocExpiryFS('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`).join('');}
-async function removeDocFile(id,isFS){
-  if(!confirm('Remove this file? You can upload a new one right after.'))return;
-  const{error}=await sb.from('documents').update({attachment_url:null,attachment_filename:null}).eq('id',id);
-  if(error){toast('Error removing file: '+error.message);return;}
-  if(isFS){loadDocsFS(curId);}else{loadDocs(curId);}
-  toast('File removed — upload a new one whenever you\'re ready.');
-}
+async function loadDocsFS(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-doc-list');if(!el)return;if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet.</div>';return;}await loadDocFilesFor(data.map(d=>d.id));el.innerHTML=data.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',true)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',true)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiryFS('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
 function setDocExpiryFS(id,current){openQuickInput('Set expiry date','Expiry date','date',current,(val)=>{sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocsFS(curId);toast('Expiry date updated.');});});}
 
-// ── Document checklist file upload ──────────────────────────────────
+// ── Document checklist file upload — supports multiple files per item ──
+let docFilesByDoc={};
+async function loadDocFilesFor(docIds){
+  if(!docIds||!docIds.length){docFilesByDoc={};return;}
+  const{data,error}=await sb.from('document_files').select('*').in('document_id',docIds).order('created_at',{ascending:true});
+  docFilesByDoc={};
+  if(!error&&data) data.forEach(f=>{(docFilesByDoc[f.document_id]=docFilesByDoc[f.document_id]||[]).push(f);});
+}
 let docUploadTargetId=null, docUploadIsFS=false;
 function triggerDocUpload(docId,isFS){
   docUploadTargetId=docId;
   docUploadIsFS=isFS;
   document.getElementById('doc-upload-input').click();
 }
-async function handleDocUploadFile(file){
-  if(!file||!docUploadTargetId)return;
-  toast('Uploading '+file.name+'…');
-  const path=`${curId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
-  const{error:upErr}=await sb.storage.from('document-attachments').upload(path,file);
-  if(upErr){toast('Upload failed: '+upErr.message);return;}
-  const{data:pub}=sb.storage.from('document-attachments').getPublicUrl(path);
-  const{error}=await sb.from('documents').update({attachment_url:pub?.publicUrl||null,attachment_filename:file.name}).eq('id',docUploadTargetId);
-  if(error){toast('Error saving file link: '+error.message);return;}
+async function handleDocUploadFile(fileOrList){
+  const files=fileOrList instanceof FileList?Array.from(fileOrList):[fileOrList];
+  if(!files.length||!files[0]||!docUploadTargetId)return;
+  toast(`Uploading ${files.length} file(s)…`);
+  for(const file of files){
+    const path=`${curId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const{error:upErr}=await sb.storage.from('document-attachments').upload(path,file);
+    if(upErr){toast(`Upload failed for ${file.name}: `+upErr.message);continue;}
+    const{data:pub}=sb.storage.from('document-attachments').getPublicUrl(path);
+    await sb.from('document_files').insert({document_id:docUploadTargetId,attachment_url:pub?.publicUrl||null,attachment_filename:file.name});
+  }
   if(docUploadIsFS){loadDocsFS(curId);}else{loadDocs(curId);}
   document.getElementById('doc-upload-input').value='';
-  toast('✅ '+file.name+' uploaded!');
+  toast('✅ File(s) uploaded!');
+}
+async function deleteDocFile(fileId,isFS){
+  if(!confirm('Remove this file? You can upload a replacement right after.'))return;
+  const{error}=await sb.from('document_files').delete().eq('id',fileId);
+  if(error){toast('Error: '+error.message);return;}
+  if(isFS){loadDocsFS(curId);}else{loadDocs(curId);}
+  toast('File removed — upload a new one whenever you are ready.');
 }
 async function initDocsFS(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=DEFAULT_DOCS.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocsFS(curId);toast('Checklist created!');}
 
@@ -3198,29 +3215,37 @@ async function deleteSopDocument(id,isFS){
 // ── University Link — replaces the per-lead Tasks card ──────────────
 // Lets whoever's drafting the SOP see exactly which university it's for,
 // with a direct link to that university's actual requirements page.
-function loadUniversityLink(lead,isFS){
+// ── University Links (for SOP) — supports multiple universities per lead ──
+async function loadUniversityLinks(leadId,isFS){
+  const listEl=document.getElementById(isFS?'ld-uni-link-list':'d-uni-link-list');
+  if(!listEl)return;
+  const{data,error}=await sb.from('university_links').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});
+  if(error){listEl.innerHTML='<div style="font-size:12px;color:var(--ink3);font-style:italic">Could not load — has university_links been created in Supabase yet?</div>';return;}
+  if(!data||!data.length){listEl.innerHTML='<div style="font-size:12px;color:var(--ink3);font-style:italic">No universities linked yet.</div>';return;}
+  listEl.innerHTML=data.map(u=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)">
+    <a href="${esc(u.url)}" target="_blank" style="flex:1;font-size:12px;color:var(--pine);text-decoration:underline;display:flex;align-items:center;gap:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><i class="ti ti-external-link" style="font-size:13px;flex-shrink:0"></i>${esc(u.university_name||'Open link')}</a>
+    <span onclick="deleteUniversityLink('${u.id}',${isFS})" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600;flex-shrink:0">×</span>
+  </div>`).join('');
+}
+async function addUniversityLink(isFS){
+  if(!curId){toast('No lead selected.');return;}
   const nameEl=document.getElementById(isFS?'ld-uni-link-name':'d-uni-link-name');
   const urlEl=document.getElementById(isFS?'ld-uni-link-url':'d-uni-link-url');
-  const displayEl=document.getElementById(isFS?'ld-uni-link-display':'d-uni-link-display');
-  if(!nameEl)return;
-  nameEl.value=lead.university_link_name||'';
-  urlEl.value=lead.university_link_url||'';
-  if(lead.university_link_url){
-    displayEl.innerHTML=`<a href="${esc(lead.university_link_url)}" target="_blank" style="font-size:12px;color:var(--pine);text-decoration:underline;display:flex;align-items:center;gap:5px"><i class="ti ti-external-link" style="font-size:13px"></i>${esc(lead.university_link_name||'Open link')}</a>`;
-  } else {
-    displayEl.innerHTML='';
-  }
-}
-async function saveUniversityLink(isFS){
-  if(!curId){toast('No lead selected.');return;}
-  const name=document.getElementById(isFS?'ld-uni-link-name':'d-uni-link-name').value.trim();
-  const url=document.getElementById(isFS?'ld-uni-link-url':'d-uni-link-url').value.trim();
-  const{error}=await sb.from('leads').update({university_link_name:name||null,university_link_url:url||null}).eq('id',curId);
+  const name=nameEl.value.trim();
+  const url=urlEl.value.trim();
+  if(!name||!url){toast('Please enter both a university name and a link.');return;}
+  const{error}=await sb.from('university_links').insert({lead_id:curId,university_name:name,url});
   if(error){toast('Error: '+error.message);return;}
-  const l=leads.find(x=>x.id===curId);
-  if(l){l.university_link_name=name;l.university_link_url=url;}
-  loadUniversityLink(l||{university_link_name:name,university_link_url:url},isFS);
-  toast('University link saved!');
+  nameEl.value='';urlEl.value='';
+  loadUniversityLinks(curId,isFS);
+  toast('University link added!');
+}
+async function deleteUniversityLink(id,isFS){
+  if(!confirm('Remove this university link?'))return;
+  const{error}=await sb.from('university_links').delete().eq('id',id);
+  if(error){toast('Error: '+error.message);return;}
+  loadUniversityLinks(curId,isFS);
+  toast('Removed.');
 }
 
 // ── Per-lead Tasks (full-screen panel) ──────────────────────────────
@@ -3258,7 +3283,7 @@ async function loadRemindersFS(leadId){const{data,error}=await sb.from('reminder
 async function toggleReminderFS(id,checked){await sb.from('reminders').update({done:checked}).eq('id',id);loadRemindersFS(curId);loadDashReminders();toast(checked?'✅ Done':'↩ Reopened');}
 async function deleteReminderFS(id){if(!confirm('Delete this reminder?'))return;await sb.from('reminders').delete().eq('id',id);loadRemindersFS(curId);loadDashReminders();toast('Reminder deleted.');}
 function openAddReminderFS(){openReminderModal();}
-async function loadUniAppsFS(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No universities added yet.</div>';return;}el.innerHTML=data.map(u=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${u.attachment_url?`<div style="font-size:11px;margin-top:2px"><a href="${u.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(u.attachment_filename||'View attachment')}</a></div>`:''}</div><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniAppFS('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`).join('');}
+async function loadUniAppsFS(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No universities added yet.</div>';return;}await loadUniFilesFor(data.map(u=>u.id));el.innerHTML=data.map(u=>{const myFiles=uniFilesByApp[u.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteUniFile('${f.id}',true)" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${filesHtml}</div><button onclick="triggerUniFileUpload('${u.id}',true)" title="Add file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniAppFS('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`;}).join('');}
 function openAddUniAppFS(){openUniversityModal();}
 
 // ── University Application modal — one dialog, all fields, optional file ──
@@ -3279,38 +3304,73 @@ async function saveUniversityApp(){
   const btn=document.getElementById('save-uni-btn');
   btn.disabled=true;btn.textContent='Saving…';
 
-  let attachment_url=null,attachment_filename=null;
-  const fileInput=document.getElementById('uni-file');
-  const file=fileInput.files[0];
-  if(file){
-    const path=`${curId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
-    const{error:upErr}=await sb.storage.from('university-attachments').upload(path,file);
-    if(upErr){
-      toast('File upload failed: '+upErr.message+' (saving without attachment)');
-    } else {
-      const{data:pub}=sb.storage.from('university-attachments').getPublicUrl(path);
-      attachment_url=pub?.publicUrl||null;
-      attachment_filename=file.name;
-    }
-  }
-
   const data={
     lead_id:curId,
     university,
     program:document.getElementById('uni-program').value.trim(),
     status:document.getElementById('uni-status').value,
     offer_expiry_date:document.getElementById('uni-expiry').value||null,
-    attachment_url,attachment_filename
   };
-  const{error}=await sb.from('university_applications').insert([data]);
+  const{data:inserted,error}=await sb.from('university_applications').insert([data]).select();
+  if(error){btn.disabled=false;btn.textContent='Save';toast('Error: '+error.message);return;}
+  const newAppId=inserted?.[0]?.id;
+
+  // Multiple files allowed at creation too, same as adding more later.
+  const files=document.getElementById('uni-file').files;
+  if(newAppId&&files&&files.length){
+    for(const file of files){
+      const path=`${curId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+      const{error:upErr}=await sb.storage.from('university-attachments').upload(path,file);
+      if(upErr){toast(`Upload failed for ${file.name}: `+upErr.message);continue;}
+      const{data:pub}=sb.storage.from('university-attachments').getPublicUrl(path);
+      await sb.from('university_application_files').insert({university_application_id:newAppId,attachment_url:pub?.publicUrl||null,attachment_filename:file.name});
+    }
+  }
+
   btn.disabled=false;btn.textContent='Save';
-  if(error){toast('Error: '+error.message);return;}
   closeModal('modal-university');
   loadUniApps(curId);
   loadUniAppsFS(curId);
   toast('University added!');
 }
 async function deleteUniAppFS(id){if(!confirm('Remove this university?'))return;await sb.from('university_applications').delete().eq('id',id);loadUniAppsFS(curId);toast('Removed.');}
+
+// ── University Application files — supports multiple files per entry ──
+let uniFilesByApp={};
+async function loadUniFilesFor(appIds){
+  if(!appIds||!appIds.length){uniFilesByApp={};return;}
+  const{data,error}=await sb.from('university_application_files').select('*').in('university_application_id',appIds).order('created_at',{ascending:true});
+  uniFilesByApp={};
+  if(!error&&data) data.forEach(f=>{(uniFilesByApp[f.university_application_id]=uniFilesByApp[f.university_application_id]||[]).push(f);});
+}
+let uniFileUploadTargetId=null, uniFileUploadIsFS=false;
+function triggerUniFileUpload(appId,isFS){
+  uniFileUploadTargetId=appId;
+  uniFileUploadIsFS=isFS;
+  document.getElementById('uni-file-upload-input').click();
+}
+async function handleUniFileUpload(fileList){
+  const files=Array.from(fileList||[]);
+  if(!files.length||!uniFileUploadTargetId)return;
+  toast(`Uploading ${files.length} file(s)…`);
+  for(const file of files){
+    const path=`${curId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const{error:upErr}=await sb.storage.from('university-attachments').upload(path,file);
+    if(upErr){toast(`Upload failed for ${file.name}: `+upErr.message);continue;}
+    const{data:pub}=sb.storage.from('university-attachments').getPublicUrl(path);
+    await sb.from('university_application_files').insert({university_application_id:uniFileUploadTargetId,attachment_url:pub?.publicUrl||null,attachment_filename:file.name});
+  }
+  if(uniFileUploadIsFS){loadUniAppsFS(curId);}else{loadUniApps(curId);}
+  document.getElementById('uni-file-upload-input').value='';
+  toast('✅ File(s) uploaded!');
+}
+async function deleteUniFile(fileId,isFS){
+  if(!confirm('Remove this file?'))return;
+  const{error}=await sb.from('university_application_files').delete().eq('id',fileId);
+  if(error){toast('Error: '+error.message);return;}
+  if(isFS){loadUniAppsFS(curId);}else{loadUniApps(curId);}
+  toast('File removed.');
+}
 
 // ── Reminder modal — comments always, date+time only if "Set reminder" chosen ──
 function openReminderModal(){
@@ -4561,7 +4621,7 @@ function renderSubTeamReportsBreakdown(scoped){
   });
   el.innerHTML=rows.length?rows.join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic">No sub-team assignments in this scope yet.</div>';
 }
-  let uniApps=[];async function loadUniApps(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data)uniApps=data;renderUniApps();}function renderUniApps(){const el=document.getElementById('d-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};el.innerHTML=uniApps.length?uniApps.map(u=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${u.attachment_url?`<div style="font-size:11px;margin-top:2px"><a href="${u.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(u.attachment_filename||'View attachment')}</a></div>`:''}</div><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniApp('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No universities added yet.</div>';}
+  let uniApps=[];async function loadUniApps(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data)uniApps=data;await renderUniApps();}async function renderUniApps(){const el=document.getElementById('d-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(!uniApps.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No universities added yet.</div>';return;}await loadUniFilesFor(uniApps.map(u=>u.id));el.innerHTML=uniApps.map(u=>{const myFiles=uniFilesByApp[u.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteUniFile('${f.id}',false)" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${filesHtml}</div><button onclick="triggerUniFileUpload('${u.id}',false)" title="Add file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniApp('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`;}).join('');}
 function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){if(!confirm('Remove this university?'))return;await sb.from('university_applications').delete().eq('id',id);loadUniApps(curId);toast('Removed.');}
   function applyRoleUI(){
     const role=(document.getElementById('sb-urole').textContent||'').trim();
@@ -4632,9 +4692,9 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
   }
   function renderCountryBreakdown(){const card=document.getElementById('country-breakdown-card');const el=document.getElementById('country-breakdown');if(!el||!card)return;if(isRestrictedStaffRole()){card.style.display='none';return;}card.style.display='block';const titleEl=card.querySelector('.card-t');if(titleEl)titleEl.textContent=isSuperAdmin?'🌍 Country breakdown':'🌍 '+(myCountry||'Your country')+' breakdown';const map={};leads.forEach(l=>{const c=l.country||'Unspecified';if(!map[c])map[c]={country:c,total:0,enrolled:0};map[c].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[c].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.total-a.total);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}const flagMap={India:'🇮🇳',UK:'🇬🇧',Pakistan:'🇵🇰',Bangladesh:'🇧🇩'};const tot=leads.length||1;el.innerHTML=sorted.map(c=>{const w=Math.round(c.total/tot*100);const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;return`<div class="prow" onclick="navFilter('ls-country','${c.country}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:110px">${flagMap[c.country]||''} ${esc(c.country)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${c.total}</span><span style="font-size:11px;color:var(--ink3);min-width:60px;text-align:right">${pct}% enr.</span></div>`;}).join('');}
   function renderCounsellorRank(){const el=document.getElementById('counsel-rank');const card=document.getElementById('counsel-rank-card');if(!el)return;if(isRestrictedStaffRole()){if(card)card.style.display='none';return;}if(card)card.style.display='block';const map={};leads.forEach(l=>{if(!l.counsellor)return;if(!map[l.counsellor])map[l.counsellor]={name:l.counsellor,total:0,enrolled:0};map[l.counsellor].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[l.counsellor].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.enrolled-a.enrolled);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="border-bottom:2px solid var(--line)"><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">#</th><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Counsellor</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Leads</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Enrolled</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Conversion %</th></tr></thead><tbody>${sorted.map((c,i)=>{const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';return`<tr style="border-bottom:1px solid var(--line)"><td style="padding:10px 8px;font-weight:600;color:var(--ink3)">${medal||i+1}</td><td style="padding:10px 8px;font-weight:600">${esc(c.name)}</td><td style="padding:10px 8px;text-align:center">${c.total}</td><td style="padding:10px 8px;text-align:center;color:var(--sage);font-weight:600">${c.enrolled}</td><td style="padding:10px 8px;text-align:center"><span style="background:${pct>=50?'#DCFCE7':pct>=25?'#FEF9C3':'#FFE4E6'};color:${pct>=50?'#166534':pct>=25?'#854D0E':'#9F1239'};padding:3px 10px;border-radius:99px;font-weight:600;font-size:11px">${pct}%</span></td></tr>`;}).join('')}</tbody></table>`;}
-  const DEFAULT_DOCS=['Passport Copy','Academic Transcripts','English Test Scores','Bank Statements','SOP Draft','References / LOR','Photo','CV / Resume'];
-async function loadDocs(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data){renderDocs(data);}else{renderDocs([]);}}
-function renderDocs(docs){const el=document.getElementById('d-doc-list');if(!el)return;if(!docs.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet. Click Init checklist to start.</div>';return;}el.innerHTML=docs.map(d=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${d.attachment_url?`<div style="font-size:11px;margin-top:1px"><a href="${d.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(d.attachment_filename||'View file')}</a></div>`:''}</div><button onclick="triggerDocUpload('${d.id}',false)" title="Upload file" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button>${d.attachment_url?`<button onclick="removeDocFile('${d.id}',false)" title="Remove uploaded file" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-trash"></i></button>`:''}<button onclick="setDocExpiry('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`).join('');}
+  const DEFAULT_DOCS=['Passport Copy','Academic Transcripts','English Test Scores','MOI (Medium of Instruction)','Bank Statements','SOP Draft','References / LOR','Photo','CV / Resume'];
+async function loadDocs(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data){await renderDocs(data);}else{await renderDocs([]);}}
+async function renderDocs(docs){const el=document.getElementById('d-doc-list');if(!el)return;if(!docs.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet. Click Init checklist to start.</div>';return;}await loadDocFilesFor(docs.map(d=>d.id));el.innerHTML=docs.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',false)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',false)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiry('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
 function setDocExpiry(id,current){openQuickInput('Set expiry date','Expiry date','date',current,(val)=>{sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocs(curId);toast('Expiry date updated.');});});}
 async function initDocs(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=DEFAULT_DOCS.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocs(curId);toast('Checklist created!');}
 async function toggleDoc(id,checked){await sb.from('documents').update({status:checked?'Done':'Pending'}).eq('id',id);const el=document.getElementById('d-doc-list');if(el){const spans=el.querySelectorAll('span');spans.forEach(s=>{if(s.style)s.style.textDecoration=checked?'line-through':''});}toast(checked?'✅ Marked done':'↩ Marked pending');}
@@ -5141,19 +5201,12 @@ function checkEventReminders(){
   if(!currentUser||!notificationsEnabled||!myName)return;
   const now=Date.now();
   (events||[]).forEach(ev=>{
-    if(!ev.event_time)return;
-    if(!ev.participants&&!ev.participant_teams)return;
+    if(!ev.event_time||!ev.participants)return;
     if(eventReminderShown.has(ev.id))return;
-    let included=false;
-    if(ev.participants){
-      const names=ev.participants.split(',').map(n=>n.trim().toLowerCase());
-      if(names.includes(myName.trim().toLowerCase()))included=true;
-    }
-    if(!included&&ev.participant_teams){
-      const teams=ev.participant_teams.split(',').map(t=>t.trim());
-      if((myRole&&teams.includes(myRole))||(myCountry&&teams.includes(myCountry)))included=true;
-    }
-    if(!included)return;
+    const parts=ev.participants.split(',').map(n=>n.trim());
+    const isNamedIndividually=parts.some(p=>p.toLowerCase()===myName.trim().toLowerCase());
+    const isNamedByTeam=parts.includes('TEAM:'+myRole);
+    if(!isNamedIndividually&&!isNamedByTeam)return;
     const eventMoment=new Date(`${ev.event_date}T${ev.event_time}`).getTime();
     const minutesUntil=(eventMoment-now)/60000;
     if(minutesUntil<=10&&minutesUntil>-5){ // fire in the 10-minute window, small grace period after start

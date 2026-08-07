@@ -411,8 +411,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <option style="background:#0D4A3C">Application Team</option>
             <option style="background:#0D4A3C">Visa Team</option>
             <option style="background:#0D4A3C">SOP Team</option>
+            <option style="background:#0D4A3C">Agent</option>
           </select>
         </div>
+        <input type="hidden" id="signup-teamcategory" value="International">
         <div class="auth-field"><label>Country</label>
           <select id="signup-country" onchange="syncSignupOffice()" style="width:100%;padding:12px 14px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);border-radius:var(--r);color:#fff;font-size:14px;font-family:var(--font-b)">
             <option value="India" style="background:#0D4A3C">India</option>
@@ -1419,7 +1421,11 @@ What would you like help with today?</div>
     <div class="fg">
       <div class="ff full"><label>Name (optional, for your reference)</label><input id="inv-name" placeholder="e.g. Priya Sharma"></div>
       <div class="ff"><label>Role</label>
-        <select id="inv-role"><option>Counsellor</option><option>Admin</option><option>Manager</option><option>Director</option><option>Application Team</option><option>Visa Team</option><option>SOP Team</option></select>
+        <select id="inv-role" onchange="syncInviteTeamCategory()"><option>Counsellor</option><option>Admin</option><option>Manager</option><option>Director</option><option>Application Team</option><option>Visa Team</option><option>SOP Team</option><option>Agent</option></select>
+      </div>
+      <div class="ff" id="inv-teamcat-wrap"><label>Team category</label>
+        <select id="inv-teamcat"><option value="International">International</option><option value="Domestic">Domestic (UK internal)</option></select>
+        <div style="font-size:11px;color:var(--ink3);margin-top:3px">Domestic and Agent never receive leads automatically — Management hands leads to them directly.</div>
       </div>
       <div class="ff"><label>Country</label>
         <select id="inv-country" onchange="syncInviteOffice()"><option value="India">India</option><option value="UK">UK</option><option value="Pakistan">Pakistan</option><option value="Bangladesh">Bangladesh</option></select>
@@ -1882,9 +1888,31 @@ function currentUnavailability(teamId){
   return unavailabilityList.find(u=>u.team_id===teamId&&u.from_date<=today&&today<=u.to_date)||null;
 }
 function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===office&&(t.role||'Counsellor')==='Counsellor'&&!isUnavailableToday(t.id));}
+// Round-robin specifically must never pick a Domestic-category counsellor
+// — Domestic leads are hand-assigned by Management only. This is a
+// separate, narrower pool from getOfficeCounsellors(), which Management
+// still needs to include Domestic staff in for manual picking.
+function getRoundRobinCounsellorPool(office){return getOfficeCounsellors(office).filter(t=>t.team_category!=='Domestic');}
 // Application/Visa/SOP Team are operational staff, same restricted access
 // tier as Counsellor — not management. Used everywhere access is scoped.
-function isRestrictedStaffRole(){return['Counsellor','Application Team','Visa Team','SOP Team'].includes(myRole)&&!isSuperAdmin;}
+// Domestic and Agent are a separate dimension from role — a Domestic
+// member can be role='Admin' or role='Counsellor', same role names as
+// International, just scoped completely differently. Agent is its own
+// single flat role with no hierarchy.
+function isDomesticOrAgent(){return myTeamCategory==='Domestic'||myTeamCategory==='Agent';}
+function isDomesticAdmin(){return myTeamCategory==='Domestic'&&myRole==='Admin';}
+// Restricted from Finance/Reports/Team/Digital Marketing/Team Dashboards —
+// same tier as Counsellor, no exception for Domestic Admin here. Domestic
+// Admin's wider visibility (their whole Domestic team's leads, not just
+// their own) is handled separately in loadLeads() only — it does not
+// extend to screen-level access, per "separate dashboards, can't see
+// others' work or performance."
+function isRestrictedStaffRole(){
+  if(isSuperAdmin)return false;
+  if(['Counsellor','Application Team','Visa Team','SOP Team'].includes(myRole))return true;
+  if(isDomesticOrAgent())return true;
+  return false;
+}
 // Application/Visa/SOP Team members cannot touch their own assignment —
 // only the Counsellor handling the lead, or Manager/Admin/Director/Super
 // Admin, can hand a lead off to these teams. This is a narrower check
@@ -1913,7 +1941,7 @@ async function getNextForGlobalRole(roleName){
   return chosen?.full_name||'';
 }
 async function getNextCounsellorForOffice(office){
-  const pool=getOfficeCounsellors(office);
+  const pool=getRoundRobinCounsellorPool(office);
   if(!pool.length)return{name:'',country:'',office};
   const idx=(rrStateByOffice[office]||0)%pool.length;
   const c=pool[idx];
@@ -2181,11 +2209,19 @@ function generateInviteLink(){
   const country=document.getElementById('inv-country').value;
   const office=document.getElementById('inv-office').value;
   const name=document.getElementById('inv-name').value.trim();
-  const params=new URLSearchParams({invite:'1',role,country,office});
+  const teamCategory=role==='Agent'?'Agent':(document.getElementById('inv-teamcat')?.value||'International');
+  const params=new URLSearchParams({invite:'1',role,country,office,teamCategory});
   if(name)params.set('name',name);
   const link=window.location.origin+window.location.pathname+'?'+params.toString();
   document.getElementById('inv-email-hint').value=link;
   document.getElementById('invite-link-box').style.display='block';
+}
+function syncInviteTeamCategory(){
+  const role=document.getElementById('inv-role').value;
+  const wrap=document.getElementById('inv-teamcat-wrap');
+  // Domestic only applies to Admin/Counsellor. Agent is always its own
+  // category, no choice needed. Everyone else is always International.
+  wrap.style.display=(role==='Admin'||role==='Counsellor')?'block':'none';
 }
 function copyInviteLink(){
   const inp=document.getElementById('inv-email-hint');
@@ -2199,6 +2235,8 @@ function applyInviteFromURL(){
   const country=params.get('country')||'India';
   const office=params.get('office')||'India HQ';
   const name=params.get('name')||'';
+  const teamCategory=params.get('teamCategory')||'International';
+  document.getElementById('signup-teamcategory').value=teamCategory;
   toggleAuth(); // switch to signup view
   document.getElementById('signup-role').value=role;
   document.getElementById('signup-country').value=country;
@@ -2207,7 +2245,7 @@ function applyInviteFromURL(){
   if(name)document.getElementById('signup-name').value=name;
   // lock fields so invited user can't change their assigned access
   ['signup-role','signup-country','signup-office'].forEach(id=>{document.getElementById(id).disabled=true;document.getElementById(id).style.opacity='0.6';});
-  document.querySelector('#auth-signup-view .auth-sub').textContent=`You've been invited as ${role} · ${country} · ${office}. Set your email and password to continue.`;
+  document.querySelector('#auth-signup-view .auth-sub').textContent=`You've been invited as ${role}${teamCategory!=='International'?' ('+teamCategory+')':''} · ${country} · ${office}. Set your email and password to continue.`;
 }
 applyInviteFromURL();
 
@@ -2216,6 +2254,7 @@ async function doSignup(){
   const role=document.getElementById('signup-role').value;
   const country=document.getElementById('signup-country').value;
   const office=document.getElementById('signup-office').value;
+  const teamCategory=document.getElementById('signup-teamcategory')?.value||'International';
   const email=document.getElementById('signup-email').value.trim();
   const pass=document.getElementById('signup-pass').value;
   const btn=document.getElementById('signup-btn');
@@ -2223,13 +2262,14 @@ async function doSignup(){
   err.style.color='';
   if(!name||!email||!pass){err.textContent='Please fill all fields.';return;}
   if(pass.length<6){err.textContent='Password must be at least 6 characters.';return;}
-  if(!isAllowedEmail(email)){err.textContent='Only @step4progress.com or @step4progress.co.uk email addresses can be used to create an account.';return;}
+  // Agents are external partners — they don't need a step4progress email.
+  if(role!=='Agent'&&!isAllowedEmail(email)){err.textContent='Only @step4progress.com or @step4progress.co.uk email addresses can be used to create an account.';return;}
   btn.disabled=true;btn.textContent='Creating account…';err.textContent='';
-  const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,role,country,office}}});
+  const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,role,country,office,team_category:teamCategory}}});
   if(error){err.textContent=readableAuthError(error,'signup');btn.disabled=false;btn.textContent='Create account →';return;}
   if(!data?.user){err.textContent='Account may already exist, or email confirmation is required before this can complete. Check your inbox, or check Supabase → Authentication → Users.';btn.disabled=false;btn.textContent='Create account →';return;}
   // save profile to team table
-  const{error:teamErr}=await sb.from('team').upsert({id:data.user.id,full_name:name,role,email,country,office});
+  const{error:teamErr}=await sb.from('team').upsert({id:data.user.id,full_name:name,role,email,country,office,team_category:teamCategory});
   if(teamErr){
     console.error('Team profile save failed:',teamErr);
     err.textContent='Account created, but saving your team profile failed: '+(teamErr.message||'unknown error')+'. Contact your Super Admin.';
@@ -2242,14 +2282,22 @@ async function doSignup(){
 }
 
 const SUPER_ADMIN_EMAIL='india@step4progress.com';
-let myOffice=null, isSuperAdmin=false, myName=null, myRole='Counsellor', myCountry=null;
+let myOffice=null, isSuperAdmin=false, myName=null, myRole='Counsellor', myCountry=null, myTeamCategory='International';
 async function onLoginGuarded(user){
   if(!isAllowedEmail(user.email)){
-    console.warn('Blocked sign-in from disallowed email domain:',user.email);
-    await sb.auth.signOut();
-    const loginErr=document.getElementById('login-err');
-    if(loginErr) loginErr.textContent='This account ('+user.email+') is not authorised for this CRM. Only @step4progress.com or @step4progress.co.uk accounts may sign in.';
-    return;
+    // Agents are external partners and won't have a step4progress email —
+    // check if this exact email belongs to an already-registered Agent
+    // account before blocking. (The team row has to exist first, same as
+    // everyone else — this doesn't let an unknown email in, it just lifts
+    // the domain requirement for a specific, already-invited Agent.)
+    const{data:agentCheck}=await sb.from('team').select('team_category').eq('email',user.email).eq('team_category','Agent').maybeSingle();
+    if(!agentCheck){
+      console.warn('Blocked sign-in from disallowed email domain:',user.email);
+      await sb.auth.signOut();
+      const loginErr=document.getElementById('login-err');
+      if(loginErr) loginErr.textContent='This account ('+user.email+') is not authorised for this CRM. Only @step4progress.com or @step4progress.co.uk accounts may sign in.';
+      return;
+    }
   }
   await onLogin(user);
 }
@@ -2274,6 +2322,7 @@ async function onLogin(user){
   myOffice=profile?.office||null;
   myName=name;
   myRole=role;
+  myTeamCategory=profile?.team_category||'International';
   myCountry=profile?.country||Object.keys(OFFICE_MAP).find(c=>OFFICE_MAP[c].includes(myOffice))||null;
   isSuperAdmin=(user.email||'').toLowerCase()===SUPER_ADMIN_EMAIL.toLowerCase();
   document.getElementById('sb-av').textContent=ini(name);
@@ -2514,6 +2563,22 @@ async function loadLeads(){
 
   if(isSuperAdmin){
     // no restriction — sees everything
+  } else if(myTeamCategory==='Agent'){
+    // Agent: only leads explicitly, individually assigned to them by
+    // Management — never country-scoped, never round-robin.
+    q=q.eq('counsellor',myName);
+  } else if(myTeamCategory==='Domestic'){
+    if(myRole==='Admin'){
+      // Domestic Admin sees their whole Domestic team's assigned leads,
+      // not just their own — but never the International side. Queried
+      // fresh here rather than relying on teamList, since that may not
+      // have finished loading yet (loadLeads runs in parallel with it).
+      const{data:domesticStaff}=await sb.from('team').select('full_name').eq('team_category','Domestic');
+      const domesticNames=(domesticStaff||[]).map(t=>t.full_name).filter(Boolean);
+      q=q.in('counsellor',domesticNames.length?domesticNames:['__none__']);
+    } else {
+      q=q.eq('counsellor',myName);
+    }
   } else if(subTeamFieldMap[myRole]){
     // Application/Visa/SOP Team: their round-robin pool is deliberately
     // global, not country-scoped — so visibility has to match that. They

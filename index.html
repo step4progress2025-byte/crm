@@ -5022,13 +5022,16 @@ async function refreshMetaData(){
   if(fb.error){
     kpis.push(['Facebook',`⚠️ ${safeErrorText(fb.error)}`,'c7']);
   } else {
-    kpis.push(['Page reach',fb.reach??fb.page_impressions??'—','c1']);
-    kpis.push(['Engagement',fb.engagement??fb.page_engaged_users??'—','c4']);
+    kpis.push(['Page followers',fb.page_fans??'—','c1']);
+    // Engagement/reach metrics removed for now — Meta keeps rejecting
+    // every name tried so far. Once a working metric name is confirmed
+    // via the ?metric= override, add it back here.
   }
   if(ads.error){
     kpis.push(['Ad spend',`⚠️ ${safeErrorText(ads.error)}`,'c7']);
   } else {
     kpis.push(['Ad spend',ads.spend?`₹${Number(ads.spend).toLocaleString('en-IN')}`:'—','c3']);
+    kpis.push(['Leads (30d)',ads.leads??'—','c6']);
     kpis.push(['Cost per lead',ads.cost_per_lead?`₹${Number(ads.cost_per_lead).toLocaleString('en-IN')}`:'—','c2']);
   }
   kpisEl.innerHTML=kpis.map(([label,val,cls])=>

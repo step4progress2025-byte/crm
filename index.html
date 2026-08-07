@@ -747,6 +747,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <section id="sc-team" class="screen">
         <div id="management-team-section"></div>
         <div id="operations-team-section"></div>
+        <div id="domestic-team-section"></div>
+        <div id="agent-team-section"></div>
         <div id="team-members-card" style="display:none">
           <div class="dsec" style="margin-bottom:2px">By office / branch</div>
           <div id="team-icon-legend" style="font-size:11px;color:var(--ink3);margin-bottom:10px"></div>
@@ -2087,6 +2089,19 @@ async function quickChangePriority(leadId,newPriority){
   renderLeads();
 }
 function renderCounsellorCell(l){
+  if(isDomesticAdmin()){
+    // Every lead a Domestic Admin can even see is already guaranteed to be
+    // a Domestic-team lead (loadLeads() already filtered to that), so it's
+    // safe to let them redistribute it — but only among their own
+    // Domestic Counsellors, never touching the International pool.
+    const domesticPool=(teamList||[]).filter(t=>t.team_category==='Domestic'&&t.role==='Counsellor');
+    const options=[`<option value=""${l.counsellor?'':' selected'}>${l.counsellor?'— Unassign —':'Unassigned'}</option>`];
+    options.push(...domesticPool.map(c=>`<option value="${esc(c.full_name)}"${c.full_name===l.counsellor?' selected':''}>${esc(c.full_name)}</option>`));
+    if(l.counsellor&&!domesticPool.some(c=>c.full_name===l.counsellor)){
+      options.push(`<option value="${esc(l.counsellor)}" selected>${esc(l.counsellor)}</option>`);
+    }
+    return `<select onchange="quickReassignLead('${l.id}',this.value)" style="font-size:12px;padding:4px 6px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);max-width:150px">${options.join('')}</select>`;
+  }
   if(isRestrictedStaffRole()){
     return esc(l.counsellor||'—');
   }
@@ -2710,6 +2725,9 @@ function renderDash(){
   const scopeNote=document.getElementById('dash-scope-note');
   if(scopeNote){
     if(isSuperAdmin) scopeNote.textContent='Showing all countries and offices · Super Admin view';
+    else if(myTeamCategory==='Agent') scopeNote.textContent='Agent Portal — showing only leads assigned to you by Management';
+    else if(myTeamCategory==='Domestic'&&myRole==='Admin') scopeNote.textContent='Domestic Operations — showing your whole Domestic team assigned leads';
+    else if(myTeamCategory==='Domestic') scopeNote.textContent='Domestic Operations — showing only leads assigned to you by Management';
     else if(myRole==='Counsellor') scopeNote.textContent='Showing only leads assigned to you or added by you';
     else scopeNote.textContent='Showing '+(myCountry||'your')+' — all offices in your country';
   }
@@ -3986,9 +4004,9 @@ function renderManagementAndOperationsTeams(team){
   if(!mgmtEl||!opsEl)return;
 
   const mgmtRoles=['Manager','Admin','Director'];
-  const mgmt=(team||[]).filter(t=>mgmtRoles.includes(t.role));
+  const mgmt=(team||[]).filter(t=>mgmtRoles.includes(t.role)&&t.team_category!=='Domestic');
   mgmtEl.innerHTML=`<div class="card" style="margin-bottom:16px">
-    <div class="card-h"><span class="card-t">🏛️ Management Team</span><span style="font-size:11px;color:var(--ink3)">${mgmt.length} member${mgmt.length!==1?'s':''} — Manager, Admin & Director, across every country</span></div>
+    <div class="card-h"><span class="card-t">🌍 International — Management Team</span><span style="font-size:11px;color:var(--ink3)">${mgmt.length} member${mgmt.length!==1?'s':''} — Manager, Admin & Director, across every country</span></div>
     <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard">
         <div class="tcard-av">${ini(t.full_name||t.email)}</div>
         <div style="flex:1;min-width:0"><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email">${esc(t.email||'')}</div></div>
@@ -4012,9 +4030,37 @@ function renderManagementAndOperationsTeams(team){
     </div>`;
   }).join('');
   opsEl.innerHTML=`<div class="card" style="margin-bottom:16px">
-    <div class="card-h"><span class="card-t">⚙️ Operations Team</span><span style="font-size:11px;color:var(--ink3)">Application, Visa & SOP — pooled globally, not limited to any one country</span></div>
+    <div class="card-h"><span class="card-t">🌍 International — Operations Team</span><span style="font-size:11px;color:var(--ink3)">Application, Visa & SOP — pooled globally, not limited to any one country</span></div>
     <div style="display:flex;gap:20px;flex-wrap:wrap">${opsCols}</div>
   </div>`;
+
+  // ── Domestic Operations (UK-internal, no round-robin, Management-assigned only) ──
+  const domesticEl=document.getElementById('domestic-team-section');
+  if(domesticEl){
+    const domestic=(team||[]).filter(t=>t.team_category==='Domestic');
+    domesticEl.innerHTML=`<div class="card" style="margin-bottom:16px">
+      <div class="card-h"><span class="card-t">🇬🇧 Domestic Operations</span><span style="font-size:11px;color:var(--ink3)">${domestic.length} member${domestic.length!==1?'s':''} — UK-internal only, never receives leads automatically</span></div>
+      <div class="team-grid">${domestic.length?domestic.map(t=>`<div class="tcard">
+          <div class="tcard-av">${ini(t.full_name||t.email)}</div>
+          <div style="flex:1;min-width:0"><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email">${esc(t.email||'')}</div></div>
+          ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+        </div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:8px 0">No Domestic team members yet.</div>'}</div>
+    </div>`;
+  }
+
+  // ── Agent Portal (external partners, single flat role, no hierarchy) ──
+  const agentEl=document.getElementById('agent-team-section');
+  if(agentEl){
+    const agents=(team||[]).filter(t=>t.role==='Agent');
+    agentEl.innerHTML=`<div class="card" style="margin-bottom:16px">
+      <div class="card-h"><span class="card-t">🤝 Agent Portal</span><span style="font-size:11px;color:var(--ink3)">${agents.length} agent${agents.length!==1?'s':''} — external partners, work only on leads Management assigns them</span></div>
+      <div class="team-grid">${agents.length?agents.map(t=>`<div class="tcard">
+          <div class="tcard-av">${ini(t.full_name||t.email)}</div>
+          <div style="flex:1;min-width:0"><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent</div><div class="tcard-email">${esc(t.email||'')}</div></div>
+          ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+        </div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:8px 0">No agents yet.</div>'}</div>
+    </div>`;
+  }
 }
 
 function renderTeam(team){
@@ -4040,8 +4086,8 @@ function renderTeam(team){
 
   const byOffice={};
   allOffices.forEach(({office})=>{byOffice[office]=[];});
-  const officeExcludedRoles=['Manager','Admin','Director','Application Team','Visa Team','SOP Team'];
-  (team||[]).filter(t=>!officeExcludedRoles.includes(t.role)).forEach(t=>{
+  const officeExcludedRoles=['Manager','Admin','Director','Application Team','Visa Team','SOP Team','Agent'];
+  (team||[]).filter(t=>!officeExcludedRoles.includes(t.role)&&t.team_category!=='Domestic').forEach(t=>{
     // If office is blank, or doesn't match a known office for their country
     // (e.g. a stale value from before offices were consolidated), derive the
     // correct office from country instead of showing a phantom "Unassigned"

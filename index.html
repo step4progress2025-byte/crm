@@ -4980,6 +4980,16 @@ function initDigitalMarketing(){
   renderSourceBreakdown();
   loadMarketingPosts();
 }
+// Meta/Supabase errors can come back as a plain string, or a nested
+// object like {message:"..."} or {error:{message:"..."}} — this makes
+// sure we always show something readable instead of "[object Object]".
+function safeErrorText(e){
+  if(typeof e==='string')return e;
+  if(e&&typeof e==='object'){
+    return e.message||e.error_user_msg||e.error?.message||JSON.stringify(e);
+  }
+  return String(e);
+}
 async function refreshMetaData(){
   const btn=document.getElementById('dm-refresh-btn');
   const statusEl=document.getElementById('dm-meta-status');
@@ -4990,10 +5000,18 @@ async function refreshMetaData(){
   for(const type of ['facebook','ads']){
     try{
       const r=await fetch(`${META_PULL_URL}?type=${type}`);
-      const d=await r.json();
-      results[type]=d;
+      const text=await r.text();
+      let d;
+      try{ d=JSON.parse(text); }catch{ d={error:text||`HTTP ${r.status}`}; }
+      if(!r.ok){
+        // Surface the real status + body, not just "it failed" — this is
+        // what actually lets us diagnose a 502 instead of guessing at it.
+        results[type]={error:`HTTP ${r.status}: ${safeErrorText(d.error??d)}`};
+      } else {
+        results[type]=d;
+      }
     }catch(e){
-      results[type]={error:'Could not reach Meta — check your connection or try again.'};
+      results[type]={error:'Could not reach Meta at all — network or CORS issue: '+(e?.message||e)};
     }
   }
   btn.disabled=false;
@@ -5002,19 +5020,19 @@ async function refreshMetaData(){
   const ads=results.ads||{};
   const kpis=[];
   if(fb.error){
-    kpis.push(['Facebook',`⚠️ ${fb.error}`,'c7']);
+    kpis.push(['Facebook',`⚠️ ${safeErrorText(fb.error)}`,'c7']);
   } else {
     kpis.push(['Page reach',fb.reach??fb.page_impressions??'—','c1']);
     kpis.push(['Engagement',fb.engagement??fb.page_engaged_users??'—','c4']);
   }
   if(ads.error){
-    kpis.push(['Ad spend',`⚠️ ${ads.error}`,'c7']);
+    kpis.push(['Ad spend',`⚠️ ${safeErrorText(ads.error)}`,'c7']);
   } else {
     kpis.push(['Ad spend',ads.spend?`₹${Number(ads.spend).toLocaleString('en-IN')}`:'—','c3']);
     kpis.push(['Cost per lead',ads.cost_per_lead?`₹${Number(ads.cost_per_lead).toLocaleString('en-IN')}`:'—','c2']);
   }
   kpisEl.innerHTML=kpis.map(([label,val,cls])=>
-    `<div class="rpt-hero ${cls}" style="background:rgba(255,255,255,.1)"><div class="rpt-hero-l" style="color:rgba(255,255,255,.75)">${label}</div><div class="rpt-hero-v" style="color:#fff">${val}</div></div>`
+    `<div class="rpt-hero ${cls}" style="background:rgba(255,255,255,.1)"><div class="rpt-hero-l" style="color:rgba(255,255,255,.75)">${label}</div><div class="rpt-hero-v" style="color:#fff;font-size:${String(val).length>30?'12px':'inherit'}">${val}</div></div>`
   ).join('');
   statusEl.textContent=`Last checked: ${new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}. Instagram not connected yet — Facebook and Ads data shown above.`;
 }

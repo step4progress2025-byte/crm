@@ -456,7 +456,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <div class="sng">Workspace</div>
       <button class="ni" data-nav="team" onclick="nav('team',this)"><i class="ti ti-id-badge"></i>Team</button>
       <button class="ni" data-nav="events" onclick="nav('events',this)"><i class="ti ti-calendar-event"></i>Events</button><button class="ni" data-nav="import" onclick="nav('import',this)"><i class="ti ti-file-import"></i>Import data</button>
-      <button class="ni" data-nav="finance" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
+      <button class="ni" data-nav="finance" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" data-nav="digitalmarketing" id="ni-digitalmarketing" onclick="nav('digitalmarketing',this)"><i class="ti ti-speakerphone"></i>Digital Marketing</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
     </div>
     <div class="sb-foot">
       <div class="sb-user">
@@ -814,6 +814,43 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div id="fc-aging-buckets" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px"></div>
           <div class="tw" style="border:none;box-shadow:none;border-radius:0">
             <table class="tbl"><thead><tr><th>Student</th><th>University</th><th>Amount</th><th>Days outstanding</th><th>Bucket</th></tr></thead><tbody id="fc-aging-tbody"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Digital Marketing -->
+      <section id="sc-digitalmarketing" class="screen">
+        <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#1C3F6E,#2D5C9E);color:#fff">
+          <div class="card-h"><span class="card-t" style="color:#fff">📣 Live from Meta</span>
+            <button onclick="refreshMetaData()" id="dm-refresh-btn" style="font-size:12px;padding:6px 14px;background:rgba(255,255,255,.15);border:none;border-radius:99px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-refresh"></i> Refresh from Meta</button>
+          </div>
+          <div id="dm-meta-status" style="font-size:12px;opacity:.85;margin-bottom:14px">Not checked yet this session — click Refresh.</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="dm-meta-kpis"></div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h"><span class="card-t">🎯 Leads by source — real CRM data</span></div>
+          <div id="dm-source-breakdown"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><span class="card-t">📝 Manual post tracker</span></div>
+          <p style="font-size:12px;color:var(--ink3);margin-bottom:12px">For posts or context Meta's automatic pull doesn't cover — log it here alongside the live numbers above.</p>
+          <div class="fg" style="margin-bottom:14px">
+            <div class="ff"><label>Platform</label><select id="dm-post-platform"><option>Facebook</option><option>Instagram</option><option>Google Ads</option><option>LinkedIn</option><option>YouTube</option><option>Other</option></select></div>
+            <div class="ff"><label>Date</label><input type="date" id="dm-post-date"></div>
+            <div class="ff full"><label>Description</label><input id="dm-post-desc" placeholder="e.g. UK Universities Fair carousel post"></div>
+            <div class="ff"><label>Reach</label><input type="number" id="dm-post-reach" placeholder="0"></div>
+            <div class="ff"><label>Engagement</label><input type="number" id="dm-post-engagement" placeholder="0"></div>
+            <div class="ff"><label>Spend (₹/£/$)</label><input type="number" id="dm-post-spend" placeholder="0"></div>
+            <div class="ff"><label>Leads generated</label><input type="number" id="dm-post-leads" placeholder="0"></div>
+          </div>
+          <button class="btn btn-p" onclick="addMarketingPost()"><i class="ti ti-plus"></i>Log this post</button>
+          <div class="tw" style="margin-top:16px;border:none;box-shadow:none;border-radius:0">
+            <table class="tbl">
+              <thead><tr><th>Date</th><th>Platform</th><th>Description</th><th>Reach</th><th>Engagement</th><th>Spend</th><th>Leads</th><th></th></tr></thead>
+              <tbody id="dm-posts-tbody"></tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -2522,12 +2559,16 @@ function nav(id,btn){
   document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
   document.getElementById('sc-'+id).classList.add('active');
   if(btn)btn.classList.add('active');
-  const T={dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',reports:'Reports',coursefinder:'Course & University Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail'};
+  const T={dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digitalmarketing:'Digital Marketing',reports:'Reports',coursefinder:'Course & University Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail'};
   document.getElementById('topbar-title').textContent=T[id]||id;
-  // Role guard — checked before rendering the target screen
-  const role=(document.getElementById('sb-urole').textContent||'').trim();
-  const roleIsCounsellor=role==='Counsellor';
+  // Role guard — checked before rendering the target screen.
+  // Uses isRestrictedStaffRole() (Counsellor + Application/Visa/SOP Team),
+  // not just a literal Counsellor check — Application/Visa/SOP Team
+  // members were previously able to reach these screens too, which was
+  // never the intent.
+  const roleIsCounsellor=isRestrictedStaffRole();
   if(id==='finance'&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
+  if(id==='digitalmarketing'&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
   if(id==='team'&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
   if(id==='productivity'&&roleIsCounsellor&&!isSuperAdmin){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Productivity is restricted to Admins.');return;}
   if(id==='leads'){renderLeads();setTimeout(applyRoleUI,500);}
@@ -2538,6 +2579,7 @@ function nav(id,btn){
   if(id==='resources')loadResourcesAdmin();
   if(id==='resumes'){loadResumes().then(renderResumesAdmin);}
   if(id==='finance')renderFinance();
+  if(id==='digitalmarketing')initDigitalMarketing();
   if(id==='reports'){if(roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}initReports();}
   if(id==='subteam-detail'){if(myRole==='Counsellor'&&!isSuperAdmin){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Team Dashboards is for Application/Visa/SOP Team and management.');return;}renderSubTeamDetail();}
   if(id==='productivity'){loadCallLogs().then(renderCallLogs);}
@@ -4930,6 +4972,112 @@ async function checkUnreadDmCount(){
 // fresh each day from someone's real overdue tasks, today's follow-ups,
 // and upcoming deadlines. Cached once per day per person so it doesn't
 // re-call the AI every time the Dashboard re-renders.
+// ══ DIGITAL MARKETING DASHBOARD ═════════════════════════════════════
+const META_PULL_URL='https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/meta-data-pull';
+function initDigitalMarketing(){
+  document.getElementById('dm-post-date').value=new Date().toISOString().substring(0,10);
+  renderSourceBreakdown();
+  loadMarketingPosts();
+}
+async function refreshMetaData(){
+  const btn=document.getElementById('dm-refresh-btn');
+  const statusEl=document.getElementById('dm-meta-status');
+  const kpisEl=document.getElementById('dm-meta-kpis');
+  btn.disabled=true;
+  statusEl.textContent='Pulling live data from Meta…';
+  const results={};
+  for(const type of ['facebook','ads']){
+    try{
+      const r=await fetch(`${META_PULL_URL}?type=${type}`);
+      const d=await r.json();
+      results[type]=d;
+    }catch(e){
+      results[type]={error:'Could not reach Meta — check your connection or try again.'};
+    }
+  }
+  btn.disabled=false;
+
+  const fb=results.facebook||{};
+  const ads=results.ads||{};
+  const kpis=[];
+  if(fb.error){
+    kpis.push(['Facebook',`⚠️ ${fb.error}`,'c7']);
+  } else {
+    kpis.push(['Page reach',fb.reach??fb.page_impressions??'—','c1']);
+    kpis.push(['Engagement',fb.engagement??fb.page_engaged_users??'—','c4']);
+  }
+  if(ads.error){
+    kpis.push(['Ad spend',`⚠️ ${ads.error}`,'c7']);
+  } else {
+    kpis.push(['Ad spend',ads.spend?`₹${Number(ads.spend).toLocaleString('en-IN')}`:'—','c3']);
+    kpis.push(['Cost per lead',ads.cost_per_lead?`₹${Number(ads.cost_per_lead).toLocaleString('en-IN')}`:'—','c2']);
+  }
+  kpisEl.innerHTML=kpis.map(([label,val,cls])=>
+    `<div class="rpt-hero ${cls}" style="background:rgba(255,255,255,.1)"><div class="rpt-hero-l" style="color:rgba(255,255,255,.75)">${label}</div><div class="rpt-hero-v" style="color:#fff">${val}</div></div>`
+  ).join('');
+  statusEl.textContent=`Last checked: ${new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}. Instagram not connected yet — Facebook and Ads data shown above.`;
+}
+function renderSourceBreakdown(){
+  const el=document.getElementById('dm-source-breakdown');
+  if(!el)return;
+  const metaSources=['Meta Ads','Meta Enquiry','Instagram'];
+  const counts={};
+  leads.forEach(l=>{
+    const src=l.source||'Unspecified';
+    counts[src]=(counts[src]||0)+1;
+  });
+  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  if(!sorted.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">No leads yet.</div>';return;}
+  const total=leads.length||1;
+  el.innerHTML=sorted.map(([src,count])=>{
+    const isMeta=metaSources.includes(src);
+    const pct=Math.round(count/total*100);
+    return `<div class="prow"><span class="pill" style="background:${isMeta?'var(--sky-l)':'var(--cream)'};color:${isMeta?'var(--sky)':'var(--ink3)'};min-width:140px">${isMeta?'📣 ':''}${esc(src)}</span><div class="bar-t"><div class="bar-f" style="width:${pct}%;background:${isMeta?'var(--sky)':'var(--pine3)'}"></div></div><span class="pn" style="color:var(--pine3)">${count}</span></div>`;
+  }).join('');
+}
+async function loadMarketingPosts(){
+  const tb=document.getElementById('dm-posts-tbody');
+  if(!tb)return;
+  const{data,error}=await sb.from('marketing_posts').select('*').order('post_date',{ascending:false}).limit(50);
+  if(error){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--ink3);font-style:italic">Could not load — has marketing_posts been created in Supabase yet?</td></tr>';return;}
+  if(!data||!data.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--ink3);font-style:italic">No posts logged yet.</td></tr>';return;}
+  tb.innerHTML=data.map(p=>`<tr>
+    <td style="font-size:12px;color:var(--ink3)">${p.post_date?new Date(p.post_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—'}</td>
+    <td><span class="pill" style="background:var(--cream);color:var(--ink3)">${esc(p.platform)}</span></td>
+    <td style="font-size:13px">${esc(p.description)}</td>
+    <td style="font-size:12px;text-align:center">${p.reach||0}</td>
+    <td style="font-size:12px;text-align:center">${p.engagement||0}</td>
+    <td style="font-size:12px;text-align:center">${p.spend?Number(p.spend).toLocaleString():'0'}</td>
+    <td style="font-size:12px;text-align:center;font-weight:600;color:var(--sage)">${p.leads_generated||0}</td>
+    <td><button onclick="deleteMarketingPost('${p.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:15px">×</button></td>
+  </tr>`).join('');
+}
+async function addMarketingPost(){
+  const description=document.getElementById('dm-post-desc').value.trim();
+  if(!description){toast('Please describe the post first.');return;}
+  const data={
+    platform:document.getElementById('dm-post-platform').value,
+    post_date:document.getElementById('dm-post-date').value||new Date().toISOString().substring(0,10),
+    description,
+    reach:Number(document.getElementById('dm-post-reach').value)||0,
+    engagement:Number(document.getElementById('dm-post-engagement').value)||0,
+    spend:Number(document.getElementById('dm-post-spend').value)||0,
+    leads_generated:Number(document.getElementById('dm-post-leads').value)||0,
+    created_by:myName
+  };
+  const{error}=await sb.from('marketing_posts').insert(data);
+  if(error){toast('Error: '+error.message);return;}
+  ['dm-post-desc','dm-post-reach','dm-post-engagement','dm-post-spend','dm-post-leads'].forEach(id=>document.getElementById(id).value='');
+  loadMarketingPosts();
+  toast('Post logged!');
+}
+async function deleteMarketingPost(id){
+  if(!confirm('Remove this logged post?'))return;
+  await sb.from('marketing_posts').delete().eq('id',id);
+  loadMarketingPosts();
+  toast('Removed.');
+}
+
 async function loadDailyBriefing(force){
   if(!currentUser)return;
   const textEl=document.getElementById('briefing-text');

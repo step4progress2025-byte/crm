@@ -102,6 +102,29 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
 /* Sidebar */
 .sb{width:225px;background:var(--pine);display:flex;flex-direction:column;flex-shrink:0}
+#mobile-hamburger{display:none;position:fixed;top:14px;left:14px;z-index:601;width:40px;height:40px;background:var(--pine);color:#fff;border:none;border-radius:var(--rl);align-items:center;justify-content:center;font-size:20px;cursor:pointer;box-shadow:var(--shm)}
+#mobile-sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:598}
+#mobile-sidebar-overlay.open{display:block}
+
+/* ── Mobile breakpoint — the sidebar was fixed at 225px with no way to
+   shrink or hide, which on a ~375px phone screen left barely any room
+   for actual content. Below this width, the sidebar becomes an
+   off-canvas panel toggled by the hamburger button instead. ── */
+@media (max-width:768px){
+  #mobile-hamburger{display:flex}
+  .sb{position:fixed;top:0;bottom:0;left:0;z-index:599;transform:translateX(-100%);transition:transform .25s ease;width:250px;max-width:82vw}
+  .sb.mobile-open{transform:translateX(0)}
+  .content{width:100%}
+  .screen{padding:14px}
+  .topbar{padding-left:62px}
+  .rpt-hero-grid,[style*="grid-template-columns:repeat(4"]{grid-template-columns:repeat(2,1fr)!important}
+  .fg{grid-template-columns:1fr!important}
+  .modal{width:94vw!important;padding:var(--sp-4)!important}
+  .card{padding:var(--sp-4)!important}
+}
+@media (max-width:420px){
+  .rpt-hero-grid,[style*="grid-template-columns:repeat(4"],[style*="grid-template-columns:repeat(2"]{grid-template-columns:1fr!important}
+}
 .sb-logo{padding:26px 20px 20px;border-bottom:1px solid rgba(224,132,41,.18)}
 .sb-row{display:flex;align-items:center;gap:12px}
 .sb-logo img{border-radius:50%!important;border:2px solid rgba(224,132,41,.55);padding:2px;background:rgba(255,255,255,.06)}
@@ -489,6 +512,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
 <!-- ── APP ────────────────────────────────────────────────────── -->
 <div class="app" id="app">
+  <button id="mobile-hamburger" onclick="toggleMobileSidebar()" style="display:none"><i class="ti ti-menu-2"></i></button>
+  <div id="mobile-sidebar-overlay" onclick="toggleMobileSidebar()"></div>
   <nav class="sb">
     <div class="sb-logo">
       <div class="sb-row">
@@ -2930,6 +2955,13 @@ function nav(id,btn){
   document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
   document.getElementById('sc-'+id).classList.add('active');
   if(btn)btn.classList.add('active');
+  // On mobile, the sidebar is an overlay - close it once a destination is
+  // picked, so it doesn't sit covering the screen you just navigated to.
+  const sbEl=document.querySelector('.sb');
+  if(sbEl&&sbEl.classList.contains('mobile-open')){
+    sbEl.classList.remove('mobile-open');
+    document.getElementById('mobile-sidebar-overlay')?.classList.remove('open');
+  }
   const T={dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digitalmarketing:'Digital Marketing',reports:'Reports',coursefinder:'Course & University Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail'};
   document.getElementById('topbar-title').textContent=T[id]||id;
   // Role guard — checked before rendering the target screen.
@@ -6000,6 +6032,11 @@ function getDailyReminderTime(){
   return localStorage.getItem('s4p_daily_reminder_time_'+(currentUser?.id||''))||'09:00';
 }
 // ── Dark mode ────────────────────────────────────────────────────
+// ── Mobile sidebar ───────────────────────────────────────────────
+function toggleMobileSidebar(){
+  document.querySelector('.sb').classList.toggle('mobile-open');
+  document.getElementById('mobile-sidebar-overlay').classList.toggle('open');
+}
 function toggleDarkMode(){
   const isDark=document.documentElement.getAttribute('data-theme')==='dark';
   if(isDark){

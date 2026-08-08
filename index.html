@@ -38,6 +38,8 @@
   --sky:#1E40AF;--sky-l:#DBEAFE;
   --sage:#357A2D;--sage-l:#E5EEE2;
   --gold:#A8721F;--gold-l:#F7ECD6;
+  --violet:#6B5B95;--violet-l:#EDE9F5;
+  --teal:#2E7D7B;--teal-l:#E1F0EF;
   --font-h:'Cormorant Garamond',Georgia,serif;
   --font-b:'Lora',Georgia,serif;
   --r:4px;--rl:6px;--rxl:10px;
@@ -46,7 +48,7 @@
   /* ── Spacing scale — foundation for consistent gaps/padding.
      Existing inline styles keep working untouched; new/updated work
      should reach for these instead of ad-hoc pixel values. ── */
-  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;--sp-8:32px;
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;--sp-7:28px;--sp-8:32px;
 }
 /* ── Dark mode — same variable names, dark-appropriate values.
    Toggled by adding data-theme="dark" to <html>, so every existing
@@ -60,6 +62,8 @@ html[data-theme="dark"]{
   --sky:#6FA0F5;--sky-l:#1E2A44;
   --sage:#6FBF63;--sage-l:#20301D;
   --gold:#D4A24E;--gold-l:#3A2E17;
+  --violet:#9B8BC4;--violet-l:#2A2540;
+  --teal:#5FB3B0;--teal-l:#173330;
   --sh:0 1px 3px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.25);
   --shm:0 4px 14px rgba(0,0,0,.4),0 2px 5px rgba(0,0,0,.25);
 }
@@ -157,8 +161,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .kv-p{color:var(--pine)}.kv-t{color:var(--pine3)}.kv-g{color:var(--sage)}.kv-o{color:var(--ember)}.kv-r{color:var(--rose)}
 
 /* Cards */
-.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
-.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:6px 12px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:var(--sp-5);margin-bottom:var(--sp-4);box-shadow:var(--sh)}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-4);flex-wrap:wrap;gap:var(--sp-2) var(--sp-3)}
 .card-t{font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 
@@ -256,19 +260,19 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 /* Modal */
 .mover{display:none;position:fixed;inset:0;background:rgba(28,25,23,.5);z-index:200;align-items:center;justify-content:center}
 .mover.open{display:flex}
-.modal{background:var(--paper);border-radius:var(--rxl);border:1px solid var(--line);width:580px;max-width:96vw;max-height:92vh;overflow-y:auto;padding:28px;box-shadow:var(--shm)}
-.mhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.modal{background:var(--paper);border-radius:var(--rxl);border:1px solid var(--line);width:580px;max-width:96vw;max-height:92vh;overflow-y:auto;padding:var(--sp-7);box-shadow:var(--shm)}
+.mhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-5)}
 .mtitle{font-family:var(--font-h);font-size:22px;font-weight:300;letter-spacing:-.02em}
 .mclose{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:22px;line-height:1;padding:3px 5px;border-radius:6px}
 .mclose:hover{background:var(--cream)}
-.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.ff{display:flex;flex-direction:column;gap:5px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3)}
+.ff{display:flex;flex-direction:column;gap:var(--sp-1)}
 .ff.full{grid-column:1/-1}
 .ff label{font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em}
 .ff input,.ff select,.ff textarea{font-size:13px;padding:9px 13px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);width:100%;transition:border .14s}
 .ff input:focus,.ff select:focus,.ff textarea:focus{outline:none;border-color:var(--pine3);box-shadow:0 0 0 3px rgba(45,158,127,.1)}
 .ff textarea{resize:vertical;min-height:72px}
-.mfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+.mfoot{display:flex;justify-content:flex-end;gap:var(--sp-2);margin-top:var(--sp-5);padding-top:var(--sp-4);border-top:1px solid var(--line)}
 .sdiv{grid-column:1/-1;font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;padding-top:8px;border-top:1px solid var(--line);margin-top:4px}
 
 /* Detail panel */
@@ -280,7 +284,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .d-name{font-family:var(--font-h);font-size:22px;font-weight:300;color:#fff;letter-spacing:-.02em}
 .d-sub{font-size:12px;color:rgba(255,255,255,.5);margin-top:4px;font-style:italic}
 .dbody{flex:1;padding:20px 24px;overflow-y:auto}
-.dfield{margin-bottom:14px}
+.dfield{margin-bottom:var(--sp-3)}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:var(--sp-7) var(--sp-4);color:var(--ink3)}
+.empty-state-icon{font-size:28px;margin-bottom:var(--sp-2);opacity:.5}
+.empty-state-text{font-size:13px}
 .dlabel{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:5px}
 .dvalue{font-size:14px;color:var(--ink)}
 .dsec{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--pine);margin:20px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--pine4)}
@@ -478,16 +485,16 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
     </div>
     <div class="sb-nav">
       <div class="sng">Main</div>
-      <button class="ni active" data-nav="dashboard" onclick="nav('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
-      <button class="ni" data-nav="leads" onclick="nav('leads',this)"><i class="ti ti-users"></i>Leads<span class="nbadge" id="nb-leads">0</span></button>
-      <button class="ni" data-nav="toolleads" onclick="nav('toolleads',this)"><i class="ti ti-click"></i>Tool Leads<span class="nbadge" id="nb-toolleads">0</span></button>
+      <button class="ni active" data-nav="dashboard" onclick="nav('dashboard',this)"><i class="ti ti-layout-dashboard" style="color:var(--pine3)"></i>Dashboard</button>
+      <button class="ni" data-nav="leads" onclick="nav('leads',this)"><i class="ti ti-users" style="color:var(--sky)"></i>Leads<span class="nbadge" id="nb-leads">0</span></button>
+      <button class="ni" data-nav="toolleads" onclick="nav('toolleads',this)"><i class="ti ti-click" style="color:var(--sky)"></i>Tool Leads<span class="nbadge" id="nb-toolleads">0</span></button>
       <div class="sng">Programs</div>
-      <button class="ni" data-nav="coaching" onclick="nav('coaching',this)"><i class="ti ti-school"></i>Coaching</button>
-      <button class="ni" data-nav="followup" onclick="nav('followup',this)"><i class="ti ti-calendar-event"></i>Follow-ups<span class="nbadge" id="nb-fu">0</span></button>
+      <button class="ni" data-nav="coaching" onclick="nav('coaching',this)"><i class="ti ti-school" style="color:var(--sage)"></i>Coaching</button>
+      <button class="ni" data-nav="followup" onclick="nav('followup',this)"><i class="ti ti-calendar-event" style="color:var(--gold)"></i>Follow-ups<span class="nbadge" id="nb-fu">0</span></button>
       <div class="sng">Workspace</div>
-      <button class="ni" data-nav="team" onclick="nav('team',this)"><i class="ti ti-id-badge"></i>Team</button>
-      <button class="ni" data-nav="events" onclick="nav('events',this)"><i class="ti ti-calendar-event"></i>Events</button><button class="ni" data-nav="import" onclick="nav('import',this)"><i class="ti ti-file-import"></i>Import data</button>
-      <button class="ni" data-nav="finance" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" data-nav="digitalmarketing" id="ni-digitalmarketing" onclick="nav('digitalmarketing',this)"><i class="ti ti-speakerphone"></i>Digital Marketing</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
+      <button class="ni" data-nav="team" onclick="nav('team',this)"><i class="ti ti-id-badge" style="color:var(--violet)"></i>Team</button>
+      <button class="ni" data-nav="events" onclick="nav('events',this)"><i class="ti ti-calendar-event" style="color:var(--gold)"></i>Events</button><button class="ni" data-nav="import" onclick="nav('import',this)"><i class="ti ti-file-import" style="color:var(--teal)"></i>Import data</button>
+      <button class="ni" data-nav="finance" onclick="nav('finance',this)"><i class="ti ti-cash" style="color:var(--sage)"></i>Finance</button>       <button class="ni" data-nav="digitalmarketing" id="ni-digitalmarketing" onclick="nav('digitalmarketing',this)"><i class="ti ti-speakerphone" style="color:var(--rose)"></i>Digital Marketing</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic" style="color:var(--sky)"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard" style="color:var(--violet)"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset" style="color:var(--pine3)"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search" style="color:var(--teal)"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books" style="color:var(--gold)"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv" style="color:var(--sky)"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot" style="color:var(--violet)"></i>AI Counsellor</button>
     </div>
     <div class="sb-foot">
       <div class="sb-user">
@@ -1900,7 +1907,7 @@ function renderRecentlyViewed(){
   const el=document.getElementById('recently-viewed-list');
   if(!el||!currentUser)return;
   const list=JSON.parse(localStorage.getItem('s4p_recent_leads_'+currentUser.id)||'[]');
-  if(!list.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Nothing viewed yet — open a lead to see it here.</div>';return;}
+  if(!list.length){el.innerHTML=emptyState('🕓','Nothing viewed yet — open a lead to see it here.');return;}
   el.innerHTML=list.map(item=>{
     const stillExists=leads.some(l=>l.id===item.id);
     if(!stillExists)return '';
@@ -1936,6 +1943,7 @@ function isAllowedEmail(email){
 }
 function ini(n){const p=(n||'?').trim().split(' ');return(p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function emptyState(icon,text){return `<div class="empty-state"><div class="empty-state-icon">${icon}</div><div class="empty-state-text">${esc(text)}</div></div>`;}
 function ago(ts){if(!ts)return'';const d=Date.now()-new Date(ts).getTime();if(d<3600000)return Math.round(d/60000)+'m ago';if(d<86400000)return Math.round(d/3600000)+'h ago';return Math.round(d/86400000)+'d ago';}
 
 // ── State ────────────────────────────────────────────────────────
@@ -2647,7 +2655,7 @@ function visibleEventsFor(){
     return parts.includes(myName)||parts.includes('TEAM:'+myRole);
   });
 }
-async function loadEvents(){   const{data}=await sb.from('events').select('*').order('event_date',{ascending:true});   if(data){events=data;renderEvents();renderEventsTicker();} } function renderEvents(){   const cal=document.getElementById('events-calendar');   const list=document.getElementById('events-list');   if(!cal)return;   const vEvents=visibleEventsFor();   const now=new Date();   const thisMonth=vEvents.filter(e=>new Date(e.event_date).getMonth()===now.getMonth()&&new Date(e.event_date).getFullYear()===now.getFullYear());   const upcoming=vEvents.filter(e=>new Date(e.event_date)>=now).slice(0,10);   const typeColors={'Seminar':"var(--sky-1)",'Webinar':"var(--sky-1)",'Application Deadline':"var(--rose-1)",'Follow-up':"var(--sage-1)",'Other':"var(--gold-1)"};   cal.innerHTML=vEvents.length?vEvents.map(e=>{     const d=new Date(e.event_date);     const isPast=d<now;     const bg=typeColors[e.event_type]||"var(--gold-1)";     return`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);opacity:${isPast?0.5:1}">     <div style="min-width:48px;text-align:center;background:${bg};border-radius:8px;padding:6px 4px">     <div style="font-size:18px;font-weight:600;color:var(--ink);line-height:1">${d.getDate()}</div>     <div style="font-size:10px;color:var(--ink2)">${d.toLocaleString('default',{month:'short'})}</div>     </div>     <div style="flex:1">     <div style="font-weight:500;font-size:14px;color:var(--ink)">${esc(e.title)}</div>     <div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(e.event_type||'')}${e.description?` · <a href="${e.description}" target="_blank" style="color:var(--pine2)">${esc(e.description)}</a>`:''}</div>     </div>     <button onclick="openAddEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px">✏️</button>${(!e.created_by||e.created_by===currentUser?.id||isSuperAdmin)?`<button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">&times;</button>`:''}     </div>`;}).join(''):'<p style="color:var(--ink3);font-style:italic;font-size:13px">No events yet. Click Add event to get started.</p>';   list.innerHTML=thisMonth.length?thisMonth.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink2)"><b style="color:var(--ink)">${new Date(e.event_date).getDate()} ${new Date(e.event_date).toLocaleString('default',{month:'short'})}</b> · ${esc(e.title)}</div>`).join(''):'<p style="color:var(--ink3);font-style:italic;font-size:13px">No events this month.</p>'; } function renderEventsTicker(){   const ticker=document.getElementById('events-ticker');   const badge=document.getElementById('events-badge');   if(!ticker)return;   const vEvents=visibleEventsFor();   const now=new Date();   const soon=vEvents.filter(e=>{const d=new Date(e.event_date);return d>=now&&(d-now)<=7*86400000;});   const upcoming=vEvents.filter(e=>new Date(e.event_date)>=now).slice(0,5);   if(badge){if(soon.length>0){badge.textContent=soon.length;badge.style.display='flex';}else{badge.style.display='none';}}   ticker.innerHTML=upcoming.length?upcoming.map(e=>`<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.1)"><span style="opacity:0.7;font-size:11px">${new Date(e.event_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span><br>${esc(e.title)}</div>`).join(''):'<div style="opacity:0.7">No upcoming events</div>'; } function toggleEventsWidget(){   const w=document.getElementById('events-widget');   w.style.display=w.style.display==='none'?'block':'none'; } function toggleOther(selectId,inputId){   const sel=document.getElementById(selectId);   const inp=document.getElementById(inputId);   if(inp)inp.style.display=sel.value==='Other'?'block':'none'; } let editingEventId=null;
+async function loadEvents(){   const{data}=await sb.from('events').select('*').order('event_date',{ascending:true});   if(data){events=data;renderEvents();renderEventsTicker();} } function renderEvents(){   const cal=document.getElementById('events-calendar');   const list=document.getElementById('events-list');   if(!cal)return;   const vEvents=visibleEventsFor();   const now=new Date();   const thisMonth=vEvents.filter(e=>new Date(e.event_date).getMonth()===now.getMonth()&&new Date(e.event_date).getFullYear()===now.getFullYear());   const upcoming=vEvents.filter(e=>new Date(e.event_date)>=now).slice(0,10);   const typeColors={'Seminar':"var(--sky-1)",'Webinar':"var(--sky-1)",'Application Deadline':"var(--rose-1)",'Follow-up':"var(--sage-1)",'Other':"var(--gold-1)"};   cal.innerHTML=vEvents.length?vEvents.map(e=>{     const d=new Date(e.event_date);     const isPast=d<now;     const bg=typeColors[e.event_type]||"var(--gold-1)";     return`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);opacity:${isPast?0.5:1}">     <div style="min-width:48px;text-align:center;background:${bg};border-radius:8px;padding:6px 4px">     <div style="font-size:18px;font-weight:600;color:var(--ink);line-height:1">${d.getDate()}</div>     <div style="font-size:10px;color:var(--ink2)">${d.toLocaleString('default',{month:'short'})}</div>     </div>     <div style="flex:1">     <div style="font-weight:500;font-size:14px;color:var(--ink)">${esc(e.title)}</div>     <div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(e.event_type||'')}${e.description?` · <a href="${e.description}" target="_blank" style="color:var(--pine2)">${esc(e.description)}</a>`:''}</div>     </div>     <button onclick="openAddEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px">✏️</button>${(!e.created_by||e.created_by===currentUser?.id||isSuperAdmin)?`<button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">&times;</button>`:''}     </div>`;}).join(''):emptyState('📅','No events yet. Click Add event to get started.');   list.innerHTML=thisMonth.length?thisMonth.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink2)"><b style="color:var(--ink)">${new Date(e.event_date).getDate()} ${new Date(e.event_date).toLocaleString('default',{month:'short'})}</b> · ${esc(e.title)}</div>`).join(''):emptyState('📅','No events this month.'); } function renderEventsTicker(){   const ticker=document.getElementById('events-ticker');   const badge=document.getElementById('events-badge');   if(!ticker)return;   const vEvents=visibleEventsFor();   const now=new Date();   const soon=vEvents.filter(e=>{const d=new Date(e.event_date);return d>=now&&(d-now)<=7*86400000;});   const upcoming=vEvents.filter(e=>new Date(e.event_date)>=now).slice(0,5);   if(badge){if(soon.length>0){badge.textContent=soon.length;badge.style.display='flex';}else{badge.style.display='none';}}   ticker.innerHTML=upcoming.length?upcoming.map(e=>`<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.1)"><span style="opacity:0.7;font-size:11px">${new Date(e.event_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span><br>${esc(e.title)}</div>`).join(''):'<div style="opacity:0.7">No upcoming events</div>'; } function toggleEventsWidget(){   const w=document.getElementById('events-widget');   w.style.display=w.style.display==='none'?'block':'none'; } function toggleOther(selectId,inputId){   const sel=document.getElementById(selectId);   const inp=document.getElementById(inputId);   if(inp)inp.style.display=sel.value==='Other'?'block':'none'; } let editingEventId=null;
 const EVENT_TEAM_OPTIONS=['Counsellor','Manager','Admin','Director','Application Team','Visa Team','SOP Team'];
 function renderEventParticipantsPicker(selectedParts){
   const el=document.getElementById('event-participants-picker');
@@ -3289,7 +3297,7 @@ function renderLeads(){
   if(empty)return;
   document.getElementById('lcount').textContent=`Showing ${f.length} of ${leads.length} leads`;
   const tb=document.getElementById('lead-tbody');tb.innerHTML='';
-  if(!f.length){tb.innerHTML=`<tr><td colspan="14" style="text-align:center;padding:36px;color:var(--ink3);font-style:italic">No leads match your filters.</td></tr>`;return;}
+  if(!f.length){tb.innerHTML=`<tr><td colspan="14">${emptyState('🔍','No leads match your filters.')}</td></tr>`;return;}
   f.forEach((l,i)=>{
     const[abg,atx]=AVC[i%AVC.length];
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
@@ -3650,7 +3658,7 @@ async function loadTasksFS(leadId){
   const{data,error}=await sb.from('tasks').select('*').eq('lead_id',leadId).order('due_date',{ascending:true});
   const el=document.getElementById('ld-task-list');
   if(!el)return;
-  if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No tasks yet.</div>';return;}
+  if(error||!data||!data.length){el.innerHTML=emptyState('✅','No tasks yet.');return;}
   el.innerHTML=data.map(t=>{
     const overdue=t.status==='Open'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
     return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${t.status==='Done'?';opacity:.5':''}">
@@ -3676,7 +3684,7 @@ async function deleteTaskFS(id){
   loadTasksFS(curId);loadMyTasks();toast('Task deleted.');
 }
 
-async function loadRemindersFS(leadId){const{data,error}=await sb.from('reminders').select('*').eq('lead_id',leadId).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true});const el=document.getElementById('ld-reminder-list');if(!el)return;if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No reminders set.</div>';return;}el.innerHTML=data.map(r=>{const isComment=!r.reminder_date;const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';const tm=r.reminder_time?r.reminder_time.substring(0,5):'';return`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${r.done?';opacity:.5':''}"><input type="checkbox" ${r.done?'checked':''} onchange="toggleReminderFS('${r.id}',this.checked)" style="margin-top:3px;cursor:pointer"><div style="flex:1">${isComment?`<div style="font-size:11px;color:var(--ink3);font-style:italic;margin-bottom:2px"><i class="ti ti-message-circle" style="font-size:12px"></i> Comment only</div>`:`<div style="font-size:13px;font-weight:600${r.done?';text-decoration:line-through':''}">${dt}${tm?' \u00b7 '+tm:''}</div>`}${r.notes?`<div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(r.notes)}</div>`:''}</div><button onclick="deleteReminderFS('${r.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">\u00d7</button></div>`;}).join('');}
+async function loadRemindersFS(leadId){const{data,error}=await sb.from('reminders').select('*').eq('lead_id',leadId).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true});const el=document.getElementById('ld-reminder-list');if(!el)return;if(error||!data||!data.length){el.innerHTML=emptyState('⏰','No reminders set.');return;}el.innerHTML=data.map(r=>{const isComment=!r.reminder_date;const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';const tm=r.reminder_time?r.reminder_time.substring(0,5):'';return`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${r.done?';opacity:.5':''}"><input type="checkbox" ${r.done?'checked':''} onchange="toggleReminderFS('${r.id}',this.checked)" style="margin-top:3px;cursor:pointer"><div style="flex:1">${isComment?`<div style="font-size:11px;color:var(--ink3);font-style:italic;margin-bottom:2px"><i class="ti ti-message-circle" style="font-size:12px"></i> Comment only</div>`:`<div style="font-size:13px;font-weight:600${r.done?';text-decoration:line-through':''}">${dt}${tm?' \u00b7 '+tm:''}</div>`}${r.notes?`<div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(r.notes)}</div>`:''}</div><button onclick="deleteReminderFS('${r.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">\u00d7</button></div>`;}).join('');}
 async function toggleReminderFS(id,checked){await sb.from('reminders').update({done:checked}).eq('id',id);loadRemindersFS(curId);loadDashReminders();toast(checked?'✅ Done':'↩ Reopened');}
 async function deleteReminderFS(id){if(!confirm('Delete this reminder?'))return;await sb.from('reminders').delete().eq('id',id);loadRemindersFS(curId);loadDashReminders();toast('Reminder deleted.');}
 function openAddReminderFS(){openReminderModal();}
@@ -5145,7 +5153,7 @@ function renderReminders(list){
       </div>
       <button onclick="deleteReminder('${r.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button>
     </div>`;
-  }).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No reminders set.</div>';
+  }).join(''):emptyState('⏰','No reminders set.');
 }
 // ── Per-lead Tasks (side panel) ─────────────────────────────────────
 // ── Activity timeline (shared renderer for both detail panels) ─────
@@ -5638,7 +5646,7 @@ function renderTasks(list){
       </div>
       <button onclick="deleteTask('${t.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button>
     </div>`;
-  }).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No tasks yet.</div>';
+  }).join(''):emptyState('✅','No tasks yet.');
 }
 function openAddTask(){
   openTaskModal();

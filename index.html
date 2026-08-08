@@ -205,9 +205,9 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
 .tcard{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:18px;box-shadow:var(--sh);display:flex;align-items:flex-start;gap:14px}
 .tcard-av{width:42px;height:42px;border-radius:50%;background:var(--pine3);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff;flex-shrink:0}
-.tcard-name{font-size:14px;font-weight:600}
-.tcard-role{font-size:12px;color:var(--ink3);font-style:italic;margin-top:2px}
-.tcard-email{font-size:11px;color:var(--ink3);margin-top:3px}
+.tcard-name{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tcard-role{font-size:12px;color:var(--ink3);font-style:italic;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tcard-email{font-size:11px;color:var(--ink3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* AI */
 .ai-wrap{display:flex;flex-direction:column;height:calc(100vh - 56px - 48px);min-height:400px}
@@ -611,6 +611,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="btn" onclick="clearBulkSelection()" style="font-size:12px;padding:5px 10px;background:rgba(255,255,255,.15);color:#fff;border:none">Clear selection</button>
           </div>
           <div style="display:flex;justify-content:flex-end;margin-bottom:10px;margin-top:-6px">
+            <button class="btn" id="btn-meta-bulk-upload" onclick="openMetaBulkUploadModal()" style="font-size:12px;padding:5px 12px"><i class="ti ti-brand-meta"></i>Bulk Upload Meta Leads</button>
             <button class="btn" onclick="exportCurrentView()" style="font-size:12px;padding:5px 12px"><i class="ti ti-download"></i>Export this view</button>
           </div>
           <div id="leads-top-scroll" style="overflow-x:auto;overflow-y:hidden;height:16px;margin-bottom:2px" onscroll="document.getElementById('leads-table-wrap').scrollLeft=this.scrollLeft">
@@ -1238,6 +1239,45 @@ What would you like help with today?</div>
 </div>
 
 <!-- University Application Modal -->
+<!-- Bulk Upload Meta Leads — Admin/Manager/Super Admin only -->
+<div class="mover" id="modal-meta-bulk-upload">
+  <div class="modal" style="width:760px;max-height:88vh;display:flex;flex-direction:column">
+    <div class="mhead"><span class="mtitle">📤 Bulk Upload Meta Leads</span><button class="mclose" onclick="closeModal('modal-meta-bulk-upload')">×</button></div>
+    <div style="overflow-y:auto;flex:1">
+
+      <div id="mbu-step-upload">
+        <p style="font-size:12px;color:var(--ink3);line-height:1.6;margin-bottom:14px">
+          Export your leads from Meta Ads Manager as a CSV, then upload it here. Country is detected automatically from each phone number (+91 → India, +44 → UK, +92 → Pakistan, +880 → Bangladesh) — you'll get a chance to review before anything is saved. Campaign, ad set, and ad name are picked up automatically if your export includes them.
+        </p>
+        <input type="file" id="mbu-file-input" accept=".csv" onchange="handleMetaCSVSelected(this.files[0])" style="margin-bottom:14px">
+        <div id="mbu-parse-status" style="font-size:12px;color:var(--ink3);font-style:italic"></div>
+      </div>
+
+      <div id="mbu-step-preview" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span id="mbu-preview-summary" style="font-size:13px;font-weight:600"></span>
+          <button class="btn" onclick="showMbuStep('upload')" style="font-size:12px"><i class="ti ti-arrow-left"></i>Choose a different file</button>
+        </div>
+        <div class="tw" style="max-height:400px;border:1px solid var(--line);border-radius:var(--r)">
+          <table class="tbl">
+            <thead><tr><th>Name</th><th>Mobile</th><th>Detected Country</th><th>Campaign</th><th>Ad Set</th><th>Ad</th></tr></thead>
+            <tbody id="mbu-preview-tbody"></tbody>
+          </table>
+        </div>
+        <div id="mbu-unknown-warning" style="display:none;font-size:12px;color:var(--gold);margin-top:10px;background:var(--gold-l);padding:10px 12px;border-radius:var(--r)"></div>
+        <button class="btn btn-p" onclick="confirmMetaBulkUpload()" style="margin-top:14px" id="mbu-confirm-btn"><i class="ti ti-upload"></i>Upload these leads</button>
+      </div>
+
+      <div id="mbu-step-done" style="display:none;text-align:center;padding:30px 0">
+        <div style="font-size:40px;margin-bottom:10px">✅</div>
+        <div id="mbu-done-summary" style="font-size:14px;font-weight:600"></div>
+        <button class="btn btn-p" onclick="closeModal('modal-meta-bulk-upload')" style="margin-top:16px">Done</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <div class="mover" id="modal-university">
   <div class="modal" style="width:460px">
     <div class="mhead"><span class="mtitle">Add university</span><button class="mclose" onclick="closeModal('modal-university')">×</button></div>
@@ -1496,6 +1536,9 @@ What would you like help with today?</div>
             <div class="dfield"><div class="dlabel">Program interest</div><div class="dvalue" id="ld-prog"></div></div>
             <div class="dfield"><div class="dlabel">Destination</div><div class="dvalue" id="ld-dest"></div></div>
             <div class="dfield"><div class="dlabel">Source</div><div class="dvalue" id="ld-src"></div></div>
+            <div class="dfield" id="ld-campaign-wrap" style="display:none"><div class="dlabel">📣 Meta Campaign</div><div class="dvalue" id="ld-campaign"></div></div>
+            <div class="dfield" id="ld-adset-wrap" style="display:none"><div class="dlabel">📣 Ad Set</div><div class="dvalue" id="ld-adset"></div></div>
+            <div class="dfield" id="ld-ad-wrap" style="display:none"><div class="dlabel">📣 Ad</div><div class="dvalue" id="ld-ad"></div></div>
             <div class="dfield"><div class="dlabel">Assigned on</div><div class="dvalue" id="ld-assigned-at"></div></div>
             <div class="dfield"><div class="dlabel">Intake month</div><div class="dvalue" id="ld-intake"></div></div>
             <div class="dfield"><div class="dlabel">Budget</div><div class="dvalue" id="ld-budget"></div></div>
@@ -1608,6 +1651,9 @@ What would you like help with today?</div>
       <div class="dfield"><div class="dlabel">Program</div><div class="dvalue" id="d-prog"></div></div>
       <div class="dfield"><div class="dlabel">Destination</div><div class="dvalue" id="d-dest"></div></div>
       <div class="dfield"><div class="dlabel">Source</div><div class="dvalue" id="d-src"></div></div>
+      <div class="dfield" id="d-campaign-wrap" style="display:none"><div class="dlabel">📣 Meta Campaign</div><div class="dvalue" id="d-campaign"></div></div>
+      <div class="dfield" id="d-adset-wrap" style="display:none"><div class="dlabel">📣 Ad Set</div><div class="dvalue" id="d-adset"></div></div>
+      <div class="dfield" id="d-ad-wrap" style="display:none"><div class="dlabel">📣 Ad</div><div class="dvalue" id="d-ad"></div></div>
       <div class="dsec">Pipeline</div>
       <div class="dfield"><div class="dlabel">Update status</div><select class="ssel" id="d-ssel" onchange="updateStatus()"></select></div>
       <div class="dfield"><div class="dlabel">Priority</div><div class="dvalue" id="d-prio"></div></div>
@@ -1952,6 +1998,175 @@ async function getNextCounsellorForOffice(office){
   const{error}=await sb.from('round_robin_state').upsert({office,last_index:nextIndex},{onConflict:'office'});
   if(error) console.error('Failed to persist round_robin_state (rotation may repeat until this succeeds):',error);
   return{name:c.full_name,country:c.country,office:c.office};
+}
+
+// ══ META LEADS BULK UPLOAD ══════════════════════════════════════════
+// Stopgap for as long as the real-time Meta Lead Ads webhook isn't
+// built yet — Admin/Manager/Super Admin export a CSV from Meta Ads
+// Manager and upload it here. Country is detected from the phone
+// number's dialing code, then the lead is round-robin assigned within
+// that country exactly like any other lead — same pool, same rules.
+const COUNTRY_DIAL_CODES=[
+  {prefix:'+880',country:'Bangladesh'},
+  {prefix:'880',country:'Bangladesh'},
+  {prefix:'+91',country:'India'},
+  {prefix:'91',country:'India'},
+  {prefix:'+92',country:'Pakistan'},
+  {prefix:'92',country:'Pakistan'},
+  {prefix:'+44',country:'UK'},
+  {prefix:'44',country:'UK'},
+];
+// One representative office per country for round-robin purposes — matches
+// the offices already used throughout the CRM.
+const COUNTRY_DEFAULT_OFFICE={'India':'India HQ','UK':'UK HQ','Pakistan':'Pakistan','Bangladesh':'Bangladesh'};
+
+function detectCountryFromPhone(phone){
+  const p=(phone||'').replace(/[\s\-()]/g,'');
+  for(const{prefix,country} of COUNTRY_DIAL_CODES){
+    if(p.startsWith(prefix)) return country;
+  }
+  return null;
+}
+
+// Simple CSV parser - handles quoted fields containing commas, good enough
+// for Meta Ads Manager's own export format without needing a library.
+function parseCSV(text){
+  const rows=[];
+  let row=[],field='',inQuotes=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQuotes){
+      if(c==='"'){
+        if(text[i+1]==='"'){field+='"';i++;}
+        else inQuotes=false;
+      } else field+=c;
+    } else {
+      if(c==='"') inQuotes=true;
+      else if(c===','){row.push(field);field='';}
+      else if(c==='\n'||c==='\r'){
+        if(field!==''||row.length){row.push(field);rows.push(row);row=[];field='';}
+        if(c==='\r'&&text[i+1]==='\n')i++;
+      } else field+=c;
+    }
+  }
+  if(field!==''||row.length){row.push(field);rows.push(row);}
+  return rows.filter(r=>r.length&&r.some(c=>c.trim()!==''));
+}
+
+// Meta's export column names vary slightly by campaign setup - check a
+// few common variants for each field we care about, case-insensitive.
+function findColumn(headers,candidates){
+  const lower=headers.map(h=>h.trim().toLowerCase());
+  for(const cand of candidates){
+    const idx=lower.indexOf(cand);
+    if(idx!==-1)return idx;
+  }
+  return -1;
+}
+
+let mbuParsedLeads=[];
+function openMetaBulkUploadModal(){
+  mbuParsedLeads=[];
+  document.getElementById('mbu-file-input').value='';
+  document.getElementById('mbu-parse-status').textContent='';
+  showMbuStep('upload');
+  document.getElementById('modal-meta-bulk-upload').classList.add('open');
+}
+function showMbuStep(step){
+  ['upload','preview','done'].forEach(s=>{
+    document.getElementById('mbu-step-'+s).style.display=(s===step?'block':'none');
+  });
+}
+function handleMetaCSVSelected(file){
+  if(!file)return;
+  const statusEl=document.getElementById('mbu-parse-status');
+  statusEl.textContent='Reading file…';
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    const rows=parseCSV(e.target.result);
+    if(rows.length<2){statusEl.textContent='Could not find any lead rows in this file.';return;}
+    const headers=rows[0];
+    const nameCol=findColumn(headers,['full_name','name','full name']);
+    const phoneCol=findColumn(headers,['phone_number','phone','mobile','phone number']);
+    const emailCol=findColumn(headers,['email','email_address','email address']);
+    const campaignCol=findColumn(headers,['campaign_name','campaign','campaign name']);
+    const adsetCol=findColumn(headers,['adset_name','ad_set_name','adset','ad set name']);
+    const adCol=findColumn(headers,['ad_name','ad','ad name']);
+    if(nameCol===-1||phoneCol===-1){
+      statusEl.textContent='Could not find name/phone columns in this file. Expected something like "full_name" and "phone_number".';
+      return;
+    }
+    mbuParsedLeads=rows.slice(1).map(r=>({
+      name:(r[nameCol]||'').trim(),
+      mobile:(r[phoneCol]||'').trim(),
+      email:emailCol!==-1?(r[emailCol]||'').trim():'',
+      campaign:campaignCol!==-1?(r[campaignCol]||'').trim():'',
+      adset:adsetCol!==-1?(r[adsetCol]||'').trim():'',
+      ad:adCol!==-1?(r[adCol]||'').trim():'',
+      country:detectCountryFromPhone(r[phoneCol]||''),
+    })).filter(l=>l.name||l.mobile);
+    renderMbuPreview();
+    showMbuStep('preview');
+  };
+  reader.readAsText(file);
+}
+function renderMbuPreview(){
+  const tbody=document.getElementById('mbu-preview-tbody');
+  const unknownCount=mbuParsedLeads.filter(l=>!l.country).length;
+  document.getElementById('mbu-preview-summary').textContent=`${mbuParsedLeads.length} lead${mbuParsedLeads.length!==1?'s':''} found`;
+  const warnEl=document.getElementById('mbu-unknown-warning');
+  if(unknownCount>0){
+    warnEl.style.display='block';
+    warnEl.textContent=`⚠️ ${unknownCount} lead(s) have a phone number that didn't match any known country code and will be skipped. Check those rows below before uploading.`;
+  } else {
+    warnEl.style.display='none';
+  }
+  tbody.innerHTML=mbuParsedLeads.map(l=>`<tr style="${!l.country?'background:var(--rose-l)':''}">
+    <td style="font-size:12px">${esc(l.name||'—')}</td>
+    <td style="font-size:12px">${esc(l.mobile||'—')}</td>
+    <td style="font-size:12px">${l.country?esc(l.country):'<span style="color:var(--rose)">Unknown — will be skipped</span>'}</td>
+    <td style="font-size:11px;color:var(--ink3)">${esc(l.campaign||'—')}</td>
+    <td style="font-size:11px;color:var(--ink3)">${esc(l.adset||'—')}</td>
+    <td style="font-size:11px;color:var(--ink3)">${esc(l.ad||'—')}</td>
+  </tr>`).join('');
+}
+async function confirmMetaBulkUpload(){
+  const btn=document.getElementById('mbu-confirm-btn');
+  btn.disabled=true;btn.textContent='Uploading…';
+  const validLeads=mbuParsedLeads.filter(l=>l.country);
+  let uploaded=0, failed=0;
+  for(const l of validLeads){
+    const office=COUNTRY_DEFAULT_OFFICE[l.country]||null;
+    const picked=office?await getNextCounsellorForOffice(office):{name:''};
+    const{data:inserted,error}=await sb.from('leads').insert({
+      name:l.name||'Meta Lead',
+      mobile:l.mobile,
+      email:l.email||null,
+      country:l.country,
+      office,
+      counsellor:picked.name||null,
+      assigned_at:picked.name?new Date().toISOString():null,
+      source:'Meta Ads',
+      status:'New Enquiry',
+      priority:'Medium',
+      campaign:l.campaign||null,
+      adset:l.adset||null,
+      ad:l.ad||null,
+      added_by:currentUser?.id,
+    }).select();
+    if(error){failed++;console.error('Bulk upload row failed:',l,error);}
+    else{
+      uploaded++;
+      if(inserted?.[0]?.id) logActivity(inserted[0].id,'created',`Bulk-uploaded Meta lead${picked.name?' — assigned to '+picked.name:''}`);
+    }
+  }
+  btn.disabled=false;btn.textContent='Upload these leads';
+  document.getElementById('mbu-done-summary').innerHTML=
+    `${uploaded} lead${uploaded!==1?'s':''} uploaded successfully.` +
+    (failed?`<br><span style="color:var(--rose)">${failed} row(s) failed — check the console for details.</span>`:'') +
+    (mbuParsedLeads.length-validLeads.length?`<br><span style="color:var(--gold)">${mbuParsedLeads.length-validLeads.length} row(s) skipped — unknown country.</span>`:'');
+  showMbuStep('done');
+  loadLeads().then(()=>{renderLeads();renderDash();});
 }
 
 // ── SYNC indicator ───────────────────────────────────────────────
@@ -3008,6 +3223,8 @@ function renderLeads(){
     const bar=document.getElementById('bulk-actions-bar');
     if(bar) bar.style.display='none';
   }
+  const metaBulkBtn=document.getElementById('btn-meta-bulk-upload');
+  if(metaBulkBtn) metaBulkBtn.style.display=canBulkAct?'':'none';
   // Populate counsellor filter dropdown from live leads
   const counselSel=document.getElementById('ls-counsel');
   const existingC=Array.from(counselSel.options).map(o=>o.value);
@@ -3137,6 +3354,11 @@ function openDetail(id){
   document.getElementById('d-prog').textContent=l.program||'—';
   document.getElementById('d-dest').textContent=l.destination||'—';
   document.getElementById('d-src').textContent=l.source||'—';
+  ['campaign','adset','ad'].forEach(f=>{
+    const wrap=document.getElementById('d-'+f+'-wrap');
+    if(l[f]){wrap.style.display='block';document.getElementById('d-'+f).textContent=l[f];}
+    else wrap.style.display='none';
+  });
   document.getElementById('d-prio').textContent=l.priority||'—';
   document.getElementById('d-office').textContent=(l.country||'—')+(l.office?' · '+l.office:'');
   document.getElementById('d-counsel').textContent=l.counsellor||'Unassigned';
@@ -3184,6 +3406,11 @@ function openLeadDetail(id){
   document.getElementById('ld-prog').textContent=l.program||'—';
   document.getElementById('ld-dest').textContent=l.destination||'—';
   document.getElementById('ld-src').textContent=l.source||'—';
+  ['campaign','adset','ad'].forEach(f=>{
+    const wrap=document.getElementById('ld-'+f+'-wrap');
+    if(l[f]){wrap.style.display='block';document.getElementById('ld-'+f).textContent=l[f];}
+    else wrap.style.display='none';
+  });
   document.getElementById('ld-application-team').textContent=l.application_team||'Unassigned';
   document.getElementById('ld-visa-team').textContent=l.visa_team||'Unassigned';
   document.getElementById('ld-sop-team').textContent=l.sop_team||'Unassigned';
@@ -4009,7 +4236,7 @@ function renderManagementAndOperationsTeams(team){
     <div class="card-h"><span class="card-t">🌍 International — Management Team</span><span style="font-size:11px;color:var(--ink3)">${mgmt.length} member${mgmt.length!==1?'s':''} — Manager, Admin & Director, across every country</span></div>
     <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard">
         <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-        <div style="flex:1;min-width:0"><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email">${esc(t.email||'')}</div></div>
+        <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
         ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
       </div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:8px 0">No Management Team members yet.</div>'}</div>
   </div>`;
@@ -4024,7 +4251,7 @@ function renderManagementAndOperationsTeams(team){
       </div>
       ${members.length?members.map(t=>`<div class="tcard" style="margin-bottom:8px">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-email">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):'<div style="font-size:12px;color:var(--ink3);font-style:italic;padding:6px 0">No one assigned to this team yet.</div>'}
     </div>`;
@@ -4042,7 +4269,7 @@ function renderManagementAndOperationsTeams(team){
       <div class="card-h"><span class="card-t">🇬🇧 Domestic Operations</span><span style="font-size:11px;color:var(--ink3)">${domestic.length} member${domestic.length!==1?'s':''} — UK-internal only, never receives leads automatically</span></div>
       <div class="team-grid">${domestic.length?domestic.map(t=>`<div class="tcard">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:8px 0">No Domestic team members yet.</div>'}</div>
     </div>`;
@@ -4056,7 +4283,7 @@ function renderManagementAndOperationsTeams(team){
       <div class="card-h"><span class="card-t">🤝 Agent Portal</span><span style="font-size:11px;color:var(--ink3)">${agents.length} agent${agents.length!==1?'s':''} — external partners, work only on leads Management assigns them</span></div>
       <div class="team-grid">${agents.length?agents.map(t=>`<div class="tcard">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent</div><div class="tcard-email">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:8px 0">No agents yet.</div>'}</div>
     </div>`;
@@ -4111,9 +4338,9 @@ function renderTeam(team){
           return `<div class="tcard" style="${unavail?'opacity:.7':''}">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0">
-            <div class="tcard-name">${esc(t.full_name||'—')}</div>
+            <div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div>
             <div class="tcard-role">${esc(t.role||'Counsellor')}</div>
-            <div class="tcard-email">${esc(t.email||'')}</div>
+            <div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div>
             ${unavail?`<div style="font-size:10px;color:var(--rose);font-weight:600;margin-top:3px">🚫 Unavailable until ${new Date(unavail.to_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${unavail.reason?' — '+esc(unavail.reason):''}</div>`:''}
           </div>
           ${canManage?`<button onclick="openUnavailabilityModal('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Mark unavailable" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-calendar-off"></i></button>`:''}

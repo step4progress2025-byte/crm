@@ -611,7 +611,6 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="btn" onclick="clearBulkSelection()" style="font-size:12px;padding:5px 10px;background:rgba(255,255,255,.15);color:#fff;border:none">Clear selection</button>
           </div>
           <div style="display:flex;justify-content:flex-end;margin-bottom:10px;margin-top:-6px">
-            <button class="btn" id="btn-meta-bulk-upload" onclick="openMetaBulkUploadModal()" style="font-size:12px;padding:5px 12px"><i class="ti ti-brand-meta"></i>Bulk Upload Meta Leads</button>
             <button class="btn" onclick="exportCurrentView()" style="font-size:12px;padding:5px 12px"><i class="ti ti-download"></i>Export this view</button>
           </div>
           <div id="leads-top-scroll" style="overflow-x:auto;overflow-y:hidden;height:16px;margin-bottom:2px" onscroll="document.getElementById('leads-table-wrap').scrollLeft=this.scrollLeft">
@@ -828,7 +827,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <section id="sc-digitalmarketing" class="screen">
         <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#1C3F6E,#2D5C9E);color:#fff">
           <div class="card-h"><span class="card-t" style="color:#fff">📣 Live from Meta</span>
-            <button onclick="refreshMetaData()" id="dm-refresh-btn" style="font-size:12px;padding:6px 14px;background:rgba(255,255,255,.15);border:none;border-radius:99px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-refresh"></i> Refresh from Meta</button>
+            <div style="display:flex;gap:8px">
+              <button onclick="openMetaBulkUploadModal()" style="font-size:12px;padding:6px 14px;background:rgba(255,255,255,.15);border:none;border-radius:99px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-upload"></i> Bulk Upload Meta Leads</button>
+              <button onclick="refreshMetaData()" id="dm-refresh-btn" style="font-size:12px;padding:6px 14px;background:rgba(255,255,255,.15);border:none;border-radius:99px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-refresh"></i> Refresh from Meta</button>
+            </div>
           </div>
           <div id="dm-meta-status" style="font-size:12px;opacity:.85;margin-bottom:14px">Not checked yet this session — click Refresh.</div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="dm-meta-kpis"></div>
@@ -3223,8 +3225,6 @@ function renderLeads(){
     const bar=document.getElementById('bulk-actions-bar');
     if(bar) bar.style.display='none';
   }
-  const metaBulkBtn=document.getElementById('btn-meta-bulk-upload');
-  if(metaBulkBtn) metaBulkBtn.style.display=canBulkAct?'':'none';
   // Populate counsellor filter dropdown from live leads
   const counselSel=document.getElementById('ls-counsel');
   const existingC=Array.from(counselSel.options).map(o=>o.value);

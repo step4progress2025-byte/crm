@@ -205,9 +205,9 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
 .tcard{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:18px;box-shadow:var(--sh);display:flex;align-items:flex-start;gap:14px}
 .tcard-av{width:42px;height:42px;border-radius:50%;background:var(--pine3);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff;flex-shrink:0}
-.tcard-name{font-size:14px;font-weight:600}
-.tcard-role{font-size:12px;color:var(--ink3);font-style:italic;margin-top:2px}
-.tcard-email{font-size:11px;color:var(--ink3);margin-top:3px}
+.tcard-name{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tcard-role{font-size:12px;color:var(--ink3);font-style:italic;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tcard-email{font-size:11px;color:var(--ink3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* AI */
 .ai-wrap{display:flex;flex-direction:column;height:calc(100vh - 56px - 48px);min-height:400px}
@@ -459,7 +459,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <div class="sng">Workspace</div>
       <button class="ni" data-nav="team" onclick="nav('team',this)"><i class="ti ti-id-badge"></i>Team</button>
       <button class="ni" data-nav="events" onclick="nav('events',this)"><i class="ti ti-calendar-event"></i>Events</button><button class="ni" data-nav="import" onclick="nav('import',this)"><i class="ti ti-file-import"></i>Import data</button>
-      <button class="ni" data-nav="finance" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" data-nav="digital" id="ni-digital" onclick="nav('digital',this)"><i class="ti ti-speakerphone"></i>Digital</button>       <button class="ni" data-nav="marketing" id="ni-marketing" onclick="nav('marketing',this)"><i class="ti ti-palette"></i>Marketing</button>       <button class="ni" data-nav="metaleads" id="ni-metaleads" onclick="nav('metaleads',this)"><i class="ti ti-target-arrow"></i>Meta Leads</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
+      <button class="ni" data-nav="finance" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" data-nav="digitalmarketing" id="ni-digitalmarketing" onclick="nav('digitalmarketing',this)"><i class="ti ti-speakerphone"></i>Digital Marketing</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
     </div>
     <div class="sb-foot">
       <div class="sb-user">
@@ -823,28 +823,36 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         </div>
       </section>
 
-      <!-- Digital: account-level health snapshot -->
-      <section id="sc-digital" class="screen">
-        <div class="card" style="margin-bottom:16px">
-          <div class="card-h"><span class="card-t">📣 Live from Meta</span>
-            <button onclick="refreshMetaData()" id="dm-refresh-btn" class="btn btn-p" style="font-size:12px;padding:6px 14px"><i class="ti ti-refresh"></i> Refresh from Meta</button>
+      <!-- Digital Marketing -->
+      <section id="sc-digitalmarketing" class="screen">
+        <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#1C3F6E,#2D5C9E);color:#fff">
+          <div class="card-h"><span class="card-t" style="color:#fff">📣 Live from Meta</span>
+            <div style="display:flex;gap:8px">
+              <button onclick="openMetaBulkUploadModal()" style="font-size:12px;padding:6px 14px;background:rgba(255,255,255,.15);border:none;border-radius:99px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-upload"></i> Bulk Upload Meta Leads</button>
+              <button onclick="refreshMetaData()" id="dm-refresh-btn" style="font-size:12px;padding:6px 14px;background:rgba(255,255,255,.15);border:none;border-radius:99px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-refresh"></i> Refresh from Meta</button>
+            </div>
           </div>
-          <div id="dm-meta-status" style="font-size:12px;color:var(--ink3);margin-bottom:16px">Not checked yet this session — click Refresh.</div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px" id="dm-meta-kpis"></div>
+          <div id="dm-meta-status" style="font-size:12px;opacity:.85;margin-bottom:14px">Not checked yet this session — click Refresh.</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="dm-meta-kpis"></div>
         </div>
-      </section>
 
-      <!-- Marketing: content performance -->
-      <section id="sc-marketing" class="screen">
         <div class="card" style="margin-bottom:16px">
-          <div class="card-h"><span class="card-t">🏆 Top Instagram posts — last 12, by reach</span></div>
-          <p style="font-size:12px;color:var(--ink3);margin-bottom:12px">Refreshed together with the Meta KPIs on the Digital tab. Shows which content is actually landing — use this to spot what the team should be making more of.</p>
+          <div class="card-h"><span class="card-t">🌐 Website Analytics</span>
+            <button onclick="syncGA4Data()" id="dm-ga4-sync-btn" style="font-size:12px;padding:6px 14px;background:var(--pine);color:#fff;border:none;border-radius:99px;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-refresh"></i> Sync from GA4</button>
+          </div>
+          <div id="dm-ga4-status" style="font-size:12px;color:var(--ink3);margin-bottom:14px">No data synced yet — click Sync.</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px" id="dm-ga4-kpis"></div>
           <div class="tw" style="border:none;box-shadow:none;border-radius:0">
             <table class="tbl">
-              <thead><tr><th>Post</th><th>Type</th><th>Date</th><th>Views</th><th>Reach</th><th>Likes</th><th>Comments</th><th>Saved</th><th>Shares</th></tr></thead>
-              <tbody id="dm-posts-meta-tbody"><tr><td colspan="9" style="text-align:center;padding:20px;color:var(--ink3);font-style:italic">Go to the Digital tab and click "Refresh from Meta" to load.</td></tr></tbody>
+              <thead><tr><th>Date</th><th>Users</th><th>Sessions</th><th>Pageviews</th><th>Organic</th><th>Paid</th><th>Leads</th></tr></thead>
+              <tbody id="dm-ga4-history-tbody"></tbody>
             </table>
           </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h"><span class="card-t">🎯 Leads by source — real CRM data</span></div>
+          <div id="dm-source-breakdown"></div>
         </div>
 
         <div class="card">
@@ -865,44 +873,6 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <thead><tr><th>Date</th><th>Platform</th><th>Description</th><th>Reach</th><th>Engagement</th><th>Spend</th><th>Leads</th><th></th></tr></thead>
               <tbody id="dm-posts-tbody"></tbody>
             </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- Meta Leads: source breakdown + bulk CSV import from Meta's Leads Center -->
-      <section id="sc-metaleads" class="screen">
-        <div class="card" style="margin-bottom:16px">
-          <div class="card-h"><span class="card-t">🎯 Leads by source — real CRM data</span></div>
-          <div id="dm-source-breakdown"></div>
-        </div>
-
-        <div class="card" style="max-width:720px">
-          <div class="card-h"><span class="card-t">📥 Bulk import Meta leads (CSV)</span></div>
-          <p style="font-size:13px;color:var(--ink3);margin-bottom:16px;line-height:1.65">For the CSV you export from <strong>Meta Business Suite → Leads Center</strong>. Expected columns: <strong>Created, Name, Email address, Source, Form, Channel, Stage, Owner, Phone</strong> (Secondary phone / WhatsApp number are read too, if present). This is separate from the general importer on the "Import data" tab — this one understands Meta's specific export format and tags every lead's source automatically.</p>
-
-          <div class="fg" style="margin-bottom:14px">
-            <div class="ff"><label>Office these leads belong to</label>
-              <select id="ml-office">
-                <option value="India">India</option><option value="UK">UK</option><option value="Pakistan">Pakistan</option><option value="Bangladesh">Bangladesh</option>
-              </select>
-            </div>
-            <div class="ff"><label>Assignment</label>
-              <select id="ml-assign-method">
-                <option value="roundrobin">Auto-assign via round-robin</option>
-                <option value="unassigned">Leave unassigned — Admin/Management assigns manually</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="import-zone" onclick="document.getElementById('ml-csv').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropMetaLeadsCSV(event)">
-            <i class="ti ti-upload"></i>
-            <p style="font-size:14px;font-weight:500;color:var(--ink2);margin-bottom:4px">Drop your Meta Leads Center CSV here</p>
-            <span style="font-size:12px;color:var(--ink3)">or click to browse</span>
-          </div>
-          <input type="file" id="ml-csv" accept=".csv,.txt" style="display:none" onchange="handleMetaLeadsCSV(event)">
-          <div id="ml-preview" style="display:none;margin-top:14px;font-size:12px;color:var(--ink3);background:var(--cream);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;max-height:160px;overflow-y:auto"></div>
-          <div id="ml-btn" style="display:none;margin-top:14px">
-            <button class="btn btn-p" onclick="doMetaLeadsImport()"><i class="ti ti-database-import"></i>Import <span id="ml-count">0</span> leads to shared database</button>
           </div>
         </div>
       </section>
@@ -1285,6 +1255,45 @@ What would you like help with today?</div>
 </div>
 
 <!-- University Application Modal -->
+<!-- Bulk Upload Meta Leads — Admin/Manager/Super Admin only -->
+<div class="mover" id="modal-meta-bulk-upload">
+  <div class="modal" style="width:760px;max-height:88vh;display:flex;flex-direction:column">
+    <div class="mhead"><span class="mtitle">📤 Bulk Upload Meta Leads</span><button class="mclose" onclick="closeModal('modal-meta-bulk-upload')">×</button></div>
+    <div style="overflow-y:auto;flex:1">
+
+      <div id="mbu-step-upload">
+        <p style="font-size:12px;color:var(--ink3);line-height:1.6;margin-bottom:14px">
+          Export your leads from Meta Ads Manager as a CSV, then upload it here. Country is detected automatically from each phone number (+91 → India, +44 → UK, +92 → Pakistan, +880 → Bangladesh) — you'll get a chance to review before anything is saved. Campaign, ad set, and ad name are picked up automatically if your export includes them.
+        </p>
+        <input type="file" id="mbu-file-input" accept=".csv" onchange="handleMetaCSVSelected(this.files[0])" style="margin-bottom:14px">
+        <div id="mbu-parse-status" style="font-size:12px;color:var(--ink3);font-style:italic"></div>
+      </div>
+
+      <div id="mbu-step-preview" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span id="mbu-preview-summary" style="font-size:13px;font-weight:600"></span>
+          <button class="btn" onclick="showMbuStep('upload')" style="font-size:12px"><i class="ti ti-arrow-left"></i>Choose a different file</button>
+        </div>
+        <div class="tw" style="max-height:400px;border:1px solid var(--line);border-radius:var(--r)">
+          <table class="tbl">
+            <thead><tr><th>Name</th><th>Mobile</th><th>Detected Country</th><th>Campaign</th><th>Ad Set</th><th>Ad</th></tr></thead>
+            <tbody id="mbu-preview-tbody"></tbody>
+          </table>
+        </div>
+        <div id="mbu-unknown-warning" style="display:none;font-size:12px;color:var(--gold);margin-top:10px;background:var(--gold-l);padding:10px 12px;border-radius:var(--r)"></div>
+        <button class="btn btn-p" onclick="confirmMetaBulkUpload()" style="margin-top:14px" id="mbu-confirm-btn"><i class="ti ti-upload"></i>Upload these leads</button>
+      </div>
+
+      <div id="mbu-step-done" style="display:none;text-align:center;padding:30px 0">
+        <div style="font-size:40px;margin-bottom:10px">✅</div>
+        <div id="mbu-done-summary" style="font-size:14px;font-weight:600"></div>
+        <button class="btn btn-p" onclick="closeModal('modal-meta-bulk-upload')" style="margin-top:16px">Done</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <div class="mover" id="modal-university">
   <div class="modal" style="width:460px">
     <div class="mhead"><span class="mtitle">Add university</span><button class="mclose" onclick="closeModal('modal-university')">×</button></div>
@@ -1543,6 +1552,9 @@ What would you like help with today?</div>
             <div class="dfield"><div class="dlabel">Program interest</div><div class="dvalue" id="ld-prog"></div></div>
             <div class="dfield"><div class="dlabel">Destination</div><div class="dvalue" id="ld-dest"></div></div>
             <div class="dfield"><div class="dlabel">Source</div><div class="dvalue" id="ld-src"></div></div>
+            <div class="dfield" id="ld-campaign-wrap" style="display:none"><div class="dlabel">📣 Meta Campaign</div><div class="dvalue" id="ld-campaign"></div></div>
+            <div class="dfield" id="ld-adset-wrap" style="display:none"><div class="dlabel">📣 Ad Set</div><div class="dvalue" id="ld-adset"></div></div>
+            <div class="dfield" id="ld-ad-wrap" style="display:none"><div class="dlabel">📣 Ad</div><div class="dvalue" id="ld-ad"></div></div>
             <div class="dfield"><div class="dlabel">Assigned on</div><div class="dvalue" id="ld-assigned-at"></div></div>
             <div class="dfield"><div class="dlabel">Intake month</div><div class="dvalue" id="ld-intake"></div></div>
             <div class="dfield"><div class="dlabel">Budget</div><div class="dvalue" id="ld-budget"></div></div>
@@ -1655,6 +1667,9 @@ What would you like help with today?</div>
       <div class="dfield"><div class="dlabel">Program</div><div class="dvalue" id="d-prog"></div></div>
       <div class="dfield"><div class="dlabel">Destination</div><div class="dvalue" id="d-dest"></div></div>
       <div class="dfield"><div class="dlabel">Source</div><div class="dvalue" id="d-src"></div></div>
+      <div class="dfield" id="d-campaign-wrap" style="display:none"><div class="dlabel">📣 Meta Campaign</div><div class="dvalue" id="d-campaign"></div></div>
+      <div class="dfield" id="d-adset-wrap" style="display:none"><div class="dlabel">📣 Ad Set</div><div class="dvalue" id="d-adset"></div></div>
+      <div class="dfield" id="d-ad-wrap" style="display:none"><div class="dlabel">📣 Ad</div><div class="dvalue" id="d-ad"></div></div>
       <div class="dsec">Pipeline</div>
       <div class="dfield"><div class="dlabel">Update status</div><select class="ssel" id="d-ssel" onchange="updateStatus()"></select></div>
       <div class="dfield"><div class="dlabel">Priority</div><div class="dvalue" id="d-prio"></div></div>
@@ -1999,6 +2014,175 @@ async function getNextCounsellorForOffice(office){
   const{error}=await sb.from('round_robin_state').upsert({office,last_index:nextIndex},{onConflict:'office'});
   if(error) console.error('Failed to persist round_robin_state (rotation may repeat until this succeeds):',error);
   return{name:c.full_name,country:c.country,office:c.office};
+}
+
+// ══ META LEADS BULK UPLOAD ══════════════════════════════════════════
+// Stopgap for as long as the real-time Meta Lead Ads webhook isn't
+// built yet — Admin/Manager/Super Admin export a CSV from Meta Ads
+// Manager and upload it here. Country is detected from the phone
+// number's dialing code, then the lead is round-robin assigned within
+// that country exactly like any other lead — same pool, same rules.
+const COUNTRY_DIAL_CODES=[
+  {prefix:'+880',country:'Bangladesh'},
+  {prefix:'880',country:'Bangladesh'},
+  {prefix:'+91',country:'India'},
+  {prefix:'91',country:'India'},
+  {prefix:'+92',country:'Pakistan'},
+  {prefix:'92',country:'Pakistan'},
+  {prefix:'+44',country:'UK'},
+  {prefix:'44',country:'UK'},
+];
+// One representative office per country for round-robin purposes — matches
+// the offices already used throughout the CRM.
+const COUNTRY_DEFAULT_OFFICE={'India':'India HQ','UK':'UK HQ','Pakistan':'Pakistan','Bangladesh':'Bangladesh'};
+
+function detectCountryFromPhone(phone){
+  const p=(phone||'').replace(/[\s\-()]/g,'');
+  for(const{prefix,country} of COUNTRY_DIAL_CODES){
+    if(p.startsWith(prefix)) return country;
+  }
+  return null;
+}
+
+// Simple CSV parser - handles quoted fields containing commas, good enough
+// for Meta Ads Manager's own export format without needing a library.
+function parseCSV(text){
+  const rows=[];
+  let row=[],field='',inQuotes=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQuotes){
+      if(c==='"'){
+        if(text[i+1]==='"'){field+='"';i++;}
+        else inQuotes=false;
+      } else field+=c;
+    } else {
+      if(c==='"') inQuotes=true;
+      else if(c===','){row.push(field);field='';}
+      else if(c==='\n'||c==='\r'){
+        if(field!==''||row.length){row.push(field);rows.push(row);row=[];field='';}
+        if(c==='\r'&&text[i+1]==='\n')i++;
+      } else field+=c;
+    }
+  }
+  if(field!==''||row.length){row.push(field);rows.push(row);}
+  return rows.filter(r=>r.length&&r.some(c=>c.trim()!==''));
+}
+
+// Meta's export column names vary slightly by campaign setup - check a
+// few common variants for each field we care about, case-insensitive.
+function findColumn(headers,candidates){
+  const lower=headers.map(h=>h.trim().toLowerCase());
+  for(const cand of candidates){
+    const idx=lower.indexOf(cand);
+    if(idx!==-1)return idx;
+  }
+  return -1;
+}
+
+let mbuParsedLeads=[];
+function openMetaBulkUploadModal(){
+  mbuParsedLeads=[];
+  document.getElementById('mbu-file-input').value='';
+  document.getElementById('mbu-parse-status').textContent='';
+  showMbuStep('upload');
+  document.getElementById('modal-meta-bulk-upload').classList.add('open');
+}
+function showMbuStep(step){
+  ['upload','preview','done'].forEach(s=>{
+    document.getElementById('mbu-step-'+s).style.display=(s===step?'block':'none');
+  });
+}
+function handleMetaCSVSelected(file){
+  if(!file)return;
+  const statusEl=document.getElementById('mbu-parse-status');
+  statusEl.textContent='Reading file…';
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    const rows=parseCSV(e.target.result);
+    if(rows.length<2){statusEl.textContent='Could not find any lead rows in this file.';return;}
+    const headers=rows[0];
+    const nameCol=findColumn(headers,['full_name','name','full name']);
+    const phoneCol=findColumn(headers,['phone_number','phone','mobile','phone number']);
+    const emailCol=findColumn(headers,['email','email_address','email address']);
+    const campaignCol=findColumn(headers,['campaign_name','campaign','campaign name']);
+    const adsetCol=findColumn(headers,['adset_name','ad_set_name','adset','ad set name']);
+    const adCol=findColumn(headers,['ad_name','ad','ad name']);
+    if(nameCol===-1||phoneCol===-1){
+      statusEl.textContent='Could not find name/phone columns in this file. Expected something like "full_name" and "phone_number".';
+      return;
+    }
+    mbuParsedLeads=rows.slice(1).map(r=>({
+      name:(r[nameCol]||'').trim(),
+      mobile:(r[phoneCol]||'').trim(),
+      email:emailCol!==-1?(r[emailCol]||'').trim():'',
+      campaign:campaignCol!==-1?(r[campaignCol]||'').trim():'',
+      adset:adsetCol!==-1?(r[adsetCol]||'').trim():'',
+      ad:adCol!==-1?(r[adCol]||'').trim():'',
+      country:detectCountryFromPhone(r[phoneCol]||''),
+    })).filter(l=>l.name||l.mobile);
+    renderMbuPreview();
+    showMbuStep('preview');
+  };
+  reader.readAsText(file);
+}
+function renderMbuPreview(){
+  const tbody=document.getElementById('mbu-preview-tbody');
+  const unknownCount=mbuParsedLeads.filter(l=>!l.country).length;
+  document.getElementById('mbu-preview-summary').textContent=`${mbuParsedLeads.length} lead${mbuParsedLeads.length!==1?'s':''} found`;
+  const warnEl=document.getElementById('mbu-unknown-warning');
+  if(unknownCount>0){
+    warnEl.style.display='block';
+    warnEl.textContent=`⚠️ ${unknownCount} lead(s) have a phone number that didn't match any known country code and will be skipped. Check those rows below before uploading.`;
+  } else {
+    warnEl.style.display='none';
+  }
+  tbody.innerHTML=mbuParsedLeads.map(l=>`<tr style="${!l.country?'background:var(--rose-l)':''}">
+    <td style="font-size:12px">${esc(l.name||'—')}</td>
+    <td style="font-size:12px">${esc(l.mobile||'—')}</td>
+    <td style="font-size:12px">${l.country?esc(l.country):'<span style="color:var(--rose)">Unknown — will be skipped</span>'}</td>
+    <td style="font-size:11px;color:var(--ink3)">${esc(l.campaign||'—')}</td>
+    <td style="font-size:11px;color:var(--ink3)">${esc(l.adset||'—')}</td>
+    <td style="font-size:11px;color:var(--ink3)">${esc(l.ad||'—')}</td>
+  </tr>`).join('');
+}
+async function confirmMetaBulkUpload(){
+  const btn=document.getElementById('mbu-confirm-btn');
+  btn.disabled=true;btn.textContent='Uploading…';
+  const validLeads=mbuParsedLeads.filter(l=>l.country);
+  let uploaded=0, failed=0;
+  for(const l of validLeads){
+    const office=COUNTRY_DEFAULT_OFFICE[l.country]||null;
+    const picked=office?await getNextCounsellorForOffice(office):{name:''};
+    const{data:inserted,error}=await sb.from('leads').insert({
+      name:l.name||'Meta Lead',
+      mobile:l.mobile,
+      email:l.email||null,
+      country:l.country,
+      office,
+      counsellor:picked.name||null,
+      assigned_at:picked.name?new Date().toISOString():null,
+      source:'Meta Ads',
+      status:'New Enquiry',
+      priority:'Medium',
+      campaign:l.campaign||null,
+      adset:l.adset||null,
+      ad:l.ad||null,
+      added_by:currentUser?.id,
+    }).select();
+    if(error){failed++;console.error('Bulk upload row failed:',l,error);}
+    else{
+      uploaded++;
+      if(inserted?.[0]?.id) logActivity(inserted[0].id,'created',`Bulk-uploaded Meta lead${picked.name?' — assigned to '+picked.name:''}`);
+    }
+  }
+  btn.disabled=false;btn.textContent='Upload these leads';
+  document.getElementById('mbu-done-summary').innerHTML=
+    `${uploaded} lead${uploaded!==1?'s':''} uploaded successfully.` +
+    (failed?`<br><span style="color:var(--rose)">${failed} row(s) failed — check the console for details.</span>`:'') +
+    (mbuParsedLeads.length-validLeads.length?`<br><span style="color:var(--gold)">${mbuParsedLeads.length-validLeads.length} row(s) skipped — unknown country.</span>`:'');
+  showMbuStep('done');
+  loadLeads().then(()=>{renderLeads();renderDash();});
 }
 
 // ── SYNC indicator ───────────────────────────────────────────────
@@ -2687,7 +2871,7 @@ function nav(id,btn){
   document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
   document.getElementById('sc-'+id).classList.add('active');
   if(btn)btn.classList.add('active');
-  const T={dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digital:'Digital',marketing:'Marketing',metaleads:'Meta Leads',reports:'Reports',coursefinder:'Course & University Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail'};
+  const T={dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digitalmarketing:'Digital Marketing',reports:'Reports',coursefinder:'Course & University Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail'};
   document.getElementById('topbar-title').textContent=T[id]||id;
   // Role guard — checked before rendering the target screen.
   // Uses isRestrictedStaffRole() (Counsellor + Application/Visa/SOP Team),
@@ -2696,7 +2880,7 @@ function nav(id,btn){
   // never the intent.
   const roleIsCounsellor=isRestrictedStaffRole();
   if(id==='finance'&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
-  if((id==='digital'||id==='marketing'||id==='metaleads')&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
+  if(id==='digitalmarketing'&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
   if(id==='team'&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
   if(id==='productivity'&&roleIsCounsellor&&!isSuperAdmin){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Productivity is restricted to Admins.');return;}
   if(id==='leads'){renderLeads();setTimeout(applyRoleUI,500);}
@@ -2707,7 +2891,7 @@ function nav(id,btn){
   if(id==='resources')loadResourcesAdmin();
   if(id==='resumes'){loadResumes().then(renderResumesAdmin);}
   if(id==='finance')renderFinance();
-  if(id==='digital'||id==='marketing'||id==='metaleads')initDigitalMarketing();
+  if(id==='digitalmarketing')initDigitalMarketing();
   if(id==='reports'){if(roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}initReports();}
   if(id==='subteam-detail'){if(myRole==='Counsellor'&&!isSuperAdmin){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Team Dashboards is for Application/Visa/SOP Team and management.');return;}renderSubTeamDetail();}
   if(id==='productivity'){loadCallLogs().then(renderCallLogs);}
@@ -3184,6 +3368,11 @@ function openDetail(id){
   document.getElementById('d-prog').textContent=l.program||'—';
   document.getElementById('d-dest').textContent=l.destination||'—';
   document.getElementById('d-src').textContent=l.source||'—';
+  ['campaign','adset','ad'].forEach(f=>{
+    const wrap=document.getElementById('d-'+f+'-wrap');
+    if(l[f]){wrap.style.display='block';document.getElementById('d-'+f).textContent=l[f];}
+    else wrap.style.display='none';
+  });
   document.getElementById('d-prio').textContent=l.priority||'—';
   document.getElementById('d-office').textContent=(l.country||'—')+(l.office?' · '+l.office:'');
   document.getElementById('d-counsel').textContent=l.counsellor||'Unassigned';
@@ -3231,6 +3420,11 @@ function openLeadDetail(id){
   document.getElementById('ld-prog').textContent=l.program||'—';
   document.getElementById('ld-dest').textContent=l.destination||'—';
   document.getElementById('ld-src').textContent=l.source||'—';
+  ['campaign','adset','ad'].forEach(f=>{
+    const wrap=document.getElementById('ld-'+f+'-wrap');
+    if(l[f]){wrap.style.display='block';document.getElementById('ld-'+f).textContent=l[f];}
+    else wrap.style.display='none';
+  });
   document.getElementById('ld-application-team').textContent=l.application_team||'Unassigned';
   document.getElementById('ld-visa-team').textContent=l.visa_team||'Unassigned';
   document.getElementById('ld-sop-team').textContent=l.sop_team||'Unassigned';
@@ -4056,7 +4250,7 @@ function renderManagementAndOperationsTeams(team){
     <div class="card-h"><span class="card-t">🌍 International — Management Team</span><span style="font-size:11px;color:var(--ink3)">${mgmt.length} member${mgmt.length!==1?'s':''} — Manager, Admin & Director, across every country</span></div>
     <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard">
         <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-        <div style="flex:1;min-width:0"><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email">${esc(t.email||'')}</div></div>
+        <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
         ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
       </div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:8px 0">No Management Team members yet.</div>'}</div>
   </div>`;
@@ -4071,7 +4265,7 @@ function renderManagementAndOperationsTeams(team){
       </div>
       ${members.length?members.map(t=>`<div class="tcard" style="margin-bottom:8px">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-email">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):'<div style="font-size:12px;color:var(--ink3);font-style:italic;padding:6px 0">No one assigned to this team yet.</div>'}
     </div>`;
@@ -4089,7 +4283,7 @@ function renderManagementAndOperationsTeams(team){
       <div class="card-h"><span class="card-t">🇬🇧 Domestic Operations</span><span style="font-size:11px;color:var(--ink3)">${domestic.length} member${domestic.length!==1?'s':''} — UK-internal only, never receives leads automatically</span></div>
       <div class="team-grid">${domestic.length?domestic.map(t=>`<div class="tcard">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:8px 0">No Domestic team members yet.</div>'}</div>
     </div>`;
@@ -4103,7 +4297,7 @@ function renderManagementAndOperationsTeams(team){
       <div class="card-h"><span class="card-t">🤝 Agent Portal</span><span style="font-size:11px;color:var(--ink3)">${agents.length} agent${agents.length!==1?'s':''} — external partners, work only on leads Management assigns them</span></div>
       <div class="team-grid">${agents.length?agents.map(t=>`<div class="tcard">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent</div><div class="tcard-email">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:8px 0">No agents yet.</div>'}</div>
     </div>`;
@@ -4158,9 +4352,9 @@ function renderTeam(team){
           return `<div class="tcard" style="${unavail?'opacity:.7':''}">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0">
-            <div class="tcard-name">${esc(t.full_name||'—')}</div>
+            <div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div>
             <div class="tcard-role">${esc(t.role||'Counsellor')}</div>
-            <div class="tcard-email">${esc(t.email||'')}</div>
+            <div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div>
             ${unavail?`<div style="font-size:10px;color:var(--rose);font-weight:600;margin-top:3px">🚫 Unavailable until ${new Date(unavail.to_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${unavail.reason?' — '+esc(unavail.reason):''}</div>`:''}
           </div>
           ${canManage?`<button onclick="openUnavailabilityModal('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Mark unavailable" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-calendar-off"></i></button>`:''}
@@ -4279,161 +4473,6 @@ async function doImport(){
   renderLeads();renderDash();badges();setTimeout(checkNoActivity,2000);setTimeout(checkNoActivity,2000);applyRoleUI();
   const skipMsg=(skippedExisting+skippedInBatch)>0?` (${skippedExisting} already existed, ${skippedInBatch} repeated in file — skipped)`:'';
   toast(toInsert.length+' leads imported to shared database!'+skipMsg);
-}
-
-// ── Meta Leads Center bulk CSV importer ─────────────────────────────
-// Separate from the generic doImport() above — this one knows Meta's
-// exact Leads Center export columns (Created, Name, Email address,
-// Source, Form, Channel, Stage, Owner, Phone, Secondary phone number,
-// WhatsApp number) and tags every lead's source/notes automatically,
-// rather than relying on the person to have renamed columns to match
-// the generic importer's expected headers.
-//
-// Uses a proper quoted-CSV parser (not naive split(',')) because real
-// exports contain commas inside names/labels (e.g. names written with a
-// comma, or in scripts where a naive split corrupts the row).
-let metaLeadsRows=[];
-
-function parseCSVProper(text){
-  // Strips a UTF-8 BOM if present (Meta's export includes one).
-  if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
-  const rows=[];
-  let row=[],field='',inQuotes=false;
-  for(let i=0;i<text.length;i++){
-    const c=text[i],next=text[i+1];
-    if(inQuotes){
-      if(c==='"'&&next==='"'){field+='"';i++;}
-      else if(c==='"'){inQuotes=false;}
-      else field+=c;
-    } else {
-      if(c==='"')inQuotes=true;
-      else if(c===','){row.push(field);field='';}
-      else if(c==='\r'){/* skip, \n handles the line break */}
-      else if(c==='\n'){row.push(field);rows.push(row);row=[];field='';}
-      else field+=c;
-    }
-  }
-  if(field.length||row.length){row.push(field);rows.push(row);}
-  return rows.filter(r=>r.length>1||r[0]!=='');
-}
-
-function dropMetaLeadsCSV(e){e.preventDefault();e.currentTarget.style.borderColor='';if(e.dataTransfer.files[0])parseMetaLeadsFile(e.dataTransfer.files[0]);}
-function handleMetaLeadsCSV(e){if(e.target.files[0])parseMetaLeadsFile(e.target.files[0]);}
-
-function parseMetaLeadsFile(file){
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const table=parseCSVProper(e.target.result);
-    if(table.length<2){toast('CSV needs at least a header row and one data row.');return;}
-    const headers=table[0].map(h=>h.trim().toLowerCase());
-    const rows=[];
-    for(let i=1;i<table.length;i++){
-      const cols=table[i];
-      if(cols.length<2||!cols.some(c=>c.trim()))continue;
-      const row={};headers.forEach((h,j)=>{row[h]=(cols[j]||'').trim();});
-      rows.push(row);
-    }
-    metaLeadsRows=rows;
-    const prev=document.getElementById('ml-preview');
-    prev.style.display='block';
-    const paidCount=rows.filter(r=>(r['source']||'').toLowerCase()==='paid').length;
-    prev.innerHTML=`<div style="font-weight:600;margin-bottom:6px;color:var(--pine)">${rows.length} leads found (${paidCount} paid, ${rows.length-paidCount} organic)</div>`+
-      rows.slice(0,5).map(r=>`<div style="padding:3px 0;border-bottom:1px solid var(--line)">${esc(r['name']||'—')} · ${esc(r['phone']||'—')} · ${esc(r['channel']||'—')} · ${esc(r['source']||'—')}</div>`).join('');
-    document.getElementById('ml-btn').style.display='block';
-    document.getElementById('ml-count').textContent=rows.length;
-  };
-  reader.readAsText(file);
-}
-
-async function doMetaLeadsImport(){
-  if(!metaLeadsRows.length)return;
-  const btn=document.querySelector('#ml-btn .btn');btn.disabled=true;btn.textContent='Importing…';
-  setSyncing();
-
-  const office=document.getElementById('ml-office').value||'India';
-  const assignMethod=document.getElementById('ml-assign-method').value;
-
-  // Build the assignment plan BEFORE inserting, so round-robin only writes
-  // its rotation state to Supabase ONCE at the end (not once per lead —
-  // hundreds of individual upserts would be slow and unnecessary).
-  let assignedNames=[];
-  if(assignMethod==='roundrobin'){
-    const pool=getRoundRobinCounsellorPool(office);
-    if(!pool.length){
-      btn.disabled=false;btn.textContent='Import '+metaLeadsRows.length+' leads to shared database';
-      toast(`No round-robin-eligible counsellors found for ${office}. Choose "Leave unassigned" instead, or add counsellors to that office.`);
-      return;
-    }
-    let idx=(rrStateByOffice[office]||0);
-    for(let i=0;i<metaLeadsRows.length;i++){
-      assignedNames.push(pool[idx%pool.length].full_name);
-      idx++;
-    }
-    rrStateByOffice[office]=idx;
-    // Persist the final rotation position once, not per-lead.
-    const{error:rrErr}=await sb.from('round_robin_state').upsert({office,last_index:idx},{onConflict:'office'});
-    if(rrErr)console.error('Failed to persist round_robin_state after bulk Meta import:',rrErr);
-  }
-
-  const allRows=metaLeadsRows.map((r,i)=>{
-    const sourceRaw=(r['source']||'').toLowerCase();
-    const channel=r['channel']||'';
-    const source=sourceRaw==='paid'?'Meta Ads':(channel.toLowerCase()==='instagram'?'Instagram':'Meta Organic');
-    const noteParts=[];
-    if(channel)noteParts.push(`Channel: ${channel}`);
-    if(r['form'])noteParts.push(`Form: ${r['form']}`);
-    if(r['stage'])noteParts.push(`Meta stage: ${r['stage']}`);
-    if(r['secondary phone number'])noteParts.push(`Alt phone: ${r['secondary phone number']}`);
-    if(r['whatsapp number'])noteParts.push(`WhatsApp: ${r['whatsapp number']}`);
-    return{
-      lead_id:'S4P-'+String(leads.length+i+1).padStart(4,'0'),
-      name:r['name']||'',
-      mobile:r['phone']||r['whatsapp number']||'',
-      email:r['email address']||r['email']||'',
-      status:'New Enquiry',
-      source,
-      priority:'Medium',
-      counsellor:assignMethod==='roundrobin'?(assignedNames[i]||''):'',
-      country:office,
-      office,
-      notes:noteParts.join(' • '),
-      added_by:currentUser?.id
-    };
-  }).filter(r=>r.name);
-
-  // Same duplicate-guard pattern as the generic importer: skip rows whose
-  // phone matches an existing lead, and skip repeats within the file.
-  const existingPhones=new Set(leads.map(l=>normalizePhone(l.mobile)).filter(Boolean));
-  const seenInBatch=new Set();
-  let skippedExisting=0, skippedInBatch=0;
-  const toInsert=allRows.filter(r=>{
-    const np=normalizePhone(r.mobile);
-    if(!np)return true;
-    if(existingPhones.has(np)){skippedExisting++;return false;}
-    if(seenInBatch.has(np)){skippedInBatch++;return false;}
-    seenInBatch.add(np);
-    return true;
-  });
-
-  if(!toInsert.length){
-    btn.disabled=false;btn.textContent='Import '+metaLeadsRows.length+' leads to shared database';
-    toast(`Nothing to import — all ${skippedExisting+skippedInBatch} rows matched existing leads or repeated within the file.`);
-    return;
-  }
-  const{error,data}=await sb.from('leads').insert(toInsert).select();
-  btn.disabled=false;
-  if(error){setSyncErr();toast('Import error: '+error.message);return;}
-  if(data)leads=[...data,...leads];
-  if(data)data.forEach(l=>logActivity(l.id,'imported',`Imported from Meta Leads Center, assigned to ${l.counsellor||'Unassigned'}`));
-  setSynced();
-  document.getElementById('ml-preview').style.display='none';
-  document.getElementById('ml-btn').style.display='none';
-  metaLeadsRows=[];
-  renderLeads();renderDash();badges();applyRoleUI();
-  renderSourceBreakdown();
-  const skipMsg=(skippedExisting+skippedInBatch)>0?` (${skippedExisting} already existed, ${skippedInBatch} repeated in file — skipped)`:'';
-  const assignMsg=assignMethod==='roundrobin'?' and assigned via round-robin':' — left unassigned for manual assignment';
-  toast(toInsert.length+' Meta leads imported'+assignMsg+'!'+skipMsg);
 }
 
 function buildCSV(rows){
@@ -5289,15 +5328,10 @@ async function checkUnreadDmCount(){
 // ══ DIGITAL MARKETING DASHBOARD ═════════════════════════════════════
 const META_PULL_URL='https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/meta-data-pull';
 function initDigitalMarketing(){
-  const dateEl=document.getElementById('dm-post-date');
-  if(dateEl&&!dateEl.value)dateEl.value=new Date().toISOString().substring(0,10);
+  document.getElementById('dm-post-date').value=new Date().toISOString().substring(0,10);
   renderSourceBreakdown();
   loadMarketingPosts();
-  const mlOffice=document.getElementById('ml-office');
-  if(mlOffice&&!mlOffice.dataset.initialized){
-    mlOffice.value=myOffice||'India';
-    mlOffice.dataset.initialized='1';
-  }
+  loadGA4History();
 }
 // Meta/Supabase errors can come back as a plain string, or a nested
 // object like {message:"..."} or {error:{message:"..."}} — this makes
@@ -5316,7 +5350,7 @@ async function refreshMetaData(){
   btn.disabled=true;
   statusEl.textContent='Pulling live data from Meta…';
   const results={};
-  for(const type of ['facebook','ads','instagram','instagram_posts']){
+  for(const type of ['facebook','ads']){
     try{
       const r=await fetch(`${META_PULL_URL}?type=${type}`);
       const text=await r.text();
@@ -5337,69 +5371,89 @@ async function refreshMetaData(){
 
   const fb=results.facebook||{};
   const ads=results.ads||{};
-  const ig=results.instagram||{};
-  const kpis=[]; // [label, value, top-border color var, text color var, icon]
+  const kpis=[];
   if(fb.error){
-    kpis.push(['Facebook',`⚠️ ${safeErrorText(fb.error)}`,'var(--rose)','kv-r','ti-brand-facebook']);
+    kpis.push(['Facebook',`⚠️ ${safeErrorText(fb.error)}`,'c7']);
   } else {
-    kpis.push(['Page followers',fmtNum(fb.page_fans),'var(--sky)','kv-t','ti-users']);
-    kpis.push(['Page views (30d)',fmtNum(fb.page_views),'var(--sky)','kv-t','ti-eye']);
+    kpis.push(['Page followers',fb.page_fans??'—','c1']);
+    // Engagement/reach metrics removed for now — Meta keeps rejecting
+    // every name tried so far. Once a working metric name is confirmed
+    // via the ?metric= override, add it back here.
   }
   if(ads.error){
-    kpis.push(['Ad spend',`⚠️ ${safeErrorText(ads.error)}`,'var(--rose)','kv-r','ti-alert-triangle']);
+    kpis.push(['Ad spend',`⚠️ ${safeErrorText(ads.error)}`,'c7']);
   } else {
-    kpis.push(['Ad spend',ads.spend?`₹${Number(ads.spend).toLocaleString('en-IN')}`:'—','var(--gold)','kv-o','ti-currency-rupee']);
-    kpis.push(['Leads (30d)',fmtNum(ads.leads),'var(--gold)','kv-o','ti-target-arrow']);
-    kpis.push(['Cost per lead',ads.cost_per_lead?`₹${Number(ads.cost_per_lead).toLocaleString('en-IN')}`:'—','var(--gold)','kv-o','ti-receipt']);
+    kpis.push(['Ad spend',ads.spend?`₹${Number(ads.spend).toLocaleString('en-IN')}`:'—','c3']);
+    kpis.push(['Leads (30d)',ads.leads??'—','c6']);
+    kpis.push(['Cost per lead',ads.cost_per_lead?`₹${Number(ads.cost_per_lead).toLocaleString('en-IN')}`:'—','c2']);
   }
-  if(ig.error){
-    kpis.push(['Instagram',`⚠️ ${safeErrorText(ig.error)}`,'var(--rose)','kv-r','ti-brand-instagram']);
-  } else {
-    kpis.push(['Instagram followers',fmtNum(ig.followers),'var(--pine)','kv-p','ti-brand-instagram']);
-    kpis.push(['Instagram reach (30d)',fmtNum(ig.reach),'var(--pine)','kv-p','ti-affiliate']);
-    kpis.push(['Instagram views (30d)',fmtNum(ig.views),'var(--pine)','kv-p','ti-player-play']);
-  }
-  kpisEl.innerHTML=kpis.map(([label,val,borderColor,valClass,icon])=>{
-    const isErr=String(val).startsWith('⚠️');
-    return `<div class="kpi" style="border-top:3px solid ${borderColor}!important">
-      <div class="kpi-l"><i class="ti ${icon}" style="margin-right:5px"></i>${label}</div>
-      <div class="kpi-v ${isErr?'':valClass}" style="${isErr?'font-size:13px;font-weight:500;line-height:1.4;color:var(--rose)':''}">${val}</div>
-    </div>`;
-  }).join('');
-  statusEl.textContent=`Last checked: ${new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}.`;
+  kpisEl.innerHTML=kpis.map(([label,val,cls])=>
+    `<div class="rpt-hero ${cls}" style="background:rgba(255,255,255,.1)"><div class="rpt-hero-l" style="color:rgba(255,255,255,.75)">${label}</div><div class="rpt-hero-v" style="color:#fff;font-size:${String(val).length>30?'12px':'inherit'}">${val}</div></div>`
+  ).join('');
+  statusEl.textContent=`Last checked: ${new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}. Instagram not connected yet — Facebook and Ads data shown above.`;
+}
 
-  renderMetaPosts(results.instagram_posts);
+// ── Website Analytics (GA4) ─────────────────────────────────────────
+const GA4_SYNC_URL='https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/ga4-sync';
+async function syncGA4Data(){
+  const btn=document.getElementById('dm-ga4-sync-btn');
+  const statusEl=document.getElementById('dm-ga4-status');
+  btn.disabled=true;btn.textContent='Syncing…';
+  statusEl.textContent='Pulling yesterday\u2019s traffic from GA4…';
+  try{
+    const r=await fetch(GA4_SYNC_URL);
+    const d=await r.json();
+    if(!r.ok||d.error){
+      statusEl.textContent='⚠️ '+safeErrorText(d.error||`HTTP ${r.status}`);
+    } else {
+      statusEl.textContent=`Synced ${d.date} — ${d.users} users, ${d.leadsGenerated} lead(s) tracked.`;
+      await loadGA4History();
+    }
+  }catch(e){
+    statusEl.textContent='⚠️ Could not reach the sync function: '+(e?.message||e);
+  }
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-refresh"></i> Sync from GA4';
 }
-// Clean number formatting for the KPI tiles — thousands separators, and
-// an em-dash for null/undefined rather than a bare "null" on screen.
-function fmtNum(n){
-  if(n===null||n===undefined)return '—';
-  return Number(n).toLocaleString('en-IN');
-}
-function renderMetaPosts(postsResult){
-  const tb=document.getElementById('dm-posts-meta-tbody');
-  if(!tb)return;
-  if(!postsResult||postsResult.error){
-    tb.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--ink3);font-style:italic">⚠️ ${safeErrorText(postsResult?.error??'Could not load posts')}</td></tr>`;
+async function loadGA4History(){
+  const kpisEl=document.getElementById('dm-ga4-kpis');
+  const tbody=document.getElementById('dm-ga4-history-tbody');
+  const statusEl=document.getElementById('dm-ga4-status');
+  if(!kpisEl)return;
+  const{data,error}=await sb.from('website_daily_metrics').select('*').order('date',{ascending:false}).limit(14);
+  if(error){
+    tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--ink3);font-style:italic">Could not load — has website_daily_metrics been created in Supabase yet?</td></tr>`;
     return;
   }
-  const posts=(postsResult.posts||[]).slice().sort((a,b)=>(b.reach??0)-(a.reach??0));
-  if(!posts.length){
-    tb.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--ink3);font-style:italic">No posts found.</td></tr>';
+  if(!data||!data.length){
+    tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--ink3);font-style:italic">No synced days yet — click "Sync from GA4" above.</td></tr>`;
+    kpisEl.innerHTML='';
     return;
   }
-  tb.innerHTML=posts.map(p=>{
-    const dateStr=p.timestamp?new Date(p.timestamp).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—';
-    const typeLabel=p.media_product_type==='REELS'?'🎬 Reel':(p.media_type==='VIDEO'?'🎬 Video':'🖼️ Post');
-    const captionShort=esc((p.caption||'').slice(0,60))+((p.caption||'').length>60?'…':'');
-    const link=p.permalink?`<a href="${esc(p.permalink)}" target="_blank" rel="noopener" style="color:var(--sky);text-decoration:none">${captionShort||'(view post)'}</a>`:captionShort;
-    return `<tr><td style="max-width:260px">${link}</td><td>${typeLabel}</td><td>${dateStr}</td><td>${fmtNum(p.views)}</td><td>${fmtNum(p.reach)}</td><td>${fmtNum(p.likes)}</td><td>${fmtNum(p.comments)}</td><td>${fmtNum(p.saved)}</td><td>${fmtNum(p.shares)}</td></tr>`;
-  }).join('');
+  const latest=data[0];
+  statusEl.textContent=`Showing data through ${latest.date}. ${data.length} day(s) synced so far.`;
+  kpisEl.innerHTML=[
+    ['Users (latest day)',latest.users,'c1'],
+    ['Sessions',latest.sessions,'c4'],
+    ['Organic vs Paid',`${latest.organic_users} / ${latest.paid_users}`,'c6'],
+    ['Leads tracked',latest.leads_generated,'c2'],
+  ].map(([label,val,cls])=>
+    `<div class="rpt-hero ${cls}"><div class="rpt-hero-l">${label}</div><div class="rpt-hero-v">${val}</div></div>`
+  ).join('');
+  tbody.innerHTML=data.map(d=>`<tr>
+    <td style="font-size:12px;color:var(--ink3)">${new Date(d.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</td>
+    <td style="font-size:12px">${d.users}</td>
+    <td style="font-size:12px">${d.sessions}</td>
+    <td style="font-size:12px">${d.pageviews}</td>
+    <td style="font-size:12px;color:var(--sky)">${d.organic_users}</td>
+    <td style="font-size:12px;color:var(--gold)">${d.paid_users}</td>
+    <td style="font-size:12px;font-weight:600;color:var(--sage)">${d.leads_generated}</td>
+  </tr>`).join('');
 }
+
 function renderSourceBreakdown(){
   const el=document.getElementById('dm-source-breakdown');
   if(!el)return;
-  const metaSources=['Meta Ads','Meta Enquiry','Meta Organic','Instagram'];
+  const metaSources=['Meta Ads','Meta Enquiry','Instagram'];
   const counts={};
   leads.forEach(l=>{
     const src=l.source||'Unspecified';

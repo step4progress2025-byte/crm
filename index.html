@@ -138,12 +138,20 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .btn-ai{background:var(--pine3);color:#fff;border-color:var(--pine3)}.btn-ai:hover{background:var(--pine2)}
 .btn-del{background:var(--rose-l);color:var(--rose);border-color:#fecdd3}.btn-del:hover{background:#ffe4e6}
 
-.content{flex:1;overflow-y:auto;background:var(--cream)}
-.screen{display:none;padding:24px;min-height:100%}
+.content{flex:1;overflow-y:auto;background:var(--cream);scrollbar-width:auto;scrollbar-color:var(--pine3) var(--cream)}
+.content::-webkit-scrollbar{width:12px}
+.content::-webkit-scrollbar-track{background:var(--cream)}
+.content::-webkit-scrollbar-thumb{background:var(--pine3);border-radius:99px;border:3px solid var(--cream)}
+.content::-webkit-scrollbar-thumb:hover{background:var(--pine)}
+.screen{display:none;padding:24px;min-height:100%;opacity:0;animation:screenFadeIn .22s ease forwards}
 .screen.active{display:block}
+@keyframes screenFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
 /* Loading */
 .loading{display:flex;align-items:center;justify-content:center;min-height:300px;flex-direction:column;gap:12px;color:var(--ink3)}
+.skel{background:linear-gradient(90deg,var(--line) 25%,var(--line2) 37%,var(--line) 63%);background-size:400% 100%;animation:skelShimmer 1.4s ease infinite;border-radius:4px}
+@keyframes skelShimmer{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+.skel-row{display:flex;align-items:center;gap:16px;padding:14px 18px;border-bottom:1px solid var(--line)}
 .loading i{font-size:28px;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -260,7 +268,11 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 /* Modal */
 .mover{display:none;position:fixed;inset:0;background:rgba(28,25,23,.5);z-index:200;align-items:center;justify-content:center}
 .mover.open{display:flex}
-.modal{background:var(--paper);border-radius:var(--rxl);border:1px solid var(--line);width:580px;max-width:96vw;max-height:92vh;overflow-y:auto;padding:var(--sp-7);box-shadow:var(--shm)}
+.modal{background:var(--paper);border-radius:var(--rxl);border:1px solid var(--line);width:580px;max-width:96vw;max-height:92vh;overflow-y:auto;padding:var(--sp-7);box-shadow:var(--shm);scrollbar-width:auto;scrollbar-color:var(--pine3) var(--paper)}
+.modal::-webkit-scrollbar{width:10px}
+.modal::-webkit-scrollbar-track{background:var(--paper)}
+.modal::-webkit-scrollbar-thumb{background:var(--pine3);border-radius:99px;border:2px solid var(--paper)}
+.modal::-webkit-scrollbar-thumb:hover{background:var(--pine)}
 .mhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-5)}
 .mtitle{font-family:var(--font-h);font-size:22px;font-weight:300;letter-spacing:-.02em}
 .mclose{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:22px;line-height:1;padding:3px 5px;border-radius:6px}
@@ -300,7 +312,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .import-zone i{font-size:36px;color:var(--ink3);display:block;margin-bottom:12px}
 
 /* Toast */
-.toast{position:fixed;bottom:24px;right:24px;background:var(--pine);color:#fff;font-size:13px;padding:10px 18px;border-radius:var(--r);z-index:400;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;box-shadow:var(--shm)}
+@keyframes toastIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(30px)}}
 .toast.show{opacity:1;transform:translateY(0)}
 
 /* Sync indicator */
@@ -532,6 +545,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
       <!-- Dashboard -->
       <section id="sc-dashboard" class="screen active">
+                <div id="dash-greeting" style="font-family:var(--font-h);font-size:24px;font-weight:600;color:var(--ink);margin-bottom:6px"></div>
         <div id="briefing-card" style="background:linear-gradient(135deg,#1C3F6E,#2D5C9E);border-radius:16px;padding:20px 24px;margin-bottom:18px;color:#fff;box-shadow:0 8px 24px rgba(28,63,110,.25)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
             <span style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;opacity:.85">✨ Your AI Daily Briefing</span>
@@ -601,7 +615,14 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
       <!-- Leads -->
       <section id="sc-leads" class="screen">
-        <div id="leads-loading" class="loading"><i class="ti ti-loader-2"></i><span>Loading leads…</span></div>
+        <div id="leads-loading">
+          <div class="skel-row"><div class="skel" style="width:32px;height:32px;border-radius:50%"></div><div class="skel" style="width:140px;height:14px"></div><div class="skel" style="width:90px;height:14px"></div><div class="skel" style="width:70px;height:14px"></div><div class="skel" style="width:60px;height:22px;border-radius:99px;margin-left:auto"></div></div>
+          <div class="skel-row"><div class="skel" style="width:32px;height:32px;border-radius:50%"></div><div class="skel" style="width:110px;height:14px"></div><div class="skel" style="width:95px;height:14px"></div><div class="skel" style="width:75px;height:14px"></div><div class="skel" style="width:60px;height:22px;border-radius:99px;margin-left:auto"></div></div>
+          <div class="skel-row"><div class="skel" style="width:32px;height:32px;border-radius:50%"></div><div class="skel" style="width:150px;height:14px"></div><div class="skel" style="width:80px;height:14px"></div><div class="skel" style="width:65px;height:14px"></div><div class="skel" style="width:60px;height:22px;border-radius:99px;margin-left:auto"></div></div>
+          <div class="skel-row"><div class="skel" style="width:32px;height:32px;border-radius:50%"></div><div class="skel" style="width:120px;height:14px"></div><div class="skel" style="width:100px;height:14px"></div><div class="skel" style="width:70px;height:14px"></div><div class="skel" style="width:60px;height:22px;border-radius:99px;margin-left:auto"></div></div>
+          <div class="skel-row"><div class="skel" style="width:32px;height:32px;border-radius:50%"></div><div class="skel" style="width:135px;height:14px"></div><div class="skel" style="width:85px;height:14px"></div><div class="skel" style="width:60px;height:14px"></div><div class="skel" style="width:60px;height:22px;border-radius:99px;margin-left:auto"></div></div>
+          <div class="skel-row"><div class="skel" style="width:32px;height:32px;border-radius:50%"></div><div class="skel" style="width:100px;height:14px"></div><div class="skel" style="width:90px;height:14px"></div><div class="skel" style="width:75px;height:14px"></div><div class="skel" style="width:60px;height:22px;border-radius:99px;margin-left:auto"></div></div>
+        </div>
         <div id="leads-empty" class="empty-state" style="display:none">
           <div class="es-icon"><i class="ti ti-users"></i></div>
           <div class="es-title">No leads yet</div>
@@ -1775,7 +1796,7 @@ What would you like help with today?</div>
 </div>
 <input type="file" id="doc-upload-input" multiple style="display:none" onchange="handleDocUploadFile(this.files)">
 <input type="file" id="uni-file-upload-input" multiple style="display:none" onchange="handleUniFileUpload(this.files)">
-<div class="toast" id="toast"></div>
+
 
 <script>
 // ── SUPABASE INIT ────────────────────────────────────────────────
@@ -2989,6 +3010,13 @@ function badges(){
 
 // ── DASHBOARD ────────────────────────────────────────────────────
 function renderDash(){
+  const greetEl=document.getElementById('dash-greeting');
+  if(greetEl){
+    const hour=new Date().getHours();
+    const timeGreeting=hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
+    const firstName=(myName||'there').split(' ')[0];
+    greetEl.textContent=`${timeGreeting}, ${firstName} 👋`;
+  }
   loadDailyBriefing(false);
   renderRecentlyViewed();
   const scopeNote=document.getElementById('dash-scope-note');
@@ -5863,6 +5891,26 @@ function queueUrgentPopup(html,onView,compactText){
   urgentPopupQueue.push({html,onView});
   showNextUrgentPopup();
 }
+// A short, soft two-tone chime — generated directly via Web Audio, no
+// external sound file to host or load. Respects the same notifications
+// toggle as everything else, so turning notifications off silences this too.
+function playNotificationChime(){
+  if(!notificationsEnabled)return;
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const now=ctx.currentTime;
+    [[880,0],[1108,.09]].forEach(([freq,delay])=>{
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.type='sine';osc.frequency.value=freq;
+      gain.gain.setValueAtTime(0,now+delay);
+      gain.gain.linearRampToValueAtTime(.12,now+delay+.01);
+      gain.gain.exponentialRampToValueAtTime(.001,now+delay+.18);
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.start(now+delay);osc.stop(now+delay+.2);
+    });
+  }catch(e){/* Web Audio not available - fail silently, visual popup still shows */}
+}
 function showNextUrgentPopup(){
   const overlay=document.getElementById('urgent-popup-overlay');
   if(!overlay||overlay.style.display==='flex')return; // one at a time
@@ -5871,6 +5919,7 @@ function showNextUrgentPopup(){
   document.getElementById('urgent-popup-card').innerHTML=item.html;
   urgentPopupAction=item.onView;
   overlay.style.display='flex';
+  playNotificationChime();
 }
 function actOnUrgentPopup(){
   if(urgentPopupAction)urgentPopupAction();
@@ -6011,9 +6060,34 @@ function checkDailyFollowupPopup(){
 
 function checkNoActivity(){const now=Date.now();const stale=leads.filter(l=>['New Enquiry','Contacted','Counselling Done'].includes(l.status)&&l.updated_at&&(now-new Date(l.updated_at).getTime())>2*86400000);const nb=document.getElementById('nb-fu');if(stale.length>0){nb.classList.add('hot');nb.textContent=stale.length;const existing=document.getElementById('stale-toast');if(!existing){const t=document.createElement('div');t.id='stale-toast';t.style.cssText='position:fixed;top:16px;right:24px;background:var(--ember);color:#fff;font-size:13px;padding:10px 18px;border-radius:var(--r);z-index:400;box-shadow:var(--shm);cursor:pointer';t.textContent=`⚠️ ${stale.length} lead${stale.length>1?'s':''} with no activity for 2+ days`;t.onclick=()=>{t.remove();nav('followup',document.querySelector('.ni[data-nav="followup"]'));};document.body.appendChild(t);setTimeout(()=>t?.remove(),8000);}}}
   function waFollowUp(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
-  function toast(m){
-  const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2800);
+  function toast(m,type){
+  // Backward compatible with every existing toast('message') call in the
+  // file — type is optional and auto-detected from the message content
+  // if not given, so nothing else needs to change.
+  if(!type){
+    const lower=(m||'').toLowerCase();
+    if(m?.includes('⚠️')||lower.includes('error')||lower.includes('failed')||lower.includes('could not')) type='error';
+    else if(m?.includes('✅')) type='success';
+    else type='info';
+  }
+  const icons={success:'✅',error:'⚠️',info:'ℹ️'};
+  const colors={success:'var(--sage)',error:'var(--ember)',info:'var(--pine)'};
+  let container=document.getElementById('toast-container');
+  if(!container){
+    container=document.createElement('div');
+    container.id='toast-container';
+    container.style.cssText='position:fixed;bottom:24px;right:24px;z-index:400;display:flex;flex-direction:column;gap:8px;align-items:flex-end';
+    document.body.appendChild(container);
+  }
+  const t=document.createElement('div');
+  t.className='toast-item';
+  t.style.cssText=`background:var(--paper);color:var(--ink);font-size:13px;padding:12px 16px;border-radius:var(--rl);box-shadow:var(--shm);border-left:3px solid ${colors[type]};display:flex;align-items:center;gap:9px;max-width:360px;animation:toastIn .25s ease`;
+  t.innerHTML=`<span style="font-size:15px;flex-shrink:0">${icons[type]}</span><span>${esc(m)}</span>`;
+  container.appendChild(t);
+  setTimeout(()=>{
+    t.style.animation='toastOut .25s ease forwards';
+    setTimeout(()=>t.remove(),250);
+  },2800);
 }
 
 

@@ -459,7 +459,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <div class="sng">Workspace</div>
       <button class="ni" data-nav="team" onclick="nav('team',this)"><i class="ti ti-id-badge"></i>Team</button>
       <button class="ni" data-nav="events" onclick="nav('events',this)"><i class="ti ti-calendar-event"></i>Events</button><button class="ni" data-nav="import" onclick="nav('import',this)"><i class="ti ti-file-import"></i>Import data</button>
-      <button class="ni" data-nav="finance" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" data-nav="digitalmarketing" id="ni-digitalmarketing" onclick="nav('digitalmarketing',this)"><i class="ti ti-speakerphone"></i>Digital Marketing</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
+      <button class="ni" data-nav="finance" onclick="nav('finance',this)"><i class="ti ti-cash"></i>Finance</button>       <button class="ni" data-nav="digital" id="ni-digital" onclick="nav('digital',this)"><i class="ti ti-speakerphone"></i>Digital</button>       <button class="ni" data-nav="marketing" id="ni-marketing" onclick="nav('marketing',this)"><i class="ti ti-palette"></i>Marketing</button>       <button class="ni" data-nav="metaleads" id="ni-metaleads" onclick="nav('metaleads',this)"><i class="ti ti-target-arrow"></i>Meta Leads</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot"></i>AI Counsellor</button>
     </div>
     <div class="sb-foot">
       <div class="sb-user">
@@ -823,30 +823,28 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         </div>
       </section>
 
-      <!-- Digital Marketing -->
-      <section id="sc-digitalmarketing" class="screen">
-        <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#1C3F6E,#2D5C9E);color:#fff">
-          <div class="card-h"><span class="card-t" style="color:#fff">📣 Live from Meta</span>
-            <button onclick="refreshMetaData()" id="dm-refresh-btn" style="font-size:12px;padding:6px 14px;background:rgba(255,255,255,.15);border:none;border-radius:99px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-refresh"></i> Refresh from Meta</button>
+      <!-- Digital: account-level health snapshot -->
+      <section id="sc-digital" class="screen">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h"><span class="card-t">📣 Live from Meta</span>
+            <button onclick="refreshMetaData()" id="dm-refresh-btn" class="btn btn-p" style="font-size:12px;padding:6px 14px"><i class="ti ti-refresh"></i> Refresh from Meta</button>
           </div>
-          <div id="dm-meta-status" style="font-size:12px;opacity:.85;margin-bottom:14px">Not checked yet this session — click Refresh.</div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="dm-meta-kpis"></div>
+          <div id="dm-meta-status" style="font-size:12px;color:var(--ink3);margin-bottom:16px">Not checked yet this session — click Refresh.</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px" id="dm-meta-kpis"></div>
         </div>
+      </section>
 
+      <!-- Marketing: content performance -->
+      <section id="sc-marketing" class="screen">
         <div class="card" style="margin-bottom:16px">
           <div class="card-h"><span class="card-t">🏆 Top Instagram posts — last 12, by reach</span></div>
-          <p style="font-size:12px;color:var(--ink3);margin-bottom:12px">Refreshed together with the Meta KPIs above. Shows which content is actually landing — use this to spot what the team should be making more of.</p>
+          <p style="font-size:12px;color:var(--ink3);margin-bottom:12px">Refreshed together with the Meta KPIs on the Digital tab. Shows which content is actually landing — use this to spot what the team should be making more of.</p>
           <div class="tw" style="border:none;box-shadow:none;border-radius:0">
             <table class="tbl">
               <thead><tr><th>Post</th><th>Type</th><th>Date</th><th>Views</th><th>Reach</th><th>Likes</th><th>Comments</th><th>Saved</th><th>Shares</th></tr></thead>
-              <tbody id="dm-posts-meta-tbody"><tr><td colspan="9" style="text-align:center;padding:20px;color:var(--ink3);font-style:italic">Click "Refresh from Meta" above to load.</td></tr></tbody>
+              <tbody id="dm-posts-meta-tbody"><tr><td colspan="9" style="text-align:center;padding:20px;color:var(--ink3);font-style:italic">Go to the Digital tab and click "Refresh from Meta" to load.</td></tr></tbody>
             </table>
           </div>
-        </div>
-
-        <div class="card" style="margin-bottom:16px">
-          <div class="card-h"><span class="card-t">🎯 Leads by source — real CRM data</span></div>
-          <div id="dm-source-breakdown"></div>
         </div>
 
         <div class="card">
@@ -867,6 +865,44 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <thead><tr><th>Date</th><th>Platform</th><th>Description</th><th>Reach</th><th>Engagement</th><th>Spend</th><th>Leads</th><th></th></tr></thead>
               <tbody id="dm-posts-tbody"></tbody>
             </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Meta Leads: source breakdown + bulk CSV import from Meta's Leads Center -->
+      <section id="sc-metaleads" class="screen">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h"><span class="card-t">🎯 Leads by source — real CRM data</span></div>
+          <div id="dm-source-breakdown"></div>
+        </div>
+
+        <div class="card" style="max-width:720px">
+          <div class="card-h"><span class="card-t">📥 Bulk import Meta leads (CSV)</span></div>
+          <p style="font-size:13px;color:var(--ink3);margin-bottom:16px;line-height:1.65">For the CSV you export from <strong>Meta Business Suite → Leads Center</strong>. Expected columns: <strong>Created, Name, Email address, Source, Form, Channel, Stage, Owner, Phone</strong> (Secondary phone / WhatsApp number are read too, if present). This is separate from the general importer on the "Import data" tab — this one understands Meta's specific export format and tags every lead's source automatically.</p>
+
+          <div class="fg" style="margin-bottom:14px">
+            <div class="ff"><label>Office these leads belong to</label>
+              <select id="ml-office">
+                <option value="India">India</option><option value="UK">UK</option><option value="Pakistan">Pakistan</option><option value="Bangladesh">Bangladesh</option>
+              </select>
+            </div>
+            <div class="ff"><label>Assignment</label>
+              <select id="ml-assign-method">
+                <option value="roundrobin">Auto-assign via round-robin</option>
+                <option value="unassigned">Leave unassigned — Admin/Management assigns manually</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="import-zone" onclick="document.getElementById('ml-csv').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropMetaLeadsCSV(event)">
+            <i class="ti ti-upload"></i>
+            <p style="font-size:14px;font-weight:500;color:var(--ink2);margin-bottom:4px">Drop your Meta Leads Center CSV here</p>
+            <span style="font-size:12px;color:var(--ink3)">or click to browse</span>
+          </div>
+          <input type="file" id="ml-csv" accept=".csv,.txt" style="display:none" onchange="handleMetaLeadsCSV(event)">
+          <div id="ml-preview" style="display:none;margin-top:14px;font-size:12px;color:var(--ink3);background:var(--cream);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;max-height:160px;overflow-y:auto"></div>
+          <div id="ml-btn" style="display:none;margin-top:14px">
+            <button class="btn btn-p" onclick="doMetaLeadsImport()"><i class="ti ti-database-import"></i>Import <span id="ml-count">0</span> leads to shared database</button>
           </div>
         </div>
       </section>
@@ -2651,7 +2687,7 @@ function nav(id,btn){
   document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
   document.getElementById('sc-'+id).classList.add('active');
   if(btn)btn.classList.add('active');
-  const T={dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digitalmarketing:'Digital Marketing',reports:'Reports',coursefinder:'Course & University Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail'};
+  const T={dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digital:'Digital',marketing:'Marketing',metaleads:'Meta Leads',reports:'Reports',coursefinder:'Course & University Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail'};
   document.getElementById('topbar-title').textContent=T[id]||id;
   // Role guard — checked before rendering the target screen.
   // Uses isRestrictedStaffRole() (Counsellor + Application/Visa/SOP Team),
@@ -2660,7 +2696,7 @@ function nav(id,btn){
   // never the intent.
   const roleIsCounsellor=isRestrictedStaffRole();
   if(id==='finance'&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
-  if(id==='digitalmarketing'&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
+  if((id==='digital'||id==='marketing'||id==='metaleads')&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
   if(id==='team'&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
   if(id==='productivity'&&roleIsCounsellor&&!isSuperAdmin){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Productivity is restricted to Admins.');return;}
   if(id==='leads'){renderLeads();setTimeout(applyRoleUI,500);}
@@ -2671,7 +2707,7 @@ function nav(id,btn){
   if(id==='resources')loadResourcesAdmin();
   if(id==='resumes'){loadResumes().then(renderResumesAdmin);}
   if(id==='finance')renderFinance();
-  if(id==='digitalmarketing')initDigitalMarketing();
+  if(id==='digital'||id==='marketing'||id==='metaleads')initDigitalMarketing();
   if(id==='reports'){if(roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}initReports();}
   if(id==='subteam-detail'){if(myRole==='Counsellor'&&!isSuperAdmin){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Team Dashboards is for Application/Visa/SOP Team and management.');return;}renderSubTeamDetail();}
   if(id==='productivity'){loadCallLogs().then(renderCallLogs);}
@@ -4245,6 +4281,161 @@ async function doImport(){
   toast(toInsert.length+' leads imported to shared database!'+skipMsg);
 }
 
+// ── Meta Leads Center bulk CSV importer ─────────────────────────────
+// Separate from the generic doImport() above — this one knows Meta's
+// exact Leads Center export columns (Created, Name, Email address,
+// Source, Form, Channel, Stage, Owner, Phone, Secondary phone number,
+// WhatsApp number) and tags every lead's source/notes automatically,
+// rather than relying on the person to have renamed columns to match
+// the generic importer's expected headers.
+//
+// Uses a proper quoted-CSV parser (not naive split(',')) because real
+// exports contain commas inside names/labels (e.g. names written with a
+// comma, or in scripts where a naive split corrupts the row).
+let metaLeadsRows=[];
+
+function parseCSVProper(text){
+  // Strips a UTF-8 BOM if present (Meta's export includes one).
+  if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+  const rows=[];
+  let row=[],field='',inQuotes=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i],next=text[i+1];
+    if(inQuotes){
+      if(c==='"'&&next==='"'){field+='"';i++;}
+      else if(c==='"'){inQuotes=false;}
+      else field+=c;
+    } else {
+      if(c==='"')inQuotes=true;
+      else if(c===','){row.push(field);field='';}
+      else if(c==='\r'){/* skip, \n handles the line break */}
+      else if(c==='\n'){row.push(field);rows.push(row);row=[];field='';}
+      else field+=c;
+    }
+  }
+  if(field.length||row.length){row.push(field);rows.push(row);}
+  return rows.filter(r=>r.length>1||r[0]!=='');
+}
+
+function dropMetaLeadsCSV(e){e.preventDefault();e.currentTarget.style.borderColor='';if(e.dataTransfer.files[0])parseMetaLeadsFile(e.dataTransfer.files[0]);}
+function handleMetaLeadsCSV(e){if(e.target.files[0])parseMetaLeadsFile(e.target.files[0]);}
+
+function parseMetaLeadsFile(file){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const table=parseCSVProper(e.target.result);
+    if(table.length<2){toast('CSV needs at least a header row and one data row.');return;}
+    const headers=table[0].map(h=>h.trim().toLowerCase());
+    const rows=[];
+    for(let i=1;i<table.length;i++){
+      const cols=table[i];
+      if(cols.length<2||!cols.some(c=>c.trim()))continue;
+      const row={};headers.forEach((h,j)=>{row[h]=(cols[j]||'').trim();});
+      rows.push(row);
+    }
+    metaLeadsRows=rows;
+    const prev=document.getElementById('ml-preview');
+    prev.style.display='block';
+    const paidCount=rows.filter(r=>(r['source']||'').toLowerCase()==='paid').length;
+    prev.innerHTML=`<div style="font-weight:600;margin-bottom:6px;color:var(--pine)">${rows.length} leads found (${paidCount} paid, ${rows.length-paidCount} organic)</div>`+
+      rows.slice(0,5).map(r=>`<div style="padding:3px 0;border-bottom:1px solid var(--line)">${esc(r['name']||'—')} · ${esc(r['phone']||'—')} · ${esc(r['channel']||'—')} · ${esc(r['source']||'—')}</div>`).join('');
+    document.getElementById('ml-btn').style.display='block';
+    document.getElementById('ml-count').textContent=rows.length;
+  };
+  reader.readAsText(file);
+}
+
+async function doMetaLeadsImport(){
+  if(!metaLeadsRows.length)return;
+  const btn=document.querySelector('#ml-btn .btn');btn.disabled=true;btn.textContent='Importing…';
+  setSyncing();
+
+  const office=document.getElementById('ml-office').value||'India';
+  const assignMethod=document.getElementById('ml-assign-method').value;
+
+  // Build the assignment plan BEFORE inserting, so round-robin only writes
+  // its rotation state to Supabase ONCE at the end (not once per lead —
+  // hundreds of individual upserts would be slow and unnecessary).
+  let assignedNames=[];
+  if(assignMethod==='roundrobin'){
+    const pool=getRoundRobinCounsellorPool(office);
+    if(!pool.length){
+      btn.disabled=false;btn.textContent='Import '+metaLeadsRows.length+' leads to shared database';
+      toast(`No round-robin-eligible counsellors found for ${office}. Choose "Leave unassigned" instead, or add counsellors to that office.`);
+      return;
+    }
+    let idx=(rrStateByOffice[office]||0);
+    for(let i=0;i<metaLeadsRows.length;i++){
+      assignedNames.push(pool[idx%pool.length].full_name);
+      idx++;
+    }
+    rrStateByOffice[office]=idx;
+    // Persist the final rotation position once, not per-lead.
+    const{error:rrErr}=await sb.from('round_robin_state').upsert({office,last_index:idx},{onConflict:'office'});
+    if(rrErr)console.error('Failed to persist round_robin_state after bulk Meta import:',rrErr);
+  }
+
+  const allRows=metaLeadsRows.map((r,i)=>{
+    const sourceRaw=(r['source']||'').toLowerCase();
+    const channel=r['channel']||'';
+    const source=sourceRaw==='paid'?'Meta Ads':(channel.toLowerCase()==='instagram'?'Instagram':'Meta Organic');
+    const noteParts=[];
+    if(channel)noteParts.push(`Channel: ${channel}`);
+    if(r['form'])noteParts.push(`Form: ${r['form']}`);
+    if(r['stage'])noteParts.push(`Meta stage: ${r['stage']}`);
+    if(r['secondary phone number'])noteParts.push(`Alt phone: ${r['secondary phone number']}`);
+    if(r['whatsapp number'])noteParts.push(`WhatsApp: ${r['whatsapp number']}`);
+    return{
+      lead_id:'S4P-'+String(leads.length+i+1).padStart(4,'0'),
+      name:r['name']||'',
+      mobile:r['phone']||r['whatsapp number']||'',
+      email:r['email address']||r['email']||'',
+      status:'New Enquiry',
+      source,
+      priority:'Medium',
+      counsellor:assignMethod==='roundrobin'?(assignedNames[i]||''):'',
+      country:office,
+      office,
+      notes:noteParts.join(' • '),
+      added_by:currentUser?.id
+    };
+  }).filter(r=>r.name);
+
+  // Same duplicate-guard pattern as the generic importer: skip rows whose
+  // phone matches an existing lead, and skip repeats within the file.
+  const existingPhones=new Set(leads.map(l=>normalizePhone(l.mobile)).filter(Boolean));
+  const seenInBatch=new Set();
+  let skippedExisting=0, skippedInBatch=0;
+  const toInsert=allRows.filter(r=>{
+    const np=normalizePhone(r.mobile);
+    if(!np)return true;
+    if(existingPhones.has(np)){skippedExisting++;return false;}
+    if(seenInBatch.has(np)){skippedInBatch++;return false;}
+    seenInBatch.add(np);
+    return true;
+  });
+
+  if(!toInsert.length){
+    btn.disabled=false;btn.textContent='Import '+metaLeadsRows.length+' leads to shared database';
+    toast(`Nothing to import — all ${skippedExisting+skippedInBatch} rows matched existing leads or repeated within the file.`);
+    return;
+  }
+  const{error,data}=await sb.from('leads').insert(toInsert).select();
+  btn.disabled=false;
+  if(error){setSyncErr();toast('Import error: '+error.message);return;}
+  if(data)leads=[...data,...leads];
+  if(data)data.forEach(l=>logActivity(l.id,'imported',`Imported from Meta Leads Center, assigned to ${l.counsellor||'Unassigned'}`));
+  setSynced();
+  document.getElementById('ml-preview').style.display='none';
+  document.getElementById('ml-btn').style.display='none';
+  metaLeadsRows=[];
+  renderLeads();renderDash();badges();applyRoleUI();
+  renderSourceBreakdown();
+  const skipMsg=(skippedExisting+skippedInBatch)>0?` (${skippedExisting} already existed, ${skippedInBatch} repeated in file — skipped)`:'';
+  const assignMsg=assignMethod==='roundrobin'?' and assigned via round-robin':' — left unassigned for manual assignment';
+  toast(toInsert.length+' Meta leads imported'+assignMsg+'!'+skipMsg);
+}
+
 function buildCSV(rows){
   const H=['Lead ID','Name','Mobile','Email','City','DOB','Qualification','Program','Destination','Status','Source','Priority','Country','Office','Counsellor','Follow-up','Notes','Intake Month','IELTS Status','IELTS Score','Budget','English','Created'];
   const lines=rows.map(l=>[l.lead_id,l.name,l.mobile,l.email,l.city,l.dob,l.qualification,l.program,l.destination,l.status,l.source,l.priority,l.country,l.office,l.counsellor,l.next_followup,l.notes,l.intake_month,l.ielts_status,l.ielts_score,l.budget_range,l.english_status,l.created_at].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(','));
@@ -5098,9 +5289,15 @@ async function checkUnreadDmCount(){
 // ══ DIGITAL MARKETING DASHBOARD ═════════════════════════════════════
 const META_PULL_URL='https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/meta-data-pull';
 function initDigitalMarketing(){
-  document.getElementById('dm-post-date').value=new Date().toISOString().substring(0,10);
+  const dateEl=document.getElementById('dm-post-date');
+  if(dateEl&&!dateEl.value)dateEl.value=new Date().toISOString().substring(0,10);
   renderSourceBreakdown();
   loadMarketingPosts();
+  const mlOffice=document.getElementById('ml-office');
+  if(mlOffice&&!mlOffice.dataset.initialized){
+    mlOffice.value=myOffice||'India';
+    mlOffice.dataset.initialized='1';
+  }
 }
 // Meta/Supabase errors can come back as a plain string, or a nested
 // object like {message:"..."} or {error:{message:"..."}} — this makes
@@ -5141,33 +5338,43 @@ async function refreshMetaData(){
   const fb=results.facebook||{};
   const ads=results.ads||{};
   const ig=results.instagram||{};
-  const kpis=[];
+  const kpis=[]; // [label, value, top-border color var, text color var, icon]
   if(fb.error){
-    kpis.push(['Facebook',`⚠️ ${safeErrorText(fb.error)}`,'c7']);
+    kpis.push(['Facebook',`⚠️ ${safeErrorText(fb.error)}`,'var(--rose)','kv-r','ti-brand-facebook']);
   } else {
-    kpis.push(['Page followers',fb.page_fans??'—','c1']);
-    kpis.push(['Page views (30d)',fb.page_views??'—','c1']);
+    kpis.push(['Page followers',fmtNum(fb.page_fans),'var(--sky)','kv-t','ti-users']);
+    kpis.push(['Page views (30d)',fmtNum(fb.page_views),'var(--sky)','kv-t','ti-eye']);
   }
   if(ads.error){
-    kpis.push(['Ad spend',`⚠️ ${safeErrorText(ads.error)}`,'c7']);
+    kpis.push(['Ad spend',`⚠️ ${safeErrorText(ads.error)}`,'var(--rose)','kv-r','ti-alert-triangle']);
   } else {
-    kpis.push(['Ad spend',ads.spend?`₹${Number(ads.spend).toLocaleString('en-IN')}`:'—','c3']);
-    kpis.push(['Leads (30d)',ads.leads??'—','c6']);
-    kpis.push(['Cost per lead',ads.cost_per_lead?`₹${Number(ads.cost_per_lead).toLocaleString('en-IN')}`:'—','c2']);
+    kpis.push(['Ad spend',ads.spend?`₹${Number(ads.spend).toLocaleString('en-IN')}`:'—','var(--gold)','kv-o','ti-currency-rupee']);
+    kpis.push(['Leads (30d)',fmtNum(ads.leads),'var(--gold)','kv-o','ti-target-arrow']);
+    kpis.push(['Cost per lead',ads.cost_per_lead?`₹${Number(ads.cost_per_lead).toLocaleString('en-IN')}`:'—','var(--gold)','kv-o','ti-receipt']);
   }
   if(ig.error){
-    kpis.push(['Instagram',`⚠️ ${safeErrorText(ig.error)}`,'c7']);
+    kpis.push(['Instagram',`⚠️ ${safeErrorText(ig.error)}`,'var(--rose)','kv-r','ti-brand-instagram']);
   } else {
-    kpis.push(['Instagram followers',ig.followers??'—','c4']);
-    kpis.push(['Instagram reach (30d)',ig.reach??'—','c5']);
-    kpis.push(['Instagram views (30d)',ig.views??'—','c5']);
+    kpis.push(['Instagram followers',fmtNum(ig.followers),'var(--pine)','kv-p','ti-brand-instagram']);
+    kpis.push(['Instagram reach (30d)',fmtNum(ig.reach),'var(--pine)','kv-p','ti-affiliate']);
+    kpis.push(['Instagram views (30d)',fmtNum(ig.views),'var(--pine)','kv-p','ti-player-play']);
   }
-  kpisEl.innerHTML=kpis.map(([label,val,cls])=>
-    `<div class="rpt-hero ${cls}" style="background:rgba(255,255,255,.1)"><div class="rpt-hero-l" style="color:rgba(255,255,255,.75)">${label}</div><div class="rpt-hero-v" style="color:#fff;font-size:${String(val).length>30?'12px':'inherit'}">${val}</div></div>`
-  ).join('');
+  kpisEl.innerHTML=kpis.map(([label,val,borderColor,valClass,icon])=>{
+    const isErr=String(val).startsWith('⚠️');
+    return `<div class="kpi" style="border-top:3px solid ${borderColor}!important">
+      <div class="kpi-l"><i class="ti ${icon}" style="margin-right:5px"></i>${label}</div>
+      <div class="kpi-v ${isErr?'':valClass}" style="${isErr?'font-size:13px;font-weight:500;line-height:1.4;color:var(--rose)':''}">${val}</div>
+    </div>`;
+  }).join('');
   statusEl.textContent=`Last checked: ${new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}.`;
 
   renderMetaPosts(results.instagram_posts);
+}
+// Clean number formatting for the KPI tiles — thousands separators, and
+// an em-dash for null/undefined rather than a bare "null" on screen.
+function fmtNum(n){
+  if(n===null||n===undefined)return '—';
+  return Number(n).toLocaleString('en-IN');
 }
 function renderMetaPosts(postsResult){
   const tb=document.getElementById('dm-posts-meta-tbody');
@@ -5186,13 +5393,13 @@ function renderMetaPosts(postsResult){
     const typeLabel=p.media_product_type==='REELS'?'🎬 Reel':(p.media_type==='VIDEO'?'🎬 Video':'🖼️ Post');
     const captionShort=esc((p.caption||'').slice(0,60))+((p.caption||'').length>60?'…':'');
     const link=p.permalink?`<a href="${esc(p.permalink)}" target="_blank" rel="noopener" style="color:var(--sky);text-decoration:none">${captionShort||'(view post)'}</a>`:captionShort;
-    return `<tr><td style="max-width:260px">${link}</td><td>${typeLabel}</td><td>${dateStr}</td><td>${p.views??'—'}</td><td>${p.reach??'—'}</td><td>${p.likes??'—'}</td><td>${p.comments??'—'}</td><td>${p.saved??'—'}</td><td>${p.shares??'—'}</td></tr>`;
+    return `<tr><td style="max-width:260px">${link}</td><td>${typeLabel}</td><td>${dateStr}</td><td>${fmtNum(p.views)}</td><td>${fmtNum(p.reach)}</td><td>${fmtNum(p.likes)}</td><td>${fmtNum(p.comments)}</td><td>${fmtNum(p.saved)}</td><td>${fmtNum(p.shares)}</td></tr>`;
   }).join('');
 }
 function renderSourceBreakdown(){
   const el=document.getElementById('dm-source-breakdown');
   if(!el)return;
-  const metaSources=['Meta Ads','Meta Enquiry','Instagram'];
+  const metaSources=['Meta Ads','Meta Enquiry','Meta Organic','Instagram'];
   const counts={};
   leads.forEach(l=>{
     const src=l.source||'Unspecified';

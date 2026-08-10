@@ -483,6 +483,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <option style="background:#0D4A3C">Visa Team</option>
             <option style="background:#0D4A3C">SOP Team</option>
             <option style="background:#0D4A3C">Agent</option>
+            <option style="background:#0D4A3C">Digital Marketing</option>
           </select>
         </div>
         <input type="hidden" id="signup-teamcategory" value="International">
@@ -907,6 +908,23 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
       <!-- Digital Marketing -->
       <section id="sc-digitalmarketing" class="screen">
+        <div class="card" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <div><span class="card-t">🌍 Country</span></div>
+          <div id="dm-country-locked" style="display:none;font-size:13px;font-weight:600;color:var(--pine)"></div>
+          <select id="dm-country-select" onchange="onDmCountryChange()" style="font-size:13px;padding:6px 12px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b)">
+            <option>India</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option>
+          </select>
+        </div>
+
+        <div id="dm-not-connected-placeholder" style="display:none">
+          <div class="card" style="margin-bottom:16px;text-align:center;padding:40px 24px">
+            <div style="font-size:36px;margin-bottom:10px">🚧</div>
+            <div style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px">Meta & GA4 not connected yet for <span id="dm-not-connected-country"></span></div>
+            <div style="font-size:13px;color:var(--ink3);max-width:420px;margin:0 auto">This country's Digital Marketing dashboard is set up and ready — once real Meta and Google Analytics credentials are provided for this office, live data will appear here the same way it does for India.</div>
+          </div>
+        </div>
+
+        <div id="dm-connected-sections">
         <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#1C3F6E,#2D5C9E);color:#fff">
           <div class="card-h"><span class="card-t" style="color:#fff">📣 Live from Meta</span>
             <div style="display:flex;gap:8px">
@@ -917,6 +935,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div id="dm-meta-status" style="font-size:12px;opacity:.85;margin-bottom:14px">Not checked yet this session — click Refresh.</div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="dm-meta-kpis"></div>
         </div>
+
 
         <div class="card" style="margin-bottom:16px">
           <div class="card-h"><span class="card-t">🌐 Website Analytics</span>
@@ -930,6 +949,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <tbody id="dm-ga4-history-tbody"></tbody>
             </table>
           </div>
+        </div>
         </div>
 
         <div class="card" style="margin-bottom:16px">
@@ -1561,7 +1581,7 @@ What would you like help with today?</div>
     <div class="fg">
       <div class="ff full"><label>Name (optional, for your reference)</label><input id="inv-name" placeholder="e.g. Priya Sharma"></div>
       <div class="ff"><label>Role</label>
-        <select id="inv-role" onchange="syncInviteTeamCategory()"><option>Counsellor</option><option>Admin</option><option>Manager</option><option>Director</option><option>Application Team</option><option>Visa Team</option><option>SOP Team</option><option>Agent</option></select>
+        <select id="inv-role" onchange="syncInviteTeamCategory()"><option>Counsellor</option><option>Admin</option><option>Manager</option><option>Director</option><option>Application Team</option><option>Visa Team</option><option>SOP Team</option><option>Agent</option><option>Digital Marketing</option></select>
       </div>
       <div class="ff" id="inv-teamcat-wrap"><label>Team category</label>
         <select id="inv-teamcat"><option value="International">International</option><option value="Domestic">Domestic (UK internal)</option></select>
@@ -2056,7 +2076,7 @@ function isDomesticAdmin(){return myTeamCategory==='Domestic'&&myRole==='Admin';
 // others' work or performance."
 function isRestrictedStaffRole(){
   if(isSuperAdmin)return false;
-  if(['Counsellor','Application Team','Visa Team','SOP Team'].includes(myRole))return true;
+  if(['Counsellor','Application Team','Visa Team','SOP Team','Digital Marketing'].includes(myRole))return true;
   if(isDomesticOrAgent())return true;
   return false;
 }
@@ -2893,6 +2913,11 @@ async function loadLeads(){
 
   if(isSuperAdmin){
     // no restriction — sees everything
+  } else if(myRole==='Digital Marketing'){
+    // Digital Marketing works with aggregate marketing data, never
+    // individual lead records - deliberately scoped to nothing here
+    // rather than falling through to a broader default.
+    q=q.eq('id','00000000-0000-0000-0000-000000000000');
   } else if(myTeamCategory==='Agent'){
     // Agent: only leads explicitly, individually assigned to them by
     // Management — never country-scoped, never round-robin.
@@ -2969,9 +2994,20 @@ function nav(id,btn){
   // not just a literal Counsellor check — Application/Visa/SOP Team
   // members were previously able to reach these screens too, which was
   // never the intent.
+  // Digital Marketing role members only ever need their own dashboard and
+  // the general Dashboard - a default-deny here is cleaner and safer than
+  // individually blocking every other screen one at a time.
+  if(myRole==='Digital Marketing'&&!isSuperAdmin&&!['dashboard','digitalmarketing'].includes(id)){
+    nav('digitalmarketing',document.querySelector('.ni[data-nav="digitalmarketing"]'));
+    toast('Digital Marketing accounts only have access to the Digital Marketing dashboard.');
+    return;
+  }
   const roleIsCounsellor=isRestrictedStaffRole();
   if(id==='finance'&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
-  if(id==='digitalmarketing'&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
+  // Digital Marketing role members are otherwise treated as restricted
+  // staff (blocked from Finance/Team/etc, same as Counsellors) but need
+  // through to the one screen their whole role exists for.
+  if(id==='digitalmarketing'&&roleIsCounsellor&&myRole!=='Digital Marketing'){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
   if(id==='team'&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
   if(id==='productivity'&&roleIsCounsellor&&!isSuperAdmin){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Productivity is restricted to Admins.');return;}
   if(id==='leads'){renderLeads();setTimeout(applyRoleUI,500);}
@@ -5425,11 +5461,37 @@ async function checkUnreadDmCount(){
 // re-call the AI every time the Dashboard re-renders.
 // ══ DIGITAL MARKETING DASHBOARD ═════════════════════════════════════
 const META_PULL_URL='https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/meta-data-pull';
+// Only India has real Meta/GA4 credentials connected so far - other
+// countries show a clean placeholder until their own credentials exist.
+const DM_CONNECTED_COUNTRIES=['India'];
+let dmActiveCountry='India';
 function initDigitalMarketing(){
   document.getElementById('dm-post-date').value=new Date().toISOString().substring(0,10);
+  const sel=document.getElementById('dm-country-select');
+  const lockedLabel=document.getElementById('dm-country-locked');
+  if(myRole==='Digital Marketing'&&!isSuperAdmin){
+    // Locked to their own country - no picking around at other offices.
+    dmActiveCountry=myCountry||'India';
+    sel.style.display='none';
+    lockedLabel.style.display='block';
+    lockedLabel.textContent=dmActiveCountry;
+  } else {
+    sel.style.display='block';
+    lockedLabel.style.display='none';
+    sel.value=dmActiveCountry;
+  }
+  onDmCountryChange();
+}
+function onDmCountryChange(){
+  const sel=document.getElementById('dm-country-select');
+  if(sel.style.display!=='none') dmActiveCountry=sel.value;
+  const connected=DM_CONNECTED_COUNTRIES.includes(dmActiveCountry);
+  document.getElementById('dm-not-connected-placeholder').style.display=connected?'none':'block';
+  document.getElementById('dm-connected-sections').style.display=connected?'block':'none';
+  document.getElementById('dm-not-connected-country').textContent=dmActiveCountry;
   renderSourceBreakdown();
   loadMarketingPosts();
-  loadGA4History();
+  if(connected) loadGA4History();
 }
 // Meta/Supabase errors can come back as a plain string, or a nested
 // object like {message:"..."} or {error:{message:"..."}} — this makes
@@ -5556,18 +5618,25 @@ async function loadGA4History(){
   </tr>`).join('');
 }
 
-function renderSourceBreakdown(){
+async function renderSourceBreakdown(){
   const el=document.getElementById('dm-source-breakdown');
   if(!el)return;
+  el.innerHTML='<div style="font-size:12px;color:var(--ink3);font-style:italic">Loading…</div>';
   const metaSources=['Meta Ads','Meta Enquiry','Instagram'];
+  // A dedicated, minimal query (source field only) rather than reusing
+  // the global `leads` array - that array is empty for Digital Marketing
+  // role members by design (no individual lead access), but they still
+  // need this aggregate, country-scoped breakdown.
+  const{data,error}=await sb.from('leads').select('source').eq('country',dmActiveCountry);
+  if(error){el.innerHTML=emptyState('⚠️','Could not load lead sources.');return;}
   const counts={};
-  leads.forEach(l=>{
+  (data||[]).forEach(l=>{
     const src=l.source||'Unspecified';
     counts[src]=(counts[src]||0)+1;
   });
   const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
   if(!sorted.length){el.innerHTML=emptyState('📭','No leads yet.');return;}
-  const total=leads.length||1;
+  const total=(data||[]).length||1;
   el.innerHTML=sorted.map(([src,count])=>{
     const isMeta=metaSources.includes(src);
     const pct=Math.round(count/total*100);
@@ -5577,9 +5646,9 @@ function renderSourceBreakdown(){
 async function loadMarketingPosts(){
   const tb=document.getElementById('dm-posts-tbody');
   if(!tb)return;
-  const{data,error}=await sb.from('marketing_posts').select('*').order('post_date',{ascending:false}).limit(50);
+  const{data,error}=await sb.from('marketing_posts').select('*').eq('country',dmActiveCountry).order('post_date',{ascending:false}).limit(50);
   if(error){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--ink3);font-style:italic">Could not load — has marketing_posts been created in Supabase yet?</td></tr>';return;}
-  if(!data||!data.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--ink3);font-style:italic">No posts logged yet.</td></tr>';return;}
+  if(!data||!data.length){tb.innerHTML=`<tr><td colspan="8">${emptyState('📝','No posts logged yet for '+esc(dmActiveCountry)+'.')}</td></tr>`;return;}
   tb.innerHTML=data.map(p=>`<tr>
     <td style="font-size:12px;color:var(--ink3)">${p.post_date?new Date(p.post_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—'}</td>
     <td><span class="pill" style="background:var(--cream);color:var(--ink3)">${esc(p.platform)}</span></td>
@@ -5602,7 +5671,8 @@ async function addMarketingPost(){
     engagement:Number(document.getElementById('dm-post-engagement').value)||0,
     spend:Number(document.getElementById('dm-post-spend').value)||0,
     leads_generated:Number(document.getElementById('dm-post-leads').value)||0,
-    created_by:myName
+    created_by:myName,
+    country:dmActiveCountry
   };
   const{error}=await sb.from('marketing_posts').insert(data);
   if(error){toast('Error: '+error.message);return;}

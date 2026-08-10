@@ -944,6 +944,27 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div id="dm-ig-posts-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px"></div>
         </div>
 
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h"><span class="card-t">📘 Recent Facebook Posts</span>
+            <button onclick="loadFacebookPosts()" id="dm-fb-posts-btn" style="font-size:12px;padding:5px 12px" class="btn"><i class="ti ti-refresh"></i> Load Posts</button>
+          </div>
+          <div id="dm-fb-posts-status" style="font-size:12px;color:var(--ink3);margin-bottom:12px">Not loaded yet this session — click Load Posts.</div>
+          <div id="dm-fb-posts-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px"></div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h"><span class="card-t">🎯 Leads by ad — which campaigns are actually converting</span>
+            <button onclick="loadLeadsByAd()" id="dm-leadsbyad-btn" style="font-size:12px;padding:5px 12px" class="btn"><i class="ti ti-refresh"></i> Load</button>
+          </div>
+          <div id="dm-leadsbyad-status" style="font-size:12px;color:var(--ink3);margin-bottom:12px">Not loaded yet this session — click Load.</div>
+          <div class="tw" style="border:none;box-shadow:none;border-radius:0">
+            <table class="tbl">
+              <thead><tr><th>Ad</th><th>Leads</th><th>Spend (30d)</th><th>Cost per lead</th></tr></thead>
+              <tbody id="dm-leadsbyad-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
 
         <div class="card" style="margin-bottom:16px">
           <div class="card-h"><span class="card-t">🌐 Website Analytics</span>
@@ -1377,6 +1398,11 @@ What would you like help with today?</div>
         </p>
         <input type="file" id="mbu-file-input" accept=".csv" onchange="handleMetaCSVSelected(this.files[0])" style="margin-bottom:14px">
         <div id="mbu-parse-status" style="font-size:12px;color:var(--ink3);font-style:italic"></div>
+
+        <div style="margin-top:22px;padding-top:16px;border-top:1px solid var(--line)">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px">Previous uploads</div>
+          <div id="mbu-history-list" style="font-size:12px;color:var(--ink3)">Loading…</div>
+        </div>
       </div>
 
       <div id="mbu-step-preview" style="display:none">
@@ -1397,7 +1423,10 @@ What would you like help with today?</div>
       <div id="mbu-step-done" style="display:none;text-align:center;padding:30px 0">
         <div style="font-size:40px;margin-bottom:10px">✅</div>
         <div id="mbu-done-summary" style="font-size:14px;font-weight:600"></div>
-        <button class="btn btn-p" onclick="closeModal('modal-meta-bulk-upload')" style="margin-top:16px">Done</button>
+        <div style="margin-top:16px;display:flex;gap:10px;justify-content:center">
+          <button class="btn" id="mbu-undo-btn" onclick="undoLastMbuUpload()" style="display:none;color:var(--rose)"><i class="ti ti-trash"></i>Undo this upload</button>
+          <button class="btn btn-p" onclick="closeModal('modal-meta-bulk-upload')">Done</button>
+        </div>
       </div>
 
     </div>
@@ -2197,6 +2226,7 @@ function openMetaBulkUploadModal(){
   document.getElementById('mbu-file-input').value='';
   document.getElementById('mbu-parse-status').textContent='';
   showMbuStep('upload');
+  loadMbuHistory();
   document.getElementById('modal-meta-bulk-upload').classList.add('open');
 }
 function showMbuStep(step){
@@ -2206,6 +2236,7 @@ function showMbuStep(step){
 }
 function handleMetaCSVSelected(file){
   if(!file)return;
+  mbuLastFilename=file.name;
   const statusEl=document.getElementById('mbu-parse-status');
   statusEl.textContent='Reading file…';
   const reader=new FileReader();
@@ -2261,6 +2292,7 @@ async function confirmMetaBulkUpload(){
   const btn=document.getElementById('mbu-confirm-btn');
   btn.disabled=true;btn.textContent='Uploading…';
   const validLeads=mbuParsedLeads.filter(l=>l.country);
+  const batchId=crypto.randomUUID();
   let uploaded=0, failed=0;
   for(const l of validLeads){
     const office=COUNTRY_DEFAULT_OFFICE[l.country]||null;
@@ -2280,6 +2312,7 @@ async function confirmMetaBulkUpload(){
       adset:l.adset||null,
       ad:l.ad||null,
       added_by:currentUser?.id,
+      upload_batch_id:batchId, // lets this whole upload be undone in one action later
     }).select();
     if(error){failed++;console.error('Bulk upload row failed:',l,error);}
     else{
@@ -2287,13 +2320,70 @@ async function confirmMetaBulkUpload(){
       if(inserted?.[0]?.id) logActivity(inserted[0].id,'created',`Bulk-uploaded Meta lead${picked.name?' — assigned to '+picked.name:''}`);
     }
   }
+  // Log the upload itself (filename/count/who/when) so it shows up in the
+  // upload-history list and can be found and deleted later, not just
+  // right after uploading.
+  if(uploaded>0){
+    await sb.from('meta_bulk_uploads').insert({
+      id:batchId,
+      filename:mbuLastFilename||null,
+      lead_count:uploaded,
+      uploaded_by:currentUser?.id,
+    });
+  }
+  mbuLastBatchId=uploaded>0?batchId:null;
   btn.disabled=false;btn.textContent='Upload these leads';
   document.getElementById('mbu-done-summary').innerHTML=
     `${uploaded} lead${uploaded!==1?'s':''} uploaded successfully.` +
     (failed?`<br><span style="color:var(--rose)">${failed} row(s) failed — check the console for details.</span>`:'') +
     (mbuParsedLeads.length-validLeads.length?`<br><span style="color:var(--gold)">${mbuParsedLeads.length-validLeads.length} row(s) skipped — unknown country.</span>`:'');
+  document.getElementById('mbu-undo-btn').style.display=mbuLastBatchId?'inline-flex':'none';
   showMbuStep('done');
   loadLeads().then(()=>{renderLeads();renderDash();});
+}
+
+// ── Undo a whole bulk upload (either right after uploading, or later
+// from the upload-history list) — deletes every lead tagged with that
+// batch, plus the log row itself, in one confirm.
+let mbuLastBatchId=null;
+let mbuLastFilename=null;
+async function deleteMbuBatch(batchId){
+  if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete a bulk upload.');return;}
+  const{count}=await sb.from('leads').select('id',{count:'exact',head:true}).eq('upload_batch_id',batchId);
+  if(!confirm(`Delete this upload? This removes all ${count??''} lead(s) from it. This cannot be undone.`))return;
+  const{error}=await sb.from('leads').delete().eq('upload_batch_id',batchId);
+  if(error){toast('Error deleting upload — some leads may not have been removed.');return;}
+  await sb.from('meta_bulk_uploads').delete().eq('id',batchId);
+  toast('Upload deleted.');
+  loadLeads().then(()=>{renderLeads();renderDash();});
+  loadMbuHistory();
+  if(batchId===mbuLastBatchId){
+    mbuLastBatchId=null;
+    document.getElementById('mbu-undo-btn').style.display='none';
+  }
+}
+function undoLastMbuUpload(){
+  if(!mbuLastBatchId)return;
+  deleteMbuBatch(mbuLastBatchId);
+}
+
+// ── Upload history — lets an OLDER bulk upload be found and deleted
+// too, not just the one that was just done.
+async function loadMbuHistory(){
+  const el=document.getElementById('mbu-history-list');
+  if(!el)return;
+  const{data,error}=await sb.from('meta_bulk_uploads').select('*').order('created_at',{ascending:false}).limit(10);
+  if(error||!data||!data.length){
+    el.innerHTML=`<div style="font-size:12px;color:var(--ink3);font-style:italic;padding:8px 0">No previous uploads yet.</div>`;
+    return;
+  }
+  el.innerHTML=data.map(u=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)">
+    <div>
+      <div style="font-size:12px;font-weight:600">${esc(u.filename||'(filename not recorded)')}</div>
+      <div style="font-size:11px;color:var(--ink3)">${u.lead_count} lead${u.lead_count!==1?'s':''} · ${new Date(u.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+    </div>
+    <button onclick="deleteMbuBatch('${u.id}')" class="btn" style="font-size:11px;padding:5px 10px;color:var(--rose)"><i class="ti ti-trash"></i> Delete this upload</button>
+  </div>`).join('');
 }
 
 // ── SYNC indicator ───────────────────────────────────────────────
@@ -5560,6 +5650,7 @@ async function refreshMetaData(){
     kpis.push(['Instagram',`⚠️ ${safeErrorText(ig.error)}`,'c7']);
   } else {
     kpis.push(['Instagram followers',ig.followers_count??'—','c4']);
+    kpis.push(['Instagram profile views (30d)',ig.profile_views??'—','c5']);
     kpis.push(['Instagram reach (30d)',ig.reach??'—','c2']);
     kpis.push(['Instagram views (30d)',ig.impressions??'—','c6']);
   }
@@ -5618,7 +5709,98 @@ async function loadInstagramPosts(){
   btn.disabled=false;
 }
 
-// ── Website Analytics (GA4) ─────────────────────────────────────────
+// ── Facebook Posts — mirrors loadInstagramPosts(), same ranked-by-
+// performance approach, since the whole point is spotting what's working.
+async function loadFacebookPosts(){
+  const btn=document.getElementById('dm-fb-posts-btn');
+  const statusEl=document.getElementById('dm-fb-posts-status');
+  const gridEl=document.getElementById('dm-fb-posts-grid');
+  btn.disabled=true;
+  statusEl.textContent='Loading recent posts…';
+  gridEl.innerHTML='';
+  try{
+    const r=await fetch(`${META_PULL_URL}?type=facebook_posts`);
+    const text=await r.text();
+    let d;
+    try{ d=JSON.parse(text); }catch{ d={error:text||`HTTP ${r.status}`}; }
+    if(!r.ok||d.error){
+      statusEl.innerHTML=`⚠️ ${safeErrorText(d.error??`HTTP ${r.status}`)}`;
+      btn.disabled=false;
+      return;
+    }
+    const posts=d.posts||[];
+    if(!posts.length){
+      gridEl.innerHTML=emptyState('📘','No posts found.');
+      statusEl.textContent='Loaded — no posts.';
+      btn.disabled=false;
+      return;
+    }
+    gridEl.innerHTML=posts.map(p=>{
+      const date=p.created_time?new Date(p.created_time).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
+      const message=(p.message||'').slice(0,70)+((p.message||'').length>70?'…':'');
+      const thumb=p.full_picture||'';
+      return `<a href="${esc(p.permalink_url||'#')}" target="_blank" style="text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:var(--rl);overflow:hidden;display:block;background:var(--paper);box-shadow:var(--sh)">
+        ${thumb?`<img src="${esc(thumb)}" style="width:100%;height:140px;object-fit:cover;display:block" loading="lazy">`:`<div style="width:100%;height:140px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:28px">📘</div>`}
+        <div style="padding:10px">
+          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">${date}</div>
+          <div style="font-size:12px;color:var(--ink);margin-bottom:8px;min-height:32px">${esc(message)||'<span style=\"color:var(--ink3);font-style:italic\">No text</span>'}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:11px">
+            <span class="pill" style="background:var(--rose-l);color:var(--rose)">❤️ ${p.likes??'—'}</span>
+            <span class="pill" style="background:var(--sky-l);color:var(--sky)">💬 ${p.comments??'—'}</span>
+            <span class="pill" style="background:var(--sage-l);color:var(--sage)">🔁 ${p.shares??'—'}</span>
+            <span class="pill" style="background:var(--gold-l);color:var(--gold)">👁️ ${p.reach??'—'}</span>
+          </div>
+        </div>
+      </a>`;
+    }).join('');
+    statusEl.textContent=`Loaded ${posts.length} recent post${posts.length!==1?'s':''}.`;
+  }catch(e){
+    statusEl.innerHTML=`⚠️ Could not reach Meta: ${e?.message||e}`;
+  }
+  btn.disabled=false;
+}
+
+// ── Leads by ad — links the CRM's own captured leads (via the ad_id the
+// leadgen webhook stores) to what each ad actually spent, so cost-per-lead
+// is visible per campaign, not just as one blended account-wide number.
+async function loadLeadsByAd(){
+  const btn=document.getElementById('dm-leadsbyad-btn');
+  const statusEl=document.getElementById('dm-leadsbyad-status');
+  const tbody=document.getElementById('dm-leadsbyad-tbody');
+  btn.disabled=true;
+  statusEl.textContent='Loading…';
+  tbody.innerHTML='';
+  try{
+    const r=await fetch(`${META_PULL_URL}?type=leads_by_ad`);
+    const text=await r.text();
+    let d;
+    try{ d=JSON.parse(text); }catch{ d={error:text||`HTTP ${r.status}`}; }
+    if(!r.ok||d.error){
+      statusEl.innerHTML=`⚠️ ${safeErrorText(d.error??`HTTP ${r.status}`)}`;
+      btn.disabled=false;
+      return;
+    }
+    const ads=d.ads||[];
+    if(!ads.length){
+      tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--ink3);padding:20px">No leads with a linked ad yet — this fills in as new leads arrive through the Meta webhook.</td></tr>`;
+      statusEl.textContent='Loaded — no ad-linked leads yet.';
+      btn.disabled=false;
+      return;
+    }
+    tbody.innerHTML=ads.map(a=>`<tr>
+      <td>${esc(a.ad_name)}</td>
+      <td><b>${a.leads}</b></td>
+      <td>${a.spend!=null?`₹${Number(a.spend).toLocaleString('en-IN')}`:'—'}</td>
+      <td>${a.cost_per_lead!=null?`₹${Number(a.cost_per_lead).toLocaleString('en-IN',{maximumFractionDigits:0})}`:'—'}</td>
+    </tr>`).join('');
+    statusEl.textContent=`Loaded ${ads.length} ad${ads.length!==1?'s':''} with captured leads.`;
+  }catch(e){
+    statusEl.innerHTML=`⚠️ Could not reach Meta: ${e?.message||e}`;
+  }
+  btn.disabled=false;
+}
+
+
 const GA4_SYNC_URL='https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/ga4-sync';
 async function syncGA4Data(){
   const btn=document.getElementById('dm-ga4-sync-btn');

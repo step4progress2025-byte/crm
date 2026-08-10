@@ -936,6 +936,14 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="dm-meta-kpis"></div>
         </div>
 
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h"><span class="card-t">📸 Recent Instagram Posts</span>
+            <button onclick="loadInstagramPosts()" id="dm-ig-posts-btn" style="font-size:12px;padding:5px 12px" class="btn"><i class="ti ti-refresh"></i> Load Posts</button>
+          </div>
+          <div id="dm-ig-posts-status" style="font-size:12px;color:var(--ink3);margin-bottom:12px">Not loaded yet this session — click Load Posts.</div>
+          <div id="dm-ig-posts-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px"></div>
+        </div>
+
 
         <div class="card" style="margin-bottom:16px">
           <div class="card-h"><span class="card-t">🌐 Website Analytics</span>
@@ -5559,6 +5567,55 @@ async function refreshMetaData(){
     `<div class="rpt-hero ${cls}" style="background:rgba(255,255,255,.1)"><div class="rpt-hero-l" style="color:rgba(255,255,255,.75)">${label}</div><div class="rpt-hero-v" style="color:#fff;font-size:${String(val).length>30?'12px':'inherit'}">${val}</div></div>`
   ).join('');
   statusEl.textContent=`Last checked: ${new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}.`;
+}
+
+async function loadInstagramPosts(){
+  const btn=document.getElementById('dm-ig-posts-btn');
+  const statusEl=document.getElementById('dm-ig-posts-status');
+  const gridEl=document.getElementById('dm-ig-posts-grid');
+  btn.disabled=true;
+  statusEl.textContent='Loading recent posts…';
+  gridEl.innerHTML='';
+  try{
+    const r=await fetch(`${META_PULL_URL}?type=instagram_posts`);
+    const text=await r.text();
+    let d;
+    try{ d=JSON.parse(text); }catch{ d={error:text||`HTTP ${r.status}`}; }
+    if(!r.ok||d.error){
+      statusEl.innerHTML=`⚠️ ${safeErrorText(d.error??`HTTP ${r.status}`)}`;
+      btn.disabled=false;
+      return;
+    }
+    const posts=d.posts||[];
+    if(!posts.length){
+      gridEl.innerHTML=emptyState('📸','No posts found.');
+      statusEl.textContent='Loaded — no posts.';
+      btn.disabled=false;
+      return;
+    }
+    gridEl.innerHTML=posts.map(p=>{
+      const date=p.timestamp?new Date(p.timestamp).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
+      const caption=(p.caption||'').slice(0,70)+((p.caption||'').length>70?'…':'');
+      const thumb=p.thumbnail_url||p.media_url||'';
+      return `<a href="${esc(p.permalink||'#')}" target="_blank" style="text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:var(--rl);overflow:hidden;display:block;background:var(--paper);box-shadow:var(--sh)">
+        ${thumb?`<img src="${esc(thumb)}" style="width:100%;height:140px;object-fit:cover;display:block" loading="lazy">`:`<div style="width:100%;height:140px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:28px">📷</div>`}
+        <div style="padding:10px">
+          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">${date}</div>
+          <div style="font-size:12px;color:var(--ink);margin-bottom:8px;min-height:32px">${esc(caption)||'<span style=\"color:var(--ink3);font-style:italic\">No caption</span>'}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:11px">
+            <span class="pill" style="background:var(--rose-l);color:var(--rose)">❤️ ${p.like_count??'—'}</span>
+            <span class="pill" style="background:var(--sky-l);color:var(--sky)">💬 ${p.comments_count??'—'}</span>
+            <span class="pill" style="background:var(--sage-l);color:var(--sage)">👁️ ${p.reach??'—'}</span>
+            <span class="pill" style="background:var(--gold-l);color:var(--gold)">🔖 ${p.saved??'—'}</span>
+          </div>
+        </div>
+      </a>`;
+    }).join('');
+    statusEl.textContent=`Loaded ${posts.length} recent post${posts.length!==1?'s':''}.`;
+  }catch(e){
+    statusEl.innerHTML=`⚠️ Could not reach Meta: ${e?.message||e}`;
+  }
+  btn.disabled=false;
 }
 
 // ── Website Analytics (GA4) ─────────────────────────────────────────

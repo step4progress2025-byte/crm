@@ -324,7 +324,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .empty-state-icon{font-size:28px;margin-bottom:var(--sp-2);opacity:.5}
 .empty-state-text{font-size:13px}
 .dlabel{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:5px}
-.dvalue{font-size:14px;color:var(--ink)}
+.dvalue{font-size:14px;color:var(--ink);overflow-wrap:break-word;word-break:break-word}
 .dsec{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--pine);margin:20px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--pine4)}
 .ssel{font-size:13px;padding:9px 13px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);width:100%}
 .dfoot{padding:16px 24px;border-top:1px solid var(--line);display:flex;gap:8px;flex-shrink:0}
@@ -1961,7 +1961,7 @@ function renderRecentlyViewed(){
       <i class="ti ti-clock" style="font-size:13px;color:var(--ink3);flex-shrink:0"></i>
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(item.name)}</span>
     </div>`;
-  }).join('')||'<div style="font-size:13px;color:var(--ink3);font-style:italic">Nothing viewed yet.</div>';
+  }).join('')||emptyState('🕓','Nothing viewed yet.');
 }
 
 async function autoCreateTaskForStatus(lead,newStatus){
@@ -2846,7 +2846,7 @@ function renderCommandResults(){
 
   cmdkResults=results;
   cmdkSelectedIndex=0;
-  if(!results.length){el.innerHTML='<div style="padding:24px;text-align:center;font-size:13px;color:var(--ink3);font-style:italic">No matches.</div>';return;}
+  if(!results.length){el.innerHTML=emptyState('🔍','No matches.');return;}
   el.innerHTML=results.map((r,i)=>`
     <div class="cmdk-row" data-idx="${i}" onclick="executeCommandResult(cmdkResults[${i}])" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;cursor:pointer;${i===0?'background:var(--cream)':''}">
       <span style="font-size:17px">${r.icon}</span>
@@ -3309,7 +3309,7 @@ function renderSubTeamDetail(){
   ).join('');
 
   const tb=document.getElementById('subteam-detail-tbody');
-  if(!scoped.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--ink3);font-style:italic">No leads in this scope.</td></tr>';return;}
+  if(!scoped.length){tb.innerHTML=`<tr><td colspan="7">${emptyState('📭','No leads in this scope.')}</td></tr>`;return;}
   tb.innerHTML=scoped.map(l=>{
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
     const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
@@ -3580,7 +3580,7 @@ async function deleteLeadFS(){if(!curId)return;if(!isSuperAdmin&&myRole!=='Admin
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
 // FS versions of doc/reminder/uni functions
-async function loadDocsFS(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-doc-list');if(!el)return;if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet.</div>';return;}await loadDocFilesFor(data.map(d=>d.id));el.innerHTML=data.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',true)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',true)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiryFS('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
+async function loadDocsFS(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-doc-list');if(!el)return;if(error||!data||!data.length){el.innerHTML=emptyState('📋','No checklist yet.');return;}await loadDocFilesFor(data.map(d=>d.id));el.innerHTML=data.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',true)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',true)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiryFS('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
 function setDocExpiryFS(id,current){openQuickInput('Set expiry date','Expiry date','date',current,(val)=>{sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocsFS(curId);toast('Expiry date updated.');});});}
 
 // ── Document checklist file upload — supports multiple files per item ──
@@ -3637,7 +3637,7 @@ async function loadSopDocuments(leadId,isFS){
 
   const{data,error}=await sb.from('sop_documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:false});
   if(error){listEl.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load — has sop_documents been created in Supabase yet?</div>';return;}
-  if(!data||!data.length){listEl.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">No SOP documents uploaded yet.</div>';return;}
+  if(!data||!data.length){listEl.innerHTML=emptyState('✍️','No SOP documents uploaded yet.');return;}
   listEl.innerHTML=data.map(s=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)">
     <div style="flex:1;min-width:0">
       <div style="font-size:12px;font-weight:600">${esc(s.university||'General')}</div>
@@ -3686,7 +3686,7 @@ async function loadUniversityLinks(leadId,isFS){
   if(!listEl)return;
   const{data,error}=await sb.from('university_links').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});
   if(error){listEl.innerHTML='<div style="font-size:12px;color:var(--ink3);font-style:italic">Could not load — has university_links been created in Supabase yet?</div>';return;}
-  if(!data||!data.length){listEl.innerHTML='<div style="font-size:12px;color:var(--ink3);font-style:italic">No universities linked yet.</div>';return;}
+  if(!data||!data.length){listEl.innerHTML=emptyState('🔗','No universities linked yet.');return;}
   listEl.innerHTML=data.map(u=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)">
     <a href="${esc(u.url)}" target="_blank" style="flex:1;font-size:12px;color:var(--pine);text-decoration:underline;display:flex;align-items:center;gap:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><i class="ti ti-external-link" style="font-size:13px;flex-shrink:0"></i>${esc(u.university_name||'Open link')}</a>
     <span onclick="deleteUniversityLink('${u.id}',${isFS})" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600;flex-shrink:0">×</span>
@@ -3748,7 +3748,7 @@ async function loadRemindersFS(leadId){const{data,error}=await sb.from('reminder
 async function toggleReminderFS(id,checked){await sb.from('reminders').update({done:checked}).eq('id',id);loadRemindersFS(curId);loadDashReminders();toast(checked?'✅ Done':'↩ Reopened');}
 async function deleteReminderFS(id){if(!confirm('Delete this reminder?'))return;await sb.from('reminders').delete().eq('id',id);loadRemindersFS(curId);loadDashReminders();toast('Reminder deleted.');}
 function openAddReminderFS(){openReminderModal();}
-async function loadUniAppsFS(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No universities added yet.</div>';return;}await loadUniFilesFor(data.map(u=>u.id));el.innerHTML=data.map(u=>{const myFiles=uniFilesByApp[u.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteUniFile('${f.id}',true)" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${filesHtml}</div><button onclick="triggerUniFileUpload('${u.id}',true)" title="Add file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniAppFS('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`;}).join('');}
+async function loadUniAppsFS(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(error||!data||!data.length){el.innerHTML=emptyState('🎓','No universities added yet.');return;}await loadUniFilesFor(data.map(u=>u.id));el.innerHTML=data.map(u=>{const myFiles=uniFilesByApp[u.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteUniFile('${f.id}',true)" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${filesHtml}</div><button onclick="triggerUniFileUpload('${u.id}',true)" title="Add file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniAppFS('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`;}).join('');}
 function openAddUniAppFS(){openUniversityModal();}
 
 // ── University Application modal — one dialog, all fields, optional file ──
@@ -4350,7 +4350,7 @@ function renderManagementAndOperationsTeams(team){
         <div class="tcard-av">${ini(t.full_name||t.email)}</div>
         <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
         ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
-      </div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:8px 0">No Management Team members yet.</div>'}</div>
+      </div>`).join(''):emptyState('🏛️','No Management Team members yet.')}</div>
   </div>`;
 
   const opsRoles=[['Application Team','📝'],['Visa Team','🛂'],['SOP Team','✍️']];
@@ -4365,7 +4365,7 @@ function renderManagementAndOperationsTeams(team){
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
-        </div>`).join(''):'<div style="font-size:12px;color:var(--ink3);font-style:italic;padding:6px 0">No one assigned to this team yet.</div>'}
+        </div>`).join(''):emptyState('👥','No one assigned to this team yet.')}
     </div>`;
   }).join('');
   opsEl.innerHTML=`<div class="card" style="margin-bottom:16px">
@@ -4383,7 +4383,7 @@ function renderManagementAndOperationsTeams(team){
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
-        </div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:8px 0">No Domestic team members yet.</div>'}</div>
+        </div>`).join(''):emptyState('🇬🇧','No Domestic team members yet.')}</div>
     </div>`;
   }
 
@@ -4397,7 +4397,7 @@ function renderManagementAndOperationsTeams(team){
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
-        </div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:8px 0">No agents yet.</div>'}</div>
+        </div>`).join(''):emptyState('🤝','No agents yet.')}</div>
     </div>`;
   }
 }
@@ -4459,7 +4459,7 @@ function renderTeam(team){
           ${isSuperAdmin?`<button onclick="deleteTeamMember('${t.id}','${esc(t.full_name||t.email||'').replace(/'/g,"\\'")}')" title="Remove team member" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`;
         }).join('')
-      : `<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:8px 0">No members yet — share an invite link to add counsellors to this office.</div>`;
+      : emptyState('👥','No members yet — share an invite link to add counsellors to this office.');
     return `<div style="margin-bottom:20px;background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:18px 20px;box-shadow:var(--sh)">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--line)">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -5002,7 +5002,7 @@ function renderLeaderboard(scoped){
   const map={};
   scoped.forEach(l=>{if(!l.counsellor)return;if(!map[l.counsellor])map[l.counsellor]={name:l.counsellor,total:0,enrolled:0};map[l.counsellor].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[l.counsellor].enrolled++;});
   const sorted=Object.values(map).sort((a,b)=>b.enrolled-a.enrolled).slice(0,8);
-  if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No counsellor data for this scope yet.</div>';return;}
+  if(!sorted.length){el.innerHTML=emptyState('👤','No counsellor data for this scope yet.');return;}
   const maxN=Math.max(...sorted.map(s=>s.enrolled),1);
   const medals=['🥇','🥈','🥉'];
   el.innerHTML=sorted.map((s,i)=>`<div class="rpt-lb-row"><span class="rpt-lb-medal">${medals[i]||(i+1)}</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${esc(s.name)}</div><div class="rpt-lb-bar-t"><div class="rpt-lb-bar-f" style="width:${Math.round(s.enrolled/maxN*100)}%"></div></div></div><span style="font-size:13px;font-weight:700;color:var(--pine)">${s.enrolled}</span></div>`).join('');
@@ -5060,7 +5060,7 @@ async function loadGlobalActivityLog(scopedLeads,start,end){
   const el=document.getElementById('rpt-activity-log');
   if(!el)return;
   const leadIds=scopedLeads.map(l=>l.id);
-  if(!leadIds.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">No leads in this scope.</div>';return;}
+  if(!leadIds.length){el.innerHTML=emptyState('📭','No leads in this scope.');return;}
   const leadNameById={};scopedLeads.forEach(l=>{leadNameById[l.id]=l.name;});
   const{data,error}=await sb.from('activity_log').select('*')
     .in('lead_id',leadIds)
@@ -5069,7 +5069,7 @@ async function loadGlobalActivityLog(scopedLeads,start,end){
     .order('created_at',{ascending:false})
     .limit(200);
   if(error){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load activity log — has activity_log been created in Supabase yet?</div>';return;}
-  if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">No activity recorded in this period yet.</div>';return;}
+  if(!data||!data.length){el.innerHTML=emptyState('🕐','No activity recorded in this period yet.');return;}
   const icons={created:'✨',imported:'📥',status_change:'🔄',reassigned:'👤',field_edit:'✏️',viewed:'👁️'};
   el.innerHTML=data.map(e=>`<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;cursor:pointer" onclick="openLeadDetail('${e.lead_id}')">
     <span>${icons[e.event_type]||'•'}</span>
@@ -5112,9 +5112,9 @@ function renderSubTeamReportsBreakdown(scoped){
       </div>
     </div>`);
   });
-  el.innerHTML=rows.length?rows.join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic">No sub-team assignments in this scope yet.</div>';
+  el.innerHTML=rows.length?rows.join(''):emptyState('📝','No sub-team assignments in this scope yet.');
 }
-  let uniApps=[];async function loadUniApps(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data)uniApps=data;await renderUniApps();}async function renderUniApps(){const el=document.getElementById('d-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(!uniApps.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No universities added yet.</div>';return;}await loadUniFilesFor(uniApps.map(u=>u.id));el.innerHTML=uniApps.map(u=>{const myFiles=uniFilesByApp[u.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteUniFile('${f.id}',false)" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${filesHtml}</div><button onclick="triggerUniFileUpload('${u.id}',false)" title="Add file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniApp('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`;}).join('');}
+  let uniApps=[];async function loadUniApps(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data)uniApps=data;await renderUniApps();}async function renderUniApps(){const el=document.getElementById('d-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(!uniApps.length){el.innerHTML=emptyState('🎓','No universities added yet.');return;}await loadUniFilesFor(uniApps.map(u=>u.id));el.innerHTML=uniApps.map(u=>{const myFiles=uniFilesByApp[u.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteUniFile('${f.id}',false)" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${filesHtml}</div><button onclick="triggerUniFileUpload('${u.id}',false)" title="Add file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniApp('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`;}).join('');}
 function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){if(!confirm('Remove this university?'))return;await sb.from('university_applications').delete().eq('id',id);loadUniApps(curId);toast('Removed.');}
   function applyRoleUI(){
     const role=(document.getElementById('sb-urole').textContent||'').trim();
@@ -5172,7 +5172,7 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
     if(!el)return;
     const offRamps=['Deferred','Not Interested','Dropped','Visa Application Rejected'];
     const active=allLeads.filter(l=>l.intake_month&&!offRamps.includes(l.status));
-    if(!active.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No intake data yet — set an Intake Month on leads to see a forecast here.</div>';return;}
+    if(!active.length){el.innerHTML=emptyState('📅','No intake data yet — set an Intake Month on leads to see a forecast here.');return;}
     const byIntake={};
     active.forEach(l=>{byIntake[l.intake_month]=(byIntake[l.intake_month]||0)+1;});
     // Sort chronologically by parsing "Month Year" rather than alphabetically
@@ -5224,7 +5224,7 @@ async function loadActivityTimeline(leadId,statElId,listElId){
   if(!statEl)return;
   if(error||!data||!data.length){
     statEl.textContent='';
-    if(listEl)listEl.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No activity recorded yet.</div>';
+    if(listEl)listEl.innerHTML=emptyState('🕐','No activity recorded yet.');
     return;
   }
   // Time to first action: gap between lead creation and whatever happened next.
@@ -5355,7 +5355,7 @@ function renderDmInbox(){
       if(aOn!==bOn)return aOn-bOn;
       return (a.full_name||'').localeCompare(b.full_name||'');
     });
-  if(!contacts.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;text-align:center;padding:20px">No one found.</div>';return;}
+  if(!contacts.length){el.innerHTML=emptyState('🔍','No one found.');return;}
   el.innerHTML=contacts.map(t=>{
     const isOnline=onlineIds.has(t.id);
     const hasUnread=unreadDmSenders.has(t.id);
@@ -5381,7 +5381,7 @@ async function loadDmMessages(){
   // Mark any messages sent TO me as read now that I've opened this thread.
   const unreadIds=(data||[]).filter(m=>m.recipient_id===me&&!m.read).map(m=>m.id);
   if(unreadIds.length){sb.from('direct_messages').update({read:true}).in('id',unreadIds).then(checkUnreadDmCount);}
-  if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;text-align:center;padding:20px">No messages yet — say hello.</div>';return;}
+  if(!data||!data.length){el.innerHTML=emptyState('💬','No messages yet — say hello.');return;}
   el.innerHTML=data.map(m=>{
     const isMine=m.sender_id===me;
     return `<div style="display:flex;flex-direction:column;align-items:${isMine?'flex-end':'flex-start'};margin-bottom:10px">
@@ -5448,7 +5448,7 @@ async function refreshMetaData(){
   btn.disabled=true;
   statusEl.textContent='Pulling live data from Meta…';
   const results={};
-  for(const type of ['facebook','ads']){
+  for(const type of ['facebook','ads','instagram']){
     try{
       const r=await fetch(`${META_PULL_URL}?type=${type}`);
       const text=await r.text();
@@ -5469,6 +5469,7 @@ async function refreshMetaData(){
 
   const fb=results.facebook||{};
   const ads=results.ads||{};
+  const ig=results.instagram||{};
   const kpis=[];
   if(fb.error){
     kpis.push(['Facebook',`⚠️ ${safeErrorText(fb.error)}`,'c7']);
@@ -5485,10 +5486,17 @@ async function refreshMetaData(){
     kpis.push(['Leads (30d)',ads.leads??'—','c6']);
     kpis.push(['Cost per lead',ads.cost_per_lead?`₹${Number(ads.cost_per_lead).toLocaleString('en-IN')}`:'—','c2']);
   }
+  if(ig.error){
+    kpis.push(['Instagram',`⚠️ ${safeErrorText(ig.error)}`,'c7']);
+  } else {
+    kpis.push(['Instagram followers',ig.followers_count??'—','c4']);
+    kpis.push(['Instagram reach (30d)',ig.reach??'—','c2']);
+    kpis.push(['Instagram views (30d)',ig.impressions??'—','c6']);
+  }
   kpisEl.innerHTML=kpis.map(([label,val,cls])=>
     `<div class="rpt-hero ${cls}" style="background:rgba(255,255,255,.1)"><div class="rpt-hero-l" style="color:rgba(255,255,255,.75)">${label}</div><div class="rpt-hero-v" style="color:#fff;font-size:${String(val).length>30?'12px':'inherit'}">${val}</div></div>`
   ).join('');
-  statusEl.textContent=`Last checked: ${new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}. Instagram not connected yet — Facebook and Ads data shown above.`;
+  statusEl.textContent=`Last checked: ${new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}.`;
 }
 
 // ── Website Analytics (GA4) ─────────────────────────────────────────
@@ -5558,7 +5566,7 @@ function renderSourceBreakdown(){
     counts[src]=(counts[src]||0)+1;
   });
   const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-  if(!sorted.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">No leads yet.</div>';return;}
+  if(!sorted.length){el.innerHTML=emptyState('📭','No leads yet.');return;}
   const total=leads.length||1;
   el.innerHTML=sorted.map(([src,count])=>{
     const isMeta=metaSources.includes(src);
@@ -5741,7 +5749,7 @@ async function loadDashReminders(){
   const{data,error}=await sb.from('reminders').select('*,leads(name)').eq('done',false).gte('reminder_date',today).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true}).limit(8);
   const el=document.getElementById('reminders-dash-list');
   if(!el)return;
-  if(error||!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">No upcoming reminders.</div>';return;}
+  if(error||!data||!data.length){el.innerHTML=emptyState('⏰','No upcoming reminders.');return;}
   const todayStr=today;
   el.innerHTML=data.map(r=>{
     const isToday=r.reminder_date===todayStr;
@@ -5782,7 +5790,7 @@ async function loadExpiryAlerts(){
   }));
 
   const all=[...visaAlerts,...offerAlerts,...docAlerts].sort((a,b)=>a.date.localeCompare(b.date));
-  if(!all.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Nothing expiring in the next 7–30 days.</div>';return;}
+  if(!all.length){el.innerHTML=emptyState('✅','Nothing expiring in the next 7–30 days.');return;}
   el.innerHTML=all.map(a=>{
     const days=Math.ceil((new Date(a.date+'T00:00:00').getTime()-Date.now())/86400000);
     const overdue=days<0;
@@ -5807,7 +5815,7 @@ async function loadMyTasks(){
   } else if(!isSuperAdmin){
     scoped=scoped.filter(t=>t.leads?.country===myCountry);
   }
-  if(!scoped.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">No open tasks right now.</div>';return;}
+  if(!scoped.length){el.innerHTML=emptyState('🎉','No open tasks right now.');return;}
   const today=new Date().toISOString().substring(0,10);
   el.innerHTML=scoped.slice(0,8).map(t=>{
     const overdue=t.due_date&&t.due_date<today;
@@ -5971,6 +5979,7 @@ function addSuperAdminNotification(compactText,onView){
   card.querySelector('span').onclick=(e)=>{e.stopPropagation();card.remove();};
   card.addEventListener('click',(e)=>{if(e.target.tagName!=='SPAN'){onView();card.remove();}});
   container.appendChild(card);
+  playNotificationChime();
   setTimeout(()=>card?.remove(),25000);
 }
 

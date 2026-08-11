@@ -2126,7 +2126,7 @@ function currentUnavailability(teamId){
   const today=new Date().toISOString().substring(0,10);
   return unavailabilityList.find(u=>u.team_id===teamId&&u.from_date<=today&&today<=u.to_date)||null;
 }
-function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===office&&(t.role||'Counsellor')==='Counsellor'&&!isUnavailableToday(t.id));}
+function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===office&&((t.role||'Counsellor')==='Counsellor'||t.also_counsellor===true)&&!isUnavailableToday(t.id));}
 // Round-robin specifically must never pick a Domestic-category counsellor
 // — Domestic leads are hand-assigned by Management only. This is a
 // separate, narrower pool from getOfficeCounsellors(), which Management

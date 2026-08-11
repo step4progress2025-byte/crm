@@ -597,10 +597,13 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div class="kpi-row" style="margin-top:-10px" id="kpi-row-exec">
           <div class="kpi" onclick="kpiNav('today')" style="cursor:pointer"><div class="kpi-l">Leads today</div><div class="kpi-v kv-p" id="k-today">—</div></div>
           <div class="kpi" onclick="kpiNav('apps')" style="cursor:pointer"><div class="kpi-l">Applications submitted</div><div class="kpi-v kv-t" id="k-apps">—</div></div>
-          <div class="kpi" onclick="kpiNav('visafiled')" style="cursor:pointer"><div class="kpi-l">Visa filed</div><div class="kpi-v kv-p" id="k-visafiled">—</div></div>
           <div class="kpi" id="k-revenue-tile" onclick="kpiNav('revenue')" style="cursor:pointer"><div class="kpi-l">Revenue pipeline</div><div class="kpi-v kv-g" id="k-revenue">—</div></div>
           <div class="kpi" id="k-outstanding-tile" onclick="kpiNav('outstanding')" style="cursor:pointer"><div class="kpi-l">Commission outstanding</div><div class="kpi-v kv-o" id="k-outstanding">—</div></div>
           <div class="kpi" onclick="kpiNav('leakage')" style="cursor:pointer"><div class="kpi-l">Lead leakage %</div><div class="kpi-v kv-r" id="k-leakage">—</div></div>
+        </div>
+        <div class="kpi-row" style="margin-top:-10px;grid-template-columns:repeat(2,1fr);max-width:420px">
+          <div class="kpi" onclick="kpiNav('visafiled')" style="cursor:pointer"><div class="kpi-l">Visa filed</div><div class="kpi-v kv-t" id="k-visafiled">—</div></div>
+          <div class="kpi" id="k-overdue-tile" onclick="nav('followup',document.querySelector('.ni[data-nav=&quot;followup&quot;]'))" style="cursor:pointer"><div class="kpi-l">Overdue follow-ups</div><div class="kpi-v kv-r" id="k-overdue">—</div></div>
         </div>
         <div id="dash-empty" class="empty-state" style="display:none">
           <div class="es-icon"><i class="ti ti-rocket"></i></div>
@@ -619,6 +622,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div class="card-h"><span class="card-t">📋 My tasks</span></div>
           <div id="my-tasks-list"></div>
         </div>
+        <div class="card" id="latest-payments-widget" style="display:none">
+          <div class="card-h"><span class="card-t">💰 Latest payments</span></div>
+          <div id="latest-payments-list"></div>
+        </div>
         <div class="card" id="recently-viewed-widget">
           <div class="card-h"><span class="card-t">🕓 Recently viewed</span></div>
           <div id="recently-viewed-list"></div>
@@ -626,16 +633,6 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div class="card" id="expiry-alerts-widget">
           <div class="card-h"><span class="card-t">⚠️ Expiring soon — offers, visa deadlines & documents</span></div>
           <div id="expiry-alerts-list"></div>
-        </div>
-        <div class="two-col">
-          <div class="card" id="recent-leads-widget">
-            <div class="card-h"><span class="card-t">🆕 Recent leads</span></div>
-            <div id="recent-leads-list"></div>
-          </div>
-          <div class="card" id="latest-payments-widget">
-            <div class="card-h"><span class="card-t">💰 Latest payments</span></div>
-            <div id="latest-payments-list"></div>
-          </div>
         </div>
         <!-- Application/Visa/SOP dashboards moved to their own "Team Dashboards" tab, no longer embedded here -->
         <div id="dash-content" style="display:none">
@@ -714,7 +711,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <table class="tbl">
               <thead><tr>
                 <th style="width:36px"><input type="checkbox" id="bulk-select-all" onchange="toggleSelectAllLeads(this.checked)" style="cursor:pointer"></th>
-                <th>#</th><th>ID</th><th>Name</th><th>Mobile</th><th>Contact</th><th>Program</th>
+                <th>#</th><th>ID</th><th>Name</th><th>Mobile</th><th></th><th>Docs</th><th>Program</th>
                 <th>Destination</th><th>Captured</th><th>Status</th><th>Priority</th><th>Counsellor</th><th>Application</th><th>Visa</th><th>SOP</th>
               </tr></thead>
               <tbody id="lead-tbody"></tbody>
@@ -754,7 +751,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div class="tw">
             <table class="tbl">
               <thead><tr>
-                <th>ID</th><th>Name</th><th>Mobile</th><th>Source</th><th>Program</th><th>Destination</th><th>Status</th>
+                <th>ID</th><th>Name</th><th>Mobile</th><th></th><th>Source</th><th>Program</th><th>Destination</th><th>Status</th>
               </tr></thead>
               <tbody id="toolleads-tbody"></tbody>
             </table>
@@ -1670,11 +1667,10 @@ What would you like help with today?</div>
         <button class="btn btn-ai" onclick="aiAboutLeadFS()"><i class="ti ti-robot"></i>Ask AI</button>
         <button class="btn" style="background:var(--gold-l);color:var(--gold);border-color:var(--gold)" onclick="openCourseFinderForLead(curId)"><i class="ti ti-search"></i>Find Courses</button>
         <button class="btn" style="background:#25D366;color:#fff;border-color:#25D366" onclick="waFollowUpFS()"><i class="ti ti-brand-whatsapp"></i></button>
-        <button class="btn" id="btn-edit-lead-fs" onclick="editLeadFS()"><i class="ti ti-edit"></i>Edit</button>
+        <button class="btn" onclick="editLeadFS()"><i class="ti ti-edit"></i>Edit</button>
         <button class="btn btn-del" id="btn-delete-lead-fs" onclick="deleteLeadFS()"><i class="ti ti-trash"></i>Delete</button>
       </div>
     </div>
-    <div id="ld-viewonly-banner" style="display:none;background:var(--gold-l);color:var(--gold);font-size:12px;font-weight:600;padding:8px 32px;text-align:center">👁️ View-only — India's leads can be viewed but not edited from your account.</div>
     <!-- Body: 3-column grid -->
     <div style="padding:28px 32px;flex:1;max-width:1400px;width:100%;margin:0 auto">
       <!-- Status update bar -->
@@ -1694,7 +1690,6 @@ What would you like help with today?</div>
             <div class="dfield"><div class="dlabel">Lead captured on</div><div class="dvalue" id="ld-captured-at" style="font-weight:600"></div></div>
             <div class="dfield"><div class="dlabel">Mobile</div><div class="dvalue" id="ld-mob"></div></div>
             <div class="dfield"><div class="dlabel">Email</div><div class="dvalue" id="ld-email"></div></div>
-            <div class="dfield"><div class="dlabel">Quick contact</div><div class="dvalue" id="ld-contact-icons"></div></div>
             <div class="dfield"><div class="dlabel">City</div><div class="dvalue" id="ld-city"></div></div>
             <div class="dfield"><div class="dlabel">Date of birth</div><div class="dvalue" id="ld-dob"></div></div>
             <div class="dfield"><div class="dlabel">Qualification</div><div class="dvalue" id="ld-qual"></div></div>
@@ -1812,7 +1807,6 @@ What would you like help with today?</div>
       <div class="dsec">Contact</div>
       <div class="dfield"><div class="dlabel">Mobile</div><div class="dvalue" id="d-mob"></div></div>
       <div class="dfield"><div class="dlabel">Email</div><div class="dvalue" id="d-email"></div></div>
-      <div class="dfield"><div class="dlabel">Quick contact</div><div class="dvalue" id="d-contact-icons"></div></div>
       <div class="dfield"><div class="dlabel">City</div><div class="dvalue" id="d-city"></div></div>
       <div class="dfield"><div class="dlabel">DOB</div><div class="dvalue" id="d-dob"></div></div>
       <div class="dfield"><div class="dlabel">Qualification</div><div class="dvalue" id="d-qual"></div></div>
@@ -2060,44 +2054,29 @@ function isAllowedEmail(email){
 }
 function ini(n){const p=(n||'?').trim().split(' ');return(p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+// One-click Call / WhatsApp / Email icons — used anywhere a phone/email
+// shows up, so nobody has to copy-paste a number into another app.
+// stopClick=true on table rows so clicking an icon doesn't also trigger
+// the row's onclick (which opens the lead detail view).
+function contactIcons(mobile,email,stopClick){
+  const digits=(mobile||'').replace(/\D/g,'');
+  const stop=stopClick?'event.stopPropagation();':'';
+  let html='<span style="display:inline-flex;gap:6px;white-space:nowrap">';
+  if(digits){
+    html+=`<a href="tel:${digits}" onclick="${stop}" title="Call" style="color:var(--sage);text-decoration:none"><i class="ti ti-phone"></i></a>`;
+    html+=`<a href="https://wa.me/${digits}" target="_blank" rel="noopener" onclick="${stop}" title="WhatsApp" style="color:#25D366;text-decoration:none"><i class="ti ti-brand-whatsapp"></i></a>`;
+  }
+  if(email){
+    html+=`<a href="mailto:${esc(email)}" onclick="${stop}" title="Email" style="color:var(--sky);text-decoration:none"><i class="ti ti-mail"></i></a>`;
+  }
+  html+='</span>';
+  return html;
+}
 function emptyState(icon,text){return `<div class="empty-state"><div class="empty-state-icon">${icon}</div><div class="empty-state-text">${esc(text)}</div></div>`;}
-
-// ── Contact quick-buttons (#7) ─────────────────────────────────────
-// Renders small call / WhatsApp / email icons that deep-link out via
-// tel: / wa.me / mailto:, so staff don't copy-paste numbers. Used in
-// the leads table rows and both detail views. When used inside a
-// clickable table row, wrap the cell in onclick="event.stopPropagation()"
-// so tapping an icon doesn't also open the lead.
-function waDigits(mobile){
-  // wa.me needs digits only, no +, spaces, or dashes. Assume the stored
-  // number already carries its country code (our leads do).
-  return (mobile||'').replace(/[^\d]/g,'');
-}
-function contactIcons(mobile,email,opts){
-  opts=opts||{};
-  const size=opts.size||24;
-  const gap=opts.gap||6;
-  const num=(mobile||'').trim();
-  const wa=waDigits(num);
-  const em=(email||'').trim();
-  const btn=(href,bg,color,title,svg)=>href
-    ? `<a href="${href}" target="_blank" rel="noopener" title="${title}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:50%;background:${bg};color:${color};text-decoration:none;flex-shrink:0">${svg}</a>`
-    : '';
-  const phoneSvg='<i class="ti ti-phone" style="font-size:'+Math.round(size*0.55)+'px"></i>';
-  const waSvg='<i class="ti ti-brand-whatsapp" style="font-size:'+Math.round(size*0.58)+'px"></i>';
-  const mailSvg='<i class="ti ti-mail" style="font-size:'+Math.round(size*0.55)+'px"></i>';
-  const parts=[
-    btn(num?`tel:${num.replace(/\s/g,'')}`:'', 'var(--sky-l)','var(--sky)','Call',phoneSvg),
-    btn(wa?`https://wa.me/${wa}`:'', '#DCF8E8','#128C4B','WhatsApp',waSvg),
-    btn(em?`mailto:${em}`:'', 'var(--gold-l)','var(--gold)','Email',mailSvg),
-  ].filter(Boolean);
-  if(!parts.length)return '';
-  return `<span style="display:inline-flex;gap:${gap}px;align-items:center">${parts.join('')}</span>`;
-}
 function ago(ts){if(!ts)return'';const d=Date.now()-new Date(ts).getTime();if(d<3600000)return Math.round(d/60000)+'m ago';if(d<86400000)return Math.round(d/3600000)+'h ago';return Math.round(d/86400000)+'d ago';}
 
 // ── State ────────────────────────────────────────────────────────
-let leads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[], editedFromView=null; function openCreateUser(){
+let leads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[], editedFromView=null, docSummaryByLead={}; function openCreateUser(){
   // Only the Super Admin can add team members / send invites.
   if(!isSuperAdmin){toast('Only the Super Admin can add team members.');return;}
   document.getElementById('inv-name').value='';
@@ -2338,7 +2317,23 @@ function renderMbuPreview(){
 async function confirmMetaBulkUpload(){
   const btn=document.getElementById('mbu-confirm-btn');
   btn.disabled=true;btn.textContent='Uploading…';
-  const validLeads=mbuParsedLeads.filter(l=>l.country);
+  // Skip any row whose phone number already belongs to an existing lead —
+  // without this, re-uploading a CSV that includes a past/converted
+  // customer silently creates a duplicate row instead of leaving their
+  // real record (e.g. Enrolled) alone.
+  const existingPhones=new Set(leads.map(l=>normalizePhone(l.mobile)).filter(Boolean));
+  const seenInBatch=new Set();
+  let skippedDupe=0;
+  const validLeads=mbuParsedLeads.filter(l=>{
+    if(!l.country)return false;
+    const np=normalizePhone(l.mobile);
+    if(np){
+      if(existingPhones.has(np)){skippedDupe++;return false;}
+      if(seenInBatch.has(np)){skippedDupe++;return false;}
+      seenInBatch.add(np);
+    }
+    return true;
+  });
   const batchId=crypto.randomUUID();
   let uploaded=0, failed=0;
   for(const l of validLeads){
@@ -2380,10 +2375,12 @@ async function confirmMetaBulkUpload(){
   }
   mbuLastBatchId=uploaded>0?batchId:null;
   btn.disabled=false;btn.textContent='Upload these leads';
+  const unknownCountryCount=mbuParsedLeads.filter(l=>!l.country).length;
   document.getElementById('mbu-done-summary').innerHTML=
     `${uploaded} lead${uploaded!==1?'s':''} uploaded successfully.` +
     (failed?`<br><span style="color:var(--rose)">${failed} row(s) failed — check the console for details.</span>`:'') +
-    (mbuParsedLeads.length-validLeads.length?`<br><span style="color:var(--gold)">${mbuParsedLeads.length-validLeads.length} row(s) skipped — unknown country.</span>`:'');
+    (unknownCountryCount?`<br><span style="color:var(--gold)">${unknownCountryCount} row(s) skipped — unknown country.</span>`:'') +
+    (skippedDupe?`<br><span style="color:var(--gold)">${skippedDupe} row(s) skipped — phone number already exists in the CRM (protects existing records, e.g. already-Enrolled leads, from being duplicated).</span>`:'');
   document.getElementById('mbu-undo-btn').style.display=mbuLastBatchId?'inline-flex':'none';
   showMbuStep('done');
   loadLeads().then(()=>{renderLeads();renderDash();});
@@ -2598,7 +2595,6 @@ function renderCounsellorCell(l){
 async function quickReassignLead(leadId,newCounsellor){
   const l=leads.find(x=>x.id===leadId);
   if(!l||l.counsellor===newCounsellor)return;
-  if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");renderLeads();return;}
   const oldCounsellor=l.counsellor;
   setSyncing();
   const{error}=await sb.from('leads').update({counsellor:newCounsellor||null,assigned_at:new Date().toISOString()}).eq('id',leadId);
@@ -2641,7 +2637,6 @@ function renderSubTeamCell(l,field,roleName){
 async function quickReassignSubTeam(leadId,field,newValue){
   const l=leads.find(x=>x.id===leadId);
   if(!l)return;
-  if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");renderLeads();return;}
   const labels={application_team:'Application Team',visa_team:'Visa Team',sop_team:'SOP Team'};
   const roleName=labels[field];
   const old=l[field];
@@ -2833,15 +2828,8 @@ async function onLogin(user){
   isOwner=(user.email||'').toLowerCase()===OWNER_EMAIL.toLowerCase();
   document.getElementById('sb-av').textContent=ini(name);
   document.getElementById('sb-uname').textContent=name;
-  // Access-level display: the Owner (India) shows as "Owner", any other
-  // Super Admin shows as "Super Admin" — cleanly, not "Counsellor (Super
-  // Admin)". Everyone else shows their normal role. The underlying `role`
-  // (Director/Manager/etc.) is unchanged in the DB; this is display only.
-  let roleLabel=role;
-  if(isOwner)roleLabel='Owner';
-  else if(isSuperAdmin)roleLabel='Super Admin';
-  document.getElementById('sb-urole').textContent=roleLabel;
-  await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents(),loadResumes(),loadRoundRobinState(),loadUnavailability(),loadSopUploadedLeadIds()]);
+  document.getElementById('sb-urole').textContent=role+(isSuperAdmin&&role!=='Super Admin'?' (Super Admin)':'');
+  await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents(),loadResumes(),loadRoundRobinState(),loadUnavailability(),loadSopUploadedLeadIds(),loadDocSummaries()]);
  initPresence(user, profile);
   renderDash();renderLeads();renderFU();badges();checkNoActivity();applyRoleUI();setTimeout(()=>{applyRoleUI();renderDash();},2000);
   loadDashReminders();
@@ -3220,7 +3208,6 @@ function kpiNav(kind){
     case 'fees': navFilter('ls-st','Fees Paid'); break;
     case 'dropped': navFilter('ls-st','Dropped'); break;
     case 'apps': navFilter('ls-st','Application Submitted'); break;
-    case 'visafiled': navFilter('ls-st','Visa Application Submitted'); break;
     case 'leakage': nav('followup',document.querySelector('.ni[data-nav="followup"]')); break;
     case 'revenue': case 'outstanding': nav('finance',document.querySelector('.ni[data-nav="finance"]')); break;
   }
@@ -3283,27 +3270,43 @@ function renderDash(){
   const appsSubmitted=leads.filter(l=>reachedStage(l.status,'Application Submitted')).length;
   document.getElementById('k-apps').textContent=appsSubmitted;
 
-  // Visa filed: every lead that has reached the visa-application stage or
-  // beyond (filed, then accepted/rejected all count as "filed").
-  const visaFiled=leads.filter(l=>reachedStage(l.status,'Visa Application Submitted')||['Visa Application Accepted','Visa Application Rejected'].includes(l.status)).length;
-  {const vf=document.getElementById('k-visafiled');if(vf)vf.textContent=visaFiled;}
-
   // Lead leakage: enquiries sitting untouched with no follow-up in 2+ days —
   // leads at genuine risk of being lost to inactivity rather than an explicit
   // "Not Interested"/"Dropped" decision.
   const leakageCount=leads.filter(l=>['New Enquiry','Contacted'].includes(l.status)&&l.updated_at&&(Date.now()-new Date(l.updated_at).getTime())>2*86400000).length;
   document.getElementById('k-leakage').textContent=tot>0?Math.round(leakageCount/tot*100)+'%':'—';
 
+  // Visa filed — reached-or-passed "Visa Application Submitted", same
+  // "reached this stage or further" logic as the Applications tile above.
+  document.getElementById('k-visafiled').textContent=leads.filter(l=>reachedStage(l.status,'Visa Application Submitted')).length;
+
   // Revenue Pipeline / Commission Outstanding — hidden from Counsellors, matching
   // the same "no finance visibility" rule already applied to the Finance tab.
   const showFinanceTiles=!isRestrictedStaffRole();
   ['k-revenue-tile','k-outstanding-tile'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=showFinanceTiles?'':'none';});
+  const paymentsWidget=document.getElementById('latest-payments-widget');
+  if(paymentsWidget)paymentsWidget.style.display=showFinanceTiles?'block':'none';
   if(showFinanceTiles){
     loadCommissions().then(()=>{
       const totalRev=commissions.reduce((s,c)=>s+(parseFloat(c.commission_amount)||0),0);
       const outstanding=commissions.filter(c=>c.status==='Pending').reduce((s,c)=>s+(parseFloat(c.commission_amount)||0),0);
       document.getElementById('k-revenue').textContent='£'+totalRev.toLocaleString();
       document.getElementById('k-outstanding').textContent='£'+outstanding.toLocaleString();
+      renderCounsellorRank(); // re-render now that commissions (and thus revenue-per-counsellor) has actually loaded
+      // Latest payments — most recent RECEIVED commissions, so this reads
+      // as "money that's actually come in", not the whole pipeline.
+      const paymentsList=document.getElementById('latest-payments-list');
+      if(paymentsList){
+        const received=commissions.filter(c=>c.status==='Received').slice(0,5);
+        if(!received.length){
+          paymentsList.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No payments logged yet.</div>';
+        } else {
+          paymentsList.innerHTML=received.map(c=>`<div class="prow" onclick="openLeadDetail('${c.lead_id}')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)">
+            <div><div style="font-size:13px;font-weight:600">${esc(c.student_name||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(c.university||'')}${c.university&&c.destination?' · ':''}${esc(c.destination||'')}</div></div>
+            <div style="font-size:13px;font-weight:600;color:var(--sage)">${esc(c.currency||'£')}${Number(c.commission_amount||0).toLocaleString()}</div>
+          </div>`).join('');
+        }
+      }
     });
   }
 
@@ -3326,8 +3329,6 @@ function renderDash(){
   });
   renderCountryBreakdown();
   renderCounsellorRank();
-  renderRecentLeads();
-  renderLatestPayments();
   // Sub-team cards moved to their own "Team Dashboards" tab
 }
 
@@ -3564,7 +3565,7 @@ function renderLeads(){
   if(empty)return;
   document.getElementById('lcount').textContent=`Showing ${f.length} of ${leads.length} leads`;
   const tb=document.getElementById('lead-tbody');tb.innerHTML='';
-  if(!f.length){tb.innerHTML=`<tr><td colspan="15">${emptyState('🔍','No leads match your filters.')}</td></tr>`;return;}
+  if(!f.length){tb.innerHTML=`<tr><td colspan="16">${emptyState('🔍','No leads match your filters.')}</td></tr>`;return;}
   f.forEach((l,i)=>{
     const[abg,atx]=AVC[i%AVC.length];
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
@@ -3576,7 +3577,8 @@ function renderLeads(){
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
       <td><div class="nc"><div class="av" style="background:${abg};color:${atx}">${ini(l.name)}</div><div><div class="ln">${esc(l.name)}</div><div class="lc">${esc(l.city||'—')}</div></div></div></td>
       <td style="font-size:12px;color:var(--ink3)">${esc(l.mobile||'—')}</td>
-      <td onclick="event.stopPropagation()">${contactIcons(l.mobile,l.email,{size:24})}</td>
+      <td onclick="event.stopPropagation()">${contactIcons(l.mobile,l.email,true)}</td>
+      <td onclick="event.stopPropagation()">${docBadge(l.id)}</td>
       <td style="font-size:12px">${esc(l.program||'—')}</td>
       <td style="font-size:12px">${esc(l.destination||'—')}</td>
       <td style="font-size:11px;color:var(--ink3);white-space:nowrap">${capturedStr}</td>
@@ -3649,6 +3651,7 @@ function renderToolLeads(){
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
       <td><div class="nc"><div class="av" style="background:${abg};color:${atx}">${ini(l.name)}</div><div><div class="ln">${esc(l.name)}</div></div></div></td>
       <td style="font-size:12px;color:var(--ink3)">${esc(l.mobile||'—')}</td>
+      <td>${contactIcons(l.mobile,l.email,true)}</td>
       <td style="font-size:12px"><span class="pill" style="background:var(--gold-l);color:var(--gold)">${esc(l.source||'—')}</span></td>
       <td style="font-size:12px">${esc(l.program||'—')}</td>
       <td style="font-size:12px">${esc(l.destination||'—')}</td>
@@ -3666,9 +3669,8 @@ function openDetail(id){
   document.getElementById('d-captured-at').textContent=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'Unknown';
   document.getElementById('d-name').textContent=l.name;
   document.getElementById('d-sub').textContent=(l.program||'')+(l.destination?' → '+l.destination:'');
-  document.getElementById('d-mob').textContent=l.mobile||'—';
-  document.getElementById('d-email').textContent=l.email||'—';
-  {const ci=document.getElementById('d-contact-icons');if(ci)ci.innerHTML=contactIcons(l.mobile,l.email,{size:28,gap:8});}
+  document.getElementById('d-mob').innerHTML=esc(l.mobile||'—')+(l.mobile?' '+contactIcons(l.mobile,null,false):'');
+  document.getElementById('d-email').innerHTML=esc(l.email||'—')+(l.email?' '+contactIcons(null,l.email,false):'');
   document.getElementById('d-city').textContent=l.city||'—';
   document.getElementById('d-dob').textContent=l.dob||'—';
   document.getElementById('d-qual').textContent=l.qualification||'—';
@@ -3719,9 +3721,8 @@ function openLeadDetail(id){
   document.getElementById('ld-captured-at').textContent=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'Unknown';
   document.getElementById('ld-name').textContent=l.name;
   document.getElementById('ld-sub').textContent=(l.program||'')+(l.destination?' → '+l.destination:'');
-  document.getElementById('ld-mob').textContent=l.mobile||'—';
-  document.getElementById('ld-email').textContent=l.email||'—';
-  {const ci=document.getElementById('ld-contact-icons');if(ci)ci.innerHTML=contactIcons(l.mobile,l.email,{size:30,gap:10});}
+  document.getElementById('ld-mob').innerHTML=esc(l.mobile||'—')+(l.mobile?' '+contactIcons(l.mobile,null,false):'');
+  document.getElementById('ld-email').innerHTML=esc(l.email||'—')+(l.email?' '+contactIcons(null,l.email,false):'');
   document.getElementById('ld-city').textContent=l.city||'—';
   document.getElementById('ld-dob').textContent=l.dob||'—';
   document.getElementById('ld-qual').textContent=l.qualification||'—';
@@ -3756,22 +3757,6 @@ function openLeadDetail(id){
   const sel=document.getElementById('ld-ssel');
   sel.innerHTML=STATUSES.map(s=>`<option${s===l.status?' selected':''}>${s}</option>`).join('');
   document.getElementById('modal-lead-detail').classList.add('open');
-  // India view-only: if this is an India lead and the viewer is an
-  // India-locked Super Admin, hide the mutating controls in the detail
-  // view so it reads as genuinely view-only (the functions are guarded
-  // too, and RLS enforces it server-side).
-  {
-    const ro=isIndiaLeadReadOnly(l);
-    ['btn-delete-lead','btn-delete-lead-fs','btn-edit-lead-fs'].forEach(bid=>{const b=document.getElementById(bid);if(b)b.style.display=ro?'none':'';});
-    const ss=document.getElementById('ld-ssel'); if(ss)ss.disabled=ro;
-    if(ro){
-      const banner=document.getElementById('ld-viewonly-banner');
-      if(banner)banner.style.display='block';
-    } else {
-      const banner=document.getElementById('ld-viewonly-banner');
-      if(banner)banner.style.display='none';
-    }
-  }
   loadDocsFS(id);
   loadUniversityLinks(id,true);
   loadActivityLogFS(id);
@@ -3788,8 +3773,6 @@ function closeLeadDetail(){
 }
 async function updateStatusFS(){
   if(!curId)return;
-  const _l=leads.find(x=>x.id===curId);
-  if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");renderLeads();return;}
   const status=document.getElementById('ld-ssel').value;
   const l=leads.find(x=>x.id===curId);
   const oldStatus=l?.status;
@@ -3803,8 +3786,8 @@ async function updateStatusFS(){
   loadTasksFS(curId);
   loadActivityLogFS(curId);
 }
-function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;},100);}
-async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
+function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;},100);}
+async function deleteLeadFS(){if(!curId)return;if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
 // FS versions of doc/reminder/uni functions
@@ -3847,7 +3830,7 @@ async function deleteDocFile(fileId,isFS){
   if(isFS){loadDocsFS(curId);}else{loadDocs(curId);}
   toast('File removed — upload a new one whenever you are ready.');
 }
-async function initDocsFS(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=DEFAULT_DOCS.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocsFS(curId);toast('Checklist created!');}
+async function initDocsFS(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=DEFAULT_DOCS.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocsFS(curId);await loadDocSummaries();renderLeads();toast('Checklist created!');}
 
 // ── SOP Documents — multiple files per lead, each tagged to a university ──
 async function loadSopDocuments(leadId,isFS){
@@ -4189,8 +4172,6 @@ async function updateStatus(){
 }
 async function deleteLead(){
   if(!curId)return;
-  const _l=leads.find(x=>x.id===curId);
-  if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}
   if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}
   if(!confirm('Delete this lead? This cannot be undone.'))return;
   setSyncing();
@@ -4202,7 +4183,6 @@ async function deleteLead(){
 function editLead(){
   if(!curId)return;
   const l=leads.find(x=>x.id===curId);if(!l)return;
-  if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}
   editedFromView='side';
   editMode=true;
   document.getElementById('modal-title').textContent='Edit lead';
@@ -4307,14 +4287,6 @@ async function saveLead(){
   if(!name){document.getElementById('f-name').focus();toast('Please enter a name.');return;}
   const countryVal=document.getElementById('f-country').value;
   if(!countryVal){document.getElementById('f-country').focus();toast("Please select the lead's native country — this is required and determines which branch handles them.");return;}
-  // India view-only guard: a Super Admin can't edit an existing India
-  // lead, nor create/move a lead INTO India. Owner is exempt.
-  if(isIndiaLocked()){
-    const existing=editMode&&curId?leads.find(x=>x.id===curId):null;
-    if((existing&&existing.country==='India')||countryVal==='India'||countryVal==='Other'){
-      toast("India's leads are view-only for your account.");return;
-    }
-  }
   const cityVal=document.getElementById('f-city').value.trim();
   if(!cityVal){document.getElementById('f-city').focus();toast('Please enter the city / native — this is required.');return;}
   // Only check for duplicates when creating a brand new lead — not on every
@@ -4534,34 +4506,13 @@ function renderFU(){
 function isProtectedOwnerRow(t){
   return (t.email||'').toLowerCase()===OWNER_EMAIL.toLowerCase()&&!isOwner;
 }
-
-// ── India view-only guard for Super Admins ─────────────────────────
-// A Super Admin (e.g. the UK account) can fully manage every OTHER
-// country, but India's data is view-only to them — they may see India's
-// leads/team but cannot edit, delete, reassign, or remove them. Only the
-// Owner (india@) can modify India's data. This is the FRONT-END half
-// (hides/blocks controls for clean UX); the real enforcement is the
-// matching Supabase RLS policies in the accompanying migration, since a
-// browser console can bypass front-end checks alone.
-function isIndiaLocked(){
-  return isSuperAdmin && !isOwner;
-}
-function isIndiaLeadReadOnly(lead){
-  return isIndiaLocked() && (lead?.country==='India');
-}
-function isIndiaTeamReadOnly(t){
-  return isIndiaLocked() && (t?.country==='India');
-}
 async function deleteTeamMember(id,name){
   if(!isSuperAdmin){toast('Only the Super Admin can remove team members.');return;}
+  if(currentUser&&id===currentUser.id){toast("You can't remove your own account.");return;}
   const target=teamList.find(t=>t.id===id);
   if(target&&(target.email||'').toLowerCase()===OWNER_EMAIL.toLowerCase()&&!isOwner){
     toast("This account can't be removed.");return;
   }
-  if(target&&isIndiaTeamReadOnly(target)){
-    toast("India's team members are view-only for your account.");return;
-  }
-  if(currentUser&&id===currentUser.id){toast("You can't remove your own account.");return;}
   if(!confirm(`Remove ${name} from the team? This deletes their CRM access record. For full account removal, also delete their login from Supabase → Authentication → Users.`))return;
   const{error}=await sb.from('team').delete().eq('id',id);
   if(error){toast('Error removing team member: '+error.message);return;}
@@ -4620,7 +4571,7 @@ function renderManagementAndOperationsTeams(team){
     <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard">
         <div class="tcard-av">${ini(t.full_name||t.email)}</div>
         <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
-        ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+        ${(isSuperAdmin&&!isProtectedOwnerRow(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
       </div>`).join(''):emptyState('🏛️','No Management Team members yet.')}</div>
   </div>`;
 
@@ -4635,7 +4586,7 @@ function renderManagementAndOperationsTeams(team){
       ${members.length?members.map(t=>`<div class="tcard" style="margin-bottom:8px">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          ${(isSuperAdmin&&!isProtectedOwnerRow(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('👥','No one assigned to this team yet.')}
     </div>`;
   }).join('');
@@ -4653,7 +4604,7 @@ function renderManagementAndOperationsTeams(team){
       <div class="team-grid">${domestic.length?domestic.map(t=>`<div class="tcard">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          ${(isSuperAdmin&&!isProtectedOwnerRow(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('🇬🇧','No Domestic team members yet.')}</div>
     </div>`;
   }
@@ -4667,7 +4618,7 @@ function renderManagementAndOperationsTeams(team){
       <div class="team-grid">${agents.length?agents.map(t=>`<div class="tcard">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          ${(isSuperAdmin&&!isProtectedOwnerRow(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('🤝','No agents yet.')}</div>
     </div>`;
   }
@@ -4727,7 +4678,7 @@ function renderTeam(team){
             ${unavail?`<div style="font-size:10px;color:var(--rose);font-weight:600;margin-top:3px">🚫 Unavailable until ${new Date(unavail.to_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${unavail.reason?' — '+esc(unavail.reason):''}</div>`:''}
           </div>
           ${canManage?`<button onclick="openUnavailabilityModal('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Mark unavailable" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-calendar-off"></i></button>`:''}
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc(t.full_name||t.email||'').replace(/'/g,"\\'")}')" title="Remove team member" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          ${(isSuperAdmin&&!isProtectedOwnerRow(t))?`<button onclick="deleteTeamMember('${t.id}','${esc(t.full_name||t.email||'').replace(/'/g,"\\'")}')" title="Remove team member" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`;
         }).join('')
       : emptyState('👥','No members yet — share an invite link to add counsellors to this office.');
@@ -4971,22 +4922,12 @@ async function bulkReassignCounsellor(){
   if(!ids.length)return;
   const counsellor=document.getElementById('bulk-counsellor-select').value;
   if(!counsellor){toast('Pick a counsellor first.');return;}
-  // India view-only guard: strip out any India leads the selection may
-  // include, so an India-locked Super Admin's bulk action silently skips
-  // them rather than reassigning India's leads.
-  let workIds=ids;
-  if(isIndiaLocked()){
-    workIds=ids.filter(id=>{const l=leads.find(x=>x.id===id);return l&&l.country!=='India';});
-    const skipped=ids.length-workIds.length;
-    if(!workIds.length){toast("India's leads are view-only for your account — nothing to reassign.");return;}
-    if(skipped>0)toast(`${skipped} India lead(s) skipped — view-only for your account.`);
-  }
-  if(!confirm(`Reassign ${workIds.length} lead(s) to ${counsellor}?`))return;
-  const{error}=await sb.from('leads').update({counsellor,assigned_at:new Date().toISOString()}).in('id',workIds);
+  if(!confirm(`Reassign ${ids.length} lead(s) to ${counsellor}?`))return;
+  const{error}=await sb.from('leads').update({counsellor,assigned_at:new Date().toISOString()}).in('id',ids);
   if(error){toast('Error: '+error.message);return;}
-  workIds.forEach(id=>{const l=leads.find(x=>x.id===id);if(l){l.counsellor=counsellor;l.assigned_at=new Date().toISOString();}});
-  workIds.forEach(id=>logActivity(id,'reassigned',`Reassigned (bulk) → ${counsellor}`));
-  toast(`Reassigned ${workIds.length} lead(s) to ${counsellor}.`);
+  ids.forEach(id=>{const l=leads.find(x=>x.id===id);if(l){l.counsellor=counsellor;l.assigned_at=new Date().toISOString();}});
+  ids.forEach(id=>logActivity(id,'reassigned',`Reassigned (bulk) → ${counsellor}`));
+  toast(`Reassigned ${ids.length} lead(s) to ${counsellor}.`);
   clearBulkSelection();renderLeads();renderDash();
 }
 function exportSelectedLeads(){
@@ -5398,11 +5339,7 @@ function renderSubTeamReportsBreakdown(scoped){
   let uniApps=[];async function loadUniApps(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data)uniApps=data;await renderUniApps();}async function renderUniApps(){const el=document.getElementById('d-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(!uniApps.length){el.innerHTML=emptyState('🎓','No universities added yet.');return;}await loadUniFilesFor(uniApps.map(u=>u.id));el.innerHTML=uniApps.map(u=>{const myFiles=uniFilesByApp[u.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteUniFile('${f.id}',false)" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${filesHtml}</div><button onclick="triggerUniFileUpload('${u.id}',false)" title="Add file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniApp('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`;}).join('');}
 function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){if(!confirm('Remove this university?'))return;await sb.from('university_applications').delete().eq('id',id);loadUniApps(curId);toast('Removed.');}
   function applyRoleUI(){
-    // Use the real role variable, not the displayed label — the sidebar
-    // label now shows "Owner"/"Super Admin" cleanly, which would otherwise
-    // break a text-based role check here. isSuperAdmin/isOwner are separate
-    // access flags already resolved at login.
-    const role=(myRole||'').trim();
+    const role=(document.getElementById('sb-urole').textContent||'').trim();
     const isAdminLike=role.startsWith('Admin')||role.startsWith('Director')||isSuperAdmin;
     const isCounsellor=isRestrictedStaffRole();
 
@@ -5469,12 +5406,44 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
     }).join('');
   }
   function renderCountryBreakdown(){const card=document.getElementById('country-breakdown-card');const el=document.getElementById('country-breakdown');if(!el||!card)return;if(isRestrictedStaffRole()){card.style.display='none';return;}card.style.display='block';const titleEl=card.querySelector('.card-t');if(titleEl)titleEl.textContent=isSuperAdmin?'🌍 Country breakdown':'🌍 '+(myCountry||'Your country')+' breakdown';const map={};leads.forEach(l=>{const c=l.country||'Unspecified';if(!map[c])map[c]={country:c,total:0,enrolled:0};map[c].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[c].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.total-a.total);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}const flagMap={India:'🇮🇳',UK:'🇬🇧',Pakistan:'🇵🇰',Bangladesh:'🇧🇩'};const tot=leads.length||1;el.innerHTML=sorted.map(c=>{const w=Math.round(c.total/tot*100);const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;return`<div class="prow" onclick="navFilter('ls-country','${c.country}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:110px">${flagMap[c.country]||''} ${esc(c.country)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${c.total}</span><span style="font-size:11px;color:var(--ink3);min-width:60px;text-align:right">${pct}% enr.</span></div>`;}).join('');}
-  function renderCounsellorRank(){const el=document.getElementById('counsel-rank');const card=document.getElementById('counsel-rank-card');if(!el)return;if(isRestrictedStaffRole()){if(card)card.style.display='none';return;}if(card)card.style.display='block';const showRev=!isRestrictedStaffRole();const revByCounsellor={};if(showRev&&typeof commissions!=='undefined'){commissions.forEach(cm=>{const lead=leads.find(x=>x.id===cm.lead_id);const who=lead&&lead.counsellor;if(who)revByCounsellor[who]=(revByCounsellor[who]||0)+(parseFloat(cm.commission_amount)||0);});}const map={};leads.forEach(l=>{if(!l.counsellor)return;if(!map[l.counsellor])map[l.counsellor]={name:l.counsellor,total:0,enrolled:0};map[l.counsellor].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[l.counsellor].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.enrolled-a.enrolled);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="border-bottom:2px solid var(--line)"><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">#</th><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Counsellor</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Leads</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Enrolled</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Conversion %</th>${showRev?'<th style="text-align:right;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Revenue</th>':''}</tr></thead><tbody>${sorted.map((c,i)=>{const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';const rev=revByCounsellor[c.name]||0;return`<tr style="border-bottom:1px solid var(--line)"><td style="padding:10px 8px;font-weight:600;color:var(--ink3)">${medal||i+1}</td><td style="padding:10px 8px;font-weight:600">${esc(c.name)}</td><td style="padding:10px 8px;text-align:center">${c.total}</td><td style="padding:10px 8px;text-align:center;color:var(--sage);font-weight:600">${c.enrolled}</td><td style="padding:10px 8px;text-align:center"><span style="background:${pct>=50?'#DCFCE7':pct>=25?'#FEF9C3':'#FFE4E6'};color:${pct>=50?'#166534':pct>=25?'#854D0E':'#9F1239'};padding:3px 10px;border-radius:99px;font-weight:600;font-size:11px">${pct}%</span></td>${showRev?`<td style="padding:10px 8px;text-align:right;font-weight:700;color:var(--pine3)">£${rev.toLocaleString()}</td>`:''}</tr>`;}).join('')}</tbody></table>`;}
-  const DEFAULT_DOCS=['Passport Copy','Academic Transcripts','English Test Scores','MOI (Medium of Instruction)','Bank Statements','SOP Draft','References / LOR','Photo','CV / Resume'];async function loadDocs(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data){await renderDocs(data);}else{await renderDocs([]);}}
+  function renderCounsellorRank(){const el=document.getElementById('counsel-rank');const card=document.getElementById('counsel-rank-card');if(!el)return;if(isRestrictedStaffRole()){if(card)card.style.display='none';return;}if(card)card.style.display='block';const map={};leads.forEach(l=>{if(!l.counsellor)return;if(!map[l.counsellor])map[l.counsellor]={name:l.counsellor,total:0,enrolled:0,revenue:0};map[l.counsellor].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[l.counsellor].enrolled++;});
+    // Revenue per counsellor — matched by student_name against the lead's
+    // counsellor. commissions doesn't store counsellor directly, so this
+    // joins through the lead's name (already loaded client-side, no extra
+    // query needed since loadCommissions() is already called by renderDash()).
+    (commissions||[]).forEach(cm=>{const lead=leads.find(l=>l.id===cm.lead_id);if(lead&&lead.counsellor&&map[lead.counsellor])map[lead.counsellor].revenue+=(parseFloat(cm.commission_amount)||0);});
+    const sorted=Object.values(map).sort((a,b)=>b.enrolled-a.enrolled);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}const showRevenue=!isRestrictedStaffRole();el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="border-bottom:2px solid var(--line)"><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">#</th><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Counsellor</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Leads</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Enrolled</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Conversion %</th>${showRevenue?'<th style="text-align:right;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Revenue</th>':''}</tr></thead><tbody>${sorted.map((c,i)=>{const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';return`<tr style="border-bottom:1px solid var(--line)"><td style="padding:10px 8px;font-weight:600;color:var(--ink3)">${medal||i+1}</td><td style="padding:10px 8px;font-weight:600">${esc(c.name)}</td><td style="padding:10px 8px;text-align:center">${c.total}</td><td style="padding:10px 8px;text-align:center;color:var(--sage);font-weight:600">${c.enrolled}</td><td style="padding:10px 8px;text-align:center"><span style="background:${pct>=50?'#DCFCE7':pct>=25?'#FEF9C3':'#FFE4E6'};color:${pct>=50?'#166534':pct>=25?'#854D0E':'#9F1239'};padding:3px 10px;border-radius:99px;font-weight:600;font-size:11px">${pct}%</span></td>${showRevenue?`<td style="padding:10px 8px;text-align:right;font-weight:600;color:var(--sage)">£${c.revenue.toLocaleString()}</td>`:''}</tr>`;}).join('')}</tbody></table>`;}
+  const DEFAULT_DOCS=['Passport Copy','Academic Transcripts','English Test Scores','MOI (Medium of Instruction)','Bank Statements','SOP Draft','References / LOR','Photo','CV / Resume'];
+async function loadDocs(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data){await renderDocs(data);}else{await renderDocs([]);}}
 async function renderDocs(docs){const el=document.getElementById('d-doc-list');if(!el)return;if(!docs.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet. Click Init checklist to start.</div>';return;}await loadDocFilesFor(docs.map(d=>d.id));el.innerHTML=docs.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',false)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',false)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiry('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
 function setDocExpiry(id,current){openQuickInput('Set expiry date','Expiry date','date',current,(val)=>{sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocs(curId);toast('Expiry date updated.');});});}
-async function initDocs(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=DEFAULT_DOCS.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocs(curId);toast('Checklist created!');}
-async function toggleDoc(id,checked){await sb.from('documents').update({status:checked?'Done':'Pending'}).eq('id',id);const el=document.getElementById('d-doc-list');if(el){const spans=el.querySelectorAll('span');spans.forEach(s=>{if(s.style)s.style.textDecoration=checked?'line-through':''});}toast(checked?'✅ Marked done':'↩ Marked pending');}
+async function initDocs(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=DEFAULT_DOCS.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocs(curId);await loadDocSummaries();renderLeads();toast('Checklist created!');}
+// Lightweight document-completion summary — ONE query for every lead's
+// checklist status, not one query per row. Powers the compact "X/9 docs"
+// badge in the leads list, so missing documents are visible without
+// opening each profile individually.
+async function loadDocSummaries(){
+  const{data,error}=await sb.from('documents').select('lead_id,doc_name,status');
+  if(error||!data)return;
+  docSummaryByLead={};
+  data.forEach(d=>{
+    if(!docSummaryByLead[d.lead_id])docSummaryByLead[d.lead_id]={total:0,done:0,missing:[]};
+    docSummaryByLead[d.lead_id].total++;
+    if(d.status==='Done')docSummaryByLead[d.lead_id].done++;
+    else docSummaryByLead[d.lead_id].missing.push(d.doc_name);
+  });
+}
+function docBadge(leadId){
+  const s=docSummaryByLead[leadId];
+  if(!s||!s.total)return `<span style="font-size:11px;color:var(--ink3);font-style:italic">No checklist</span>`;
+  const complete=s.done===s.total;
+  const started=s.done>0;
+  const bg=complete?'#DCFCE7':started?'#FEF9C3':'#FFE4E6';
+  const tx=complete?'#166534':started?'#854D0E':'#9F1239';
+  const tip=s.missing.length?`Missing: ${s.missing.join(', ')}`:'All documents received';
+  return `<span class="pill" title="${esc(tip)}" style="background:${bg};color:${tx};cursor:default">${complete?'🟢':started?'🟡':'🔴'} ${s.done}/${s.total}</span>`;
+}
+async function toggleDoc(id,checked){await sb.from('documents').update({status:checked?'Done':'Pending'}).eq('id',id);const el=document.getElementById('d-doc-list');if(el){const spans=el.querySelectorAll('span');spans.forEach(s=>{if(s.style)s.style.textDecoration=checked?'line-through':''});}await loadDocSummaries();renderLeads();toast(checked?'✅ Marked done':'↩ Marked pending');}
 
 // ── REMINDERS ───────────────────────────────────────────────────
 let allReminders=[];
@@ -5525,32 +5494,25 @@ async function loadActivityTimeline(leadId,statElId,listElId){
   }
   if(!listEl)return;
   const icons={created:'✨',imported:'📥',status_change:'🔄',reassigned:'👤',field_edit:'✏️',viewed:'👁️'};
-  // Vertical timeline (#4): group events by day, with a connecting line
-  // down the left and a dot per event — WhatsApp-style. Same data as the
-  // old flat list, just restructured. data is already newest-first from
-  // the query; keep that order.
-  const byDay={};
-  const dayOrder=[];
+  // Group into day clusters (like WhatsApp's date dividers), then render
+  // each day's events as a connected vertical timeline — a small dot per
+  // event, joined by a line, rather than a flat divided list.
+  const groups=[];
   data.forEach(e=>{
-    const d=new Date(e.created_at);
-    const key=d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-    if(!byDay[key]){byDay[key]=[];dayOrder.push(key);}
-    byDay[key].push(e);
+    const dayKey=new Date(e.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    let g=groups.find(g=>g.day===dayKey);
+    if(!g){g={day:dayKey,events:[]};groups.push(g);}
+    g.events.push(e);
   });
-  const todayKey=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-  listEl.innerHTML=dayOrder.map(day=>{
-    const isToday=day===todayKey;
-    const events=byDay[day].map(e=>`
-      <div style="position:relative;padding:0 0 14px 26px">
-        <span style="position:absolute;left:6px;top:2px;width:13px;height:13px;border-radius:50%;background:var(--paper);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:8px;line-height:1">${icons[e.event_type]||''}</span>
-        <div style="font-size:12px;color:var(--ink);line-height:1.4">${esc(e.detail||e.event_type)}</div>
-        <div style="color:var(--ink3);font-size:11px;margin-top:1px">${esc(e.actor_name||'System')} · ${new Date(e.created_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>
-      </div>`).join('');
-    return `<div style="margin-bottom:4px">
-      <div style="font-size:11px;font-weight:700;color:${isToday?'var(--gold)':'var(--ink3)'};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">${isToday?'Today · ':''}${esc(day)}</div>
-      <div style="position:relative;border-left:2px solid var(--line);margin-left:12px">${events}</div>
-    </div>`;
-  }).join('')||`<div style="color:var(--ink3);font-style:italic;font-size:12px">No activity yet.</div>`;
+  listEl.innerHTML=groups.map(g=>`
+    <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 8px 0">${g.day}</div>
+    ${g.events.map((e,i)=>`<div style="position:relative;padding-left:26px;padding-bottom:${i===g.events.length-1?4:16}px">
+      <div style="position:absolute;left:2px;top:2px;width:11px;height:11px;border-radius:50%;background:var(--pine);border:2px solid var(--paper);box-shadow:0 0 0 1px var(--line);z-index:1"></div>
+      ${i<g.events.length-1?`<div style="position:absolute;left:7px;top:15px;bottom:-2px;width:2px;background:var(--line)"></div>`:''}
+      <div style="font-size:13px;line-height:1.3"><span style="margin-right:5px">${icons[e.event_type]||'•'}</span>${esc(e.detail||e.event_type)}</div>
+      <div style="color:var(--ink3);font-size:11px;margin-top:2px">${esc(e.actor_name||'System')} · ${new Date(e.created_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>
+    </div>`).join('')}
+  `).join('');
 }
 function loadActivityLog(leadId){loadActivityTimeline(leadId,'d-activity-stat','d-activity-list');}
 function loadActivityLogFS(leadId){loadActivityTimeline(leadId,'ld-activity-stat','ld-activity-list');}
@@ -6222,69 +6184,36 @@ async function deleteReminder(id){
   loadDashReminders();
   toast('Reminder deleted.');
 }
-// ── Recent leads widget (#1): newest 6, from in-memory leads ────────
-function renderRecentLeads(){
-  const el=document.getElementById('recent-leads-list');
-  if(!el)return;
-  const recent=[...leads].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,6);
-  if(!recent.length){el.innerHTML=emptyState('🆕','No leads yet.');return;}
-  el.innerHTML=recent.map(l=>{
-    const ss=SS[l.status]||{bg:'#E2E8F0',tx:'#475569'};
-    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="openLeadDetail('${l.id}')">
-      <div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(l.name)}</div><div style="font-size:11px;color:var(--ink3)">${ago(l.created_at)}${l.country?' · '+esc(l.country):''}${l.source?' · '+esc(l.source):''}</div></div>
-      <span class="pill" style="background:${ss.bg};color:${ss.tx};font-size:10px">${esc(l.status)}</span>
-    </div>`;
-  }).join('');
-}
-
-// ── Latest payments widget (#1): most recent commission/payment rows ─
-// Reads the same `commissions` data the finance tiles use, so it respects
-// the same "no finance visibility for restricted staff" rule.
-async function renderLatestPayments(){
-  const el=document.getElementById('latest-payments-list');
-  const card=document.getElementById('latest-payments-widget');
-  if(!el)return;
-  if(isRestrictedStaffRole()){if(card)card.style.display='none';return;}
-  if(card)card.style.display='';
-  await loadCommissions();
-  const paid=commissions.filter(c=>c.status==='Received'||c.status==='Paid'||parseFloat(c.commission_amount)>0);
-  const recent=[...paid].sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at)).slice(0,6);
-  if(!recent.length){el.innerHTML=emptyState('💰','No payments recorded yet.');return;}
-  el.innerHTML=recent.map(c=>{
-    const lead=leads.find(x=>x.id===c.lead_id);
-    const nm=lead?lead.name:(c.lead_name||'Unknown lead');
-    const amt=parseFloat(c.commission_amount)||0;
-    const when=c.updated_at||c.created_at;
-    const statusColor=c.status==='Received'||c.status==='Paid'?'var(--sage)':'var(--gold)';
-    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);${lead?'cursor:pointer':''}" ${lead?`onclick="openLeadDetail('${c.lead_id}')"`:''}>
-      <div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(nm)}</div><div style="font-size:11px;color:var(--ink3)">${when?ago(when):''}${c.status?' · '+esc(c.status):''}</div></div>
-      <span style="font-weight:700;font-size:13px;color:${statusColor}">£${amt.toLocaleString()}</span>
-    </div>`;
-  }).join('');
-}
-
 async function loadDashReminders(){
   const today=new Date().toISOString().split('T')[0];
-  // Include OVERDUE reminders (before today, still not done) — previously
-  // the query was gte(today), which silently hid anything overdue. Now we
-  // drop the date floor entirely and sort by date, so overdue items surface
-  // at the top flagged red.
-  const{data,error}=await sb.from('reminders').select('*,leads(name)').eq('done',false).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true}).limit(10);
+  // Fetch OVERDUE (before today, still not done) and UPCOMING (today onward)
+  // separately — the old version only ever queried >= today, so anything
+  // overdue silently never showed up here at all.
+  const[overdueRes,upcomingRes]=await Promise.all([
+    sb.from('reminders').select('*,leads(name)').eq('done',false).lt('reminder_date',today).order('reminder_date',{ascending:true}),
+    sb.from('reminders').select('*,leads(name)').eq('done',false).gte('reminder_date',today).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true}).limit(8),
+  ]);
+  const overdue=overdueRes.data||[];
+  const upcoming=upcomingRes.data||[];
+  const overdueTile=document.getElementById('k-overdue');
+  if(overdueTile)overdueTile.textContent=overdue.length;
+
   const el=document.getElementById('reminders-dash-list');
   if(!el)return;
-  if(error||!data||!data.length){el.innerHTML=emptyState('⏰','No upcoming reminders.');return;}
+  const data=[...overdue,...upcoming];
+  if(!data.length){el.innerHTML=emptyState('⏰','No upcoming reminders.');return;}
   const todayStr=today;
   el.innerHTML=data.map(r=>{
-    const isToday=r.reminder_date===todayStr;
     const isOverdue=r.reminder_date<todayStr;
+    const isToday=r.reminder_date===todayStr;
     const dt=new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
     const tm=r.reminder_time?r.reminder_time.substring(0,5):'';
     const leadName=r.leads?.name||'Unknown lead';
-    const pillBg=isOverdue?'#FEE2E2':isToday?'var(--rose-l)':'var(--gold-l)';
-    const pillTx=isOverdue?'#B91C1C':isToday?'var(--rose)':'var(--gold)';
-    const pillLabel=isOverdue?('Overdue · '+dt):isToday?'Today':dt;
+    const pillBg=isOverdue?'var(--rose)':isToday?'var(--rose-l)':'var(--gold-l)';
+    const pillTx=isOverdue?'#fff':isToday?'var(--rose)':'var(--gold)';
+    const pillLabel=isOverdue?'Overdue · '+dt:isToday?'Today':dt;
     return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="openLeadDetail('${r.lead_id}')">
-      <span class="pill" style="background:${pillBg};color:${pillTx};font-weight:600">${pillLabel}</span>
+      <span class="pill" style="background:${pillBg};color:${pillTx}">${pillLabel}</span>
       <div style="flex:1;font-size:13px"><b>${esc(leadName)}</b>${tm?' · '+tm:''}${r.notes?' — '+esc(r.notes):''}</div>
     </div>`;
   }).join('');

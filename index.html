@@ -2056,14 +2056,23 @@ function ini(n){const p=(n||'?').trim().split(' ');return(p[0][0]+(p[1]?p[1][0]:
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 // One-click Call / WhatsApp / Email icons — used anywhere a phone/email
 // shows up, so nobody has to copy-paste a number into another app.
+// country is required to get the RIGHT dialing code: some stored mobile
+// values already include a +XX prefix, others don't — splitMobile() (used
+// elsewhere for the edit form) resolves this the same way in both places,
+// so a UK lead always gets +44 and an India lead always gets +91, rather
+// than every number being treated as if it were already India-prefixed.
 // stopClick=true on table rows so clicking an icon doesn't also trigger
 // the row's onclick (which opens the lead detail view).
-function contactIcons(mobile,email,stopClick){
-  const digits=(mobile||'').replace(/\D/g,'');
+function contactIcons(mobile,email,stopClick,country){
+  let digits='';
+  if(mobile){
+    const{code,number}=splitMobile(mobile,country);
+    digits=(code+number).replace(/\D/g,'');
+  }
   const stop=stopClick?'event.stopPropagation();':'';
   let html='<span style="display:inline-flex;gap:6px;white-space:nowrap">';
   if(digits){
-    html+=`<a href="tel:${digits}" onclick="${stop}" title="Call" style="color:var(--sage);text-decoration:none"><i class="ti ti-phone"></i></a>`;
+    html+=`<a href="tel:+${digits}" onclick="${stop}" title="Call" style="color:var(--sage);text-decoration:none"><i class="ti ti-phone"></i></a>`;
     html+=`<a href="https://wa.me/${digits}" target="_blank" rel="noopener" onclick="${stop}" title="WhatsApp" style="color:#25D366;text-decoration:none"><i class="ti ti-brand-whatsapp"></i></a>`;
   }
   if(email){
@@ -3577,7 +3586,7 @@ function renderLeads(){
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
       <td><div class="nc"><div class="av" style="background:${abg};color:${atx}">${ini(l.name)}</div><div><div class="ln">${esc(l.name)}</div><div class="lc">${esc(l.city||'—')}</div></div></div></td>
       <td style="font-size:12px;color:var(--ink3)">${esc(l.mobile||'—')}</td>
-      <td onclick="event.stopPropagation()">${contactIcons(l.mobile,l.email,true)}</td>
+      <td onclick="event.stopPropagation()">${contactIcons(l.mobile,l.email,true,l.country)}</td>
       <td onclick="event.stopPropagation()">${docBadge(l.id)}</td>
       <td style="font-size:12px">${esc(l.program||'—')}</td>
       <td style="font-size:12px">${esc(l.destination||'—')}</td>
@@ -3651,7 +3660,7 @@ function renderToolLeads(){
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
       <td><div class="nc"><div class="av" style="background:${abg};color:${atx}">${ini(l.name)}</div><div><div class="ln">${esc(l.name)}</div></div></div></td>
       <td style="font-size:12px;color:var(--ink3)">${esc(l.mobile||'—')}</td>
-      <td>${contactIcons(l.mobile,l.email,true)}</td>
+      <td>${contactIcons(l.mobile,l.email,true,l.country)}</td>
       <td style="font-size:12px"><span class="pill" style="background:var(--gold-l);color:var(--gold)">${esc(l.source||'—')}</span></td>
       <td style="font-size:12px">${esc(l.program||'—')}</td>
       <td style="font-size:12px">${esc(l.destination||'—')}</td>
@@ -3669,8 +3678,8 @@ function openDetail(id){
   document.getElementById('d-captured-at').textContent=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'Unknown';
   document.getElementById('d-name').textContent=l.name;
   document.getElementById('d-sub').textContent=(l.program||'')+(l.destination?' → '+l.destination:'');
-  document.getElementById('d-mob').innerHTML=esc(l.mobile||'—')+(l.mobile?' '+contactIcons(l.mobile,null,false):'');
-  document.getElementById('d-email').innerHTML=esc(l.email||'—')+(l.email?' '+contactIcons(null,l.email,false):'');
+  document.getElementById('d-mob').innerHTML=esc(l.mobile||'—')+(l.mobile?' '+contactIcons(l.mobile,null,false,l.country):'');
+  document.getElementById('d-email').innerHTML=esc(l.email||'—')+(l.email?' '+contactIcons(null,l.email,false,l.country):'');
   document.getElementById('d-city').textContent=l.city||'—';
   document.getElementById('d-dob').textContent=l.dob||'—';
   document.getElementById('d-qual').textContent=l.qualification||'—';
@@ -3721,8 +3730,8 @@ function openLeadDetail(id){
   document.getElementById('ld-captured-at').textContent=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'Unknown';
   document.getElementById('ld-name').textContent=l.name;
   document.getElementById('ld-sub').textContent=(l.program||'')+(l.destination?' → '+l.destination:'');
-  document.getElementById('ld-mob').innerHTML=esc(l.mobile||'—')+(l.mobile?' '+contactIcons(l.mobile,null,false):'');
-  document.getElementById('ld-email').innerHTML=esc(l.email||'—')+(l.email?' '+contactIcons(null,l.email,false):'');
+  document.getElementById('ld-mob').innerHTML=esc(l.mobile||'—')+(l.mobile?' '+contactIcons(l.mobile,null,false,l.country):'');
+  document.getElementById('ld-email').innerHTML=esc(l.email||'—')+(l.email?' '+contactIcons(null,l.email,false,l.country):'');
   document.getElementById('ld-city').textContent=l.city||'—';
   document.getElementById('ld-dob').textContent=l.dob||'—';
   document.getElementById('ld-qual').textContent=l.qualification||'—';

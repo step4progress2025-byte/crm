@@ -1734,6 +1734,12 @@ What would you like help with today?</div>
             <textarea id="ld-quick-note" placeholder="Add a note directly — no need to open Edit..." style="width:100%;min-height:60px;padding:8px;border:1px solid var(--line);border-radius:var(--r);font-family:var(--font-b);font-size:12px;resize:vertical"></textarea>
             <button onclick="quickAddNote(true)" style="margin-top:6px;font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer">Add note</button>
           </div>
+          <div class="card" style="margin-top:0">
+            <div class="card-h"><span class="card-t">🎯 Application readiness</span></div>
+            <p style="font-size:11px;color:var(--ink3);margin-bottom:10px;line-height:1.5">Internal working notes only — never shown to the student. Reviews academics, budget, documentation and communication signals so you can spend time where it counts, or spot a backup option early.</p>
+            <button id="ra-generate-btn" onclick="generateReadinessAssessment()" style="font-size:12px;padding:6px 12px;background:var(--gold);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:10px"><i class="ti ti-sparkles" style="font-size:13px"></i>Generate assessment</button>
+            <div id="ra-output"></div>
+          </div>
         </div>
         <!-- Col 3: Docs, Reminders, Universities -->
         <div>
@@ -6779,6 +6785,85 @@ async function loadResumes(){
   if(!error && data) resumesList = data;
   const nb = document.getElementById('nb-resumes');
   if(nb) nb.textContent = resumesList.length;
+}
+// ── Application Readiness Assessment ────────────────────────────────
+// Internal triage tool for counsellors: pulls together academic,
+// financial, documentation, and communication signals already sitting
+// in the CRM, and asks the AI to flag genuine gaps worth closing —
+// framed as coaching, never a pass/fail verdict, so counsellors spend
+// time where it counts and spot a backup option early rather than
+// discovering a weak spot only at interview stage.
+async function generateReadinessAssessment(){
+  if(!curId)return;
+  const l=leads.find(x=>x.id===curId);
+  if(!l)return;
+  const box=document.getElementById('ra-output');
+  const btn=document.getElementById('ra-generate-btn');
+  if(!box||!btn)return;
+  box.innerHTML='<span style="color:var(--ink3);font-style:italic;font-size:13px">Reviewing the record…</span>';
+  btn.disabled=true;
+
+  try{
+    const[{data:docs},{data:activity}]=await Promise.all([
+      sb.from('documents').select('doc_name,status').eq('lead_id',curId),
+      sb.from('activity_log').select('event_type,detail,created_at').eq('lead_id',curId).order('created_at',{ascending:false}).limit(15),
+    ]);
+    // Resumes aren't linked by lead_id (they come in as standalone tool
+    // submissions) — match by phone number, same normalizePhone pattern
+    // used for duplicate detection elsewhere. Reload fresh rather than
+    // trust resumesList's cache, since it's only populated after someone
+    // has actually visited the Resumes tab this session.
+    if(!resumesList||!resumesList.length) await loadResumes();
+    const normMob=normalizePhone(l.mobile);
+    const matchedResume=(resumesList||[]).find(r=>normalizePhone(r.mobile)===normMob);
+
+    const docLines=(docs||[]).map(d=>`${d.doc_name}: ${d.status}`).join('; ')||'No checklist started yet';
+    const activityLines=(activity||[]).map(a=>`${new Date(a.created_at).toLocaleDateString('en-GB')}: ${a.detail||a.event_type}`).join('\n')||'No activity logged yet';
+
+    const summary=`STUDENT: ${l.name}
+Program applying for: ${l.program||'Not specified'} in ${l.destination||'Not specified'}
+Intake: ${l.intake_month||'Not specified'}
+Highest qualification: ${l.qualification||'Not specified'}
+English proficiency: ${l.english_status||'Not specified'}${l.ielts_score?` (IELTS ${l.ielts_score}, status: ${l.ielts_status||'—'})`:''}
+Budget range disclosed: ${l.budget_range||'Not specified'}
+Current pipeline stage: ${l.status}
+
+DOCUMENT CHECKLIST:
+${docLines}
+
+RESUME ON FILE: ${matchedResume?`Yes — field of study: ${matchedResume.field_of_study||'—'}, target country: ${matchedResume.target_country||'—'}`:'No resume submission found for this student'}
+
+COUNSELLOR'S OWN NOTES: ${l.notes||'None recorded'}
+
+RECENT ACTIVITY / COMMUNICATION HISTORY (most recent first):
+${activityLines}`;
+
+    const system=`You are helping a study-abroad counsellor at Step4Progress quickly triage a student's readiness for their visa interview and university application, BEFORE the counsellor invests further time. This is an internal working tool for staff only — it is never shown to the student.
+
+Your job is NOT to give a pass/fail verdict or discourage anyone. Frame everything as coaching signals: what's currently strong, what's a genuine gap worth closing first, and — only if the gaps look serious — a gentle nudge toward considering a parallel/backup option (a different course, country, or intake) so the counsellor doesn't lose the student entirely if this specific path looks shaky.
+
+Assess across these angles, using ONLY what's actually provided below (say "not enough information yet" for anything missing rather than guessing or inventing details):
+1. Academic fit — does the qualification/level realistically match the intended program?
+2. Financial readiness — is there a disclosed budget, and does it look realistic for the destination?
+3. Documentation readiness — how complete is the checklist, especially the SOP?
+4. Communication signals — based on the activity log's tone and frequency, does this student engage promptly and clearly, or show signs of being hard to reach or uncertain?
+
+End with ONE clear, practical recommendation for what the counsellor should do next — never a bare score, always an action.
+
+Keep it to 150-220 words, plain conversational prose, no headers or bullet lists, written directly to the counsellor.`;
+
+    const r=await fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/ai-proxy',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:500,system,messages:[{role:'user',content:summary}]})
+    });
+    if(!r.ok){throw new Error('API error: '+r.status);}
+    const d=await r.json();
+    const text=(d.content?.[0]?.text||'').trim()||'Could not generate an assessment right now — try again in a moment.';
+    box.innerHTML=`<div style="font-size:13px;line-height:1.7;color:var(--ink);background:var(--cream);border:1px solid var(--line);border-radius:var(--r);padding:12px">${esc(text).replace(/\n/g,'<br>')}</div><div style="font-size:10px;color:var(--ink3);margin-top:8px;font-style:italic">AI-generated working notes for staff only — not a verdict. Use your own judgement alongside this.</div>`;
+  }catch(e){
+    box.innerHTML=`<span style="color:var(--rose);font-size:13px">Could not generate assessment: ${esc(e.message||String(e))}</span>`;
+  }
+  btn.disabled=false;
 }
 function renderResumesAdmin(){
   const empty = document.getElementById('resumes-empty');

@@ -1176,6 +1176,13 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
       <!-- Productivity / Call Recorder -->
       <section id="sc-productivity" class="screen">
+        <div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:0">
+          <button class="prod-subtab active" data-sub="calls" onclick="setProdSubtab('calls')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent">🎧 Call Recorder</button>
+          <button class="prod-subtab" data-sub="myupdate" onclick="setProdSubtab('myupdate')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent">📝 My Daily Update</button>
+          <button class="prod-subtab" data-sub="monitor" id="prod-tab-monitor" onclick="setProdSubtab('monitor')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent;display:none">📊 Activity Monitor</button>
+        </div>
+
+        <div id="prod-sub-calls">
         <div class="card" style="margin-bottom:16px">
           <div class="card-h"><span class="card-t">🎧 Call Recorder — call logs & recordings</span></div>
           <p style="font-size:13px;color:var(--ink3);margin-bottom:0;line-height:1.6">Log calls made to leads, with optional recording upload. This tab sits under Productivity and is restricted to Admins and the Super Admin.</p>
@@ -1208,6 +1215,44 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <tbody id="cl-tbody"></tbody>
             </table>
           </div>
+        </div>
+        </div>
+
+        <div id="prod-sub-myupdate" style="display:none">
+          <div class="card" style="margin-bottom:16px;max-width:640px">
+            <div class="card-h"><span class="card-t">📝 What did you work on today?</span></div>
+            <div class="ff"><label>Date</label><input type="date" id="du-date"></div>
+            <div class="ff"><label>Update</label><textarea id="du-content" rows="4" placeholder="e.g. Followed up with 8 leads, submitted 2 applications to Coventry, completed SOP review for..." style="width:100%;padding:10px;border:1px solid var(--line);border-radius:var(--r);font-family:var(--font-b);font-size:13px"></textarea></div>
+            <button class="btn btn-p" style="margin-top:8px" onclick="submitDailyUpdate()"><i class="ti ti-device-floppy"></i>Save update</button>
+          </div>
+          <div class="card">
+            <div class="card-h"><span class="card-t">Your recent updates</span></div>
+            <div id="du-my-list"></div>
+          </div>
+        </div>
+
+        <div id="prod-sub-monitor" style="display:none">
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-h"><span class="card-t">📊 Activity Monitor</span></div>
+            <p style="font-size:12px;color:var(--ink3);margin-bottom:14px;line-height:1.6">Country-wise view of daily work updates across the team. Admins and Managers see only their own country; Directors, Super Admins, and Owners see everything.</p>
+            <div class="fg">
+              <div class="ff"><label>Country</label><select id="am-country" onchange="renderActivityMonitor()"></select></div>
+              <div class="ff"><label>Team</label>
+                <select id="am-team" onchange="renderActivityMonitor()">
+                  <option value="All">All</option>
+                  <option value="Counsellor">Counsellor</option>
+                  <option value="Digital Marketing">Marketing</option>
+                  <option value="SOP Team">SOP</option>
+                  <option value="Visa Team">Visa</option>
+                  <option value="Application Team">Application</option>
+                  <option value="Agent">Agents</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Manager">Manager</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div id="am-list"></div>
         </div>
       </section>
 
@@ -1569,6 +1614,52 @@ What would you like help with today?</div>
   </div>
 </div>
 
+<!-- Announcements — role-gated broadcasts, tagged at an individual, a
+     whole team, or everyone, with threaded replies. Posting is
+     restricted to Admin/Manager/Director/Super Admin/Owner; reading and
+     replying is open to whoever an announcement is actually targeted at. -->
+<div class="mover" id="modal-announcements">
+  <div class="modal" style="width:460px;max-height:82vh;display:flex;flex-direction:column">
+    <div class="mhead"><span class="mtitle">📢 Announcements</span><button class="mclose" onclick="closeModal('modal-announcements')">×</button></div>
+    <button id="ann-new-btn" onclick="openAnnouncementComposer()" class="btn btn-p" style="margin-bottom:12px;display:none"><i class="ti ti-plus"></i>New announcement</button>
+    <div id="ann-composer" style="display:none;background:var(--cream);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:14px">
+      <div class="ff"><label>Send to</label>
+        <select id="ann-target-type" onchange="syncAnnouncementTargetUI()">
+          <option value="all">Everyone</option>
+          <option value="team">A team</option>
+          <option value="individual">One person</option>
+        </select>
+      </div>
+      <div class="ff" id="ann-team-picker" style="display:none"><label>Team</label>
+        <select id="ann-team-value">
+          <option value="Counsellor">Counsellor</option>
+          <option value="Digital Marketing">Marketing</option>
+          <option value="SOP Team">SOP</option>
+          <option value="Visa Team">Visa</option>
+          <option value="Application Team">Application</option>
+          <option value="Agent">Agents</option>
+          <option value="Admin">Admin</option>
+          <option value="Manager">Manager</option>
+        </select>
+      </div>
+      <div class="ff" id="ann-person-picker" style="display:none"><label>Person</label>
+        <select id="ann-person-value"></select>
+      </div>
+      <div class="ff"><label>Message</label><textarea id="ann-message" rows="3" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:var(--r);font-family:var(--font-b);font-size:13px"></textarea></div>
+      <input type="file" id="ann-attach-input" style="display:none" onchange="handleAnnAttachSelected(this.files[0])">
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <button onclick="document.getElementById('ann-attach-input').click()" title="Attach a file" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px"><i class="ti ti-paperclip"></i></button>
+        <span id="ann-attach-preview" style="font-size:11px;color:var(--ink3)"></span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btn-p" onclick="postAnnouncement()">Post</button>
+        <button onclick="closeAnnouncementComposer()" style="background:none;border:1px solid var(--line2);border-radius:var(--r);padding:8px 14px;cursor:pointer;font-size:13px">Cancel</button>
+      </div>
+    </div>
+    <div id="ann-feed" style="flex:1;overflow-y:auto"></div>
+  </div>
+</div>
+
 <!-- Shared floating chat window — Facebook/Gmail style, docked bottom-right,
      non-modal so the rest of the app stays usable while chatting. Reused
      for both per-lead Team Chat and 1-to-1 Direct Messages. -->
@@ -1595,9 +1686,12 @@ What would you like help with today?</div>
   <div id="chat-float-body" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
     <div id="chat-float-list" style="flex:1;overflow-y:auto;padding:12px"></div>
     <div style="display:flex;gap:6px;padding:10px;border-top:1px solid var(--line);flex-shrink:0">
+      <input type="file" id="chat-float-attach-input" style="display:none" onchange="handleChatAttachSelected(this.files[0])">
+      <button onclick="document.getElementById('chat-float-attach-input').click()" title="Attach a file" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:17px;padding:0 4px"><i class="ti ti-paperclip"></i></button>
       <input id="chat-float-input" placeholder="Write a message…" style="flex:1;padding:9px 12px;border:1px solid var(--line2);border-radius:99px;font-family:var(--font-b);font-size:13px" onkeydown="if(event.key==='Enter')sendChatFloatMessage()">
       <button class="btn btn-p" onclick="sendChatFloatMessage()" style="border-radius:99px;padding:9px 14px"><i class="ti ti-send"></i></button>
     </div>
+    <div id="chat-float-attach-preview" style="display:none;padding:6px 10px;font-size:11px;color:var(--ink3);border-top:1px solid var(--line);align-items:center;gap:6px"></div>
   </div>
 </div>
 
@@ -1886,7 +1980,7 @@ What would you like help with today?</div>
 </div>
 
 <div id="events-widget" style="position:fixed;bottom:80px;right:18px;width:260px;background:var(--pine);border-radius:12px;padding:12px 14px;z-index:400;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.2)"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"> <span style="color:#fff;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Upcoming events</span> <span onclick="document.getElementById('events-widget').style.display='none'" style="color:rgba(255,255,255,0.6);cursor:pointer;font-size:18px;line-height:1">&times;</span> </div> <div id="events-ticker" style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.6"></div> </div> <div id="dm-bell" onclick="openDmInbox()" style="position:fixed;bottom:24px;right:74px;width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-message-circle-2" style="color:#fff;font-size:20px"></i> <span id="dm-badge" style="position:absolute;top:-2px;right:-2px;background:var(--rose);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div>
-<div id="events-bell" onclick="toggleEventsWidget()" style="position:fixed;bottom:24px;right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> <span id="events-badge" style="position:absolute;top:-2px;right:-2px;background:#F1239;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="super-admin-notif-list" style="position:fixed;bottom:24px;left:18px;z-index:500;display:flex;flex-direction:column-reverse;gap:8px;max-width:320px"></div>
+<div id="events-bell" onclick="toggleEventsWidget()" style="position:fixed;bottom:24px;right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> <span id="events-badge" style="position:absolute;top:-2px;right:-2px;background:#F1239;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="ann-bell" onclick="openAnnouncements()" style="position:fixed;bottom:24px;right:130px;width:44px;height:44px;border-radius:50%;background:var(--ember);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-speakerphone" style="color:#fff;font-size:19px"></i> <span id="ann-badge" style="position:absolute;top:-2px;right:-2px;background:var(--rose);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="super-admin-notif-list" style="position:fixed;bottom:24px;left:18px;z-index:500;display:flex;flex-direction:column-reverse;gap:8px;max-width:320px"></div>
 <div id="urgent-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,20,20,.6);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
   <div id="urgent-popup-card" style="background:#fff;border-radius:18px;padding:0;max-width:460px;width:92%;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden"></div>
 </div>
@@ -1991,6 +2085,125 @@ async function logActivity(leadId,eventType,detail){
     lead_id:leadId,event_type:eventType,detail,actor_name:myName||null
   });
   if(error)console.error('Activity log failed (non-blocking):',error);
+}
+
+// ── Productivity: sub-tabs, My Daily Update, Activity Monitor ──────
+function initProductivity(){
+  const dateEl=document.getElementById('du-date');
+  if(dateEl&&!dateEl.value)dateEl.value=new Date().toISOString().substring(0,10);
+
+  // Call Recorder and Activity Monitor are Admin-tier+ only; everyone
+  // else only ever sees "My Daily Update", and lands there by default.
+  const isAdminTier=!isRestrictedStaffRole();
+  document.querySelectorAll('.prod-subtab[data-sub="calls"]').forEach(b=>b.style.display=isAdminTier?'':'none');
+  const monitorTab=document.getElementById('prod-tab-monitor');
+  if(monitorTab)monitorTab.style.display=isAdminTier?'':'none';
+
+  if(isAdminTier){
+    loadCallLogs().then(renderCallLogs);
+    populateActivityMonitorCountryFilter();
+  } else {
+    setProdSubtab('myupdate');
+  }
+  loadMyDailyUpdates();
+}
+function setProdSubtab(sub){
+  ['calls','myupdate','monitor'].forEach(s=>{
+    const panel=document.getElementById('prod-sub-'+s);
+    if(panel)panel.style.display=s===sub?'block':'none';
+    const btn=document.querySelector(`.prod-subtab[data-sub="${s}"]`);
+    if(btn){btn.style.color=s===sub?'var(--pine)':'var(--ink3)';btn.style.borderBottomColor=s===sub?'var(--pine)':'transparent';}
+  });
+  if(sub==='monitor')renderActivityMonitor();
+}
+async function submitDailyUpdate(){
+  const dateEl=document.getElementById('du-date');
+  const contentEl=document.getElementById('du-content');
+  const content=(contentEl.value||'').trim();
+  if(!content){toast('Write a quick note about what you worked on first.');return;}
+  const{error}=await sb.from('daily_updates').insert({
+    team_id:currentUser?.id||null,
+    user_name:myName||'',
+    role:myRole||'',
+    office:myOffice||'',
+    work_date:dateEl.value||new Date().toISOString().substring(0,10),
+    content,
+  });
+  if(error){toast('Error saving update: '+error.message);return;}
+  contentEl.value='';
+  toast('Update saved!');
+  loadMyDailyUpdates();
+}
+async function loadMyDailyUpdates(){
+  const listEl=document.getElementById('du-my-list');
+  if(!listEl||!currentUser)return;
+  const{data,error}=await sb.from('daily_updates').select('*').eq('team_id',currentUser.id).order('work_date',{ascending:false}).limit(15);
+  if(error||!data||!data.length){
+    listEl.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No updates logged yet — add today\'s above.</div>';
+    return;
+  }
+  listEl.innerHTML=data.map(u=>`<div style="padding:9px 0;border-bottom:1px solid var(--line)">
+    <div style="font-size:11px;color:var(--ink3);font-weight:600">${new Date(u.work_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div>
+    <div style="font-size:13px;margin-top:2px;white-space:pre-wrap">${esc(u.content)}</div>
+  </div>`).join('');
+}
+// Director/Super Admin/Owner see every country; Admin/Manager are locked
+// to their own office — same hierarchy already used for round-robin and
+// leads visibility elsewhere in the CRM.
+function populateActivityMonitorCountryFilter(){
+  const sel=document.getElementById('am-country');
+  if(!sel)return;
+  const seesAllCountries=isSuperAdmin||myRole==='Director';
+  if(seesAllCountries){
+    sel.innerHTML=['All','India','UK','Pakistan','Bangladesh'].map(c=>`<option value="${c}">${c}</option>`).join('');
+    sel.disabled=false;
+  } else {
+    sel.innerHTML=`<option value="${esc(myOffice||'')}">${esc(myOffice||'—')}</option>`;
+    sel.disabled=true;
+  }
+}
+async function renderActivityMonitor(){
+  const listEl=document.getElementById('am-list');
+  if(!listEl)return;
+  const countrySel=document.getElementById('am-country');
+  const teamSel=document.getElementById('am-team');
+  const seesAllCountries=isSuperAdmin||myRole==='Director';
+  const countryFilter=seesAllCountries?(countrySel?.value||'All'):myOffice;
+  const teamFilter=teamSel?.value||'All';
+
+  let members=(teamList||[]).filter(t=>{
+    if(countryFilter&&countryFilter!=='All'&&t.office!==countryFilter)return false;
+    if(teamFilter&&teamFilter!=='All'&&(t.role||'Counsellor')!==teamFilter)return false;
+    return true;
+  });
+
+  if(!members.length){
+    listEl.innerHTML=emptyState('👥','No team members match this filter.');
+    return;
+  }
+
+  // Pull each shown member's most recent update + a 7-day update count in
+  // one query rather than one call per row.
+  const teamIds=members.map(m=>m.id).filter(Boolean);
+  const since=new Date(Date.now()-7*24*60*60*1000).toISOString().substring(0,10);
+  const{data:updates}=await sb.from('daily_updates').select('team_id,work_date,content').in('team_id',teamIds).gte('work_date',since).order('work_date',{ascending:false});
+  const byMember={};
+  (updates||[]).forEach(u=>{
+    if(!byMember[u.team_id])byMember[u.team_id]={count:0,latest:null};
+    byMember[u.team_id].count++;
+    if(!byMember[u.team_id].latest)byMember[u.team_id].latest=u;
+  });
+
+  listEl.innerHTML=`<div class="tw"><table class="tbl"><thead><tr><th>Name</th><th>Team</th><th>Country</th><th>Updates (7d)</th><th>Latest update</th></tr></thead><tbody>`+
+    members.map(m=>{
+      const info=byMember[m.id];
+      const count=info?.count||0;
+      const badgeColor=count>=5?'var(--sage)':count>=1?'var(--gold)':'var(--rose)';
+      const badgeBg=count>=5?'var(--sage-l)':count>=1?'var(--gold-l)':'var(--rose-l)';
+      const latest=info?.latest?`${new Date(info.latest.work_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}: ${esc((info.latest.content||'').slice(0,80))}${(info.latest.content||'').length>80?'…':''}`:'<span style="color:var(--ink3);font-style:italic">No updates logged this week</span>';
+      return `<tr><td style="font-weight:600">${esc(m.full_name||m.email||'—')}</td><td style="font-size:12px">${esc(m.role||'Counsellor')}</td><td style="font-size:12px">${esc(m.office||'—')}</td><td><span class="pill" style="background:${badgeBg};color:${badgeColor}">${count}</span></td><td style="font-size:12.5px;max-width:340px">${latest}</td></tr>`;
+    }).join('')+
+    `</tbody></table></div>`;
 }
 
 // Every time a lead is opened, log who viewed it — this is what actually
@@ -2794,9 +3007,18 @@ async function doSignup(){
 // owner's own account can't be edited, demoted, or removed by anyone else,
 // even another Super Admin. Add more emails here to grant a new person
 // the exact same full access India has, without touching this protection.
-const SUPER_ADMIN_EMAILS=['india@step4progress.com','jisan@step4progress.co.uk'];
-const OWNER_EMAIL='india@step4progress.com';
-let myOffice=null, isSuperAdmin=false, isOwner=false, myName=null, myRole='Counsellor', myCountry=null, myTeamCategory='International';
+// Multiple people can hold full Super Admin access (checked by email, not
+// a stored role value). Separately, OWNERS is a set of untouchable-root
+// accounts — each with their own display title — protected from being
+// edited, demoted, or removed by literally anyone, including each other.
+// Add someone here only when they should be a genuine second root, not
+// just "full access" (that's what SUPER_ADMIN_EMAILS alone already gives).
+const SUPER_ADMIN_EMAILS=['india@step4progress.com','jisan@step4progress.co.uk','pavitra@step4progress.com'];
+const OWNERS={
+  'india@step4progress.com':'Owner',
+  'pavitra@step4progress.com':'Platform Administrator',
+};
+let myOffice=null, isSuperAdmin=false, isOwner=false, myOwnerTitle=null, myName=null, myRole='Counsellor', myCountry=null, myTeamCategory='International';
 async function onLoginGuarded(user){
   if(!isAllowedEmail(user.email)){
     // Agents are external partners and won't have a step4progress email —
@@ -2840,10 +3062,11 @@ async function onLogin(user){
   myTeamCategory=profile?.team_category||'International';
   myCountry=profile?.country||Object.keys(OFFICE_MAP).find(c=>OFFICE_MAP[c].includes(myOffice))||null;
   isSuperAdmin=SUPER_ADMIN_EMAILS.includes((user.email||'').toLowerCase());
-  isOwner=(user.email||'').toLowerCase()===OWNER_EMAIL.toLowerCase();
+  myOwnerTitle=OWNERS[(user.email||'').toLowerCase()]||null;
+  isOwner=myOwnerTitle!==null;
   document.getElementById('sb-av').textContent=ini(name);
   document.getElementById('sb-uname').textContent=name;
-  document.getElementById('sb-urole').textContent=role+(isSuperAdmin&&role!=='Super Admin'?' (Super Admin)':'');
+  document.getElementById('sb-urole').textContent=isOwner?myOwnerTitle:role+(isSuperAdmin&&role!=='Super Admin'?' (Super Admin)':'');
   await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents(),loadResumes(),loadRoundRobinState(),loadUnavailability(),loadSopUploadedLeadIds(),loadDocSummaries()]);
  initPresence(user, profile);
   renderDash();renderLeads();renderFU();badges();checkNoActivity();applyRoleUI();setTimeout(()=>{applyRoleUI();renderDash();},2000);
@@ -2864,7 +3087,7 @@ async function doLogout(){
   if(curId) broadcastStopEditing(curId);
   stopNotificationEngine();
   await sb.auth.signOut();
-  leads=[];coaching=[];currentUser=null;myOffice=null;isSuperAdmin=false;isOwner=false;
+  leads=[];coaching=[];currentUser=null;myOffice=null;isSuperAdmin=false;isOwner=false;myOwnerTitle=null;
   document.getElementById('auth-screen').classList.remove('hidden');
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login-email').value='';
@@ -3175,7 +3398,10 @@ function nav(id,btn){
   // through to the one screen their whole role exists for.
   if(id==='digitalmarketing'&&roleIsCounsellor&&myRole!=='Digital Marketing'){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
   if(id==='team'&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
-  if(id==='productivity'&&roleIsCounsellor&&!isSuperAdmin){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Productivity is restricted to Admins.');return;}
+  // Productivity used to be Admin-tier only — now everyone needs in for
+  // "My Daily Update", so the blanket block is gone. Call Recorder and
+  // Activity Monitor stay restricted via initProductivity() below instead,
+  // sub-tab by sub-tab, rather than blocking the whole screen.
   if(id==='leads'){renderLeads();setTimeout(applyRoleUI,500);}
   if(id==='toolleads'){renderToolLeads();}
   if(id==='events'){loadEvents();}
@@ -3187,7 +3413,7 @@ function nav(id,btn){
   if(id==='digitalmarketing')initDigitalMarketing();
   if(id==='reports'){if(roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}initReports();}
   if(id==='subteam-detail'){if(myRole==='Counsellor'&&!isSuperAdmin){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Team Dashboards is for Application/Visa/SOP Team and management.');return;}renderSubTeamDetail();}
-  if(id==='productivity'){loadCallLogs().then(renderCallLogs);}
+  if(id==='productivity')initProductivity();
   if(id==='coaching')renderCoaching();
   if(id==='followup')renderFU();
 }
@@ -4514,18 +4740,20 @@ function renderFU(){
 }
 
 // ── TEAM ─────────────────────────────────────────────────────────
-// True when this row is India's protected Owner account AND the current
-// viewer isn't the Owner themself — used to hide the delete button on
-// India's card for every other Super Admin, so the protection is quiet
-// (no error message needed, the control just isn't there).
+// True for any OWNERS-tier account's row, for EVERY viewer — including
+// other owners, including the owner viewing their own row. Untouchable
+// really means untouchable: nobody removes a root account through the
+// UI, full stop. (Self-deletion was already separately blocked below,
+// but this keeps the button from ever appearing at all, on any owner's
+// card, for anyone.)
 function isProtectedOwnerRow(t){
-  return (t.email||'').toLowerCase()===OWNER_EMAIL.toLowerCase()&&!isOwner;
+  return Object.prototype.hasOwnProperty.call(OWNERS,(t.email||'').toLowerCase());
 }
 async function deleteTeamMember(id,name){
   if(!isSuperAdmin){toast('Only the Super Admin can remove team members.');return;}
   if(currentUser&&id===currentUser.id){toast("You can't remove your own account.");return;}
   const target=teamList.find(t=>t.id===id);
-  if(target&&(target.email||'').toLowerCase()===OWNER_EMAIL.toLowerCase()&&!isOwner){
+  if(target&&isProtectedOwnerRow(target)){
     toast("This account can't be removed.");return;
   }
   if(!confirm(`Remove ${name} from the team? This deletes their CRM access record. For full account removal, also delete their login from Supabase → Authentication → Users.`))return;
@@ -5556,8 +5784,9 @@ async function loadLeadChatMessages(leadId){
   if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;text-align:center;padding:20px">No messages yet — start the conversation below.</div>';el.scrollTop=0;return;}
   el.innerHTML=data.map(m=>{
     const isMine=m.author_id===currentUser?.id;
+    const attachHtml=m.attachment_url?`<div style="margin-top:6px"><a href="${esc(m.attachment_url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:${isMine?'#fff':'var(--pine)'};text-decoration:underline"><i class="ti ti-paperclip"></i>${esc(m.attachment_filename||'Attachment')}</a></div>`:'';
     return `<div style="display:flex;flex-direction:column;align-items:${isMine?'flex-end':'flex-start'};margin-bottom:10px">
-      <div style="max-width:78%;background:${isMine?'var(--pine)':'var(--paper)'};color:${isMine?'#fff':'var(--ink)'};border:${isMine?'none':'1px solid var(--line)'};padding:9px 13px;border-radius:14px;${isMine?'border-bottom-right-radius:3px':'border-bottom-left-radius:3px'};font-size:13px;line-height:1.5">${esc(m.message)}</div>
+      <div style="max-width:78%;background:${isMine?'var(--pine)':'var(--paper)'};color:${isMine?'#fff':'var(--ink)'};border:${isMine?'none':'1px solid var(--line)'};padding:9px 13px;border-radius:14px;${isMine?'border-bottom-right-radius:3px':'border-bottom-left-radius:3px'};font-size:13px;line-height:1.5">${esc(m.message)}${attachHtml}</div>
       <div style="font-size:10px;color:var(--ink3);margin-top:3px;padding:0 4px">${isMine?'You':esc(m.author_name||'Someone')} · ${new Date(m.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
     </div>`;
   }).join('');
@@ -5567,9 +5796,11 @@ async function sendLeadChatMessage(){
   if(!curId)return;
   const input=document.getElementById('chat-float-input');
   const message=input.value.trim();
-  if(!message)return;
+  if(!message&&!stagedChatAttachment)return;
   input.value='';
-  const{error}=await sb.from('lead_comments').insert({lead_id:curId,author_id:currentUser?.id,author_name:myName,message});
+  const attach=stagedChatAttachment;
+  clearStagedChatAttachment();
+  const{error}=await sb.from('lead_comments').insert({lead_id:curId,author_id:currentUser?.id,author_name:myName,message:message||'📎 Sent an attachment',attachment_url:attach?.url||null,attachment_filename:attach?.filename||null});
   if(error){toast('Error sending message: '+error.message);input.value=message;return;}
   await loadLeadChatMessages(curId);
   loadChatStat(curId,'d-chat-stat');
@@ -5584,6 +5815,7 @@ let chatFloatTarget=null; // leadId (string) for lead mode, {id,name} for dm mod
 function openChatFloat(mode,target,title){
   chatFloatMode=mode;
   chatFloatTarget=target;
+  clearStagedChatAttachment(); // don't carry a staged file across conversations
   document.getElementById('chat-float-title').textContent=title;
   document.getElementById('chat-float-input').value='';
   document.getElementById('chat-float').style.display='flex';
@@ -5664,23 +5896,50 @@ async function loadDmMessages(){
   if(!data||!data.length){el.innerHTML=emptyState('💬','No messages yet — say hello.');return;}
   el.innerHTML=data.map(m=>{
     const isMine=m.sender_id===me;
+    const attachHtml=m.attachment_url?`<div style="margin-top:6px"><a href="${esc(m.attachment_url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:${isMine?'#fff':'var(--pine)'};text-decoration:underline"><i class="ti ti-paperclip"></i>${esc(m.attachment_filename||'Attachment')}</a></div>`:'';
     return `<div style="display:flex;flex-direction:column;align-items:${isMine?'flex-end':'flex-start'};margin-bottom:10px">
-      <div style="max-width:78%;background:${isMine?'var(--pine)':'var(--paper)'};color:${isMine?'#fff':'var(--ink)'};border:${isMine?'none':'1px solid var(--line)'};padding:9px 13px;border-radius:14px;${isMine?'border-bottom-right-radius:3px':'border-bottom-left-radius:3px'};font-size:13px;line-height:1.5">${esc(m.message)}</div>
+      <div style="max-width:78%;background:${isMine?'var(--pine)':'var(--paper)'};color:${isMine?'#fff':'var(--ink)'};border:${isMine?'none':'1px solid var(--line)'};padding:9px 13px;border-radius:14px;${isMine?'border-bottom-right-radius:3px':'border-bottom-left-radius:3px'};font-size:13px;line-height:1.5">${esc(m.message)}${attachHtml}</div>
       <div style="font-size:10px;color:var(--ink3);margin-top:3px;padding:0 4px">${new Date(m.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
     </div>`;
   }).join('');
   el.scrollTop=el.scrollHeight;
 }
+// ── Chat attachments (DM + lead chat share this) ────────────────────
+// A file picked via the paperclip is uploaded immediately, then just
+// its URL/filename ride along with whichever message gets sent next —
+// this avoids a separate "confirm attachment" step for a simple chat box.
+let stagedChatAttachment=null; // {url, filename} | null
+async function handleChatAttachSelected(file){
+  if(!file)return;
+  const preview=document.getElementById('chat-float-attach-preview');
+  preview.style.display='flex';preview.innerHTML='Uploading…';
+  const path=`${currentUser?.id||'anon'}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+  const{error:upErr}=await sb.storage.from('chat-attachments').upload(path,file);
+  if(upErr){preview.innerHTML='Upload failed: '+esc(upErr.message);stagedChatAttachment=null;return;}
+  const{data:pub}=sb.storage.from('chat-attachments').getPublicUrl(path);
+  stagedChatAttachment={url:pub?.publicUrl||null,filename:file.name};
+  preview.innerHTML=`<i class="ti ti-paperclip"></i> ${esc(file.name)} <span onclick="clearStagedChatAttachment()" style="cursor:pointer;color:var(--rose);margin-left:4px">×</span>`;
+}
+function clearStagedChatAttachment(){
+  stagedChatAttachment=null;
+  const preview=document.getElementById('chat-float-attach-preview');
+  if(preview){preview.style.display='none';preview.innerHTML='';}
+  const input=document.getElementById('chat-float-attach-input');
+  if(input)input.value='';
+}
 async function sendDmMessage(){
   if(!dmActiveRecipient||!currentUser)return;
   const input=document.getElementById('chat-float-input');
   const message=input.value.trim();
-  if(!message)return;
+  if(!message&&!stagedChatAttachment)return;
   input.value='';
+  const attach=stagedChatAttachment;
+  clearStagedChatAttachment();
   const{error}=await sb.from('direct_messages').insert({
     sender_id:currentUser.id,sender_name:myName,
     recipient_id:dmActiveRecipient.id,recipient_name:dmActiveRecipient.name,
-    message,read:false
+    message:message||'📎 Sent an attachment',read:false,
+    attachment_url:attach?.url||null,attachment_filename:attach?.filename||null,
   });
   if(error){toast('Error sending message: '+error.message);input.value=message;return;}
   await loadDmMessages();
@@ -5696,6 +5955,154 @@ async function checkUnreadDmCount(){
   if(count>0){badge.textContent=count>9?'9+':count;badge.style.display='flex';}
   else{badge.style.display='none';}
   renderOnlineUsers(presenceChannel?presenceChannel.presenceState():{});
+}
+
+// ── Announcements — Slack-style broadcasts ───────────────────────────
+// Posting is restricted to Admin/Manager/Director/Super Admin/Owner.
+// A person SEES an announcement if it's targeted at 'all', at their own
+// team/role, or at them individually. Fetches the whole table and
+// filters client-side — simplest correct approach for a table this
+// size, rather than a fragile multi-condition .or() query.
+let allAnnouncements=[];
+function isAnnouncementRelevantToMe(a){
+  if(a.target_type==='all')return true;
+  if(a.target_type==='team')return a.target_value===myRole;
+  if(a.target_type==='individual')return a.target_value===currentUser?.id;
+  return false;
+}
+async function openAnnouncements(){
+  document.getElementById('modal-announcements').classList.add('open');
+  const newBtn=document.getElementById('ann-new-btn');
+  if(newBtn)newBtn.style.display=isRestrictedStaffRole()?'none':'flex';
+  await loadAnnouncements();
+  // Mark as seen now that the panel's open — badge clears on close, not
+  // per-item, since this is a simple broadcast feed, not a full inbox.
+  localStorage.setItem('s4p_ann_last_seen',new Date().toISOString());
+  checkUnreadAnnouncementsCount();
+}
+async function loadAnnouncements(){
+  const{data,error}=await sb.from('announcements').select('*').order('created_at',{ascending:false}).limit(100);
+  if(error){document.getElementById('ann-feed').innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;text-align:center;padding:20px">Could not load announcements — has the announcements table been created in Supabase yet?</div>';return;}
+  allAnnouncements=data||[];
+  renderAnnouncementFeed();
+}
+function renderAnnouncementFeed(){
+  const el=document.getElementById('ann-feed');
+  if(!el)return;
+  const mine=allAnnouncements.filter(isAnnouncementRelevantToMe);
+  if(!mine.length){el.innerHTML=emptyState('📢','Nothing here yet.');return;}
+  el.innerHTML=mine.map(a=>{
+    const attachHtml=a.attachment_url?`<div style="margin-top:6px"><a href="${esc(a.attachment_url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i>${esc(a.attachment_filename||'Attachment')}</a></div>`:'';
+    return `<div style="border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:10px;background:var(--paper)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="font-size:13px;font-weight:700">${esc(a.author_name||'Someone')}</div>
+        <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:10px">${esc(a.target_label||'Everyone')}</span>
+      </div>
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:6px">${new Date(a.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+      <div style="font-size:13px;line-height:1.6;white-space:pre-wrap">${esc(a.message)}</div>
+      ${attachHtml}
+      <div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px">
+        <div id="ann-replies-${a.id}" style="margin-bottom:8px"></div>
+        <div style="display:flex;gap:6px">
+          <input id="ann-reply-input-${a.id}" placeholder="Reply…" style="flex:1;padding:6px 10px;border:1px solid var(--line2);border-radius:99px;font-family:var(--font-b);font-size:12px" onkeydown="if(event.key==='Enter')postAnnouncementReply('${a.id}')">
+          <button onclick="postAnnouncementReply('${a.id}')" style="background:var(--pine);color:#fff;border:none;border-radius:99px;padding:6px 12px;cursor:pointer;font-size:11px"><i class="ti ti-send"></i></button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  mine.forEach(a=>loadAnnouncementReplies(a.id));
+}
+async function loadAnnouncementReplies(announcementId){
+  const el=document.getElementById('ann-replies-'+announcementId);
+  if(!el)return;
+  const{data,error}=await sb.from('announcement_replies').select('*').eq('announcement_id',announcementId).order('created_at',{ascending:true});
+  if(error||!data||!data.length){el.innerHTML='';return;}
+  el.innerHTML=data.map(r=>`<div style="font-size:12px;padding:4px 0;border-top:1px solid var(--line)"><b>${esc(r.author_name||'Someone')}:</b> ${esc(r.message)}</div>`).join('');
+}
+async function postAnnouncementReply(announcementId){
+  const input=document.getElementById('ann-reply-input-'+announcementId);
+  const message=(input?.value||'').trim();
+  if(!message)return;
+  input.value='';
+  const{error}=await sb.from('announcement_replies').insert({announcement_id:announcementId,author_id:currentUser?.id,author_name:myName,message});
+  if(error){toast('Error posting reply: '+error.message);return;}
+  loadAnnouncementReplies(announcementId);
+}
+function openAnnouncementComposer(){
+  document.getElementById('ann-composer').style.display='block';
+  document.getElementById('ann-target-type').value='all';
+  document.getElementById('ann-message').value='';
+  stagedAnnAttachment=null;
+  document.getElementById('ann-attach-preview').textContent='';
+  const personSel=document.getElementById('ann-person-value');
+  personSel.innerHTML=(teamList||[]).filter(t=>t.id!==currentUser?.id).map(t=>`<option value="${t.id}">${esc(t.full_name||t.email||'—')}</option>`).join('');
+  syncAnnouncementTargetUI();
+}
+function closeAnnouncementComposer(){
+  document.getElementById('ann-composer').style.display='none';
+}
+function syncAnnouncementTargetUI(){
+  const type=document.getElementById('ann-target-type').value;
+  document.getElementById('ann-team-picker').style.display=type==='team'?'block':'none';
+  document.getElementById('ann-person-picker').style.display=type==='individual'?'block':'none';
+}
+let stagedAnnAttachment=null;
+async function handleAnnAttachSelected(file){
+  if(!file)return;
+  const preview=document.getElementById('ann-attach-preview');
+  preview.textContent='Uploading…';
+  const path=`${currentUser?.id||'anon'}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+  const{error:upErr}=await sb.storage.from('chat-attachments').upload(path,file);
+  if(upErr){preview.textContent='Upload failed: '+upErr.message;stagedAnnAttachment=null;return;}
+  const{data:pub}=sb.storage.from('chat-attachments').getPublicUrl(path);
+  stagedAnnAttachment={url:pub?.publicUrl||null,filename:file.name};
+  preview.innerHTML=`<i class="ti ti-paperclip"></i> ${esc(file.name)}`;
+}
+async function postAnnouncement(){
+  if(isRestrictedStaffRole()){toast('Only Admin, Manager, Director, Super Admin, or Owner can post announcements.');return;}
+  const type=document.getElementById('ann-target-type').value;
+  const message=(document.getElementById('ann-message').value||'').trim();
+  if(!message){toast('Write a message first.');return;}
+
+  let target_value=null, target_label='Everyone';
+  if(type==='team'){
+    target_value=document.getElementById('ann-team-value').value;
+    target_label=document.getElementById('ann-team-value').selectedOptions[0]?.textContent||target_value;
+  } else if(type==='individual'){
+    target_value=document.getElementById('ann-person-value').value;
+    target_label=document.getElementById('ann-person-value').selectedOptions[0]?.textContent||'Someone';
+    if(!target_value){toast('Pick a person to send this to.');return;}
+  }
+
+  const{error}=await sb.from('announcements').insert({
+    author_id:currentUser?.id,author_name:myName,
+    target_type:type,target_value,target_label,
+    message,
+    attachment_url:stagedAnnAttachment?.url||null,
+    attachment_filename:stagedAnnAttachment?.filename||null,
+  });
+  if(error){toast('Error posting announcement: '+error.message);return;}
+  closeAnnouncementComposer();
+  toast('Announcement posted!');
+  loadAnnouncements();
+}
+async function checkUnreadAnnouncementsCount(){
+  if(!currentUser)return;
+  const badge=document.getElementById('ann-badge');
+  if(!badge)return;
+  const lastSeen=localStorage.getItem('s4p_ann_last_seen');
+  const{data,error}=await sb.from('announcements').select('id,target_type,target_value,created_at').order('created_at',{ascending:false}).limit(100);
+  if(error||!data){badge.style.display='none';return;}
+  const relevant=data.filter(a=>{
+    if(a.target_type==='all')return true;
+    if(a.target_type==='team')return a.target_value===myRole;
+    if(a.target_type==='individual')return a.target_value===currentUser.id;
+    return false;
+  });
+  const unread=lastSeen?relevant.filter(a=>new Date(a.created_at)>new Date(lastSeen)):relevant;
+  const count=unread.length;
+  if(count>0){badge.textContent=count>9?'9+':count;badge.style.display='flex';}
+  else{badge.style.display='none';}
 }
 
 // ── AI Daily Briefing ────────────────────────────────────────────────
@@ -6343,11 +6750,13 @@ function startNotificationEngine(){
   checkDailyFollowupPopup();
   checkEventReminders();
   checkUnreadDmCount();
+  checkUnreadAnnouncementsCount();
   notificationInterval=setInterval(()=>{
     checkEscalations();
     checkDailyFollowupPopup();
     checkEventReminders();
     checkUnreadDmCount();
+    checkUnreadAnnouncementsCount();
   },60000); // every 60 seconds
 }
 function stopNotificationEngine(){

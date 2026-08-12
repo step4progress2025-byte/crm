@@ -1606,6 +1606,14 @@ What would you like help with today?</div>
 
 <!-- Team Chat Modal — per-lead conversation thread -->
 <!-- Direct Message Inbox — contact list, click anyone to open a 1-to-1 chat -->
+<div class="mover" id="modal-member-activity">
+  <div class="modal" style="width:460px;max-height:82vh;display:flex;flex-direction:column">
+    <div class="mhead"><span class="mtitle" id="ma-title">Activity</span><button class="mclose" onclick="closeModal('modal-member-activity')">×</button></div>
+    <div id="ma-sub" style="font-size:12px;color:var(--ink3);margin-bottom:14px"></div>
+    <div id="ma-list" style="flex:1;overflow-y:auto"></div>
+  </div>
+</div>
+
 <div class="mover" id="modal-dm-inbox">
   <div class="modal" style="width:400px;max-height:78vh;display:flex;flex-direction:column">
     <div class="mhead"><span class="mtitle">💬 Messages</span><button class="mclose" onclick="closeModal('modal-dm-inbox')">×</button></div>
@@ -2201,9 +2209,39 @@ async function renderActivityMonitor(){
       const badgeColor=count>=5?'var(--sage)':count>=1?'var(--gold)':'var(--rose)';
       const badgeBg=count>=5?'var(--sage-l)':count>=1?'var(--gold-l)':'var(--rose-l)';
       const latest=info?.latest?`${new Date(info.latest.work_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}: ${esc((info.latest.content||'').slice(0,80))}${(info.latest.content||'').length>80?'…':''}`:'<span style="color:var(--ink3);font-style:italic">No updates logged this week</span>';
-      return `<tr><td style="font-weight:600">${esc(m.full_name||m.email||'—')}</td><td style="font-size:12px">${esc(m.role||'Counsellor')}</td><td style="font-size:12px">${esc(m.office||'—')}</td><td><span class="pill" style="background:${badgeBg};color:${badgeColor}">${count}</span></td><td style="font-size:12.5px;max-width:340px">${latest}</td></tr>`;
+      return `<tr onclick="openMemberActivityDetail('${m.id}','${esc((m.full_name||m.email||'').replace(/'/g,"\\'"))}','${esc((m.role||'').replace(/'/g,"\\'"))}','${esc((m.office||'').replace(/'/g,"\\'"))}')" style="cursor:pointer"><td style="font-weight:600">${esc(m.full_name||m.email||'—')}</td><td style="font-size:12px">${esc(m.role||'Counsellor')}</td><td style="font-size:12px">${esc(m.office||'—')}</td><td><span class="pill" style="background:${badgeBg};color:${badgeColor}">${count}</span></td><td style="font-size:12.5px;max-width:340px">${latest}</td></tr>`;
     }).join('')+
     `</tbody></table></div>`;
+}
+// Drill-down: every one of this person's daily updates, EVER (not just
+// the 7-day summary window shown in the table), grouped by date — same
+// visual pattern as the per-lead activity timeline, for consistency.
+async function openMemberActivityDetail(teamId,name,role,office){
+  document.getElementById('ma-title').textContent=name;
+  document.getElementById('ma-sub').textContent=[role,office].filter(Boolean).join(' · ');
+  const listEl=document.getElementById('ma-list');
+  listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink3);font-style:italic">Loading…</div>';
+  document.getElementById('modal-member-activity').classList.add('open');
+
+  const{data,error}=await sb.from('daily_updates').select('work_date,content,created_at').eq('team_id',teamId).order('work_date',{ascending:false}).order('created_at',{ascending:false});
+  if(error){listEl.innerHTML='<div style="color:var(--rose);font-size:13px">Could not load: '+esc(error.message)+'</div>';return;}
+  if(!data||!data.length){listEl.innerHTML=emptyState('📝','No updates logged yet.');return;}
+
+  const groups=[];
+  data.forEach(u=>{
+    const dayKey=new Date(u.work_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    let g=groups.find(g=>g.day===dayKey);
+    if(!g){g={day:dayKey,items:[]};groups.push(g);}
+    g.items.push(u);
+  });
+  listEl.innerHTML=groups.map(g=>`
+    <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 8px 0">${g.day}</div>
+    ${g.items.map((u,i)=>`<div style="position:relative;padding-left:26px;padding-bottom:${i===g.items.length-1?4:14}px">
+      <div style="position:absolute;left:2px;top:2px;width:11px;height:11px;border-radius:50%;background:var(--pine);border:2px solid var(--paper);box-shadow:0 0 0 1px var(--line);z-index:1"></div>
+      ${i<g.items.length-1?`<div style="position:absolute;left:7px;top:15px;bottom:-2px;width:2px;background:var(--line)"></div>`:''}
+      <div style="font-size:13px;line-height:1.5;white-space:pre-wrap">${esc(u.content)}</div>
+    </div>`).join('')}
+  `).join('');
 }
 
 // Every time a lead is opened, log who viewed it — this is what actually

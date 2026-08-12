@@ -4,13 +4,14 @@
 // IMPORTANT: Bump CACHE_NAME on every deploy so old caches are purged
 // and every visitor (including MD) gets the new version automatically.
 
-const CACHE_NAME = 's4p-crm-v2'; // ← bump this number each time you deploy
+const CACHE_NAME = 's4p-crm-v3'; // ← bump this number each time you deploy
 
 // Assets to pre-cache on install (adjust paths if your repo layout differs)
 const PRECACHE = [
   '/crm/manifest.json',
   '/crm/icons/icon-192.png',
   '/crm/icons/icon-512.png',
+  '/crm/icons/apple-touch-icon.png',
   // External CDN assets (cached on first fetch after install)
   'https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;1,300&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap',
   'https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css',
@@ -52,6 +53,17 @@ self.addEventListener('activate', (event) => {
       )
     ).then(() => self.clients.claim())
   );
+});
+
+// index.html's registration script sends this after showing the "new
+// version available, reload?" confirm dialog. skipWaiting() above
+// already runs automatically on install regardless (deliberate choice —
+// see comment at top), so this listener is a harmless no-op most of the
+// time, but keeps things correct if that auto-behavior is ever removed.
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // ── Fetch strategy ───────────────────────────────────────────────

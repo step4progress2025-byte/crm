@@ -4022,14 +4022,19 @@ function renderLeads(){
   document.getElementById('leads-content').style.display=empty?'none':'block';
   if(empty)return;
   document.getElementById('lcount').textContent=`Showing ${f.length} of ${leads.length} leads`;
-  const tb=document.getElementById('lead-tbody');tb.innerHTML='';
+  const tb=document.getElementById('lead-tbody');
   if(!f.length){tb.innerHTML=`<tr><td colspan="16">${emptyState('🔍','No leads match your filters.')}</td></tr>`;return;}
-  f.forEach((l,i)=>{
+  // Built as an array and joined ONCE at the end, instead of tb.innerHTML+=
+  // per row — the old pattern re-parsed and re-rendered the WHOLE growing
+  // table on every single row (up to 229+ times for a full list), which
+  // was a real, measurable contributor to the CRM feeling sluggish. Same
+  // exact final HTML either way — this only changes HOW it gets built.
+  const rowsHtml=f.map((l,i)=>{
     const[abg,atx]=AVC[i%AVC.length];
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
     const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
     const capturedStr=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
-    tb.innerHTML+=`<tr onclick="openLeadDetail('${l.id}')">
+    return `<tr onclick="openLeadDetail('${l.id}')">
       ${canBulkAct?`<td onclick="event.stopPropagation()"><input type="checkbox" class="bulk-lead-checkbox" data-id="${l.id}" onchange="onBulkCheckboxChange()" style="cursor:pointer"></td>`:''}
       <td style="font-size:12px;color:var(--ink3);font-weight:600">${i+1}</td>
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
@@ -4048,6 +4053,7 @@ function renderLeads(){
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'sop_team','SOP Team')}</td>
     </tr>`;
   });
+  tb.innerHTML=rowsHtml.join('');
   // Keep the top scrollbar's width matched to the real table, so dragging
   // it near the top of the screen scrolls exactly as far as the real one —
   // no need to scroll all the way down to reach a scrollbar at all.
@@ -4101,11 +4107,11 @@ function renderToolLeads(){
   if(empty)return;
   const labelMap={webtools:'from website tools',website:'from the website form',social:'from social media'+(tlSocial!=='All'?' — '+tlSocial:''),other:'from other sources',all:'total'};
   document.getElementById('tlcount').textContent=`${f.length} lead${f.length!==1?'s':''} ${labelMap[tlFilter]||''}`;
-  const tb=document.getElementById('toolleads-tbody');tb.innerHTML='';
-  f.forEach((l,i)=>{
+  const tb=document.getElementById('toolleads-tbody');
+  const rowsHtml=f.map((l,i)=>{
     const[abg,atx]=AVC[i%AVC.length];
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
-    tb.innerHTML+=`<tr onclick="openLeadDetail('${l.id}')">
+    return `<tr onclick="openLeadDetail('${l.id}')">
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
       <td><div class="nc"><div class="av" style="background:${abg};color:${atx}">${ini(l.name)}</div><div><div class="ln">${esc(l.name)}</div></div></div></td>
       <td style="font-size:12px;color:var(--ink3)">${esc(l.mobile||'—')}</td>
@@ -4116,6 +4122,7 @@ function renderToolLeads(){
       <td><span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span></td>
     </tr>`;
   });
+  tb.innerHTML=rowsHtml.join('');
 }
 
 // ── DETAIL PANEL ─────────────────────────────────────────────────
@@ -4876,18 +4883,18 @@ function renderCoaching(){
   document.getElementById('coaching-empty').style.display=empty?'flex':'none';
   document.getElementById('coaching-content').style.display=empty?'none':'block';
   if(empty)return;
-  const cg=document.getElementById('cg');cg.innerHTML='';
-  scoped.forEach(c=>{
+  const cg=document.getElementById('cg');
+  cg.innerHTML=scoped.map(c=>{
     const pct=c.total_sessions>0?Math.round(c.sessions_done/c.total_sessions*100):0;
     const col=pct>=100?'#065F46':pct>=50?'#1B998B':'#C05621';
-    cg.innerHTML+=`<div class="cc"><div class="ccn">${esc(c.student_name)}</div><div class="ccp">${esc(c.program||'')} · ${esc(c.batch_name||'')}</div><div class="pt"><div class="pb" style="width:${pct}%;background:${col}"></div></div><div class="csr"><div class="cst"><div class="csl">Done</div><div class="csv">${c.sessions_done}/${c.total_sessions}</div></div><div class="cst"><div class="csl">Mock</div><div class="csv">${c.mock_score||'—'}</div></div><div class="cst"><div class="csl">Target</div><div class="csv">${c.target_score||'—'}</div></div><div class="cst"><div class="csl">%</div><div class="csv" style="color:${col}">${pct}%</div></div></div></div>`;
-  });
-  const tb=document.getElementById('ct');tb.innerHTML='';
-  scoped.forEach(c=>{
+    return `<div class="cc"><div class="ccn">${esc(c.student_name)}</div><div class="ccp">${esc(c.program||'')} · ${esc(c.batch_name||'')}</div><div class="pt"><div class="pb" style="width:${pct}%;background:${col}"></div></div><div class="csr"><div class="cst"><div class="csl">Done</div><div class="csv">${c.sessions_done}/${c.total_sessions}</div></div><div class="cst"><div class="csl">Mock</div><div class="csv">${c.mock_score||'—'}</div></div><div class="cst"><div class="csl">Target</div><div class="csv">${c.target_score||'—'}</div></div><div class="cst"><div class="csl">%</div><div class="csv" style="color:${col}">${pct}%</div></div></div></div>`;
+  }).join('');
+  const tb=document.getElementById('ct');
+  tb.innerHTML=scoped.map(c=>{
     const pct=c.total_sessions>0?Math.round(c.sessions_done/c.total_sessions*100):0;
-    const done=pct>=100;const ss=done?{bg:'#A7F3D0',tx:'#065F46'}:{bg:'#DBEAFE',tx:'#1E40AF'};
-    tb.innerHTML+=`<tr><td style="font-weight:600">${esc(c.student_name)}</td><td style="font-size:12px">${esc(c.program||'')}</td><td style="font-size:12px">${esc(c.batch_name||'')}</td><td>${c.sessions_done}/${c.total_sessions}</td><td>${c.mock_score||'—'}</td><td>${c.target_score||'—'}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="pt" style="width:80px;margin:0;border:1px solid var(--line)"><div class="pb" style="width:${pct}%;background:${done?'#065F46':'#1B998B'}"></div></div><span style="font-size:11px;color:var(--ink3)">${pct}%</span></div></td></tr>`;
-  });
+    const done=pct>=100;
+    return `<tr><td style="font-weight:600">${esc(c.student_name)}</td><td style="font-size:12px">${esc(c.program||'')}</td><td style="font-size:12px">${esc(c.batch_name||'')}</td><td>${c.sessions_done}/${c.total_sessions}</td><td>${c.mock_score||'—'}</td><td>${c.target_score||'—'}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="pt" style="width:80px;margin:0;border:1px solid var(--line)"><div class="pb" style="width:${pct}%;background:${done?'#065F46':'#1B998B'}"></div></div><span style="font-size:11px;color:var(--ink3)">${pct}%</span></div></td></tr>`;
+  }).join('');
 }
 
 function openCoachingModal(){
@@ -4931,12 +4938,12 @@ function renderFU(){
   document.getElementById('fu-content').style.display=empty?'none':'block';
   if(empty)return;
   document.getElementById('fucount').textContent=`${f.length} active follow-up${f.length!==1?'s':''}`;
-  const fl=document.getElementById('fu-list');fl.innerHTML='';
-  f.forEach(l=>{
+  const fl=document.getElementById('fu-list');
+  fl.innerHTML=f.map(l=>{
     const cls=l.priority==='High'?'high':l.priority==='Medium'?'medium':'low';
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
     const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
-    fl.innerHTML+=`<div class="fcard ${cls}" onclick="openLeadDetail('${l.id}')">
+    return `<div class="fcard ${cls}" onclick="openLeadDetail('${l.id}')">
       <div class="fmeta">
         <div class="fid">${esc(l.lead_id||l.id.substring(0,8))}</div>
         <div class="fname">${esc(l.name)}</div>
@@ -4953,7 +4960,7 @@ function renderFU(){
         <span class="pill" style="background:${ps.bg};color:${ps.tx};margin-top:6px;display:inline-block">${l.priority||'—'}</span>
       </div>
     </div>`;
-  });
+  }).join('');
 }
 
 // ── TEAM ─────────────────────────────────────────────────────────
@@ -6962,18 +6969,16 @@ function renderNotificationsToggle(){
   el.innerHTML=`<i class="ti ${notificationsEnabled?'ti-bell':'ti-bell-off'}" style="font-size:15px"></i>${notificationsEnabled?'Notifications ON':'Notifications OFF'}`;
 }
 
+// Staggered rather than all firing in the same instant — five checks each
+// touching Supabase AND the DOM, fired simultaneously every 60 seconds,
+// was a real contributor to the periodic slowdown/unresponsive-page
+// warnings. Spacing them by a couple seconds each spreads the same total
+// work across a wider window instead of bunching it into one burst.
 function startNotificationEngine(){
-  checkEscalations();
-  checkDailyFollowupPopup();
-  checkEventReminders();
-  checkUnreadDmCount();
-  checkUnreadAnnouncementsCount();
+  const checks=[checkEscalations,checkDailyFollowupPopup,checkEventReminders,checkUnreadDmCount,checkUnreadAnnouncementsCount];
+  checks.forEach((fn,i)=>setTimeout(fn,i*400)); // initial run, staggered
   notificationInterval=setInterval(()=>{
-    checkEscalations();
-    checkDailyFollowupPopup();
-    checkEventReminders();
-    checkUnreadDmCount();
-    checkUnreadAnnouncementsCount();
+    checks.forEach((fn,i)=>setTimeout(fn,i*2000)); // repeat run, more spread out
   },60000); // every 60 seconds
 }
 function stopNotificationEngine(){

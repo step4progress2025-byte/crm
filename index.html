@@ -1506,6 +1506,17 @@ What would you like help with today?</div>
      whole team, or everyone, with threaded replies. Posting is
      restricted to Admin/Manager/Director/Super Admin/Owner; reading and
      replying is open to whoever an announcement is actually targeted at. -->
+<!-- Student recordings viewer — Owner/Platform Administrator/Super Admin
+     only, reached from the Student Portal tab. Shows every saved
+     Speaking recording for one student, playable inline (using the
+     signed URLs the bridge function already generated). -->
+<div class="mover" id="modal-student-recordings">
+  <div class="modal" style="width:460px;max-height:80vh;overflow-y:auto">
+    <div class="mhead"><span class="mtitle">🎙️ Recordings</span><button class="mclose" onclick="closeModal('modal-student-recordings')">×</button></div>
+    <div id="student-recordings-list"></div>
+  </div>
+</div>
+
 <div class="mover" id="modal-announcements">
   <div class="modal" style="width:460px;max-height:82vh;display:flex;flex-direction:column">
     <div class="mhead"><span class="mtitle">📢 Announcements</span><button class="mclose" onclick="closeModal('modal-announcements')">×</button></div>
@@ -4943,21 +4954,42 @@ function renderStudentPortalTable(students){
     const[bg,tx]=map[status]||map.unpaid;
     return `<span class="pill" style="background:${bg};color:${tx}">${esc(status||'unpaid')}</span>`;
   };
-  el.innerHTML=`<div class="tw"><table class="tbl"><thead><tr><th>Name</th><th>Phone</th><th>Payment</th><th>Signed up</th><th>Documents</th><th>CRM Lead</th></tr></thead><tbody>`+
+  el.innerHTML=`<div class="tw"><table class="tbl"><thead><tr><th>Name</th><th>Phone</th><th>Payment</th><th>Signed up</th><th>Documents</th><th>Recordings</th><th>CRM Lead</th></tr></thead><tbody>`+
     students.map(s=>{
       const docCount=(s.documents||[]).length;
       const syncedCount=(s.documents||[]).filter(d=>d.synced_to_crm).length;
       const docList=(s.documents||[]).map(d=>`${esc(d.doc_name)}${d.synced_to_crm?' ✓':' (not yet synced)'}`).join('<br>')||'<span style="color:var(--ink3);font-style:italic">None yet</span>';
+      const recCount=(s.recordings||[]).length;
+      window.__spStudentsById=window.__spStudentsById||{};
+      window.__spStudentsById[s.id]=s;
       return `<tr>
         <td style="font-weight:600">${esc(s.full_name||'(no name yet)')}</td>
         <td style="font-size:12px;color:var(--ink3)">${esc(s.phone||'—')}</td>
         <td>${payBadge(s.payment_status)}</td>
         <td style="font-size:12px">${s.created_at?new Date(s.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—'}</td>
         <td style="font-size:12px" title="${docList.replace(/<br>/g,', ').replace(/"/g,'')}">${docCount} uploaded (${syncedCount} synced)</td>
+        <td style="font-size:12px">${recCount?`<span onclick="viewStudentRecordings('${s.id}')" style="color:var(--pine);cursor:pointer;text-decoration:underline">${recCount} recording${recCount===1?'':'s'}</span>`:'<span style="color:var(--ink3);font-style:italic">None yet</span>'}</td>
         <td style="font-size:12px">${s.crm_lead_id?`<span onclick="openLeadDetail('${s.crm_lead_id}')" style="color:var(--pine);cursor:pointer;text-decoration:underline">View lead</span>`:'<span style="color:var(--ink3);font-style:italic">Not linked yet</span>'}</td>
       </tr>`;
     }).join('')+
     `</tbody></table></div>`;
+}
+function viewStudentRecordings(studentId){
+  const student=window.__spStudentsById?.[studentId];
+  if(!student)return;
+  const listEl=document.getElementById('student-recordings-list');
+  listEl.innerHTML=(student.recordings||[]).map(r=>`
+    <div class="tp-info-card" style="border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:10px">
+      <div style="font-weight:600;font-size:13px">${esc(r.lesson_title||'Untitled')}</div>
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:8px">${esc(r.test_type)} · ${r.recording_type==='video'?'🎥 Video':'🎤 Audio'} · ${new Date(r.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div>
+      ${r.signed_url
+        ? (r.recording_type==='video'
+            ? `<video src="${r.signed_url}" controls style="width:100%;border-radius:8px"></video>`
+            : `<audio src="${r.signed_url}" controls style="width:100%"></audio>`)
+        : '<span style="font-size:12px;color:var(--rose)">Link expired or unavailable</span>'}
+    </div>
+  `).join('')||'<div class="empty">No recordings.</div>';
+  document.getElementById('modal-student-recordings').classList.add('open');
 }
 
 // ── Team Chat — full Slack-style interface (channels + DMs) ────────

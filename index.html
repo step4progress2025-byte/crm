@@ -186,6 +186,12 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
 /* KPI */
 .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px}
+.dash-kpi-tab{background:none;border:none;padding:9px 14px;font-size:13px;font-weight:600;color:var(--ink3);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent}
+.dash-kpi-tab.active{color:var(--pine);border-bottom-color:var(--pine)}
+.world-clock-tile{background:var(--cream);border-radius:12px;padding:14px 10px;text-align:center}
+.world-clock-tile .wc-country{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.world-clock-tile .wc-time{font-family:var(--font-h);font-size:20px;font-weight:700;color:var(--pine)}
+.world-clock-tile .wc-date{font-size:10.5px;color:var(--ink3);margin-top:2px}
 .kpi{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:16px 18px;box-shadow:var(--sh)}
 .kpi-l{font-size:10px;color:var(--ink3);font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px}
 .kpi-v{font-family:var(--font-h);font-size:32px;font-weight:300;line-height:1;letter-spacing:-.03em}
@@ -539,7 +545,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
     </div>
     <div class="sb-nav">
       <div class="sng">Main</div>
-      <button class="ni active" data-nav="dashboard" onclick="nav('dashboard',this)"><i class="ti ti-layout-dashboard" style="color:var(--pine3)"></i>Dashboard</button>
+      <button class="ni active" data-nav="home" onclick="nav('home',this)"><i class="ti ti-home" style="color:var(--pine3)"></i>Home</button>
+      <button class="ni" data-nav="dashboard" onclick="nav('dashboard',this)"><i class="ti ti-layout-dashboard" style="color:var(--pine3)"></i>Dashboard</button>
       <button class="ni" data-nav="leads" onclick="nav('leads',this)"><i class="ti ti-users" style="color:var(--sky)"></i>Leads<span class="nbadge" id="nb-leads">0</span></button>
       <button class="ni" data-nav="toolleads" onclick="nav('toolleads',this)"><i class="ti ti-click" style="color:var(--sky)"></i>Tool Leads<span class="nbadge" id="nb-toolleads">0</span></button>
       <div class="sng">Programs</div>
@@ -574,7 +581,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
   <div class="main">
     <header class="topbar">
       <div style="display:flex;align-items:center;gap:10px">
-        <span id="topbar-home-btn" onclick="nav('dashboard',document.querySelector('.ni[data-nav=\"dashboard\"]'))" style="display:none;align-items:center;gap:4px;cursor:pointer;color:var(--pine);font-size:13px;font-weight:600;padding:5px 10px;border-radius:99px;background:var(--line);margin-right:2px"><i class="ti ti-home" style="font-size:14px"></i> Home</span>
+        <span id="topbar-home-btn" onclick="goHome()" style="display:none;align-items:center;gap:4px;cursor:pointer;color:var(--pine);font-size:13px;font-weight:600;padding:5px 10px;border-radius:99px;background:var(--line);margin-right:2px"><i class="ti ti-home" style="font-size:14px"></i> Home</span>
         <span id="ops-view-switcher" onclick="reopenOpsViewModal()" style="display:none;align-items:center;gap:4px;cursor:pointer;color:var(--pine2);font-size:13px;font-weight:600;padding:5px 10px;border-radius:99px;background:var(--gold-l);margin-right:2px"></span>
         <span class="tb-title" id="topbar-title">Dashboard</span>
         <span><span class="sync-dot" id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--ink3)"></span></span>
@@ -588,7 +595,32 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
     <div class="content">
 
       <!-- Dashboard -->
-      <section id="sc-dashboard" class="screen active">
+      <!-- HOME — calm landing screen. Reminders and My Tasks moved here
+           from the Dashboard (same element IDs, so the existing
+           loadDashReminders()/loadMyTasks() functions work completely
+           unchanged — just pointed at a new location). -->
+      <section id="sc-home" class="screen active">
+        <div id="home-greeting" style="font-family:var(--font-h);font-size:26px;font-weight:600;color:var(--ink);margin-bottom:4px"></div>
+        <div style="font-size:13px;color:var(--ink3);margin-bottom:20px" id="home-date"></div>
+
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-h"><span class="card-t">🌍 World Clock</span></div>
+          <div id="world-clock-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px"></div>
+        </div>
+
+        <div class="card" id="reminders-widget">
+          <div class="card-h"><span class="card-t">⏰ Today's & upcoming reminders</span></div>
+          <div id="reminders-dash-list"></div>
+        </div>
+        <div class="card" id="my-tasks-widget">
+          <div class="card-h"><span class="card-t">📋 My tasks</span></div>
+          <div id="my-tasks-list"></div>
+        </div>
+
+        <button class="btn btn-p" onclick="goToFullDashboard()" style="width:100%;padding:18px;font-size:16px;font-weight:700;margin-top:8px;border-radius:16px;box-shadow:0 8px 24px rgba(28,63,110,.25)"><i class="ti ti-layout-dashboard"></i>&nbsp; View Full Dashboard</button>
+      </section>
+
+      <section id="sc-dashboard" class="screen">
                 <div id="dash-greeting" style="font-family:var(--font-h);font-size:24px;font-weight:600;color:var(--ink);margin-bottom:6px"></div>
         <div id="briefing-card" style="background:linear-gradient(135deg,#1C3F6E,#2D5C9E);border-radius:16px;padding:20px 24px;margin-bottom:18px;color:#fff;box-shadow:0 8px 24px rgba(28,63,110,.25)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -598,28 +630,46 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div id="briefing-text" style="font-family:var(--font-h);font-size:16px;line-height:1.6;max-width:820px">Loading your briefing…</div>
         </div>
         <div id="dash-scope-note" style="font-size:11.5px;color:var(--ink3);margin-bottom:10px;font-style:italic"></div>
-        <div class="kpi-row">
-          <div class="kpi" onclick="kpiNav('total')" style="cursor:pointer"><div class="kpi-l">Total leads</div><div class="kpi-v kv-p" id="k-tot">—</div></div>
-          <div class="kpi" onclick="kpiNav('enrolled')" style="cursor:pointer"><div class="kpi-l">Enrolled</div><div class="kpi-v kv-t" id="k-enr">—</div></div>
-          <div class="kpi" onclick="kpiNav('active')" style="cursor:pointer"><div class="kpi-l">Active pipeline</div><div class="kpi-v kv-o" id="k-act">—</div></div>
-          <div class="kpi" onclick="kpiNav('month')" style="cursor:pointer"><div class="kpi-l">This month</div><div class="kpi-v kv-p" id="k-mon">—</div></div>
-          <div class="kpi" onclick="kpiNav('offer')" style="cursor:pointer"><div class="kpi-l">Offer rate %</div><div class="kpi-v kv-g" id="k-offer">—</div></div>
+
+        <!-- KPI tabs — only the active category's cards render, instead
+             of all 16+ tiles showing at once. This is the fix for the
+             "dashboard is chaotic" feedback — same data, same KPIs,
+             just not all competing for attention simultaneously. -->
+        <div class="dash-kpi-tabs" style="display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--line);overflow-x:auto">
+          <button class="dash-kpi-tab active" data-kpicat="overview" onclick="setDashKpiTab('overview')">Overview</button>
+          <button class="dash-kpi-tab" data-kpicat="conversion" onclick="setDashKpiTab('conversion')">Conversion</button>
+          <button class="dash-kpi-tab" data-kpicat="financial" onclick="setDashKpiTab('financial')">Financial</button>
+          <button class="dash-kpi-tab" data-kpicat="risk" onclick="setDashKpiTab('risk')">Risk & Health</button>
         </div>
-        <div class="kpi-row" style="margin-top:-10px">
+
+        <div class="kpi-row" data-kpicat-group="overview">
+          <div class="kpi" onclick="kpiNav('total')" style="cursor:pointer"><div class="kpi-l">Total leads</div><div class="kpi-v kv-p" id="k-tot">—</div></div>
+          <div class="kpi" onclick="kpiNav('month')" style="cursor:pointer"><div class="kpi-l">This month</div><div class="kpi-v kv-p" id="k-mon">—</div></div>
+          <div class="kpi" onclick="kpiNav('week')" style="cursor:pointer"><div class="kpi-l">This week</div><div class="kpi-v kv-p" id="k-week">—</div></div>
+          <div class="kpi" onclick="kpiNav('today')" style="cursor:pointer"><div class="kpi-l">Leads today</div><div class="kpi-v kv-p" id="k-today">—</div></div>
+          <div class="kpi" onclick="kpiNav('active')" style="cursor:pointer"><div class="kpi-l">Active pipeline</div><div class="kpi-v kv-o" id="k-act">—</div></div>
+        </div>
+
+        <div class="kpi-row" data-kpicat-group="conversion" style="display:none">
+          <div class="kpi" onclick="kpiNav('offer')" style="cursor:pointer"><div class="kpi-l">Offer rate %</div><div class="kpi-v kv-g" id="k-offer">—</div></div>
           <div class="kpi" onclick="kpiNav('visa')" style="cursor:pointer"><div class="kpi-l">Visa success %</div><div class="kpi-v kv-g" id="k-visa">—</div></div>
           <div class="kpi" onclick="kpiNav('deposit')" style="cursor:pointer"><div class="kpi-l">Deposit conv. %</div><div class="kpi-v kv-t" id="k-dep">—</div></div>
-          <div class="kpi" onclick="kpiNav('fees')" style="cursor:pointer"><div class="kpi-l">Fees paid</div><div class="kpi-v kv-g" id="k-fee">—</div></div>
-          <div class="kpi" onclick="kpiNav('week')" style="cursor:pointer"><div class="kpi-l">This week</div><div class="kpi-v kv-p" id="k-week">—</div></div>
-          <div class="kpi" onclick="kpiNav('dropped')" style="cursor:pointer"><div class="kpi-l">Dropped</div><div class="kpi-v kv-r" id="k-drop">—</div></div>
-        </div>
-        <div class="kpi-row" style="margin-top:-10px" id="kpi-row-exec">
-          <div class="kpi" onclick="kpiNav('today')" style="cursor:pointer"><div class="kpi-l">Leads today</div><div class="kpi-v kv-p" id="k-today">—</div></div>
           <div class="kpi" onclick="kpiNav('apps')" style="cursor:pointer"><div class="kpi-l">Applications submitted</div><div class="kpi-v kv-t" id="k-apps">—</div></div>
           <div class="kpi" onclick="kpiNav('visafiled')" style="cursor:pointer"><div class="kpi-l">Visa filed</div><div class="kpi-v kv-p" id="k-visafiled">—</div></div>
+          <div class="kpi" onclick="kpiNav('enrolled')" style="cursor:pointer"><div class="kpi-l">Enrolled</div><div class="kpi-v kv-t" id="k-enr">—</div></div>
+        </div>
+
+        <div class="kpi-row" data-kpicat-group="financial" style="display:none">
           <div class="kpi" id="k-revenue-tile" onclick="kpiNav('revenue')" style="cursor:pointer"><div class="kpi-l">Revenue pipeline</div><div class="kpi-v kv-g" id="k-revenue">—</div></div>
           <div class="kpi" id="k-outstanding-tile" onclick="kpiNav('outstanding')" style="cursor:pointer"><div class="kpi-l">Commission outstanding</div><div class="kpi-v kv-o" id="k-outstanding">—</div></div>
+          <div class="kpi" onclick="kpiNav('fees')" style="cursor:pointer"><div class="kpi-l">Fees paid</div><div class="kpi-v kv-g" id="k-fee">—</div></div>
+        </div>
+
+        <div class="kpi-row" data-kpicat-group="risk" style="display:none">
+          <div class="kpi" onclick="kpiNav('dropped')" style="cursor:pointer"><div class="kpi-l">Dropped</div><div class="kpi-v kv-r" id="k-drop">—</div></div>
           <div class="kpi" onclick="kpiNav('leakage')" style="cursor:pointer"><div class="kpi-l">Lead leakage %</div><div class="kpi-v kv-r" id="k-leakage">—</div></div>
         </div>
+
         <div id="dash-empty" class="empty-state" style="display:none">
           <div class="es-icon"><i class="ti ti-rocket"></i></div>
           <div class="es-title">Your CRM is ready</div>
@@ -628,14 +678,6 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="btn btn-p" onclick="openAddLead()"><i class="ti ti-plus"></i>Add first lead</button>
             <button class="btn" onclick="nav('import',document.querySelector('.ni[data-nav=&quot;import&quot;]'))"><i class="ti ti-file-import"></i>Import CSV</button>
           </div>
-        </div>
-        <div class="card" id="reminders-widget">
-          <div class="card-h"><span class="card-t">⏰ Today's & upcoming reminders</span></div>
-          <div id="reminders-dash-list"></div>
-        </div>
-        <div class="card" id="my-tasks-widget">
-          <div class="card-h"><span class="card-t">📋 My tasks</span></div>
-          <div id="my-tasks-list"></div>
         </div>
         <div class="card" id="recently-viewed-widget">
           <div class="card-h"><span class="card-t">🕓 Recently viewed</span></div>
@@ -3364,6 +3406,47 @@ async function loadTeam(){
 }
 
 // ── NAV ──────────────────────────────────────────────────────────
+// Separate, real function instead of an inline querySelector in the
+// HTML onclick — the earlier inline version had a genuine markup bug
+// (backslash-escaped quotes inside an already-double-quoted HTML
+// attribute, which isn't valid HTML and silently broke the click).
+function goHome(){
+  nav('home',document.querySelector('.ni[data-nav="home"]'));
+}
+function goToFullDashboard(){
+  nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));
+}
+function setDashKpiTab(cat){
+  document.querySelectorAll('.dash-kpi-tab').forEach(b=>b.classList.toggle('active',b.dataset.kpicat===cat));
+  document.querySelectorAll('[data-kpicat-group]').forEach(row=>{
+    row.style.display=(row.dataset.kpicatGroup===cat)?'grid':'none';
+  });
+}
+// 4-country world clock — India, UK, Pakistan, Bangladesh, updates every
+// second. Uses each country's real IANA timezone rather than a fixed
+// offset, so it stays correct across daylight saving changes too.
+const WORLD_CLOCK_ZONES=[
+  {label:'🇮🇳 India',tz:'Asia/Kolkata'},
+  {label:'🇬🇧 UK',tz:'Europe/London'},
+  {label:'🇵🇰 Pakistan',tz:'Asia/Karachi'},
+  {label:'🇧🇩 Bangladesh',tz:'Asia/Dhaka'},
+];
+let worldClockInterval=null;
+function renderWorldClock(){
+  const el=document.getElementById('world-clock-row');
+  if(!el)return;
+  const now=new Date();
+  el.innerHTML=WORLD_CLOCK_ZONES.map(z=>{
+    const time=now.toLocaleTimeString('en-GB',{timeZone:z.tz,hour:'2-digit',minute:'2-digit'});
+    const date=now.toLocaleDateString('en-GB',{timeZone:z.tz,day:'numeric',month:'short'});
+    return `<div class="world-clock-tile"><div class="wc-country">${z.label}</div><div class="wc-time">${time}</div><div class="wc-date">${date}</div></div>`;
+  }).join('');
+}
+function startWorldClock(){
+  renderWorldClock();
+  if(worldClockInterval)clearInterval(worldClockInterval);
+  worldClockInterval=setInterval(renderWorldClock,1000);
+}
 function nav(id,btn){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
@@ -3376,14 +3459,31 @@ function nav(id,btn){
     sbEl.classList.remove('mobile-open');
     document.getElementById('mobile-sidebar-overlay')?.classList.remove('open');
   }
-  const T={dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digitalmarketing:'Digital Marketing',reports:'Reports',coursefinder:'Course & University Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail',studentportal:'Student Portal',teamchat:'Team Chat'};
+  const T={home:'Home',dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digitalmarketing:'Digital Marketing',reports:'Reports',coursefinder:'Course & University Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail',studentportal:'Student Portal',teamchat:'Team Chat'};
   document.getElementById('topbar-title').textContent=T[id]||id;
   // Persistent Home button — visible on every screen except the
   // dashboard itself, so there's always a way back to home that doesn't
   // rely on the browser's own back button (which can land somewhere
   // unexpected given how much of this app is single-page navigation).
   const homeBtn=document.getElementById('topbar-home-btn');
-  if(homeBtn) homeBtn.style.display=(id==='dashboard')?'none':'inline-flex';
+  if(homeBtn) homeBtn.style.display=(id==='home')?'none':'inline-flex';
+  // World clock only needs to tick while Home is actually visible —
+  // start/stop it here rather than leaving a 1-second interval running
+  // forever in the background regardless of which screen is open.
+  if(id==='home'){
+    startWorldClock();
+    const g=document.getElementById('home-greeting');
+    if(g){
+      const hour=new Date().getHours();
+      const timeGreeting=hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
+      g.textContent=`${timeGreeting}, ${(myName||'there').split(' ')[0]} 👋`;
+    }
+    const d=document.getElementById('home-date');
+    if(d) d.textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  } else if(worldClockInterval){
+    clearInterval(worldClockInterval);
+    worldClockInterval=null;
+  }
   updateOpsViewSwitcher();
   // Role guard — checked before rendering the target screen.
   // Uses isRestrictedStaffRole() (Counsellor + Application/Visa/SOP Team),
@@ -3393,19 +3493,19 @@ function nav(id,btn){
   // Digital Marketing role members only ever need their own dashboard and
   // the general Dashboard - a default-deny here is cleaner and safer than
   // individually blocking every other screen one at a time.
-  if(myRole==='Digital Marketing'&&!isSuperAdmin&&!['dashboard','digitalmarketing'].includes(id)){
+  if(myRole==='Digital Marketing'&&!isSuperAdmin&&!['home','dashboard','digitalmarketing'].includes(id)){
     nav('digitalmarketing',document.querySelector('.ni[data-nav="digitalmarketing"]'));
     toast('Digital Marketing accounts only have access to the Digital Marketing dashboard.');
     return;
   }
   const roleIsCounsellor=isRestrictedStaffRole();
-  if(id==='finance'&&!(isSuperAdmin||myRole==='Admin')){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Finance is restricted to Owner, Super Admin, and Admin.');return;}
-  if(id==='studentportal'&&!isSuperAdmin){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Student Portal is restricted to Owner, Platform Administrator, and Super Admin.');return;}
+  if(id==='finance'&&!(isSuperAdmin||myRole==='Admin')){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Finance is restricted to Owner, Super Admin, and Admin.');return;}
+  if(id==='studentportal'&&!isSuperAdmin){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Student Portal is restricted to Owner, Platform Administrator, and Super Admin.');return;}
   // Digital Marketing role members are otherwise treated as restricted
   // staff (blocked from Finance/Team/etc, same as Counsellors) but need
   // through to the one screen their whole role exists for.
-  if(id==='digitalmarketing'&&roleIsCounsellor&&myRole!=='Digital Marketing'){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
-  if(id==='team'&&roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}
+  if(id==='digitalmarketing'&&roleIsCounsellor&&myRole!=='Digital Marketing'){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
+  if(id==='team'&&roleIsCounsellor){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
   // Productivity used to be Admin-tier only — now everyone needs in for
   // "My Daily Update", so the blanket block is gone. Call Recorder and
   // Activity Monitor stay restricted via initProductivity() below instead,
@@ -3419,8 +3519,8 @@ function nav(id,btn){
   if(id==='resumes'){loadResumes().then(renderResumesAdmin);}
   if(id==='finance')renderFinance();
   if(id==='digitalmarketing')initDigitalMarketing();
-  if(id==='reports'){if(roleIsCounsellor){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Access restricted.');return;}initReports();}
-  if(id==='subteam-detail'){if(myRole==='Counsellor'&&!isSuperAdmin){nav('dashboard',document.querySelector('.ni[data-nav="dashboard"]'));toast('Team Dashboards is for Application/Visa/SOP Team and management.');return;}renderSubTeamDetail();}
+  if(id==='reports'){if(roleIsCounsellor){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}initReports();}
+  if(id==='subteam-detail'){if(myRole==='Counsellor'&&!isSuperAdmin){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Team Dashboards is for Application/Visa/SOP Team and management.');return;}renderSubTeamDetail();}
   if(id==='productivity')initProductivity();
   if(id==='teamchat')initTeamChat();
   if(id==='coaching')renderCoaching();

@@ -1460,6 +1460,52 @@ What would you like help with today?</div>
   </div>
 </div>
 
+<!-- Announcements — role-gated broadcasts, tagged at an individual, a
+     whole team, or everyone, with threaded replies. Posting is
+     restricted to Admin/Manager/Director/Super Admin/Owner; reading and
+     replying is open to whoever an announcement is actually targeted at. -->
+<div class="mover" id="modal-announcements">
+  <div class="modal" style="width:460px;max-height:82vh;display:flex;flex-direction:column">
+    <div class="mhead"><span class="mtitle">📢 Announcements</span><button class="mclose" onclick="closeModal('modal-announcements')">×</button></div>
+    <button id="ann-new-btn" onclick="openAnnouncementComposer()" class="btn btn-p" style="margin-bottom:12px;display:none"><i class="ti ti-plus"></i>New announcement</button>
+    <div id="ann-composer" style="display:none;background:var(--cream);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:14px">
+      <div class="ff"><label>Send to</label>
+        <select id="ann-target-type" onchange="syncAnnouncementTargetUI()">
+          <option value="all">Everyone</option>
+          <option value="team">A team</option>
+          <option value="individual">One person</option>
+        </select>
+      </div>
+      <div class="ff" id="ann-team-picker" style="display:none"><label>Team</label>
+        <select id="ann-team-value">
+          <option value="Counsellor">Counsellor</option>
+          <option value="Digital Marketing">Marketing</option>
+          <option value="SOP Team">SOP</option>
+          <option value="Visa Team">Visa</option>
+          <option value="Application Team">Application</option>
+          <option value="Agent">Agents</option>
+          <option value="Admin">Admin</option>
+          <option value="Manager">Manager</option>
+        </select>
+      </div>
+      <div class="ff" id="ann-person-picker" style="display:none"><label>Person</label>
+        <select id="ann-person-value"></select>
+      </div>
+      <div class="ff"><label>Message</label><textarea id="ann-message" rows="3" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:var(--r);font-family:var(--font-b);font-size:13px"></textarea></div>
+      <input type="file" id="ann-attach-input" style="display:none" onchange="handleAnnAttachSelected(this.files[0])">
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <button onclick="document.getElementById('ann-attach-input').click()" title="Attach a file" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px"><i class="ti ti-paperclip"></i></button>
+        <span id="ann-attach-preview" style="font-size:11px;color:var(--ink3)"></span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btn-p" onclick="postAnnouncement()">Post</button>
+        <button onclick="closeAnnouncementComposer()" style="background:none;border:1px solid var(--line2);border-radius:var(--r);padding:8px 14px;cursor:pointer;font-size:13px">Cancel</button>
+      </div>
+    </div>
+    <div id="ann-feed" style="flex:1;overflow-y:auto"></div>
+  </div>
+</div>
+
 <!-- Coaching Modal -->
 <div class="mover" id="modal-coaching">
   <div class="modal" style="width:460px">
@@ -2000,7 +2046,7 @@ What would you like help with today?</div>
 </div>
 
 <div id="events-widget" style="position:fixed;bottom:80px;right:18px;width:260px;background:var(--pine);border-radius:12px;padding:12px 14px;z-index:400;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.2)"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"> <span style="color:#fff;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Upcoming events</span> <span onclick="document.getElementById('events-widget').style.display='none'" style="color:rgba(255,255,255,0.6);cursor:pointer;font-size:18px;line-height:1">&times;</span> </div> <div id="events-ticker" style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.6"></div> </div> <div id="dm-bell" onclick="openDmInbox()" style="position:fixed;bottom:24px;right:74px;width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-message-circle-2" style="color:#fff;font-size:20px"></i> <span id="dm-badge" style="position:absolute;top:-2px;right:-2px;background:var(--rose);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div>
-<div id="events-bell" onclick="toggleEventsWidget()" style="position:fixed;bottom:24px;right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> <span id="events-badge" style="position:absolute;top:-2px;right:-2px;background:#F1239;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="super-admin-notif-list" style="position:fixed;bottom:24px;left:18px;z-index:500;display:flex;flex-direction:column-reverse;gap:8px;max-width:320px"></div>
+<div id="events-bell" onclick="toggleEventsWidget()" style="position:fixed;bottom:24px;right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> <span id="events-badge" style="position:absolute;top:-2px;right:-2px;background:#F1239;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="ann-bell" onclick="openAnnouncements()" style="position:fixed;bottom:24px;right:130px;width:44px;height:44px;border-radius:50%;background:var(--ember);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-speakerphone" style="color:#fff;font-size:19px"></i> <span id="ann-badge" style="position:absolute;top:-2px;right:-2px;background:var(--rose);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="super-admin-notif-list" style="position:fixed;bottom:24px;left:18px;z-index:500;display:flex;flex-direction:column-reverse;gap:8px;max-width:320px"></div>
 <div id="urgent-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,20,20,.6);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
   <div id="urgent-popup-card" style="background:#fff;border-radius:18px;padding:0;max-width:460px;width:92%;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden"></div>
 </div>
@@ -3017,8 +3063,21 @@ async function onLogin(user){
   await loadNotificationSettings();
   checkUnreadDmCount();
   startNotificationEngine();
-  // realtime subscription
-  sb.channel('leads-changes').on('postgres_changes',{event:'*',schema:'public',table:'leads'},()=>{
+  // realtime subscription — payload.eventType distinguishes INSERT
+  // (a genuinely new lead) from UPDATE/DELETE, so the chime only fires
+  // for new leads arriving, not every status change or note edit (which
+  // would be far too frequent to usefully alert on).
+  sb.channel('leads-changes').on('postgres_changes',{event:'*',schema:'public',table:'leads'},(payload)=>{
+    // Only alert if this new lead is actually relevant to the person
+    // currently logged in — Super Admin sees everything, everyone else
+    // only their own country, matching how the rest of the app already
+    // scopes visibility. Without this, one new lead anywhere would
+    // sound-alert the entire team globally, which gets noisy fast.
+    const relevantToMe=isSuperAdmin||!payload.new?.country||payload.new.country===myCountry;
+    if(payload.eventType==='INSERT'&&payload.new&&relevantToMe){
+      playNotificationChime();
+      toast('📥 New lead: '+(payload.new.name||'Unnamed'));
+    }
     loadLeads().then(()=>{renderDash();renderLeads();renderFU();badges();});
   }).subscribe();
 }
@@ -6780,16 +6839,159 @@ function renderNotificationsToggle(){
   el.innerHTML=`<i class="ti ${notificationsEnabled?'ti-bell':'ti-bell-off'}" style="font-size:15px"></i>${notificationsEnabled?'Notifications ON':'Notifications OFF'}`;
 }
 
+let allAnnouncements=[];
+function isAnnouncementRelevantToMe(a){
+  if(a.target_type==='all')return true;
+  if(a.target_type==='team')return a.target_value===myRole;
+  if(a.target_type==='individual')return a.target_value===currentUser?.id;
+  return false;
+}
+async function openAnnouncements(){
+  document.getElementById('modal-announcements').classList.add('open');
+  const newBtn=document.getElementById('ann-new-btn');
+  if(newBtn)newBtn.style.display=isRestrictedStaffRole()?'none':'flex';
+  await loadAnnouncements();
+  // Mark as seen now that the panel's open — badge clears on close, not
+  // per-item, since this is a simple broadcast feed, not a full inbox.
+  localStorage.setItem('s4p_ann_last_seen',new Date().toISOString());
+  checkUnreadAnnouncementsCount();
+}
+async function loadAnnouncements(){
+  const{data,error}=await sb.from('announcements').select('*').order('created_at',{ascending:false}).limit(100);
+  if(error){document.getElementById('ann-feed').innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;text-align:center;padding:20px">Could not load announcements — has the announcements table been created in Supabase yet?</div>';return;}
+  allAnnouncements=data||[];
+  renderAnnouncementFeed();
+}
+function renderAnnouncementFeed(){
+  const el=document.getElementById('ann-feed');
+  if(!el)return;
+  const mine=allAnnouncements.filter(isAnnouncementRelevantToMe);
+  if(!mine.length){el.innerHTML=emptyState('📢','Nothing here yet.');return;}
+  el.innerHTML=mine.map(a=>{
+    const attachHtml=a.attachment_url?`<div style="margin-top:6px"><a href="${esc(a.attachment_url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i>${esc(a.attachment_filename||'Attachment')}</a></div>`:'';
+    return `<div style="border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:10px;background:var(--paper)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="font-size:13px;font-weight:700">${esc(a.author_name||'Someone')}</div>
+        <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:10px">${esc(a.target_label||'Everyone')}</span>
+      </div>
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:6px">${new Date(a.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+      <div style="font-size:13px;line-height:1.6;white-space:pre-wrap">${esc(a.message)}</div>
+      ${attachHtml}
+      <div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px">
+        <div id="ann-replies-${a.id}" style="margin-bottom:8px"></div>
+        <div style="display:flex;gap:6px">
+          <input id="ann-reply-input-${a.id}" placeholder="Reply…" style="flex:1;padding:6px 10px;border:1px solid var(--line2);border-radius:99px;font-family:var(--font-b);font-size:12px" onkeydown="if(event.key==='Enter')postAnnouncementReply('${a.id}')">
+          <button onclick="postAnnouncementReply('${a.id}')" style="background:var(--pine);color:#fff;border:none;border-radius:99px;padding:6px 12px;cursor:pointer;font-size:11px"><i class="ti ti-send"></i></button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  mine.forEach(a=>loadAnnouncementReplies(a.id));
+}
+async function loadAnnouncementReplies(announcementId){
+  const el=document.getElementById('ann-replies-'+announcementId);
+  if(!el)return;
+  const{data,error}=await sb.from('announcement_replies').select('*').eq('announcement_id',announcementId).order('created_at',{ascending:true});
+  if(error||!data||!data.length){el.innerHTML='';return;}
+  el.innerHTML=data.map(r=>`<div style="font-size:12px;padding:4px 0;border-top:1px solid var(--line)"><b>${esc(r.author_name||'Someone')}:</b> ${esc(r.message)}</div>`).join('');
+}
+async function postAnnouncementReply(announcementId){
+  const input=document.getElementById('ann-reply-input-'+announcementId);
+  const message=(input?.value||'').trim();
+  if(!message)return;
+  input.value='';
+  const{error}=await sb.from('announcement_replies').insert({announcement_id:announcementId,author_id:currentUser?.id,author_name:myName,message});
+  if(error){toast('Error posting reply: '+error.message);return;}
+  loadAnnouncementReplies(announcementId);
+}
+function openAnnouncementComposer(){
+  document.getElementById('ann-composer').style.display='block';
+  document.getElementById('ann-target-type').value='all';
+  document.getElementById('ann-message').value='';
+  stagedAnnAttachment=null;
+  document.getElementById('ann-attach-preview').textContent='';
+  const personSel=document.getElementById('ann-person-value');
+  personSel.innerHTML=(teamList||[]).filter(t=>t.id!==currentUser?.id).map(t=>`<option value="${t.id}">${esc(t.full_name||t.email||'—')}</option>`).join('');
+  syncAnnouncementTargetUI();
+}
+function closeAnnouncementComposer(){
+  document.getElementById('ann-composer').style.display='none';
+}
+function syncAnnouncementTargetUI(){
+  const type=document.getElementById('ann-target-type').value;
+  document.getElementById('ann-team-picker').style.display=type==='team'?'block':'none';
+  document.getElementById('ann-person-picker').style.display=type==='individual'?'block':'none';
+}
+let stagedAnnAttachment=null;
+async function handleAnnAttachSelected(file){
+  if(!file)return;
+  const preview=document.getElementById('ann-attach-preview');
+  preview.textContent='Uploading…';
+  const path=`${currentUser?.id||'anon'}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+  const{error:upErr}=await sb.storage.from('chat-attachments').upload(path,file);
+  if(upErr){preview.textContent='Upload failed: '+upErr.message;stagedAnnAttachment=null;return;}
+  const{data:pub}=sb.storage.from('chat-attachments').getPublicUrl(path);
+  stagedAnnAttachment={url:pub?.publicUrl||null,filename:file.name};
+  preview.innerHTML=`<i class="ti ti-paperclip"></i> ${esc(file.name)}`;
+}
+async function postAnnouncement(){
+  if(isRestrictedStaffRole()){toast('Only Admin, Manager, Director, Super Admin, or Owner can post announcements.');return;}
+  const type=document.getElementById('ann-target-type').value;
+  const message=(document.getElementById('ann-message').value||'').trim();
+  if(!message){toast('Write a message first.');return;}
+
+  let target_value=null, target_label='Everyone';
+  if(type==='team'){
+    target_value=document.getElementById('ann-team-value').value;
+    target_label=document.getElementById('ann-team-value').selectedOptions[0]?.textContent||target_value;
+  } else if(type==='individual'){
+    target_value=document.getElementById('ann-person-value').value;
+    target_label=document.getElementById('ann-person-value').selectedOptions[0]?.textContent||'Someone';
+    if(!target_value){toast('Pick a person to send this to.');return;}
+  }
+
+  const{error}=await sb.from('announcements').insert({
+    author_id:currentUser?.id,author_name:myName,
+    target_type:type,target_value,target_label,
+    message,
+    attachment_url:stagedAnnAttachment?.url||null,
+    attachment_filename:stagedAnnAttachment?.filename||null,
+  });
+  if(error){toast('Error posting announcement: '+error.message);return;}
+  closeAnnouncementComposer();
+  toast('Announcement posted!');
+  loadAnnouncements();
+}
+async function checkUnreadAnnouncementsCount(){
+  if(!currentUser)return;
+  const badge=document.getElementById('ann-badge');
+  if(!badge)return;
+  const lastSeen=localStorage.getItem('s4p_ann_last_seen');
+  const{data,error}=await sb.from('announcements').select('id,target_type,target_value,created_at').order('created_at',{ascending:false}).limit(100);
+  if(error||!data){badge.style.display='none';return;}
+  const relevant=data.filter(a=>{
+    if(a.target_type==='all')return true;
+    if(a.target_type==='team')return a.target_value===myRole;
+    if(a.target_type==='individual')return a.target_value===currentUser.id;
+    return false;
+  });
+  const unread=lastSeen?relevant.filter(a=>new Date(a.created_at)>new Date(lastSeen)):relevant;
+  const count=unread.length;
+  if(count>0){badge.textContent=count>9?'9+':count;badge.style.display='flex';}
+  else{badge.style.display='none';}
+}
+
+// Staggered rather than all firing in the same instant — five checks each
+// touching Supabase AND the DOM, fired simultaneously every 60 seconds,
+// was a real contributor to the periodic slowdown/unresponsive-page
+// warnings noticed earlier. Spacing them by a couple seconds each
+// spreads the same total work across a wider window instead of
+// bunching it into one burst.
 function startNotificationEngine(){
-  checkEscalations();
-  checkDailyFollowupPopup();
-  checkEventReminders();
-  checkUnreadDmCount();
+  const checks=[checkEscalations,checkDailyFollowupPopup,checkEventReminders,checkUnreadDmCount,checkUnreadAnnouncementsCount];
+  checks.forEach((fn,i)=>setTimeout(fn,i*400)); // initial run, staggered
   notificationInterval=setInterval(()=>{
-    checkEscalations();
-    checkDailyFollowupPopup();
-    checkEventReminders();
-    checkUnreadDmCount();
+    checks.forEach((fn,i)=>setTimeout(fn,i*2000)); // repeat run, more spread out
   },60000); // every 60 seconds
 }
 function stopNotificationEngine(){

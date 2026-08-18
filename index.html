@@ -513,6 +513,21 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
 <!-- ── APP ────────────────────────────────────────────────────── -->
 <div class="app" id="app">
+  <!-- Super Admin ops-view choice — International vs Domestic (UK).
+       Only ever shown to Super Admin accounts, once per session
+       (stored in sessionStorage, so it re-asks on a genuinely new
+       login but not on every page refresh within the same session). -->
+  <div id="ops-view-modal" style="display:none;position:fixed;inset:0;background:rgba(28,23,18,.6);z-index:2000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)">
+      <div style="font-size:38px;margin-bottom:8px">🌍</div>
+      <div style="font-family:var(--font-h);font-size:20px;font-weight:600;color:var(--pine);margin-bottom:6px">Which operations?</div>
+      <div style="font-size:13px;color:var(--ink3);margin-bottom:22px">Choose which dashboard to view — you can switch anytime from the top bar.</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button onclick="chooseOpsView('International')" style="padding:14px;border:none;border-radius:10px;background:var(--pine);color:#fff;font-size:14px;font-weight:600;cursor:pointer">🌍 International Operations<div style="font-size:11px;font-weight:400;opacity:.85;margin-top:2px">India, Pakistan, Bangladesh</div></button>
+        <button onclick="chooseOpsView('Domestic')" style="padding:14px;border:1.5px solid var(--line2);border-radius:10px;background:#fff;color:var(--ink);font-size:14px;font-weight:600;cursor:pointer">🇬🇧 Domestic Operations<div style="font-size:11px;font-weight:400;opacity:.7;margin-top:2px">UK internal only</div></button>
+      </div>
+    </div>
+  </div>
   <button id="mobile-hamburger" onclick="toggleMobileSidebar()" style="display:none"><i class="ti ti-menu-2"></i></button>
   <div id="mobile-sidebar-overlay" onclick="toggleMobileSidebar()"></div>
   <nav class="sb">
@@ -560,6 +575,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
     <header class="topbar">
       <div style="display:flex;align-items:center;gap:10px">
         <span id="topbar-home-btn" onclick="nav('dashboard',document.querySelector('.ni[data-nav=\"dashboard\"]'))" style="display:none;align-items:center;gap:4px;cursor:pointer;color:var(--pine);font-size:13px;font-weight:600;padding:5px 10px;border-radius:99px;background:var(--line);margin-right:2px"><i class="ti ti-home" style="font-size:14px"></i> Home</span>
+        <span id="ops-view-switcher" onclick="reopenOpsViewModal()" style="display:none;align-items:center;gap:4px;cursor:pointer;color:var(--pine2);font-size:13px;font-weight:600;padding:5px 10px;border-radius:99px;background:var(--gold-l);margin-right:2px"></span>
         <span class="tb-title" id="topbar-title">Dashboard</span>
         <span><span class="sync-dot" id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--ink3)"></span></span>
       </div>
@@ -2888,6 +2904,37 @@ const OWNERS={
   'pavitra@step4progress.com':'Platform Administrator',
 };
 let myOffice=null, isSuperAdmin=false, isOwner=false, myOwnerTitle=null, myName=null, myRole='Counsellor', myCountry=null, myTeamCategory='International';
+let superAdminOpsView=null; // 'International' | 'Domestic' | null (non-Super-Admins always null, unused)
+
+function chooseOpsView(view){
+  superAdminOpsView=view;
+  sessionStorage.setItem('s4p_ops_view',view);
+  document.getElementById('ops-view-modal').style.display='none';
+  updateOpsViewSwitcher();
+  renderDash();
+}
+function reopenOpsViewModal(){
+  document.getElementById('ops-view-modal').style.display='flex';
+}
+function updateOpsViewSwitcher(){
+  const el=document.getElementById('ops-view-switcher');
+  if(!el)return;
+  if(!isSuperAdmin||!superAdminOpsView){ el.style.display='none'; return; }
+  el.style.display='inline-flex';
+  el.innerHTML=superAdminOpsView==='Domestic'
+    ? '🇬🇧 Domestic <i class="ti ti-switch-horizontal" style="font-size:12px"></i>'
+    : '🌍 International <i class="ti ti-switch-horizontal" style="font-size:12px"></i>';
+}
+// Leads scoped to the Super Admin's current ops-view choice. Domestic =
+// UK country leads only. International = everything else (India,
+// Pakistan, Bangladesh, Other). Non-Super-Admins, or a Super Admin who
+// hasn't chosen yet, get the unscoped full list — unchanged behaviour.
+function opsViewScopedLeads(sourceLeads){
+  if(!isSuperAdmin||!superAdminOpsView)return sourceLeads;
+  return superAdminOpsView==='Domestic'
+    ? sourceLeads.filter(l=>l.country==='UK')
+    : sourceLeads.filter(l=>l.country!=='UK');
+}
 async function onLoginGuarded(user){
   if(!isAllowedEmail(user.email)){
     // Agents are external partners and won't have a step4progress email —
@@ -2946,6 +2993,17 @@ async function onLogin(user){
   document.getElementById('sb-urole').textContent=roleLabel;
   await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents(),loadResumes(),loadRoundRobinState(),loadUnavailability(),loadSopUploadedLeadIds()]);
  initPresence(user, profile);
+  // Super Admin ops-view: International vs Domestic (UK). Asked once
+  // per session (sessionStorage — survives a page refresh, resets on a
+  // genuinely new login/tab). Non-Super-Admins never see this at all.
+  if(isSuperAdmin){
+    superAdminOpsView=sessionStorage.getItem('s4p_ops_view');
+    if(!superAdminOpsView){
+      document.getElementById('ops-view-modal').style.display='flex';
+    } else {
+      updateOpsViewSwitcher();
+    }
+  }
   renderDash();renderLeads();renderFU();badges();checkNoActivity();applyRoleUI();setTimeout(()=>{applyRoleUI();renderDash();},2000);
   loadDashReminders();
   loadExpiryAlerts();
@@ -3261,6 +3319,7 @@ function nav(id,btn){
   // unexpected given how much of this app is single-page navigation).
   const homeBtn=document.getElementById('topbar-home-btn');
   if(homeBtn) homeBtn.style.display=(id==='dashboard')?'none':'inline-flex';
+  updateOpsViewSwitcher();
   // Role guard — checked before rendering the target screen.
   // Uses isRestrictedStaffRole() (Counsellor + Application/Visa/SOP Team),
   // not just a literal Counsellor check — Application/Visa/SOP Team
@@ -3356,6 +3415,7 @@ function badges(){
 
 // ── DASHBOARD ────────────────────────────────────────────────────
 function renderDash(){
+  const dashLeads=opsViewScopedLeads(leads); // Super Admin ops-view scoping (International/Domestic) — unscoped pass-through for everyone else
   const greetEl=document.getElementById('dash-greeting');
   if(greetEl){
     const hour=new Date().getHours();
@@ -3367,26 +3427,26 @@ function renderDash(){
   renderRecentlyViewed();
   const scopeNote=document.getElementById('dash-scope-note');
   if(scopeNote){
-    if(isSuperAdmin) scopeNote.textContent='Showing all countries and offices · Super Admin view';
+    if(isSuperAdmin) scopeNote.textContent=superAdminOpsView==='Domestic'?'🇬🇧 Domestic Operations — UK leads only':superAdminOpsView==='International'?'🌍 International Operations — India, Pakistan, Bangladesh':'Showing all countries and offices · Super Admin view';
     else if(myTeamCategory==='Agent') scopeNote.textContent='Agent Portal — showing only leads assigned to you by Management';
     else if(myTeamCategory==='Domestic'&&myRole==='Admin') scopeNote.textContent='Domestic Operations — showing your whole Domestic team assigned leads';
     else if(myTeamCategory==='Domestic') scopeNote.textContent='Domestic Operations — showing only leads assigned to you by Management';
     else if(myRole==='Counsellor') scopeNote.textContent='Showing only leads assigned to you or added by you';
     else scopeNote.textContent='Showing '+(myCountry||'your')+' — all offices in your country';
   }
-  const c={};leads.forEach(l=>{c[l.status]=(c[l.status]||0)+1;});
-  const tot=leads.length;
+  const c={};dashLeads.forEach(l=>{c[l.status]=(c[l.status]||0)+1;});
+  const tot=dashLeads.length;
   const now=new Date();
-  const mon=leads.filter(l=>{const d=new Date(l.created_at);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).length;
+  const mon=dashLeads.filter(l=>{const d=new Date(l.created_at);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).length;
   document.getElementById('k-tot').textContent=tot;
   document.getElementById('k-enr').textContent=(c['Enrolled']||0)+(c['Fees Paid']||0);
   document.getElementById('k-fee').textContent=c['Fees Paid']||0;
   document.getElementById('k-act').textContent=(c['New Enquiry']||0)+(c['Contacted']||0)+(c['Counselling Done']||0);
- document.getElementById('k-mon').textContent=mon;   const week=leads.filter(l=>{const d=new Date(l.created_at);return(Date.now()-d.getTime())<7*86400000;}).length;   const appsReached=leads.filter(l=>reachedStage(l.status,'Application Submitted')).length;   const offersReached=leads.filter(l=>reachedStage(l.status,'Received Conditional')).length;   const depositReached=leads.filter(l=>reachedStage(l.status,'Deposit Paid')).length;   const visaGranted=c['Visa Received']||0;   const visaTotal=(c['Visa Received']||0)+(c['Visa Rejected']||0);   document.getElementById('k-offer').textContent=appsReached>0?Math.round(offersReached/appsReached*100)+'%':'—';   document.getElementById('k-visa').textContent=visaTotal>0?Math.round(visaGranted/visaTotal*100)+'%':'—';   document.getElementById('k-dep').textContent=offersReached>0?Math.round(depositReached/offersReached*100)+'%':'—';   document.getElementById('k-fee').textContent=c['Fees Paid']||0;   document.getElementById('k-week').textContent=week;   document.getElementById('k-drop').textContent=(c['Dropped']||0)+(c['Not Interested']||0);
+ document.getElementById('k-mon').textContent=mon;   const week=dashLeads.filter(l=>{const d=new Date(l.created_at);return(Date.now()-d.getTime())<7*86400000;}).length;   const appsReached=dashLeads.filter(l=>reachedStage(l.status,'Application Submitted')).length;   const offersReached=dashLeads.filter(l=>reachedStage(l.status,'Received Conditional')).length;   const depositReached=dashLeads.filter(l=>reachedStage(l.status,'Deposit Paid')).length;   const visaGranted=c['Visa Received']||0;   const visaTotal=(c['Visa Received']||0)+(c['Visa Rejected']||0);   document.getElementById('k-offer').textContent=appsReached>0?Math.round(offersReached/appsReached*100)+'%':'—';   document.getElementById('k-visa').textContent=visaTotal>0?Math.round(visaGranted/visaTotal*100)+'%':'—';   document.getElementById('k-dep').textContent=offersReached>0?Math.round(depositReached/offersReached*100)+'%':'—';   document.getElementById('k-fee').textContent=c['Fees Paid']||0;   document.getElementById('k-week').textContent=week;   document.getElementById('k-drop').textContent=(c['Dropped']||0)+(c['Not Interested']||0);
 
   // ── Executive KPI row ──
   const todayStr=new Date().toISOString().substring(0,10);
-  const leadsToday=leads.filter(l=>(l.created_at||'').substring(0,10)===todayStr).length;
+  const leadsToday=dashLeads.filter(l=>(l.created_at||'').substring(0,10)===todayStr).length;
   document.getElementById('k-today').textContent=leadsToday;
 
   // "Applications submitted" counts every lead currently at Application Submitted
@@ -3394,18 +3454,18 @@ function renderDash(){
   // status match — so students who have moved further along the pipeline still
   // count towards having submitted an application. See the PIPELINE_ORDER note above
   // for why leads that later dropped out can't be included in this count.
-  const appsSubmitted=leads.filter(l=>reachedStage(l.status,'Application Submitted')).length;
+  const appsSubmitted=dashLeads.filter(l=>reachedStage(l.status,'Application Submitted')).length;
   document.getElementById('k-apps').textContent=appsSubmitted;
 
   // Visa filed: every lead that has reached the visa-application stage or
   // beyond (filed, then accepted/rejected all count as "filed").
-  const visaFiled=leads.filter(l=>reachedStage(l.status,'Visa Application Submitted')||['Visa Received','Visa Rejected'].includes(l.status)).length;
+  const visaFiled=dashLeads.filter(l=>reachedStage(l.status,'Visa Application Submitted')||['Visa Received','Visa Rejected'].includes(l.status)).length;
   {const vf=document.getElementById('k-visafiled');if(vf)vf.textContent=visaFiled;}
 
   // Lead leakage: enquiries sitting untouched with no follow-up in 2+ days —
-  // leads at genuine risk of being lost to inactivity rather than an explicit
+  // dashLeads at genuine risk of being lost to inactivity rather than an explicit
   // "Not Interested"/"Dropped" decision.
-  const leakageCount=leads.filter(l=>['New Enquiry','Contacted'].includes(l.status)&&l.updated_at&&(Date.now()-new Date(l.updated_at).getTime())>2*86400000).length;
+  const leakageCount=dashLeads.filter(l=>['New Enquiry','Contacted'].includes(l.status)&&l.updated_at&&(Date.now()-new Date(l.updated_at).getTime())>2*86400000).length;
   document.getElementById('k-leakage').textContent=tot>0?Math.round(leakageCount/tot*100)+'%':'—';
 
   // Revenue Pipeline / Commission Outstanding — hidden from Counsellors, matching
@@ -3421,8 +3481,8 @@ function renderDash(){
     });
   }
 
-  renderConversionFunnel(leads);
-  renderIntakeForecast(leads);
+  renderConversionFunnel(dashLeads);
+  renderIntakeForecast(dashLeads);
   const empty=tot===0;
   document.getElementById('dash-empty').style.display=empty?'flex':'none';
   document.getElementById('dash-content').style.display=empty?'none':'block';
@@ -3435,7 +3495,7 @@ function renderDash(){
   });
   const al=document.getElementById('act-list');al.innerHTML='';
   const dotC={"New Enquiry":"#1E40AF","Enrolled":"#065F46","Fees Paid":"#064E3B","Process Completed":"#1E3A5F","Not Interested":"#9F1239","Counselling Done":"#C05621","Contacted":"#854D0E","Defer":"#92400E","Dropped":"#475569"};
-  leads.slice(0,6).forEach(l=>{
+  dashLeads.slice(0,6).forEach(l=>{
     al.innerHTML+=`<div class="aitem" onclick="openLeadDetail('${l.id}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><div class="adot" style="background:${dotC[l.status]||'#999'}"></div><div><div class="atext">${esc(l.name)} — ${l.status.toLowerCase()}</div><div class="atime">${ago(l.created_at)}${l.source?' · '+l.source:''}</div></div></div>`;
   });
   renderCountryBreakdown();

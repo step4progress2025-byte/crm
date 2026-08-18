@@ -6324,7 +6324,7 @@ async function refreshMetaData(){
   const results={};
   for(const type of ['facebook','ads','instagram']){
     try{
-      const r=await fetch(`${META_PULL_URL}?type=${type}`);
+      const r=await fetch(`${META_PULL_URL}?type=${type}&country=${encodeURIComponent(dmActiveCountry)}`);
       const text=await r.text();
       let d;
       try{ d=JSON.parse(text); }catch{ d={error:text||`HTTP ${r.status}`}; }
@@ -6382,7 +6382,7 @@ async function loadInstagramPosts(){
   statusEl.textContent='Loading recent posts…';
   gridEl.innerHTML='';
   try{
-    const r=await fetch(`${META_PULL_URL}?type=instagram_posts`);
+    const r=await fetch(`${META_PULL_URL}?type=instagram_posts&country=${encodeURIComponent(dmActiveCountry)}`);
     const text=await r.text();
     let d;
     try{ d=JSON.parse(text); }catch{ d={error:text||`HTTP ${r.status}`}; }
@@ -6433,7 +6433,7 @@ async function loadFacebookPosts(){
   statusEl.textContent='Loading recent posts…';
   gridEl.innerHTML='';
   try{
-    const r=await fetch(`${META_PULL_URL}?type=facebook_posts`);
+    const r=await fetch(`${META_PULL_URL}?type=facebook_posts&country=${encodeURIComponent(dmActiveCountry)}`);
     const text=await r.text();
     let d;
     try{ d=JSON.parse(text); }catch{ d={error:text||`HTTP ${r.status}`}; }
@@ -6485,7 +6485,7 @@ async function loadLeadsByAd(){
   statusEl.textContent='Loading…';
   tbody.innerHTML='';
   try{
-    const r=await fetch(`${META_PULL_URL}?type=leads_by_ad`);
+    const r=await fetch(`${META_PULL_URL}?type=leads_by_ad&country=${encodeURIComponent(dmActiveCountry)}`);
     const text=await r.text();
     let d;
     try{ d=JSON.parse(text); }catch{ d={error:text||`HTTP ${r.status}`}; }
@@ -6540,7 +6540,7 @@ async function loadGA4History(){
   const tbody=document.getElementById('dm-ga4-history-tbody');
   const statusEl=document.getElementById('dm-ga4-status');
   if(!kpisEl)return;
-  const{data,error}=await sb.from('website_daily_metrics').select('*').order('date',{ascending:false}).limit(14);
+  const{data,error}=await sb.from('website_daily_metrics').select('*').eq('country',dmActiveCountry).order('date',{ascending:false}).limit(14);
   if(error){
     tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--ink3);font-style:italic">Could not load — has website_daily_metrics been created in Supabase yet?</td></tr>`;
     return;

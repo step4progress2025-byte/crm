@@ -1446,6 +1446,12 @@ What would you like help with today?</div>
       <div class="ff"><label>Next follow-up</label><input type="date" id="f-fu"></div>
       <div class="ff"><label>Visa deadline</label><input type="date" id="f-visa-deadline"></div>
       <div class="sdiv">Additional Details</div>       <div class="ff"><label>Intake Month</label>         <select id="f-intake"><option value="">Select intake</option><option>January 2026</option><option>May 2026</option><option>September 2026</option><option>January 2027</option><option>May 2027</option><option>September 2027</option></select>       </div>       <div class="ff"><label>IELTS Status</label>         <select id="f-ielts-status"><option value="">Select status</option><option>Not taken</option><option>Appearing soon</option><option>Score available</option><option>Exempt</option></select>       </div>       <div class="ff"><label>IELTS / PTE Score</label><input id="f-ielts-score" placeholder="e.g. 6.5"></div>       <div class="ff"><label>Budget Range</label>         <select id="f-budget"><option value="">Select budget</option><option>Under £10,000</option><option>£10,000 - £15,000</option><option>£15,000 - £20,000</option><option>£20,000 - £30,000</option><option>Above £30,000</option></select>       </div>       <div class="ff"><label>English Proficiency</label>         <select id="f-english"><option value="">Select status</option><option>Native</option><option>Fluent</option><option>Intermediate</option><option>Basic</option></select>       </div>       <div class="ff"><label>WhatsApp Group Link</label><input id="f-walink" placeholder="https://chat.whatsapp.com/..."></div> <div class="ff"><label>Documents Folder Link</label><input id="f-doclink" placeholder="https://drive.google.com/..."></div>       <div class="ff full"><label>Notes / remarks</label><textarea id="f-notes" placeholder="Call notes, documents shared, student context…"></textarea></div>
+      <div class="ff full sdiv" id="modal-docs-section-divider" style="border-top:1px solid var(--line);margin-top:4px;padding-top:10px;display:none">Document Checklist</div>
+      <div class="ff full" id="modal-docs-wrap" style="display:none">
+        <div id="modal-doc-list" style="margin-bottom:8px"></div>
+        <button class="btn" style="width:auto;padding:7px 14px;font-size:12px" onclick="initDocsModal()"><i class="ti ti-list-check"></i> Init checklist</button>
+      </div>
+      <div class="ff full" id="modal-docs-hint" style="font-size:12px;color:var(--ink3);font-style:italic;display:none">Save this lead first — document upload becomes available right here once it's created.</div>
     </div>
     <div class="mfoot">
       <button class="btn" onclick="closeModal('modal-lead')">Cancel</button>
@@ -3975,7 +3981,7 @@ async function updateStatusFS(){
   loadTasksFS(curId);
   loadActivityLogFS(curId);
 }
-function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;},100);}
+function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
 async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
@@ -4008,7 +4014,7 @@ async function handleDocUploadFile(fileOrList){
     const{data:pub}=sb.storage.from('document-attachments').getPublicUrl(path);
     await sb.from('document_files').insert({document_id:docUploadTargetId,attachment_url:pub?.publicUrl||null,attachment_filename:file.name});
   }
-  if(docUploadIsFS){loadDocsFS(curId);}else{loadDocs(curId);}
+  if(docUploadIsFS==='modal'){loadDocsModal(curId);}else if(docUploadIsFS){loadDocsFS(curId);}else{loadDocs(curId);}
   document.getElementById('doc-upload-input').value='';
   toast('✅ File(s) uploaded!');
 }
@@ -4016,10 +4022,53 @@ async function deleteDocFile(fileId,isFS){
   if(!confirm('Remove this file? You can upload a replacement right after.'))return;
   const{error}=await sb.from('document_files').delete().eq('id',fileId);
   if(error){toast('Error: '+error.message);return;}
-  if(isFS){loadDocsFS(curId);}else{loadDocs(curId);}
+  if(isFS==='modal'){loadDocsModal(curId);}else if(isFS){loadDocsFS(curId);}else{loadDocs(curId);}
   toast('File removed — upload a new one whenever you are ready.');
 }
 async function initDocsFS(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=DEFAULT_DOCS.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocsFS(curId);toast('Checklist created!');}
+
+// ── Documents embedded directly in the Add/Edit Lead modal — reuses the
+// exact same documents/document_files tables and upload pipeline as the
+// fullscreen view, just with its own container so nothing about the
+// fullscreen or compact views needed to change. Only shown once a lead
+// actually has an id (curId) — a document needs something real to
+// attach to, so this stays hidden for a brand-new, not-yet-saved lead.
+async function loadDocsModal(leadId){
+  const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});
+  const el=document.getElementById('modal-doc-list');
+  if(!el)return;
+  if(error||!data||!data.length){el.innerHTML=emptyState('📋','No checklist yet.');return;}
+  await loadDocFilesFor(data.map(d=>d.id));
+  el.innerHTML=data.map(d=>{
+    const myFiles=docFilesByDoc[d.id]||[];
+    const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}','modal')" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');
+    return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDocModal('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${filesHtml}</div><button onclick="triggerDocUpload('${d.id}','modal')" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;
+  }).join('');
+}
+async function initDocsModal(){
+  if(!curId)return;
+  const existing=await sb.from('documents').select('id').eq('lead_id',curId);
+  if(existing.data?.length){toast('Checklist already exists!');return;}
+  const rows=DEFAULT_DOCS.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));
+  await sb.from('documents').insert(rows);
+  loadDocsModal(curId);
+  toast('Checklist created!');
+}
+async function toggleDocModal(id,checked){
+  await sb.from('documents').update({status:checked?'Done':'Pending'}).eq('id',id);
+  loadDocsModal(curId);
+  toast(checked?'✅ Marked done':'↩ Marked pending');
+}
+// Shows/hides the modal's document section based on whether this lead
+// actually has an id yet — called both when opening the modal to edit
+// an existing lead, and right after a brand-new lead is first saved.
+function refreshModalDocsVisibility(){
+  const hasId=!!curId;
+  document.getElementById('modal-docs-section-divider').style.display=hasId?'block':'none';
+  document.getElementById('modal-docs-wrap').style.display=hasId?'block':'none';
+  document.getElementById('modal-docs-hint').style.display=hasId?'none':'block';
+  if(hasId)loadDocsModal(curId);
+}
 
 // ── SOP Documents — multiple files per lead, each tagged to a university ──
 async function loadSopDocuments(leadId,isFS){
@@ -4542,6 +4591,7 @@ async function saveLead(){
   // Unassigned until someone deliberately picks a person.
   let error;
   let logEvents=[];
+  let newlyCreatedLeadId=null; // captured here so it's usable after the if/else closes below
   if(editMode&&curId){       delete data.lead_id;
     const existing=leads.find(x=>x.id===curId);
     if(existing&&existing.counsellor!==data.counsellor){
@@ -4585,7 +4635,7 @@ async function saveLead(){
     const res=await sb.from('leads').insert([data]).select();
     error=res.error;
     let newLeadId=null;
-    if(!error&&res.data){leads.unshift(res.data[0]);newLeadId=res.data[0].id;logEvents.push(['created',`Lead created, assigned to ${data.counsellor||'Unassigned'}`]);}
+    if(!error&&res.data){leads.unshift(res.data[0]);newLeadId=res.data[0].id;newlyCreatedLeadId=newLeadId;logEvents.push(['created',`Lead created, assigned to ${data.counsellor||'Unassigned'}`]);}
     toast('Lead added: '+name);
     if(!error&&newLeadId)logEvents.forEach(([type,detail])=>logActivity(newLeadId,type,detail));
     logEvents=[]; // already logged above for the new-lead case; prevent double-logging below
@@ -4599,6 +4649,12 @@ async function saveLead(){
   const wasEditing=editMode, editedLeadId=curId, reopenView=editedFromView;
   setSynced();closeModal('modal-lead');renderLeads();renderDash();badges();setTimeout(checkNoActivity,2000);setTimeout(checkNoActivity,2000);applyRoleUI();
   if(wasEditing&&editedLeadId&&reopenView==='fullscreen'){openLeadDetail(editedLeadId);}
+  // A brand-new lead now opens straight into the same fullscreen view —
+  // documents, university links, notes, reminders, all together, right
+  // after creation. Instead of duplicating all of that into the small
+  // popup, this reuses the exact same rich view already built for
+  // editing, so there's nothing new to keep in sync going forward.
+  else if(newlyCreatedLeadId){openLeadDetail(newlyCreatedLeadId);}
   else if(wasEditing&&editedLeadId&&reopenView==='side'){openDetail(editedLeadId);}
   editedFromView=null;
 }

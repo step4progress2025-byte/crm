@@ -1087,7 +1087,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="rpt-toggle-btn" data-period="weekly" onclick="setReportPeriod('weekly')">📆 Weekly</button>
           </div>
           <input type="date" id="rpt-date" onchange="loadReport()">
-          <select id="rpt-country" onchange="loadReport()"></select>
+          <select id="rpt-country" onchange="rptState.userPickedCountry=true;loadReport()"></select>
           <span id="rpt-range-label" class="rpt-range-label"></span>
           <button class="btn" onclick="exportReport()" style="font-size:12px;padding:6px 14px"><i class="ti ti-download"></i>Export this report</button>
         </div>
@@ -2440,7 +2440,18 @@ const COUNTRY_DEFAULT_OFFICE={'India':'India HQ','UK':'UK HQ','Pakistan':'Pakist
 function detectCountryFromPhone(phone){
   const p=(phone||'').replace(/[\s\-()]/g,'');
   for(const{prefix,country} of COUNTRY_DIAL_CODES){
-    if(p.startsWith(prefix)) return country;
+    if(p.startsWith(prefix)){
+      // UK is deliberately excluded from auto-detection here. A UK-format
+      // phone number is a genuinely weak signal for whether someone is
+      // actually a Domestic (UK-resident) client — diaspora numbers,
+      // WhatsApp-registered numbers, and international students who've
+      // simply lived in the UK before all produce +44 numbers without
+      // being real Domestic leads. Since this one field fully reroutes a
+      // lead into a separate operations view (not just internal team
+      // routing), it needs an explicit human decision, not a guess.
+      if(country==='UK') return null;
+      return country;
+    }
   }
   return null;
 }
@@ -3582,12 +3593,13 @@ function isToolLead(l){
     ||s.includes('parent corner')||s.includes('self assessment');
 }
 function badges(){
-  document.getElementById('nb-leads').textContent=leads.length;
-  const fu=leads.filter(l=>['New Enquiry','Contacted','Counselling Done','Defer'].includes(l.status)).length;
+  const scopedLeads=opsViewScopedLeads(leads); // same ops-view scoping as the Dashboard and Leads table — badges must agree with what's actually shown
+  document.getElementById('nb-leads').textContent=scopedLeads.length;
+  const fu=scopedLeads.filter(l=>['New Enquiry','Contacted','Counselling Done','Defer'].includes(l.status)).length;
   const nb=document.getElementById('nb-fu');
   nb.textContent=fu;nb.className='nbadge'+(fu>0?' hot':'');
   const tlBadge=document.getElementById('nb-toolleads');
-  if(tlBadge) tlBadge.textContent=leads.filter(isToolLead).length;
+  if(tlBadge) tlBadge.textContent=scopedLeads.filter(isToolLead).length;
 }
 
 // ── DASHBOARD ────────────────────────────────────────────────────
@@ -4012,7 +4024,7 @@ function setTLSocial(sub){
   renderToolLeads();
 }
 function renderToolLeads(){
-  let f=leads.filter(l=>tlFilter==='all'?true:sourceCategory(l.source)===tlFilter);
+  let f=opsViewScopedLeads(leads).filter(l=>tlFilter==='all'?true:sourceCategory(l.source)===tlFilter);
   if(tlFilter==='social'&&tlSocial!=='All') f=f.filter(l=>socialSubCategory(l.source)===tlSocial);
   const empty=f.length===0;
   document.getElementById('tl-empty').style.display=empty?'flex':'none';
@@ -4922,7 +4934,7 @@ function renderFU(){
   const cf=document.getElementById('fp-co').value;
   const countryF=document.getElementById('fp-country').value;
   const act=['New Enquiry','Pending','Ongoing','Contacted','Follow Up','Callback Later','Interested','Counselling Done','Defer'];
-  const f=leads.filter(l=>act.includes(l.status)&&(!pf||l.priority===pf)&&(!cf||l.counsellor===cf)&&(!countryF||l.country===countryF))
+  const f=opsViewScopedLeads(leads).filter(l=>act.includes(l.status)&&(!pf||l.priority===pf)&&(!cf||l.counsellor===cf)&&(!countryF||l.country===countryF))
     .sort((a,b)=>(a.priority==='High'?0:a.priority==='Medium'?1:2)-(b.priority==='High'?0:b.priority==='Medium'?1:2));
   const empty=f.length===0;
   document.getElementById('fu-empty').style.display=empty?'flex':'none';
@@ -5059,7 +5071,7 @@ function renderTcDmList(){
     .sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||''));
   el.innerHTML=contacts.map(t=>{
     const isOnline=onlineIds.has(t.id);
-    return `<div onclick="selectTcDm('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" id="tc-dm-item-${t.id}" style="padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12.5px;display:flex;align-items:center;gap:7px;margin-bottom:1px" onmouseover="if(!this.classList.contains('tc-active'))this.style.background='var(--line)'" onmouseout="if(!this.classList.contains('tc-active'))this.style.background=''">
+    return `<div onclick="selectTcDm('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" id="tc-dm-item-${t.id}" style="padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12.5px;display:flex;align-items:center;gap:7px;margin-bottom:1px" onmouseover="if(!this.classList.contains('tc-active'))this.style.background='var(--line)'" onmouseout="if(!this.classList.contains('tc-active'))this.style.background=''">
       <span style="width:7px;height:7px;border-radius:50%;background:${isOnline?'#22C55E':'var(--line2)'};flex-shrink:0"></span>
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.full_name||'—')}</span>
     </div>`;
@@ -5259,7 +5271,7 @@ function renderManagementAndOperationsTeams(team){
     <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard">
         <div class="tcard-av">${ini(t.full_name||t.email)}</div>
         <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
-        ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+        ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
       </div>`).join(''):emptyState('🏛️','No Management Team members yet.')}</div>
   </div>`;
 
@@ -5274,7 +5286,7 @@ function renderManagementAndOperationsTeams(team){
       ${members.length?members.map(t=>`<div class="tcard" style="margin-bottom:8px">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('👥','No one assigned to this team yet.')}
     </div>`;
   }).join('');
@@ -5292,7 +5304,7 @@ function renderManagementAndOperationsTeams(team){
       <div class="team-grid">${domestic.length?domestic.map(t=>`<div class="tcard">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('🇬🇧','No Domestic team members yet.')}</div>
     </div>`;
   }
@@ -5306,7 +5318,7 @@ function renderManagementAndOperationsTeams(team){
       <div class="team-grid">${agents.length?agents.map(t=>`<div class="tcard">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('🤝','No agents yet.')}</div>
     </div>`;
   }
@@ -5365,8 +5377,8 @@ function renderTeam(team){
             <div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div>
             ${unavail?`<div style="font-size:10px;color:var(--rose);font-weight:600;margin-top:3px">🚫 Unavailable until ${new Date(unavail.to_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${unavail.reason?' — '+esc(unavail.reason):''}</div>`:''}
           </div>
-          ${canManage?`<button onclick="openUnavailabilityModal('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Mark unavailable" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-calendar-off"></i></button>`:''}
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc(t.full_name||t.email||'').replace(/'/g,"\\'")}')" title="Remove team member" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          ${canManage?`<button onclick="openUnavailabilityModal('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Mark unavailable" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-calendar-off"></i></button>`:''}
+          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc(t.full_name||t.email||'').replace(/'/g,"\'")}')" title="Remove team member" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`;
         }).join('')
       : emptyState('👥','No members yet — share an invite link to add counsellors to this office.');
@@ -5682,8 +5694,17 @@ async function loadCommissions(){
   const{data,error}=await q;
   if(!error&&data){
     // Office-scope client-side via the joined lead, since commissions has no
-    // direct office column of its own — Super Admin sees everything.
-    commissions=isSuperAdmin?data:data.filter(c=>c.leads&&c.leads.office===myOffice);
+    // direct office column of its own. Non-Super-Admins see only their own
+    // office; Super Admins see everything UNLESS they've picked a
+    // Domestic/International ops-view, which must be respected here the
+    // same way it already is on the Leads list and Dashboard.
+    if(!isSuperAdmin){
+      commissions=data.filter(c=>c.leads&&c.leads.office===myOffice);
+    } else if(superAdminOpsView){
+      commissions=data.filter(c=>c.leads&&(superAdminOpsView==='Domestic'?c.leads.country==='UK':c.leads.country!=='UK'));
+    } else {
+      commissions=data;
+    }
   }
 }
 function openCommissionLead(id){if(id)openDetail(id);}
@@ -5793,8 +5814,14 @@ function initReports(){
   if(!dateInput.value) dateInput.value=rptState.date;
   if(isSuperAdmin){
     countrySel.disabled=false;
-    countrySel.innerHTML='<option value="All">🌐 All Countries</option><option>India</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option>';
-    if(!countrySel.value) countrySel.value='All';
+    countrySel.innerHTML='<option value="All">🌐 All Countries</option><option value="International">🌍 International (India, Pakistan, Bangladesh)</option><option>India</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option>';
+    // Default to whatever ops-view is currently active, so Reports agrees
+    // with the Leads list and Dashboard by default — still fully
+    // changeable by hand right after, including back to "All Countries"
+    // for genuine cross-country comparison.
+    if(!countrySel.value||!rptState.userPickedCountry){
+      countrySel.value=superAdminOpsView==='Domestic'?'UK':superAdminOpsView==='International'?'International':'All';
+    }
     rptState.country=countrySel.value||'All';
   } else {
     countrySel.disabled=true;
@@ -5820,7 +5847,9 @@ function dateRangeFor(period,dateStr){
   return {start:start.toISOString().substring(0,10),end:dateStr};
 }
 function scopedLeadsFor(country){
-  return country==='All'?leads:leads.filter(l=>l.country===country);
+  if(country==='All')return leads;
+  if(country==='International')return leads.filter(l=>l.country!=='UK');
+  return leads.filter(l=>l.country===country);
 }
 function destroyChart(id){if(rptCharts[id]){rptCharts[id].destroy();delete rptCharts[id];}}
 
@@ -6335,7 +6364,7 @@ function renderDmInbox(){
   el.innerHTML=contacts.map(t=>{
     const isOnline=onlineIds.has(t.id);
     const hasUnread=unreadDmSenders.has(t.id);
-    return `<div onclick="openDmChat('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" style="display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--line);cursor:pointer;${hasUnread?'background:var(--gold-l)':''}" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background='${hasUnread?'var(--gold-l)':''}'">
+    return `<div onclick="openDmChat('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" style="display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--line);cursor:pointer;${hasUnread?'background:var(--gold-l)':''}" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background='${hasUnread?'var(--gold-l)':''}'">
       <div style="position:relative;flex-shrink:0"><div class="tcard-av" style="width:36px;height:36px;font-size:13px${hasUnread?';box-shadow:0 0 0 2px var(--gold)':''}">${ini(t.full_name||t.email)}</div>${isOnline?'<div style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#22C55E;border:2px solid #fff"></div>':''}</div>
       <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:${hasUnread?'700':'600'}">${esc(t.full_name||'—')}${hasUnread?' 🔴':''}</div><div style="font-size:11px;color:${hasUnread?'var(--gold)':'var(--ink3)'};font-weight:${hasUnread?'600':'400'}">${hasUnread?'New message':(isOnline?'online now':esc(t.role||''))}</div></div>
     </div>`;
@@ -7556,7 +7585,7 @@ function searchCourses(){
       <td style="font-size:12px">${esc(u.country)}</td>
       <td style="font-size:11px;color:var(--ink3)">${esc(nats||'—')}</td>
       <td><span class="pill" style="background:#DCFCE7;color:#166534">✅ Tie-up</span></td>
-      <td><button onclick="shortlistUniversity('${u.id}','${u.name.replace(/'/g,"\\'")}','${u.country}')" style="font-size:12px;padding:4px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer">+ Shortlist</button></td>
+      <td><button onclick="shortlistUniversity('${u.id}','${u.name.replace(/'/g,"\'")}','${u.country}')" style="font-size:12px;padding:4px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer">+ Shortlist</button></td>
     </tr>`;
   }).join('');
   if(filtered.length>100) tb.innerHTML+=`<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--ink3);font-size:12px">Showing first 100 of ${filtered.length} — refine your filters to narrow results.</td></tr>`;
@@ -7901,7 +7930,7 @@ async function renderActivityMonitor(){
       const badgeColor=count>=5?'var(--sage)':count>=1?'var(--gold)':'var(--rose)';
       const badgeBg=count>=5?'var(--sage-l)':count>=1?'var(--gold-l)':'var(--rose-l)';
       const latest=info?.latest?`${new Date(info.latest.work_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}: ${esc((info.latest.content||'').slice(0,80))}${(info.latest.content||'').length>80?'…':''}`:'<span style="color:var(--ink3);font-style:italic">No updates logged this week</span>';
-      return `<tr onclick="openMemberActivityDetail('${m.id}','${esc((m.full_name||m.email||'').replace(/'/g,"\\'"))}','${esc((m.role||'').replace(/'/g,"\\'"))}','${esc((m.office||'').replace(/'/g,"\\'"))}')" style="cursor:pointer"><td style="font-weight:600">${esc(m.full_name||m.email||'—')}</td><td style="font-size:12px">${esc(m.role||'Counsellor')}</td><td style="font-size:12px">${esc(m.office||'—')}</td><td><span class="pill" style="background:${badgeBg};color:${badgeColor}">${count}</span></td><td style="font-size:12.5px;max-width:340px">${latest}</td></tr>`;
+      return `<tr onclick="openMemberActivityDetail('${m.id}','${esc((m.full_name||m.email||'').replace(/'/g,"\'"))}','${esc((m.role||'').replace(/'/g,"\'"))}','${esc((m.office||'').replace(/'/g,"\'"))}')" style="cursor:pointer"><td style="font-weight:600">${esc(m.full_name||m.email||'—')}</td><td style="font-size:12px">${esc(m.role||'Counsellor')}</td><td style="font-size:12px">${esc(m.office||'—')}</td><td><span class="pill" style="background:${badgeBg};color:${badgeColor}">${count}</span></td><td style="font-size:12.5px;max-width:340px">${latest}</td></tr>`;
     }).join('')+
     `</tbody></table></div>`;
 }

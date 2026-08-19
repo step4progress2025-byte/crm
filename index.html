@@ -3029,6 +3029,9 @@ function chooseOpsView(view){
   document.getElementById('ops-view-modal').style.display='none';
   updateOpsViewSwitcher();
   renderDash();
+  renderLeads();
+  badges();
+  renderFU();
 }
 function reopenOpsViewModal(){
   document.getElementById('ops-view-modal').style.display='flex';

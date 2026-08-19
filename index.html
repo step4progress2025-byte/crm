@@ -3671,17 +3671,17 @@ function renderDash(){
   document.getElementById('dash-empty').style.display=empty?'flex':'none';
   document.getElementById('dash-content').style.display=empty?'none':'block';
   if(empty)return;
- const pl=document.getElementById('pipe-list');pl.innerHTML='';
-  STATUSES.forEach(s=>{
-    const n=c[s]||0;if(!n)return;
-   const ss=SS[s]||{bg:'#E2E8F0',tx:'#475569'};if(!ss||!ss.bg)return;const w=Math.round(n/tot*100);
-    pl.innerHTML+=`<div class="prow" onclick="navFilter('ls-st','${s}')" style="cursor:pointer;transition:background .1s" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:${ss.bg};color:${ss.tx};min-width:132px">${s}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:${ss.tx}"></div></div><span class="pn" style="color:${ss.tx}">${n}</span></div>`;
-  });
-  const al=document.getElementById('act-list');al.innerHTML='';
+ const pl=document.getElementById('pipe-list');
+  pl.innerHTML=STATUSES.map(s=>{
+    const n=c[s]||0;if(!n)return '';
+    const ss=SS[s]||{bg:'#E2E8F0',tx:'#475569'};if(!ss||!ss.bg)return '';const w=Math.round(n/tot*100);
+    return `<div class="prow" onclick="navFilter('ls-st','${s}')" style="cursor:pointer;transition:background .1s" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:${ss.bg};color:${ss.tx};min-width:132px">${s}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:${ss.tx}"></div></div><span class="pn" style="color:${ss.tx}">${n}</span></div>`;
+  }).join('');
+  const al=document.getElementById('act-list');
   const dotC={"New Enquiry":"#1E40AF","Enrolled":"#065F46","Fees Paid":"#064E3B","Process Completed":"#1E3A5F","Not Interested":"#9F1239","Counselling Done":"#C05621","Contacted":"#854D0E","Defer":"#92400E","Dropped":"#475569"};
-  dashLeads.slice(0,6).forEach(l=>{
-    al.innerHTML+=`<div class="aitem" onclick="openLeadDetail('${l.id}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><div class="adot" style="background:${dotC[l.status]||'#999'}"></div><div><div class="atext">${esc(l.name)} — ${l.status.toLowerCase()}</div><div class="atime">${ago(l.created_at)}${l.source?' · '+l.source:''}</div></div></div>`;
-  });
+  al.innerHTML=dashLeads.slice(0,6).map(l=>
+    `<div class="aitem" onclick="openLeadDetail('${l.id}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><div class="adot" style="background:${dotC[l.status]||'#999'}"></div><div><div class="atext">${esc(l.name)} — ${l.status.toLowerCase()}</div><div class="atime">${ago(l.created_at)}${l.source?' · '+l.source:''}</div></div></div>`
+  ).join('');
   renderCountryBreakdown();
   renderCounsellorRank();
   renderRecentLeads();
@@ -3911,10 +3911,15 @@ function renderLeads(){
     const bar=document.getElementById('bulk-actions-bar');
     if(bar) bar.style.display='none';
   }
+  // Same ops-view scoping already applied to the Dashboard's numbers —
+  // this was the actual bug: Domestic/International correctly filtered
+  // the KPI tiles, but the Leads list itself never used this at all,
+  // so it kept showing everyone's leads regardless of the toggle.
+  const scopedLeads=opsViewScopedLeads(leads);
   // Populate counsellor filter dropdown from live leads
   const counselSel=document.getElementById('ls-counsel');
   const existingC=Array.from(counselSel.options).map(o=>o.value);
-  leads.forEach(l=>{if(l.counsellor&&!existingC.includes(l.counsellor)){const o=document.createElement('option');o.value=l.counsellor;o.textContent=l.counsellor;counselSel.appendChild(o);existingC.push(l.counsellor);}});
+  scopedLeads.forEach(l=>{if(l.counsellor&&!existingC.includes(l.counsellor)){const o=document.createElement('option');o.value=l.counsellor;o.textContent=l.counsellor;counselSel.appendChild(o);existingC.push(l.counsellor);}});
   const q=(document.getElementById('ls-q').value||'').toLowerCase();
   const sf=document.getElementById('ls-st').value;
   const pf=document.getElementById('ls-pr').value;
@@ -3925,7 +3930,7 @@ function renderLeads(){
   const from=document.getElementById('ls-from').value;
   const to=document.getElementById('ls-to').value;
   const assignF=document.getElementById('ls-assign').value;
-  const f=leads.filter(l=>(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!srcf||l.source===srcf)&&(!counsel||l.counsellor===counsel)&&(!from||l.created_at.substring(0,10)>=from)&&(!to||l.created_at.substring(0,10)<=to)&&(!assignF||(assignF==='assigned'?!!l.counsellor:!l.counsellor))&&(!q||[l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q))));
+  const f=scopedLeads.filter(l=>(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!srcf||l.source===srcf)&&(!counsel||l.counsellor===counsel)&&(!from||l.created_at.substring(0,10)>=from)&&(!to||l.created_at.substring(0,10)<=to)&&(!assignF||(assignF==='assigned'?!!l.counsellor:!l.counsellor))&&(!q||[l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q))));
   const empty=leads.length===0;
   document.getElementById('leads-empty').style.display=empty?'flex':'none';
   document.getElementById('leads-content').style.display=empty?'none':'block';
@@ -3933,12 +3938,18 @@ function renderLeads(){
   document.getElementById('lcount').textContent=`Showing ${f.length} of ${leads.length} leads`;
   const tb=document.getElementById('lead-tbody');tb.innerHTML='';
   if(!f.length){tb.innerHTML=`<tr><td colspan="15">${emptyState('🔍','No leads match your filters.')}</td></tr>`;return;}
-  f.forEach((l,i)=>{
+  // Single-assignment .map().join() instead of accumulating with += in
+  // the loop — the += pattern re-parses the ENTIRE growing HTML string
+  // on every single iteration (O(n²) work), which is a real, measurable
+  // cause of the browser's "Page Unresponsive" warning once the leads
+  // list gets into the hundreds of rows, especially since this re-runs
+  // on every realtime lead update.
+  tb.innerHTML=f.map((l,i)=>{
     const[abg,atx]=AVC[i%AVC.length];
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
     const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
     const capturedStr=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
-    tb.innerHTML+=`<tr onclick="openLeadDetail('${l.id}')">
+    return `<tr onclick="openLeadDetail('${l.id}')">
       ${canBulkAct?`<td onclick="event.stopPropagation()"><input type="checkbox" class="bulk-lead-checkbox" data-id="${l.id}" onchange="onBulkCheckboxChange()" style="cursor:pointer"></td>`:''}
       <td style="font-size:12px;color:var(--ink3);font-weight:600">${i+1}</td>
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
@@ -3955,7 +3966,7 @@ function renderLeads(){
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'visa_team','Visa Team')}</td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'sop_team','SOP Team')}</td>
     </tr>`;
-  });
+  }).join('');
   // Keep the top scrollbar's width matched to the real table, so dragging
   // it near the top of the screen scrolls exactly as far as the real one —
   // no need to scroll all the way down to reach a scrollbar at all.
@@ -4009,11 +4020,11 @@ function renderToolLeads(){
   if(empty)return;
   const labelMap={webtools:'from website tools',website:'from the website form',social:'from social media'+(tlSocial!=='All'?' — '+tlSocial:''),other:'from other sources',all:'total'};
   document.getElementById('tlcount').textContent=`${f.length} lead${f.length!==1?'s':''} ${labelMap[tlFilter]||''}`;
-  const tb=document.getElementById('toolleads-tbody');tb.innerHTML='';
-  f.forEach((l,i)=>{
+  const tb=document.getElementById('toolleads-tbody');
+  tb.innerHTML=f.map((l,i)=>{
     const[abg,atx]=AVC[i%AVC.length];
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
-    tb.innerHTML+=`<tr onclick="openLeadDetail('${l.id}')">
+    return `<tr onclick="openLeadDetail('${l.id}')">
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
       <td><div class="nc"><div class="av" style="background:${abg};color:${atx}">${ini(l.name)}</div><div><div class="ln">${esc(l.name)}</div></div></div></td>
       <td style="font-size:12px;color:var(--ink3)">${esc(l.mobile||'—')}</td>
@@ -4022,7 +4033,7 @@ function renderToolLeads(){
       <td style="font-size:12px">${esc(l.destination||'—')}</td>
       <td><span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span></td>
     </tr>`;
-  });
+  }).join('');
 }
 
 // ── DETAIL PANEL ─────────────────────────────────────────────────
@@ -4862,18 +4873,18 @@ function renderCoaching(){
   document.getElementById('coaching-empty').style.display=empty?'flex':'none';
   document.getElementById('coaching-content').style.display=empty?'none':'block';
   if(empty)return;
-  const cg=document.getElementById('cg');cg.innerHTML='';
-  scoped.forEach(c=>{
+  const cg=document.getElementById('cg');
+  cg.innerHTML=scoped.map(c=>{
     const pct=c.total_sessions>0?Math.round(c.sessions_done/c.total_sessions*100):0;
     const col=pct>=100?'#065F46':pct>=50?'#1B998B':'#C05621';
-    cg.innerHTML+=`<div class="cc"><div class="ccn">${esc(c.student_name)}</div><div class="ccp">${esc(c.program||'')} · ${esc(c.batch_name||'')}</div><div class="pt"><div class="pb" style="width:${pct}%;background:${col}"></div></div><div class="csr"><div class="cst"><div class="csl">Done</div><div class="csv">${c.sessions_done}/${c.total_sessions}</div></div><div class="cst"><div class="csl">Mock</div><div class="csv">${c.mock_score||'—'}</div></div><div class="cst"><div class="csl">Target</div><div class="csv">${c.target_score||'—'}</div></div><div class="cst"><div class="csl">%</div><div class="csv" style="color:${col}">${pct}%</div></div></div></div>`;
-  });
-  const tb=document.getElementById('ct');tb.innerHTML='';
-  scoped.forEach(c=>{
+    return `<div class="cc"><div class="ccn">${esc(c.student_name)}</div><div class="ccp">${esc(c.program||'')} · ${esc(c.batch_name||'')}</div><div class="pt"><div class="pb" style="width:${pct}%;background:${col}"></div></div><div class="csr"><div class="cst"><div class="csl">Done</div><div class="csv">${c.sessions_done}/${c.total_sessions}</div></div><div class="cst"><div class="csl">Mock</div><div class="csv">${c.mock_score||'—'}</div></div><div class="cst"><div class="csl">Target</div><div class="csv">${c.target_score||'—'}</div></div><div class="cst"><div class="csl">%</div><div class="csv" style="color:${col}">${pct}%</div></div></div></div>`;
+  }).join('');
+  const tb=document.getElementById('ct');
+  tb.innerHTML=scoped.map(c=>{
     const pct=c.total_sessions>0?Math.round(c.sessions_done/c.total_sessions*100):0;
     const done=pct>=100;const ss=done?{bg:'#A7F3D0',tx:'#065F46'}:{bg:'#DBEAFE',tx:'#1E40AF'};
-    tb.innerHTML+=`<tr><td style="font-weight:600">${esc(c.student_name)}</td><td style="font-size:12px">${esc(c.program||'')}</td><td style="font-size:12px">${esc(c.batch_name||'')}</td><td>${c.sessions_done}/${c.total_sessions}</td><td>${c.mock_score||'—'}</td><td>${c.target_score||'—'}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="pt" style="width:80px;margin:0;border:1px solid var(--line)"><div class="pb" style="width:${pct}%;background:${done?'#065F46':'#1B998B'}"></div></div><span style="font-size:11px;color:var(--ink3)">${pct}%</span></div></td></tr>`;
-  });
+    return `<tr><td style="font-weight:600">${esc(c.student_name)}</td><td style="font-size:12px">${esc(c.program||'')}</td><td style="font-size:12px">${esc(c.batch_name||'')}</td><td>${c.sessions_done}/${c.total_sessions}</td><td>${c.mock_score||'—'}</td><td>${c.target_score||'—'}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="pt" style="width:80px;margin:0;border:1px solid var(--line)"><div class="pb" style="width:${pct}%;background:${done?'#065F46':'#1B998B'}"></div></div><span style="font-size:11px;color:var(--ink3)">${pct}%</span></div></td></tr>`;
+  }).join('');
 }
 
 function openCoachingModal(){
@@ -4918,12 +4929,12 @@ function renderFU(){
   document.getElementById('fu-content').style.display=empty?'none':'block';
   if(empty)return;
   document.getElementById('fucount').textContent=`${f.length} active follow-up${f.length!==1?'s':''}`;
-  const fl=document.getElementById('fu-list');fl.innerHTML='';
-  f.forEach(l=>{
+  const fl=document.getElementById('fu-list');
+  fl.innerHTML=f.map(l=>{
     const cls=l.priority==='High'?'high':l.priority==='Medium'?'medium':'low';
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
     const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
-    fl.innerHTML+=`<div class="fcard ${cls}" onclick="openLeadDetail('${l.id}')">
+    return `<div class="fcard ${cls}" onclick="openLeadDetail('${l.id}')">
       <div class="fmeta">
         <div class="fid">${esc(l.lead_id||l.id.substring(0,8))}</div>
         <div class="fname">${esc(l.name)}</div>
@@ -4940,7 +4951,7 @@ function renderFU(){
         <span class="pill" style="background:${ps.bg};color:${ps.tx};margin-top:6px;display:inline-block">${l.priority||'—'}</span>
       </div>
     </div>`;
-  });
+  }).join('');
 }
 
 // ── Student Portal (Owner/Platform Administrator/Super Admin only) ──
@@ -5908,8 +5919,9 @@ function renderCountryChart(){
 }
 function renderLeaderboard(scoped){
   const el=document.getElementById('rpt-leaderboard');
+  const EXCLUDED_FROM_LEADERBOARD=['pavi','siva'];
   const map={};
-  scoped.forEach(l=>{if(!l.counsellor)return;if(!map[l.counsellor])map[l.counsellor]={name:l.counsellor,total:0,enrolled:0};map[l.counsellor].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[l.counsellor].enrolled++;});
+  scoped.forEach(l=>{if(!l.counsellor)return;if(EXCLUDED_FROM_LEADERBOARD.includes(l.counsellor.trim().toLowerCase()))return;if(!map[l.counsellor])map[l.counsellor]={name:l.counsellor,total:0,enrolled:0};map[l.counsellor].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[l.counsellor].enrolled++;});
   const sorted=Object.values(map).sort((a,b)=>b.enrolled-a.enrolled).slice(0,8);
   if(!sorted.length){el.innerHTML=emptyState('👤','No counsellor data for this scope yet.');return;}
   const maxN=Math.max(...sorted.map(s=>s.enrolled),1);
@@ -6107,7 +6119,75 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
     }).join('');
   }
   function renderCountryBreakdown(){const card=document.getElementById('country-breakdown-card');const el=document.getElementById('country-breakdown');if(!el||!card)return;if(isRestrictedStaffRole()){card.style.display='none';return;}card.style.display='block';const titleEl=card.querySelector('.card-t');if(titleEl)titleEl.textContent=isSuperAdmin?'🌍 Country breakdown':'🌍 '+(myCountry||'Your country')+' breakdown';const map={};leads.forEach(l=>{const c=l.country||'Unspecified';if(!map[c])map[c]={country:c,total:0,enrolled:0};map[c].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[c].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.total-a.total);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}const flagMap={India:'🇮🇳',UK:'🇬🇧',Pakistan:'🇵🇰',Bangladesh:'🇧🇩'};const tot=leads.length||1;el.innerHTML=sorted.map(c=>{const w=Math.round(c.total/tot*100);const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;return`<div class="prow" onclick="navFilter('ls-country','${c.country}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:110px">${flagMap[c.country]||''} ${esc(c.country)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${c.total}</span><span style="font-size:11px;color:var(--ink3);min-width:60px;text-align:right">${pct}% enr.</span></div>`;}).join('');}
-  function renderCounsellorRank(){const el=document.getElementById('counsel-rank');const card=document.getElementById('counsel-rank-card');if(!el)return;if(isRestrictedStaffRole()){if(card)card.style.display='none';return;}if(card)card.style.display='block';const showRev=!isRestrictedStaffRole();const revByCounsellor={};if(showRev&&typeof commissions!=='undefined'){commissions.forEach(cm=>{const lead=leads.find(x=>x.id===cm.lead_id);const who=lead&&lead.counsellor;if(who)revByCounsellor[who]=(revByCounsellor[who]||0)+(parseFloat(cm.commission_amount)||0);});}const map={};leads.forEach(l=>{if(!l.counsellor)return;if(!map[l.counsellor])map[l.counsellor]={name:l.counsellor,total:0,enrolled:0};map[l.counsellor].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[l.counsellor].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.enrolled-a.enrolled);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="border-bottom:2px solid var(--line)"><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">#</th><th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Counsellor</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Leads</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Enrolled</th><th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Conversion %</th>${showRev?'<th style="text-align:right;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Revenue</th>':''}</tr></thead><tbody>${sorted.map((c,i)=>{const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';const rev=revByCounsellor[c.name]||0;return`<tr style="border-bottom:1px solid var(--line)"><td style="padding:10px 8px;font-weight:600;color:var(--ink3)">${medal||i+1}</td><td style="padding:10px 8px;font-weight:600">${esc(c.name)}</td><td style="padding:10px 8px;text-align:center">${c.total}</td><td style="padding:10px 8px;text-align:center;color:var(--sage);font-weight:600">${c.enrolled}</td><td style="padding:10px 8px;text-align:center"><span style="background:${pct>=50?'#DCFCE7':pct>=25?'#FEF9C3':'#FFE4E6'};color:${pct>=50?'#166534':pct>=25?'#854D0E':'#9F1239'};padding:3px 10px;border-radius:99px;font-weight:600;font-size:11px">${pct}%</span></td>${showRev?`<td style="padding:10px 8px;text-align:right;font-weight:700;color:var(--pine3)">£${rev.toLocaleString()}</td>`:''}</tr>`;}).join('')}</tbody></table>`;}
+  function renderCounsellorRank(){
+    const el=document.getElementById('counsel-rank');
+    const card=document.getElementById('counsel-rank-card');
+    if(!el)return;
+    if(isRestrictedStaffRole()){ if(card)card.style.display='none'; return; }
+    if(card)card.style.display='block';
+    const showRev=!isRestrictedStaffRole();
+    // Departed/test staff whose old leads still linger under their name
+    // in the data — excluded from the ranking specifically, not from
+    // the underlying leads themselves (that's a separate data cleanup).
+    const EXCLUDED_FROM_LEADERBOARD=['pavi','siva'];
+    const revByCounsellor={};
+    if(showRev&&typeof commissions!=='undefined'){
+      commissions.forEach(cm=>{
+        const lead=leads.find(x=>x.id===cm.lead_id);
+        const who=lead&&lead.counsellor;
+        if(who) revByCounsellor[who]=(revByCounsellor[who]||0)+(parseFloat(cm.commission_amount)||0);
+      });
+    }
+    const map={};
+    leads.forEach(l=>{
+      if(!l.counsellor)return;
+      if(EXCLUDED_FROM_LEADERBOARD.includes(l.counsellor.trim().toLowerCase()))return;
+      if(!map[l.counsellor]) map[l.counsellor]={name:l.counsellor,total:0,enrolled:0,lastUpdate:null};
+      map[l.counsellor].total++;
+      if(['Enrolled','Fees Paid','Commission Received'].includes(l.status)) map[l.counsellor].enrolled++;
+      // Track this counsellor's most recent lead update — this is what
+      // "based on last updates" actually means: not just historical
+      // totals, but who's genuinely active right now.
+      if(l.updated_at&&(!map[l.counsellor].lastUpdate||new Date(l.updated_at)>new Date(map[l.counsellor].lastUpdate))){
+        map[l.counsellor].lastUpdate=l.updated_at;
+      }
+    });
+    // Primary sort: most recently active first — a counsellor who
+    // updated a lead an hour ago ranks above one whose last update was
+    // three weeks ago, even if the older one has a higher lifetime
+    // total. Ties (or no updates at all) fall back to enrolled count.
+    const sorted=Object.values(map).sort((a,b)=>{
+      const at=a.lastUpdate?new Date(a.lastUpdate).getTime():0;
+      const bt=b.lastUpdate?new Date(b.lastUpdate).getTime():0;
+      if(bt!==at) return bt-at;
+      return b.enrolled-a.enrolled;
+    });
+    if(!sorted.length){ el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>'; return; }
+    const medals=['🥇','🥈','🥉'];
+    el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="border-bottom:2px solid var(--line)">
+      <th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">#</th>
+      <th style="text-align:left;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Counsellor</th>
+      <th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Leads</th>
+      <th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Enrolled</th>
+      <th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Conversion %</th>
+      <th style="text-align:center;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Last Active</th>
+      ${showRev?'<th style="text-align:right;padding:8px;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Revenue</th>':''}
+    </tr></thead><tbody>${sorted.map((c,i)=>{
+      const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;
+      const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+      const rev=revByCounsellor[c.name]||0;
+      const lastActiveStr=c.lastUpdate?ago(c.lastUpdate):'—';
+      return`<tr style="border-bottom:1px solid var(--line)">
+        <td style="padding:10px 8px;font-weight:600;color:var(--ink3)">${medal||i+1}</td>
+        <td style="padding:10px 8px;font-weight:600">${esc(c.name)}</td>
+        <td style="padding:10px 8px;text-align:center">${c.total}</td>
+        <td style="padding:10px 8px;text-align:center;color:var(--sage);font-weight:600">${c.enrolled}</td>
+        <td style="padding:10px 8px;text-align:center"><span style="background:${pct>=50?'#DCFCE7':pct>=25?'#FEF9C3':'#FFE4E6'};color:${pct>=50?'#166534':pct>=25?'#854D0E':'#9F1239'};padding:3px 10px;border-radius:99px;font-weight:600;font-size:11px">${pct}%</span></td>
+        <td style="padding:10px 8px;text-align:center;font-size:12px;color:var(--ink3)">${lastActiveStr}</td>
+        ${showRev?`<td style="padding:10px 8px;text-align:right;font-weight:700;color:var(--pine3)">£${rev.toLocaleString()}</td>`:''}
+      </tr>`;
+    }).join('')}</tbody></table>`;
+  }
   const DEFAULT_DOCS=['Academic Certificate','Academic Transcript','English Test Certificate/ MOI','Passport','CV','LOR','Gap Justification','SOP','Photo','Bank Statement'];async function loadDocs(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data){await renderDocs(data);}else{await renderDocs([]);}}
 async function renderDocs(docs){const el=document.getElementById('d-doc-list');if(!el)return;if(!docs.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet. Click Init checklist to start.</div>';return;}await loadDocFilesFor(docs.map(d=>d.id));el.innerHTML=docs.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',false)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',false)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiry('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
 function setDocExpiry(id,current){openQuickInput('Set expiry date','Expiry date','date',current,(val)=>{sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocs(curId);toast('Expiry date updated.');});});}
@@ -7139,7 +7219,11 @@ async function checkUnreadAnnouncementsCount(){
 // spreads the same total work across a wider window instead of
 // bunching it into one burst.
 function startNotificationEngine(){
-  const checks=[checkEscalations,checkDailyFollowupPopup,checkEventReminders,checkUnreadDmCount,checkUnreadAnnouncementsCount];
+  // checkEscalations (the "not responded in time" urgent alert) is
+  // deliberately held back for now, per instruction — everything else
+  // (reminders, events, DMs, announcements) stays active. To re-enable
+  // it later, just add checkEscalations back into this array.
+  const checks=[checkDailyFollowupPopup,checkEventReminders,checkUnreadDmCount,checkUnreadAnnouncementsCount];
   checks.forEach((fn,i)=>setTimeout(fn,i*400)); // initial run, staggered
   notificationInterval=setInterval(()=>{
     checks.forEach((fn,i)=>setTimeout(fn,i*2000)); // repeat run, more spread out
@@ -7200,10 +7284,29 @@ function queueUrgentPopup(html,onView,compactText){
 // A short, soft two-tone chime — generated directly via Web Audio, no
 // external sound file to host or load. Respects the same notifications
 // toggle as everything else, so turning notifications off silences this too.
+// Reused across every chime, instead of creating a brand-new AudioContext
+// per call — browsers require a real user gesture (click/tap/keypress)
+// before ANY AudioContext can actually produce audible sound. A fresh
+// context created from a background event (a new lead arriving, a timer
+// firing) has no such gesture behind it and stays silently suspended —
+// no error, just no sound. This one gets "unlocked" once, on the very
+// first click anywhere on the page, and then works for the rest of the
+// session regardless of what triggers it afterward.
+let sharedAudioCtx=null;
+document.addEventListener('click',function unlockAudioOnce(){
+  if(!sharedAudioCtx){
+    try{ sharedAudioCtx=new(window.AudioContext||window.webkitAudioContext)(); }catch(e){}
+  }
+  if(sharedAudioCtx&&sharedAudioCtx.state==='suspended') sharedAudioCtx.resume();
+  document.removeEventListener('click',unlockAudioOnce);
+},{once:true});
+
 function playNotificationChime(){
   if(!notificationsEnabled)return;
   try{
-    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    if(!sharedAudioCtx){ sharedAudioCtx=new(window.AudioContext||window.webkitAudioContext)(); }
+    if(sharedAudioCtx.state==='suspended'){ sharedAudioCtx.resume(); }
+    const ctx=sharedAudioCtx;
     const now=ctx.currentTime;
     [[880,0],[1108,.09]].forEach(([freq,delay])=>{
       const osc=ctx.createOscillator();

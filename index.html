@@ -890,6 +890,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div class="fbar" style="margin-bottom:10px">
             <select id="fp-pr" onchange="renderFU()"><option value="">All priorities</option><option>High</option><option>Medium</option><option>Low</option></select>
             <select id="fp-co" onchange="renderFU()"><option value="">All counsellors</option></select>
+            <select id="fp-country" onchange="renderFU()"><option value="">All countries</option><option>India</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option><option>Other</option></select>
           </div>
           <div class="clabel" id="fucount"></div>
           <div id="fu-list"></div>
@@ -3096,7 +3097,7 @@ async function onLogin(user){
   if(isOwner)roleLabel=myOwnerTitle;
   else if(isSuperAdmin)roleLabel='Super Admin';
   document.getElementById('sb-urole').textContent=roleLabel;
-  await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents(),loadResumes(),loadRoundRobinState(),loadUnavailability(),loadSopUploadedLeadIds()]);
+  await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents(),loadResumes(),loadRoundRobinState(),loadUnavailability(),loadSopUploadedLeadIds(),loadDocumentsUploadedLeadIds()]);
  initPresence(user, profile);
   // Super Admin ops-view: International vs Domestic (UK). Asked once
   // per session (sessionStorage — survives a page refresh, resets on a
@@ -3617,7 +3618,14 @@ function renderDash(){
   document.getElementById('k-tot').textContent=tot;
   document.getElementById('k-enr').textContent=(c['Enrolled']||0)+(c['Fees Paid']||0);
   document.getElementById('k-fee').textContent=c['Fees Paid']||0;
-  document.getElementById('k-act').textContent=(c['New Enquiry']||0)+(c['Contacted']||0)+(c['Counselling Done']||0);
+  // Active Pipeline redefined: a lead only counts as genuinely "active"
+  // if BOTH real documents have been uploaded for it AND its status was
+  // updated recently (within 2 days — same threshold the app already
+  // uses elsewhere for "stale" detection, kept consistent rather than
+  // inventing a new number). Being at an early status alone no longer
+  // qualifies — a lead sitting untouched with no documents shouldn't
+  // count as "active."
+  document.getElementById('k-act').textContent=dashLeads.filter(l=>documentsUploadedLeadIds.has(l.id)&&l.updated_at&&(Date.now()-new Date(l.updated_at).getTime())<=2*86400000).length;
  document.getElementById('k-mon').textContent=mon;   const week=dashLeads.filter(l=>{const d=new Date(l.created_at);return(Date.now()-d.getTime())<7*86400000;}).length;   const appsReached=dashLeads.filter(l=>reachedStage(l.status,'Application Submitted')).length;   const offersReached=dashLeads.filter(l=>reachedStage(l.status,'Received Conditional')).length;   const depositReached=dashLeads.filter(l=>reachedStage(l.status,'Deposit Paid')).length;   const visaGranted=c['Visa Received']||0;   const visaTotal=(c['Visa Received']||0)+(c['Visa Rejected']||0);   document.getElementById('k-offer').textContent=appsReached>0?Math.round(offersReached/appsReached*100)+'%':'—';   document.getElementById('k-visa').textContent=visaTotal>0?Math.round(visaGranted/visaTotal*100)+'%':'—';   document.getElementById('k-dep').textContent=offersReached>0?Math.round(depositReached/offersReached*100)+'%':'—';   document.getElementById('k-fee').textContent=c['Fees Paid']||0;   document.getElementById('k-week').textContent=week;   document.getElementById('k-drop').textContent=(c['Dropped']||0)+(c['Not Interested']||0);
 
   // ── Executive KPI row ──
@@ -3699,6 +3707,15 @@ let sopUploadedLeadIds=new Set();
 async function loadSopUploadedLeadIds(){
   const{data,error}=await sb.from('sop_documents').select('lead_id');
   if(!error&&data) sopUploadedLeadIds=new Set(data.map(r=>r.lead_id));
+}
+// General document uploads (any document type, not just SOP) — used to
+// redefine Active Pipeline: a lead only counts as genuinely "active" if
+// real documents have actually been uploaded for it, not just sitting
+// at an early pipeline stage with nothing happening yet.
+let documentsUploadedLeadIds=new Set();
+async function loadDocumentsUploadedLeadIds(){
+  const{data,error}=await sb.from('document_files').select('documents(lead_id)');
+  if(!error&&data) documentsUploadedLeadIds=new Set(data.map(r=>r.documents?.lead_id).filter(Boolean));
 }
 // (Summary cards were deliberately removed from the main Dashboard — Team
 // Dashboards is its own dedicated, management-only screen now, reached via
@@ -3903,11 +3920,12 @@ function renderLeads(){
   const pf=document.getElementById('ls-pr').value;
   const df=document.getElementById('ls-de').value;
   const cf=document.getElementById('ls-country').value;
+  const srcf=document.getElementById('ls-src').value;
   const counsel=document.getElementById('ls-counsel').value;
   const from=document.getElementById('ls-from').value;
   const to=document.getElementById('ls-to').value;
   const assignF=document.getElementById('ls-assign').value;
-  const f=leads.filter(l=>(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!counsel||l.counsellor===counsel)&&(!from||l.created_at.substring(0,10)>=from)&&(!to||l.created_at.substring(0,10)<=to)&&(!assignF||(assignF==='assigned'?!!l.counsellor:!l.counsellor))&&(!q||[l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q))));
+  const f=leads.filter(l=>(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!srcf||l.source===srcf)&&(!counsel||l.counsellor===counsel)&&(!from||l.created_at.substring(0,10)>=from)&&(!to||l.created_at.substring(0,10)<=to)&&(!assignF||(assignF==='assigned'?!!l.counsellor:!l.counsellor))&&(!q||[l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q))));
   const empty=leads.length===0;
   document.getElementById('leads-empty').style.display=empty?'flex':'none';
   document.getElementById('leads-content').style.display=empty?'none':'block';
@@ -4891,8 +4909,9 @@ async function saveCoaching(){
 function renderFU(){
   const pf=document.getElementById('fp-pr').value;
   const cf=document.getElementById('fp-co').value;
+  const countryF=document.getElementById('fp-country').value;
   const act=['New Enquiry','Pending','Ongoing','Contacted','Follow Up','Callback Later','Interested','Counselling Done','Defer'];
-  const f=leads.filter(l=>act.includes(l.status)&&(!pf||l.priority===pf)&&(!cf||l.counsellor===cf))
+  const f=leads.filter(l=>act.includes(l.status)&&(!pf||l.priority===pf)&&(!cf||l.counsellor===cf)&&(!countryF||l.country===countryF))
     .sort((a,b)=>(a.priority==='High'?0:a.priority==='Medium'?1:2)-(b.priority==='High'?0:b.priority==='Medium'?1:2));
   const empty=f.length===0;
   document.getElementById('fu-empty').style.display=empty?'flex':'none';

@@ -1463,6 +1463,14 @@ What would you like help with today?</div>
           <option value="Other">Other (assigned to India — our base of operations)</option>
         </select>
       </div>
+      <div class="ff"><label>Nationality / where they're actually based</label>
+        <select id="f-nationality">
+          <option value="">Select nationality...</option>
+          <option value="India">India</option><option value="UK">UK</option><option value="Pakistan">Pakistan</option><option value="Bangladesh">Bangladesh</option>
+          <option value="Other">Other</option>
+        </select>
+        <div style="font-size:11px;color:var(--ink3);margin-top:4px">Not the same as "Assistance needed from" above — this is only used to correctly identify genuine UK-local (Domestic) queries, separate from which office is assigned to help.</div>
+      </div>
       <div class="ff"><label>Office</label>
         <select id="f-office" onchange="populateCounsellorDropdown();populateSubTeamDropdowns()"></select>
       </div>
@@ -3048,11 +3056,20 @@ function updateOpsViewSwitcher(){
 // UK country leads only. International = everything else (India,
 // Pakistan, Bangladesh, Other). Non-Super-Admins, or a Super Admin who
 // hasn't chosen yet, get the unscoped full list — unchanged behaviour.
+// Leads scoped to the Super Admin's current ops-view choice. Domestic
+// means genuinely UK-local — determined by `nationality` (where the
+// person is actually from/based), NOT `country` (which office they
+// asked for help from — someone in India choosing "UK" as their
+// Assistance Needed From is still International, not Domestic).
+// Falls back to the old country-based check only for leads created
+// before the nationality field existed, so nothing already correctly
+// categorised suddenly changes.
 function opsViewScopedLeads(sourceLeads){
   if(!isSuperAdmin||!superAdminOpsView)return sourceLeads;
+  const isDomesticLead=l=>l.nationality?l.nationality==='UK':l.country==='UK';
   return superAdminOpsView==='Domestic'
-    ? sourceLeads.filter(l=>l.country==='UK')
-    : sourceLeads.filter(l=>l.country!=='UK');
+    ? sourceLeads.filter(isDomesticLead)
+    : sourceLeads.filter(l=>!isDomesticLead(l));
 }
 async function onLoginGuarded(user){
   if(!isAllowedEmail(user.email)){
@@ -4254,7 +4271,7 @@ async function updateStatusFS(){
   loadTasksFS(curId);
   loadActivityLogFS(curId);
 }
-function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
+function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
 async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
@@ -4753,6 +4770,7 @@ function openAddLead(){
   // choose it (this is also what drives office assignment, the mobile country
   // code default, and which country the lead is visible/scoped under).
   document.getElementById('f-country').value='';
+  document.getElementById('f-nationality').value='';
   syncLeadOffice();
   document.getElementById('f-mobile-code').value='+91';
   document.getElementById('f-status').value='New Enquiry';
@@ -4858,6 +4876,10 @@ async function saveLead(){
     sop_team:document.getElementById('f-sop-team').value||null,
     office:document.getElementById('f-office').value,
     country:countryFinal,
+    // Genuinely separate from `country` above — this is only used to
+    // correctly identify Domestic (UK-local) leads, never for
+    // assignment/office routing.
+    nationality:document.getElementById('f-nationality').value||null,
     next_followup:document.getElementById('f-fu').value||null,
     visa_deadline:document.getElementById('f-visa-deadline').value||null,
     notes:document.getElementById('f-notes').value,     intake_month:document.getElementById('f-intake').value,     ielts_status:document.getElementById('f-ielts-status').value,     ielts_score:document.getElementById('f-ielts-score').value,     budget_range:document.getElementById('f-budget').value,     english_status:document.getElementById('f-english').value,     whatsapp_group_link:document.getElementById('f-walink').value,     doc_folder_link:document.getElementById('f-doclink').value,

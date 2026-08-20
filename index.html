@@ -728,7 +728,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         </div>
         <div id="leads-content" style="display:none">
           <div class="fbar">
-            <input type="text" id="ls-q" placeholder="Search by name, mobile, program, city…" oninput="renderLeads()">
+            <input type="text" id="ls-q" placeholder="Search name, phone, program, notes, destination, status…" oninput="renderLeads()">
             <select id="ls-st" onchange="renderLeads()">
               <option value="">All statuses</option>
               <option>New Enquiry</option><option>Contacted</option><option>Not Interested</option><option>Follow Up</option><option>Interested</option><option>University Shortlist</option><option>Documents Pending</option><option>Application Submitted</option><option>Received Conditional</option><option>Received Unconditional</option><option>Deposit Paid</option><option>Interview Passed</option><option>Interview Failed</option><option>CAS Applied</option><option>CAS Received</option><option>Visa Application Submitted</option><option>Visa Interview</option><option>Visa Received</option><option>Visa Rejected</option><option>Defer</option><option>Enrolled</option>
@@ -3760,6 +3760,32 @@ function docsBadge(leadId){
   const tx=pct>=0.8?'#166534':pct>=0.4?'#854D0E':'#9F1239';
   return `<span class="pill" style="background:${bg};color:${tx};margin-left:6px;font-size:10px" title="${c.done} of ${c.total} documents done">${c.done}/${c.total}</span>`;
 }
+// Smart Search — one shared function used everywhere leads get
+// text-searched, instead of the same plain substring check duplicated
+// in multiple places (which risks them drifting apart over time).
+// Three real improvements over a plain substring match:
+// 1. Multi-word AND across ALL fields, not one continuous phrase in one
+//    field — "john toronto" now matches a lead named John who is going
+//    to Toronto, even though those two words live in different fields.
+// 2. Covers notes, lead ID, destination, status, counsellor, and
+//    source too, not just name/mobile/program/city/email.
+// 3. Phone numbers match on digits alone, so "+91 98765 43210" and
+//    "9876543210" both find the same lead regardless of formatting.
+function smartLeadMatch(l,rawQuery){
+  if(!rawQuery)return true;
+  const query=rawQuery.toLowerCase().trim();
+  const words=query.split(/\s+/).filter(Boolean);
+  if(!words.length)return true;
+
+  const queryDigits=query.replace(/\D/g,'');
+  if(queryDigits.length>=4){
+    const phoneDigits=(l.mobile||'').replace(/\D/g,'');
+    if(phoneDigits.includes(queryDigits))return true;
+  }
+
+  const searchableText=[l.name,l.mobile,l.program,l.city,l.email,l.notes,l.lead_id,l.destination,l.status,l.counsellor,l.source].filter(Boolean).join(' ').toLowerCase();
+  return words.every(w=>searchableText.includes(w));
+}
 // (Summary cards were deliberately removed from the main Dashboard — Team
 // Dashboards is its own dedicated, management-only screen now, reached via
 // the sidebar tab switcher below, not via clickable cards on the Dashboard.)
@@ -3973,7 +3999,7 @@ function renderLeads(){
   const from=document.getElementById('ls-from').value;
   const to=document.getElementById('ls-to').value;
   const assignF=document.getElementById('ls-assign').value;
-  const f=scopedLeads.filter(l=>(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!srcf||l.source===srcf)&&(!counsel||l.counsellor===counsel)&&(!from||l.created_at.substring(0,10)>=from)&&(!to||l.created_at.substring(0,10)<=to)&&(!assignF||(assignF==='assigned'?!!l.counsellor:!l.counsellor))&&(!q||[l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q))));
+  const f=scopedLeads.filter(l=>(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!srcf||l.source===srcf)&&(!counsel||l.counsellor===counsel)&&(!from||l.created_at.substring(0,10)>=from)&&(!to||l.created_at.substring(0,10)<=to)&&(!assignF||(assignF==='assigned'?!!l.counsellor:!l.counsellor))&&smartLeadMatch(l,q));
   const empty=leads.length===0;
   document.getElementById('leads-empty').style.display=empty?'flex':'none';
   document.getElementById('leads-content').style.display=empty?'none':'block';
@@ -5577,7 +5603,7 @@ function exportCurrentView(){
     if(counsel&&l.counsellor!==counsel)return false;
     if(from&&l.created_at&&l.created_at.substring(0,10)<from)return false;
     if(to&&l.created_at&&l.created_at.substring(0,10)>to)return false;
-    if(q&&![l.name,l.mobile,l.program,l.city,l.email].some(v=>(v||'').toLowerCase().includes(q)))return false;
+    if(!smartLeadMatch(l,q))return false;
     return true;
   });
   if(!filtered.length){toast('No leads in current view.');return;}

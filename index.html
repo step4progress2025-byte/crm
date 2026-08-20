@@ -3667,7 +3667,7 @@ function renderDash(){
 
   // Revenue Pipeline / Commission Outstanding — hidden from Counsellors, matching
   // the same "no finance visibility" rule already applied to the Finance tab.
-  const showFinanceTiles=!isRestrictedStaffRole();
+  const showFinanceTiles=isSuperAdmin;
   ['k-revenue-tile','k-outstanding-tile'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=showFinanceTiles?'':'none';});
   if(showFinanceTiles){
     loadCommissions().then(()=>{
@@ -5958,8 +5958,14 @@ async function loadReport(){
     ['c3','🎯 Offer rate','Current snapshot',offerRate+'%'],
     ['c4','🛂 Visa success','Current snapshot',visaRate+'%'],
     ['c5','💰 Deposit rate','Current snapshot',depositRate+'%'],
-    ['c6','💷 Revenue added','This period','£'+Math.round(revenueAdded).toLocaleString()],
-    ['c7','⏳ Commission outstanding','Current snapshot','£'+Math.round(outstanding).toLocaleString()],
+    // Revenue/Commission — Super Admin and Owner only, same rule as the
+    // Finance tab itself. Spread into the array conditionally rather
+    // than hidden with CSS, so non-Super-Admin viewers never even
+    // receive these figures in the rendered page at all.
+    ...(isSuperAdmin?[
+      ['c6','💷 Revenue added','This period','£'+Math.round(revenueAdded).toLocaleString()],
+      ['c7','⏳ Commission outstanding','Current snapshot','£'+Math.round(outstanding).toLocaleString()],
+    ]:[]),
     ['c8','⚠️ Lead leakage','Current snapshot',leakagePct+'%'],
   ];
   hero.innerHTML=tiles.map(([cls,label,sub,val])=>`<div class="rpt-hero ${cls}"><div class="rpt-hero-l">${label}</div><div class="rpt-hero-v">${val}</div><div class="rpt-hero-sub">${sub}</div></div>`).join('');
@@ -6213,7 +6219,7 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
     if(!el)return;
     if(isRestrictedStaffRole()){ if(card)card.style.display='none'; return; }
     if(card)card.style.display='block';
-    const showRev=!isRestrictedStaffRole();
+    const showRev=isSuperAdmin;
     // Departed/test staff whose old leads still linger under their name
     // in the data — excluded from the ranking specifically, not from
     // the underlying leads themselves (that's a separate data cleanup).

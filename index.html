@@ -3111,7 +3111,7 @@ async function onLogin(user){
   if(isOwner)roleLabel=myOwnerTitle;
   else if(isSuperAdmin)roleLabel='Super Admin';
   document.getElementById('sb-urole').textContent=roleLabel;
-  await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents(),loadResumes(),loadRoundRobinState(),loadUnavailability(),loadSopUploadedLeadIds(),loadDocumentsUploadedLeadIds()]);
+  await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents(),loadResumes(),loadRoundRobinState(),loadUnavailability(),loadSopUploadedLeadIds(),loadDocumentsUploadedLeadIds(),loadDocumentsCountByLead()]);
  initPresence(user, profile);
   // Super Admin ops-view: International vs Domestic (UK). Asked once
   // per session (sessionStorage — survives a page refresh, resets on a
@@ -3536,7 +3536,7 @@ function nav(id,btn){
   // "My Daily Update", so the blanket block is gone. Call Recorder and
   // Activity Monitor stay restricted via initProductivity() below instead,
   // sub-tab by sub-tab, rather than blocking the whole screen.
-  if(id==='leads'){renderLeads();setTimeout(applyRoleUI,500);}
+  if(id==='leads'){loadDocumentsCountByLead().then(renderLeads);renderLeads();setTimeout(applyRoleUI,500);}
   if(id==='toolleads'){renderToolLeads();}
   if(id==='events'){loadEvents();}
   if(id==='import'){populateExportCounsellorDropdown();const note=document.getElementById('import-counsellor-note');if(note)note.style.display=(myRole==='Counsellor'&&!isSuperAdmin)?'block':'none';}
@@ -3731,6 +3731,34 @@ let documentsUploadedLeadIds=new Set();
 async function loadDocumentsUploadedLeadIds(){
   const{data,error}=await sb.from('document_files').select('documents(lead_id)');
   if(!error&&data) documentsUploadedLeadIds=new Set(data.map(r=>r.documents?.lead_id).filter(Boolean));
+}
+// Per-lead document completion count — powers the "X/10 docs" badge on
+// the leads table, so counsellors can spot missing paperwork at a
+// glance instead of opening each lead individually.
+let documentsCountByLead={};
+async function loadDocumentsCountByLead(){
+  const{data,error}=await sb.from('documents').select('lead_id,status');
+  if(error||!data)return;
+  const map={};
+  data.forEach(d=>{
+    if(!map[d.lead_id])map[d.lead_id]={done:0,total:0};
+    map[d.lead_id].total++;
+    if(d.status==='Done')map[d.lead_id].done++;
+  });
+  documentsCountByLead=map;
+}
+// Small colored badge showing document checklist completion for a
+// lead — lets a counsellor spot missing paperwork from the leads list
+// itself, without opening each lead individually. Colors: green (mostly
+// done), amber (partial), red (little/nothing done), gray (no
+// checklist created for this lead yet at all).
+function docsBadge(leadId){
+  const c=documentsCountByLead[leadId];
+  if(!c||!c.total) return `<span class="pill" style="background:#F1F5F9;color:#64748B;margin-left:6px;font-size:10px" title="No document checklist created yet">— /—</span>`;
+  const pct=c.done/c.total;
+  const bg=pct>=0.8?'#DCFCE7':pct>=0.4?'#FEF9C3':'#FFE4E6';
+  const tx=pct>=0.8?'#166534':pct>=0.4?'#854D0E':'#9F1239';
+  return `<span class="pill" style="background:${bg};color:${tx};margin-left:6px;font-size:10px" title="${c.done} of ${c.total} documents done">${c.done}/${c.total}</span>`;
 }
 // (Summary cards were deliberately removed from the main Dashboard — Team
 // Dashboards is its own dedicated, management-only screen now, reached via
@@ -3974,7 +4002,7 @@ function renderLeads(){
       <td style="font-size:12px">${esc(l.program||'—')}</td>
       <td style="font-size:12px">${esc(l.destination||'—')}</td>
       <td style="font-size:11px;color:var(--ink3);white-space:nowrap">${capturedStr}</td>
-      <td><span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span></td>
+      <td><span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span>${docsBadge(l.id)}</td>
       <td onclick="event.stopPropagation()">${renderPriorityCell(l)}</td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderCounsellorCell(l)}</td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'application_team','Application Team')}</td>

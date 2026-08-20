@@ -565,6 +565,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       </div>
       <button class="sb-logout" id="notif-toggle-btn" onclick="toggleGlobalNotifications()" style="display:none"></button>
       <button class="sb-logout" onclick="setDailyReminderTime()"><i class="ti ti-clock" style="font-size:15px"></i>Set daily reminder time</button>
+      <button class="sb-logout" onclick="setMyMobileNumber()"><i class="ti ti-device-mobile" style="font-size:15px"></i>My phone number for calls</button>
       <button class="sb-logout" id="dark-mode-toggle-btn" onclick="toggleDarkMode()"><i class="ti ti-moon" style="font-size:15px"></i>Dark mode</button>
       <button class="sb-logout" onclick="doLogout()"><i class="ti ti-logout" style="font-size:15px"></i>Sign out</button>
     </div>
@@ -2311,8 +2312,19 @@ function contactIcons(mobile,email,opts){
   const phoneSvg='<i class="ti ti-phone" style="font-size:'+Math.round(size*0.55)+'px"></i>';
   const waSvg='<i class="ti ti-brand-whatsapp" style="font-size:'+Math.round(size*0.58)+'px"></i>';
   const mailSvg='<i class="ti ti-mail" style="font-size:'+Math.round(size*0.55)+'px"></i>';
+  // Optional recorded-call button — only when a leadId is given (so we
+  // know what to log against) AND the viewer is Admin-tier, matching
+  // the same access level the manual Call Recorder upload already
+  // requires. Distinct from the plain "Call" tel: icon above, which
+  // stays as a quick unrecorded dial for anyone.
+  const recordCallSvg='<i class="ti ti-phone-outgoing" style="font-size:'+Math.round(size*0.55)+'px"></i>';
+  const canRecordCall=num&&opts.leadId&&(isSuperAdmin||myRole==='Admin'||myRole==='Director');
+  const recordCallBtn=canRecordCall
+    ? `<span onclick="event.stopPropagation();placeRecordedCall('${opts.leadId}','${esc((opts.leadName||'').replace(/'/g,"\'"))}')" title="Call (auto-recorded)" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:50%;background:var(--pine-l,#EEEDFE);color:var(--pine2);cursor:pointer;flex-shrink:0">${recordCallSvg}</span>`
+    : '';
   const parts=[
     btn(num?`tel:${num.replace(/\s/g,'')}`:'', 'var(--sky-l)','var(--sky)','Call',phoneSvg),
+    recordCallBtn,
     btn(wa?`https://wa.me/${wa}`:'', '#DCF8E8','#128C4B','WhatsApp',waSvg),
     btn(em?`mailto:${em}`:'', 'var(--gold-l)','var(--gold)','Email',mailSvg),
   ].filter(Boolean);
@@ -4104,7 +4116,7 @@ function renderLeads(){
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
       <td><div class="nc"><div class="av" style="background:${abg};color:${atx}">${ini(l.name)}</div><div><div class="ln">${esc(l.name)}</div><div class="lc">${esc(l.city||'—')}</div></div></div></td>
       <td style="font-size:12px;color:var(--ink3)">${esc(l.mobile||'—')}</td>
-      <td onclick="event.stopPropagation()">${contactIcons(l.mobile,l.email,{size:24})}</td>
+      <td onclick="event.stopPropagation()">${contactIcons(l.mobile,l.email,{size:24,leadId:l.id,leadName:l.name})}</td>
       <td style="font-size:12px">${esc(l.program||'—')}</td>
       <td style="font-size:12px">${esc(l.destination||'—')}</td>
       <td style="font-size:11px;color:var(--ink3);white-space:nowrap">${capturedStr}</td>
@@ -4196,7 +4208,7 @@ function openDetail(id){
   document.getElementById('d-sub').textContent=(l.program||'')+(l.destination?' → '+l.destination:'');
   document.getElementById('d-mob').textContent=l.mobile||'—';
   document.getElementById('d-email').textContent=l.email||'—';
-  {const ci=document.getElementById('d-contact-icons');if(ci)ci.innerHTML=contactIcons(l.mobile,l.email,{size:28,gap:8});}
+  {const ci=document.getElementById('d-contact-icons');if(ci)ci.innerHTML=contactIcons(l.mobile,l.email,{size:28,gap:8,leadId:l.id,leadName:l.name});}
   document.getElementById('d-city').textContent=l.city||'—';
   document.getElementById('d-dob').textContent=l.dob||'—';
   document.getElementById('d-qual').textContent=l.qualification||'—';
@@ -4248,7 +4260,7 @@ function openLeadDetail(id){
   document.getElementById('ld-sub').textContent=(l.program||'')+(l.destination?' → '+l.destination:'');
   document.getElementById('ld-mob').textContent=l.mobile||'—';
   document.getElementById('ld-email').textContent=l.email||'—';
-  {const ci=document.getElementById('ld-contact-icons');if(ci)ci.innerHTML=contactIcons(l.mobile,l.email,{size:30,gap:10});}
+  {const ci=document.getElementById('ld-contact-icons');if(ci)ci.innerHTML=contactIcons(l.mobile,l.email,{size:30,gap:10,leadId:l.id,leadName:l.name});}
   document.getElementById('ld-city').textContent=l.city||'—';
   document.getElementById('ld-dob').textContent=l.dob||'—';
   document.getElementById('ld-qual').textContent=l.qualification||'—';
@@ -7652,6 +7664,47 @@ function setDailyReminderTime(){
     toast('Daily reminder time set to '+val);
   });
 }
+function setMyMobileNumber(){
+  const current=teamList.find(t=>t.id===currentUser?.id)?.mobile||'';
+  openQuickInput('My phone number for calls','This is the number Twilio rings FIRST when you click "Call (auto-recorded)" on a lead — once you answer, it bridges you to the lead automatically. Include country code, e.g. +919876543210.','tel',current,async(val)=>{
+    if(!val){toast('Please enter a number.');return;}
+    const{error}=await sb.from('team').update({mobile:val}).eq('id',currentUser?.id);
+    if(error){toast('Error saving number: '+error.message);return;}
+    const t=teamList.find(x=>x.id===currentUser?.id);
+    if(t)t.mobile=val;
+    toast('Saved — this number will be called first, then bridged to leads.');
+  });
+}
+// ── Recorded calling (Twilio) ───────────────────────────────────────
+// Requires the counsellor's own number to be set first (see above).
+// Rings THEM first; once they answer, Twilio bridges to the lead's
+// number and records automatically — no manual upload needed. See
+// initiate-call / call-status-webhook / recording-ready-webhook Edge
+// Functions (0005_call_recording.sql + carry-forward doc).
+async function placeRecordedCall(leadId,leadName){
+  const myMobile=teamList.find(t=>t.id===currentUser?.id)?.mobile;
+  if(!myMobile){
+    toast('Set your own phone number first — Sidebar → "My phone number for calls".');
+    return;
+  }
+  if(!confirm(`Call ${leadName||'this lead'}? Your phone (${myMobile}) will ring first — answer it to connect, and the call will be recorded automatically.`))return;
+  toast('Calling your phone now — answer to connect…');
+  try{
+    const{data:sessionData}=await sb.auth.getSession();
+    const token=sessionData?.session?.access_token;
+    const res=await fetch(`https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/initiate-call`,{
+      method:'POST',
+      headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({leadId}),
+    });
+    const data=await res.json();
+    if(!res.ok){toast('Could not place call: '+(data.error||'Unknown error'));return;}
+    toast('Call started — check Productivity → Call Recorder for the log once it ends.');
+    loadCallLogs().then(renderCallLogs);
+  }catch(err){
+    toast('Error placing call: '+String(err));
+  }
+}
 function checkDailyFollowupPopup(){
   if(!currentUser)return;
   const todayStr=new Date().toISOString().substring(0,10);
@@ -7950,15 +8003,24 @@ function renderCallLogs(){
   empty.style.display='none';content.style.display='block';
   const canDelete=isSuperAdmin||myRole==='Admin'||myRole==='Director';
   document.getElementById('cl-count').textContent=callLogs.length+' call'+(callLogs.length!==1?'s':'')+' logged';
+  const statusColors={initiated:['var(--gold-l)','var(--gold)'],ringing:['var(--gold-l)','var(--gold)'],'in-progress':['var(--sage-l)','#0F6E56'],completed:['var(--sage-l)','#0F6E56'],'no-answer':['#FCEBEB','#A32D2D'],failed:['#FCEBEB','#A32D2D'],busy:['#FCEBEB','#A32D2D']};
   document.getElementById('cl-tbody').innerHTML=callLogs.map(c=>{
     const dt=c.call_date?new Date(c.call_date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
-    const rec=c.recording_url?`<a href="${c.recording_url}" target="_blank" style="color:var(--pine);font-weight:600;text-decoration:underline">▶ Play</a>`:'<span style="color:var(--ink3);font-style:italic">No recording</span>';
+    const rec=c.recording_url?`<a href="${c.recording_url}" target="_blank" style="color:var(--pine);font-weight:600;text-decoration:underline">▶ Play</a>`:c.auto_recorded?'<span style="color:var(--ink3);font-style:italic">Recording processing…</span>':'<span style="color:var(--ink3);font-style:italic">No recording</span>';
+    const outcomeBadge=c.outcome
+      ? `<span class="pill" style="background:var(--sky-l);color:var(--sky)">${esc(c.outcome)}</span>`
+      : c.call_status
+        ? `<span class="pill" style="background:${(statusColors[c.call_status]||['var(--sky-l)','var(--sky)'])[0]};color:${(statusColors[c.call_status]||['var(--sky-l)','var(--sky)'])[1]}">${esc(c.call_status)}</span>`
+        : '—';
+    const leadCell=c.lead_id
+      ? `<span onclick="openLeadDetail('${c.lead_id}')" style="cursor:pointer;color:var(--pine);text-decoration:underline">${esc(c.lead_label||'—')}</span>`
+      : esc(c.lead_label||'—');
     return`<tr>
-      <td style="font-weight:600">${esc(c.lead_label||'—')}</td>
+      <td style="font-weight:600">${c.auto_recorded?'<i class="ti ti-phone-outgoing" title="Auto-recorded via Twilio" style="color:var(--pine2);font-size:13px;margin-right:5px"></i>':''}${leadCell}</td>
       <td style="font-size:12px;color:var(--ink3)">${esc(c.counsellor||'—')}</td>
       <td style="font-size:12px;color:var(--ink3)">${dt}</td>
       <td style="font-size:12px">${c.duration_mins?c.duration_mins+' min':'—'}</td>
-      <td style="font-size:12px"><span class="pill" style="background:var(--sky-l);color:var(--sky)">${esc(c.outcome||'—')}</span></td>
+      <td style="font-size:12px">${outcomeBadge}</td>
       <td>${rec}</td>
       <td>${canDelete?`<button onclick="deleteCallLog('${c.id}')" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:0 4px" title="Delete log"><i class="ti ti-trash"></i></button>`:''}</td>
     </tr>`;

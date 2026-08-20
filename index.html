@@ -662,7 +662,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div class="kpi-row" data-kpicat-group="financial" style="display:none">
           <div class="kpi" id="k-revenue-tile" style="cursor:pointer;display:none" onclick="kpiNav('revenue')"><div class="kpi-l">Revenue pipeline</div><div class="kpi-v kv-g" id="k-revenue">—</div></div>
           <div class="kpi" id="k-outstanding-tile" style="cursor:pointer;display:none" onclick="kpiNav('outstanding')"><div class="kpi-l">Commission outstanding</div><div class="kpi-v kv-o" id="k-outstanding">—</div></div>
-          <div class="kpi" onclick="kpiNav('fees')" style="cursor:pointer"><div class="kpi-l">Fees paid</div><div class="kpi-v kv-g" id="k-fee">—</div></div>
+          <div class="kpi" id="k-fee-tile" style="cursor:pointer;display:none" onclick="kpiNav('fees')"><div class="kpi-l">Fees paid</div><div class="kpi-v kv-g" id="k-fee">—</div></div>
         </div>
 
         <div class="kpi-row" data-kpicat-group="risk" style="display:none">
@@ -3691,7 +3691,7 @@ function renderDash(){
   // Revenue Pipeline / Commission Outstanding — hidden from Counsellors, matching
   // the same "no finance visibility" rule already applied to the Finance tab.
   const showFinanceTiles=canSeeFinance;
-  ['k-revenue-tile','k-outstanding-tile'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=showFinanceTiles?'':'none';});
+  ['k-revenue-tile','k-outstanding-tile','k-fee-tile'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=showFinanceTiles?'':'none';});
   if(showFinanceTiles){
     loadCommissions().then(()=>{
       const totalRev=commissions.reduce((s,c)=>s+(parseFloat(c.commission_amount)||0),0);

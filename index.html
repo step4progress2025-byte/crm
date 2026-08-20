@@ -2318,7 +2318,13 @@ function contactIcons(mobile,email,opts){
   // requires. Distinct from the plain "Call" tel: icon above, which
   // stays as a quick unrecorded dial for anyone.
   const recordCallSvg='<i class="ti ti-phone-outgoing" style="font-size:'+Math.round(size*0.55)+'px"></i>';
-  const canRecordCall=num&&opts.leadId&&(isSuperAdmin||myRole==='Admin'||myRole==='Director');
+  // Placing a call is now open to Counsellors too, not just Admin-tier —
+  // they're the ones actually talking to leads day to day. This is
+  // deliberately separate from viewing/editing/deleting the Call
+  // Recorder LOG itself, which stays Admin-tier only (see canDelete in
+  // renderCallLogs, and the Productivity sub-tab gating in
+  // initProductivity — neither of those changed).
+  const canRecordCall=num&&opts.leadId&&(isSuperAdmin||myRole==='Admin'||myRole==='Director'||myRole==='Counsellor');
   const recordCallBtn=canRecordCall
     ? `<span onclick="event.stopPropagation();placeRecordedCall('${opts.leadId}','${esc((opts.leadName||'').replace(/'/g,"\'"))}')" title="Call (auto-recorded)" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:50%;background:var(--pine-l,#EEEDFE);color:var(--pine2);cursor:pointer;flex-shrink:0">${recordCallSvg}</span>`
     : '';

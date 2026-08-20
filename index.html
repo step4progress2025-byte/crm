@@ -760,6 +760,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="btn" onclick="bulkChangePriority()" style="font-size:12px;padding:5px 10px">Apply priority</button>
             <select id="bulk-counsellor-select" style="font-size:12px;padding:5px 8px;border-radius:6px;border:none"></select>
             <button class="btn" onclick="bulkReassignCounsellor()" style="font-size:12px;padding:5px 10px">Reassign</button>
+            <button class="btn" onclick="bulkDeleteLeads()" style="font-size:12px;padding:5px 10px;background:var(--rose);color:#fff;border:none"><i class="ti ti-trash"></i>Delete selected</button>
             <button class="btn" onclick="exportSelectedLeads()" style="font-size:12px;padding:5px 10px;margin-left:auto"><i class="ti ti-download"></i>Export selected</button>
             <button class="btn" onclick="clearBulkSelection()" style="font-size:12px;padding:5px 10px;background:rgba(255,255,255,.15);color:#fff;border:none">Clear selection</button>
           </div>
@@ -3757,11 +3758,12 @@ async function loadDocumentsCountByLead(){
 // checklist created for this lead yet at all).
 function docsBadge(leadId){
   const c=documentsCountByLead[leadId];
-  if(!c||!c.total) return `<span class="pill" style="background:#F1F5F9;color:#64748B;margin-left:6px;font-size:10px" title="No document checklist created yet">— /—</span>`;
+  if(!c||!c.total) return `<span class="pill" style="background:#F1F5F9;color:#64748B;margin-left:6px;font-size:11px;font-weight:700;padding:3px 8px;display:inline-block" title="No document checklist created yet">📋 —/—</span>`;
   const pct=c.done/c.total;
   const bg=pct>=0.8?'#DCFCE7':pct>=0.4?'#FEF9C3':'#FFE4E6';
   const tx=pct>=0.8?'#166534':pct>=0.4?'#854D0E':'#9F1239';
-  return `<span class="pill" style="background:${bg};color:${tx};margin-left:6px;font-size:10px" title="${c.done} of ${c.total} documents done">${c.done}/${c.total}</span>`;
+  const icon=pct>=0.8?'🟢':pct>=0.4?'🟡':'🔴';
+  return `<span class="pill" style="background:${bg};color:${tx};margin-left:6px;font-size:11px;font-weight:700;padding:3px 8px;display:inline-block" title="${c.done} of ${c.total} documents done">${icon} ${c.done}/${c.total}</span>`;
 }
 // Smart Search — one shared function used everywhere leads get
 // text-searched, instead of the same plain substring check duplicated
@@ -5710,6 +5712,35 @@ function exportSelectedLeads(){
   if(!selected.length)return;
   downloadCSV(buildCSV(selected),'step4progress_selected_leads.csv');
   toast(`Exported ${selected.length} selected lead(s).`);
+}
+// Bulk delete — same permission rule as single-lead delete (Admin tier
+// and above only), and the same India view-only protection, applied to
+// every selected lead individually so a mixed selection (some India,
+// some not) can't be used to bypass the lock on just the India ones.
+async function bulkDeleteLeads(){
+  if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}
+  const ids=new Set(getSelectedLeadIds());
+  const selected=leads.filter(l=>ids.has(l.id));
+  if(!selected.length){toast('No leads selected.');return;}
+
+  const blockedByIndiaLock=selected.filter(l=>isIndiaLeadReadOnly(l));
+  const deletable=selected.filter(l=>!isIndiaLeadReadOnly(l));
+  if(!deletable.length){toast("All selected leads are India's — view-only for your account.");return;}
+
+  const warnMsg=blockedByIndiaLock.length
+    ? `Delete ${deletable.length} lead(s)? ${blockedByIndiaLock.length} of your selection are India leads and will be skipped (view-only for your account). This cannot be undone.`
+    : `Delete ${deletable.length} lead(s)? This cannot be undone.`;
+  if(!confirm(warnMsg))return;
+
+  setSyncing();
+  const{error}=await sb.from('leads').delete().in('id',deletable.map(l=>l.id));
+  if(error){setSyncErr();toast('Error deleting leads: '+error.message);return;}
+  const deletedIds=new Set(deletable.map(l=>l.id));
+  leads=leads.filter(l=>!deletedIds.has(l.id));
+  setSynced();
+  clearBulkSelection();
+  renderLeads();renderDash();badges();
+  toast(`${deletable.length} lead(s) deleted.`);
 }
 
 // ── AI ────────────────────────────────────────────────────────────

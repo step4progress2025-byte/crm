@@ -44,6 +44,12 @@
   .modal-sheet .close-x{float:right;font-size:22px;color:var(--ink3);cursor:pointer;line-height:1}
   .file-hint{font-size:11.5px;color:var(--ink3);margin-top:-10px;margin-bottom:14px}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:99px;font-size:13.5px;z-index:200;display:none}
+  .tabs{display:flex;gap:6px;margin-bottom:16px}
+  .tab-btn{flex:1;background:var(--paper);border:1.5px solid var(--line);color:var(--ink3);padding:9px;font-size:13px}
+  .tab-btn.active{background:var(--pine);border-color:var(--pine);color:#fff}
+  .assign-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .assign-row select{margin-bottom:0;flex:1;min-width:140px}
+  .assign-row button{white-space:nowrap;padding:9px 14px;font-size:13px}
 </style>
 </head>
 <body>
@@ -77,7 +83,26 @@
       <button class="btn-danger" onclick="doLogout()">Log out</button>
     </div>
   </div>
+
+  <!-- Only shown to Owner/Super Admin/Manager/Admin/Director tier —
+       lets management assign/reassign a lead's counsellor right here,
+       without needing to open the main CRM at all. Genuinely useful
+       for quickly testing the counsellor experience with your own
+       login, and for real on-the-go reassignment later too. -->
+  <div class="tabs" id="mgmt-tabs" style="display:none">
+    <button class="tab-btn active" id="tab-myleads" onclick="switchTab('myleads')">My Leads</button>
+    <button class="tab-btn" id="tab-assign" onclick="switchTab('assign')">Assign Leads</button>
+  </div>
+
   <div id="leads-list"></div>
+
+  <div id="assign-panel" style="display:none">
+    <div class="card">
+      <label>Search any lead (name or mobile)</label>
+      <input type="text" id="assign-search" placeholder="Type to search…" oninput="searchLeadsForAssign()">
+    </div>
+    <div id="assign-results"></div>
+  </div>
 </div>
 
 <!-- LOG CALL MODAL -->
@@ -119,9 +144,16 @@ const SUPABASE_URL = 'https://jvreglqrrdnwttjasvwg.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2cmVnbHFycmRud3R0amFzdndnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDM3NzEsImV4cCI6MjA5NTQxOTc3MX0.I_X-ljOPlLFYLeWz6hE15nL8z0MPqmsSdWcgwole8GE';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Same three accounts the main CRM treats as full Owner/Super
+// Admin/Platform Administrator tier — kept in sync manually since this
+// page can't import from crm-index.html directly.
+const SUPER_ADMIN_EMAILS = ['india@step4progress.com','jisan@step4progress.co.uk','pavitra@step4progress.com'];
+
 let myName = null;
 let myLeads = [];
+let isManagement = false;
 let activeLogLead = null;
+let assignSearchTimer = null;
 
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
@@ -152,13 +184,20 @@ async function afterLogin(user){
   // leads.counsellor stores the person's actual name (not a user id),
   // same as the main CRM — so we fetch this user's profile from the
   // team table first to know which name to filter leads by.
-  const { data: profile, error } = await sb.from('team').select('full_name').eq('id', user.id).single();
+  const { data: profile, error } = await sb.from('team').select('full_name,role').eq('id', user.id).single();
   if(error || !profile){
     document.getElementById('login-err').textContent = 'Could not find your team profile. Contact your Super Admin.';
     await sb.auth.signOut();
     return;
   }
   myName = profile.full_name;
+  // Same access tier as the main CRM's "management" check — Owner/
+  // Super Admin/Platform Administrator (by email) or Manager/Admin/
+  // Director (by role) get the Assign Leads tool. Regular Counsellors
+  // just see their own leads, same as before.
+  isManagement = SUPER_ADMIN_EMAILS.includes((user.email||'').toLowerCase())
+    || ['Manager','Admin','Director'].includes(profile.role);
+  document.getElementById('mgmt-tabs').style.display = isManagement ? 'flex' : 'none';
   document.getElementById('leads-sub').textContent = myName;
   showScreen('screen-leads');
   loadLeads();
@@ -217,6 +256,77 @@ function renderLeads(){
       <a class="call-btn" href="tel:${esc(l.mobile)}">📞 Call</a>
     </div>
   `).join('');
+}
+
+// ── Assign Leads (management tier only) ────────────────────────────
+// Lets Owner/Super Admin/Manager/Admin/Director search any lead and
+// assign or reassign its counsellor directly — built specifically so
+// testing the counsellor experience doesn't require going into the
+// main CRM or Supabase's Table Editor at all. "Assign to me" is a
+// one-tap shortcut for exactly that testing use case; the free-text
+// field below it covers assigning to any real counsellor by name.
+function switchTab(tab){
+  document.getElementById('tab-myleads').classList.toggle('active', tab==='myleads');
+  document.getElementById('tab-assign').classList.toggle('active', tab==='assign');
+  document.getElementById('leads-list').style.display = tab==='myleads' ? 'block' : 'none';
+  document.getElementById('assign-panel').style.display = tab==='assign' ? 'block' : 'none';
+  if(tab==='assign'){
+    document.getElementById('assign-search').value = '';
+    document.getElementById('assign-results').innerHTML = '<div class="empty">Type a lead\'s name or mobile number above to find them.</div>';
+  }
+}
+
+function searchLeadsForAssign(){
+  clearTimeout(assignSearchTimer);
+  const term = document.getElementById('assign-search').value.trim();
+  if(term.length < 2){
+    document.getElementById('assign-results').innerHTML = '<div class="empty">Type at least 2 characters to search.</div>';
+    return;
+  }
+  // Small debounce so this doesn't fire a query on every single
+  // keystroke while someone is still typing.
+  assignSearchTimer = setTimeout(async () => {
+    document.getElementById('assign-results').innerHTML = '<div class="empty">Searching…</div>';
+    const { data, error } = await sb.from('leads')
+      .select('id,name,mobile,counsellor')
+      .or(`name.ilike.%${term}%,mobile.ilike.%${term}%`)
+      .limit(20);
+    if(error){
+      document.getElementById('assign-results').innerHTML = `<div class="empty">Error: ${esc(error.message)}</div>`;
+      return;
+    }
+    renderAssignResults(data || []);
+  }, 350);
+}
+
+function renderAssignResults(results){
+  const el = document.getElementById('assign-results');
+  if(!results.length){
+    el.innerHTML = '<div class="empty">No matching leads found.</div>';
+    return;
+  }
+  el.innerHTML = results.map(l => `
+    <div class="card">
+      <div class="lead-name">${esc(l.name||'(no name)')}</div>
+      <div class="lead-mobile">${esc(l.mobile||'')}</div>
+      <div style="font-size:12.5px;color:var(--ink3);margin:6px 0 10px">Currently: <b>${esc(l.counsellor||'Unassigned')}</b></div>
+      <div class="assign-row" style="margin-bottom:8px">
+        <button class="btn-outline" style="width:auto" onclick="assignLeadTo('${l.id}','${(myName||'').replace(/'/g,"\\'")}')">Assign to me (${esc(myName)})</button>
+      </div>
+      <div class="assign-row">
+        <input type="text" id="assign-name-${l.id}" placeholder="Or type any counsellor's name…" style="margin-bottom:0">
+        <button class="btn-primary" style="width:auto" onclick="assignLeadTo('${l.id}', document.getElementById('assign-name-${l.id}').value.trim())">Assign</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function assignLeadTo(leadId, counsellorName){
+  if(!counsellorName){ toast('Enter a name first.'); return; }
+  const { error } = await sb.from('leads').update({ counsellor: counsellorName }).eq('id', leadId);
+  if(error){ toast('Error assigning: ' + error.message); return; }
+  toast(`Assigned to ${counsellorName} ✓`);
+  searchLeadsForAssign(); // refresh the current results so the "Currently:" label updates
 }
 
 // ── Log call modal ────────────────────────────────────────────────

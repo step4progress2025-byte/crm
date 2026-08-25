@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Call Sync — Step4Progress</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --pine:#1E5F4E; --pine2:#164a3c; --ink:#1A1A1A; --ink3:#6B7280;
+    --line:#E5E7EB; --cream:#F9FAF8; --paper:#FFFFFF;
+    --sky:#3B82F6; --rose:#E5484D; --gold:#B8860B;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--cream);color:var(--ink)}
+  .screen{display:none;min-height:100vh;padding:20px}
+  .screen.active{display:block}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  h1{font-size:20px;margin:0 0 4px}
+  h2{font-size:17px;margin:0 0 4px}
+  p.sub{color:var(--ink3);font-size:13.5px;margin:0 0 20px}
+  label{font-size:12px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:5px}
+  input,select,textarea{width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:8px;font-size:15px;font-family:inherit;margin-bottom:14px;background:var(--paper)}
+  textarea{resize:vertical}
+  button{cursor:pointer;border:none;border-radius:8px;font-size:15px;font-weight:600;padding:12px 18px;font-family:inherit}
+  .btn-primary{background:var(--pine);color:#fff;width:100%}
+  .btn-primary:disabled{opacity:.6}
+  .btn-outline{background:none;border:1.5px solid var(--pine);color:var(--pine)}
+  .btn-danger{background:none;color:var(--rose);border:1.5px solid var(--rose)}
+  .err{color:var(--rose);font-size:13.5px;margin-top:8px;min-height:18px}
+  .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .top-bar .actions{display:flex;gap:8px}
+  .top-bar button{padding:8px 12px;font-size:13px}
+  .lead-card{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .lead-name{font-weight:700;font-size:15px}
+  .lead-mobile{color:var(--ink3);font-size:13px}
+  .lead-status{display:inline-block;background:#EFF6FF;color:var(--sky);font-size:11px;padding:2px 8px;border-radius:99px;margin-top:4px}
+  .call-btn{background:var(--pine);color:#fff;border-radius:99px;padding:10px 16px;font-size:14px;white-space:nowrap}
+  .log-link{font-size:12.5px;color:var(--pine);text-decoration:underline;cursor:pointer;margin-top:8px;display:inline-block}
+  .empty{text-align:center;color:var(--ink3);padding:40px 20px;font-size:14px}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end;justify-content:center}
+  .modal-overlay.active{display:flex}
+  .modal-sheet{background:var(--paper);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto}
+  .modal-sheet .close-x{float:right;font-size:22px;color:var(--ink3);cursor:pointer;line-height:1}
+  .file-hint{font-size:11.5px;color:var(--ink3);margin-top:-10px;margin-bottom:14px}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:99px;font-size:13.5px;z-index:200;display:none}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="screen active" id="screen-login">
+  <div style="max-width:400px;margin:60px auto 0">
+    <h1>📞 Call Sync</h1>
+    <p class="sub">Log in with your CRM account</p>
+    <div class="card">
+      <label>Email</label>
+      <input type="email" id="login-email" autocomplete="username">
+      <label>Password</label>
+      <input type="password" id="login-pass" autocomplete="current-password">
+      <button class="btn-primary" id="login-btn" onclick="doLogin()">Log In</button>
+      <div class="err" id="login-err"></div>
+    </div>
+    <p style="text-align:center;color:var(--ink3);font-size:12px">Same email and password you use for the main CRM.</p>
+  </div>
+</div>
+
+<!-- LEADS -->
+<div class="screen" id="screen-leads">
+  <div class="top-bar">
+    <div>
+      <h2 id="leads-heading">My Leads</h2>
+      <p class="sub" style="margin:0" id="leads-sub"></p>
+    </div>
+    <div class="actions">
+      <button class="btn-outline" onclick="loadLeads()">Refresh</button>
+      <button class="btn-danger" onclick="doLogout()">Log out</button>
+    </div>
+  </div>
+  <div id="leads-list"></div>
+</div>
+
+<!-- LOG CALL MODAL -->
+<div class="modal-overlay" id="log-modal">
+  <div class="modal-sheet">
+    <span class="close-x" onclick="closeLogModal()">×</span>
+    <h2>Log this call</h2>
+    <p class="sub" id="log-lead-name"></p>
+
+    <label>Outcome</label>
+    <select id="log-outcome">
+      <option>Connected</option>
+      <option>No Answer</option>
+      <option>Follow-up Scheduled</option>
+      <option>Not Interested</option>
+      <option>Wrong Number</option>
+      <option>Other</option>
+    </select>
+
+    <label>Duration (minutes)</label>
+    <input type="number" id="log-duration" placeholder="e.g. 8" min="0">
+
+    <label>Notes</label>
+    <textarea id="log-notes" rows="3" placeholder="What was discussed…"></textarea>
+
+    <label>Recording (optional)</label>
+    <input type="file" id="log-recording" accept="audio/*">
+    <div class="file-hint">If your phone recorded the call, pick the file from your recordings folder here.</div>
+
+    <button class="btn-primary" id="log-save-btn" onclick="saveCallLog()">Save call log</button>
+    <div class="err" id="log-err"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://jvreglqrrdnwttjasvwg.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2cmVnbHFycmRud3R0amFzdndnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDM3NzEsImV4cCI6MjA5NTQxOTc3MX0.I_X-ljOPlLFYLeWz6hE15nL8z0MPqmsSdWcgwole8GE';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let myName = null;
+let myLeads = [];
+let activeLogLead = null;
+
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',2500); }
+
+// ── Auth ──────────────────────────────────────────────────────────
+// Real Supabase Auth login, exactly like the main CRM's own website
+// (sb.auth.signInWithPassword) — the Supabase JS client handles session
+// persistence and token refresh automatically from here on, no manual
+// token-refresh logic needed the way the Android version required.
+async function doLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-err');
+  err.textContent = '';
+  if(!email || !pass){ err.textContent = 'Enter both email and password.'; return; }
+
+  btn.disabled = true; btn.textContent = 'Logging in…';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  btn.disabled = false; btn.textContent = 'Log In';
+
+  if(error){ err.textContent = error.message; return; }
+  await afterLogin(data.user);
+}
+
+async function afterLogin(user){
+  // leads.counsellor stores the person's actual name (not a user id),
+  // same as the main CRM — so we fetch this user's profile from the
+  // team table first to know which name to filter leads by.
+  const { data: profile, error } = await sb.from('team').select('full_name').eq('id', user.id).single();
+  if(error || !profile){
+    document.getElementById('login-err').textContent = 'Could not find your team profile. Contact your Super Admin.';
+    await sb.auth.signOut();
+    return;
+  }
+  myName = profile.full_name;
+  document.getElementById('leads-sub').textContent = myName;
+  showScreen('screen-leads');
+  loadLeads();
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  myName = null; myLeads = [];
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-pass').value = '';
+  showScreen('screen-login');
+}
+
+// On page load, check for an already-active session (Supabase persists
+// this in localStorage automatically) so a counsellor isn't asked to
+// log in every single time they open this page.
+async function checkExistingSession(){
+  const { data } = await sb.auth.getSession();
+  if(data?.session?.user){
+    await afterLogin(data.session.user);
+  }
+}
+
+// ── Leads ─────────────────────────────────────────────────────────
+async function loadLeads(){
+  document.getElementById('leads-list').innerHTML = '<div class="empty">Loading…</div>';
+  const cleanName = (myName||'').trim().replace(/\s+/g,' ');
+  const { data, error } = await sb.from('leads')
+    .select('id,name,mobile,status,next_followup')
+    .ilike('counsellor', cleanName)
+    .order('next_followup', { ascending: true, nullsFirst: false })
+    .limit(200);
+
+  if(error){
+    document.getElementById('leads-list').innerHTML = `<div class="empty">Error loading leads: ${esc(error.message)}</div>`;
+    return;
+  }
+  myLeads = data || [];
+  renderLeads();
+}
+
+function renderLeads(){
+  const el = document.getElementById('leads-list');
+  if(!myLeads.length){
+    el.innerHTML = `<div class="empty">No leads found for "${esc(myName)}".<br><br>Check this matches your Counsellor field exactly in the CRM.</div>`;
+    return;
+  }
+  el.innerHTML = myLeads.map(l => `
+    <div class="card lead-card">
+      <div>
+        <div class="lead-name">${esc(l.name||'(no name)')}</div>
+        <div class="lead-mobile">${esc(l.mobile||'')}</div>
+        ${l.status?`<span class="lead-status">${esc(l.status)}</span>`:''}
+        <div><span class="log-link" onclick='openLogModal(${JSON.stringify(l).replace(/'/g,"&#39;")})'>📝 Log this call</span></div>
+      </div>
+      <a class="call-btn" href="tel:${esc(l.mobile)}">📞 Call</a>
+    </div>
+  `).join('');
+}
+
+// ── Log call modal ────────────────────────────────────────────────
+function openLogModal(lead){
+  activeLogLead = lead;
+  document.getElementById('log-lead-name').textContent = `${lead.name||'(no name)'} — ${lead.mobile||''}`;
+  document.getElementById('log-outcome').value = 'Connected';
+  document.getElementById('log-duration').value = '';
+  document.getElementById('log-notes').value = '';
+  document.getElementById('log-recording').value = '';
+  document.getElementById('log-err').textContent = '';
+  document.getElementById('log-modal').classList.add('active');
+}
+function closeLogModal(){
+  document.getElementById('log-modal').classList.remove('active');
+  activeLogLead = null;
+}
+
+// Mirrors saveCallLog() in the main CRM exactly — same table, same
+// storage bucket, same fields — so entries made here show up in the
+// CRM's own Call Recorder tab identically to one logged there directly.
+async function saveCallLog(){
+  if(!activeLogLead) return;
+  const btn = document.getElementById('log-save-btn');
+  const err = document.getElementById('log-err');
+  err.textContent = '';
+
+  const outcome = document.getElementById('log-outcome').value;
+  const durationRaw = document.getElementById('log-duration').value;
+  const notes = document.getElementById('log-notes').value.trim();
+  const file = document.getElementById('log-recording').files[0];
+
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  let recording_url = null, recording_filename = null;
+  if(file){
+    const path = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const { error: upErr } = await sb.storage.from('call-recordings').upload(path, file);
+    if(upErr){
+      err.textContent = 'Recording upload failed: ' + upErr.message + ' — saving the log without it.';
+    } else {
+      const { data: pub } = sb.storage.from('call-recordings').getPublicUrl(path);
+      recording_url = pub?.publicUrl || null;
+      recording_filename = file.name;
+    }
+  }
+
+  const { error } = await sb.from('call_logs').insert({
+    lead_id: activeLogLead.id,
+    lead_label: activeLogLead.name || activeLogLead.mobile || '(unknown)',
+    counsellor: myName,
+    call_date: new Date().toISOString().slice(0,10),
+    duration_mins: durationRaw ? parseInt(durationRaw, 10) : null,
+    outcome,
+    notes: notes || null,
+    recording_url,
+    recording_filename,
+    auto_recorded: false,
+  });
+
+  btn.disabled = false; btn.textContent = 'Save call log';
+
+  if(error){
+    err.textContent = 'Error saving: ' + error.message;
+    return;
+  }
+  closeLogModal();
+  toast('Call logged ✓');
+}
+
+checkExistingSession();
+</script>
+</body>
+</html>

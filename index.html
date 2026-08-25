@@ -1249,6 +1249,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <button class="prod-subtab active" data-sub="calls" onclick="setProdSubtab('calls')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent">🎧 Call Recorder</button>
           <button class="prod-subtab" data-sub="myupdate" onclick="setProdSubtab('myupdate')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent">📝 My Daily Update</button>
           <button class="prod-subtab" data-sub="monitor" id="prod-tab-monitor" onclick="setProdSubtab('monitor')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent;display:none">📊 Activity Monitor</button>
+          <button class="prod-subtab" data-sub="progress" id="prod-tab-progress" onclick="setProdSubtab('progress')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent;display:none">📈 Progress Report</button>
         </div>
 
         <div id="prod-sub-calls">
@@ -1322,6 +1323,33 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             </div>
           </div>
           <div id="am-list"></div>
+        </div>
+
+        <!-- Progress Report — datewise counsellor performance, fully
+             automated from call_logs (the same table the CallSync
+             mobile app and web tool write into, alongside manual
+             entries here). No separate data entry — this is purely a
+             reporting view over data that already exists. -->
+        <div id="prod-sub-progress" style="display:none">
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-h"><span class="card-t">📈 Progress Report</span></div>
+            <p style="font-size:12px;color:var(--ink3);margin-bottom:14px;line-height:1.6">Date-wise counsellor performance — calls made, total call duration, and distinct leads spoken to. Automatically pulled from the Call Recorder log, including calls synced in from the mobile Call Sync app.</p>
+            <div class="fg">
+              <div class="ff"><label>Counsellor</label><select id="pr-counsellor" onchange="renderProgressReport()"><option value="All">All counsellors</option></select></div>
+              <div class="ff"><label>Country</label><select id="pr-country" onchange="renderProgressReport()"><option value="All">All countries</option><option>India</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option></select></div>
+              <div class="ff"><label>From</label><input type="date" id="pr-date-from" onchange="renderProgressReport()"></div>
+              <div class="ff"><label>To</label><input type="date" id="pr-date-to" onchange="renderProgressReport()"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div style="overflow-x:auto">
+              <table class="tbl">
+                <thead><tr><th>Date</th><th>Counsellor</th><th>Calls</th><th>Total Duration</th><th>Distinct Leads</th><th>Notes</th></tr></thead>
+                <tbody id="pr-tbody"></tbody>
+              </table>
+            </div>
+            <div id="pr-empty" class="empty" style="display:none">No calls logged for this filter combination yet.</div>
+          </div>
         </div>
       </section>
 
@@ -5437,6 +5465,20 @@ function renderManagementAndOperationsTeams(team){
   const opsEl=document.getElementById('operations-team-section');
   if(!mgmtEl||!opsEl)return;
 
+  // Full symmetry with the Domestic Operations fix below: these two
+  // sections are explicitly labeled "International," so they should
+  // hide just as completely when a Super Admin has chosen the Domestic
+  // ops view — previously only Domestic Operations respected this
+  // toggle, leaving International's own sections visible regardless of
+  // which view was selected. Applies to Super Admin/Owner/Platform
+  // Administrator alike, since they all share the same isSuperAdmin
+  // flag and the same superAdminOpsView state.
+  const hideInternational=isSuperAdmin&&superAdminOpsView==='Domestic';
+  if(hideInternational){
+    mgmtEl.innerHTML='';
+    opsEl.innerHTML='';
+  } else {
+
   const mgmtRoles=['Manager','Admin','Director'];
   const mgmt=(team||[]).filter(t=>mgmtRoles.includes(t.role)&&t.team_category!=='Domestic');
   mgmtEl.innerHTML=`<div class="card" style="margin-bottom:16px">
@@ -5467,6 +5509,8 @@ function renderManagementAndOperationsTeams(team){
     <div class="card-h"><span class="card-t">🌍 International — Operations Team</span><span style="font-size:11px;color:var(--ink3)">Application, Visa & SOP — pooled globally, not limited to any one country</span></div>
     <div style="display:flex;gap:20px;flex-wrap:wrap">${opsCols}</div>
   </div>`;
+
+  } // end of hideInternational else block
 
   // ── Domestic Operations (UK-internal, no round-robin, Management-assigned only) ──
   // Only shown when a Super Admin has explicitly chosen the Domestic ops
@@ -8150,23 +8194,102 @@ function initProductivity(){
   document.querySelectorAll('.prod-subtab[data-sub="calls"]').forEach(b=>b.style.display=isAdminTier?'':'none');
   const monitorTab=document.getElementById('prod-tab-monitor');
   if(monitorTab)monitorTab.style.display=isAdminTier?'':'none';
+  const progressTab=document.getElementById('prod-tab-progress');
+  if(progressTab)progressTab.style.display=isAdminTier?'':'none';
 
   if(isAdminTier){
-    loadCallLogs().then(renderCallLogs);
+    loadCallLogs().then(()=>{ renderCallLogs(); renderProgressReport(); });
     populateActivityMonitorCountryFilter();
+    populateProgressReportFilters();
   } else {
     setProdSubtab('myupdate');
   }
   loadMyDailyUpdates();
 }
 function setProdSubtab(sub){
-  ['calls','myupdate','monitor'].forEach(s=>{
+  ['calls','myupdate','monitor','progress'].forEach(s=>{
     const panel=document.getElementById('prod-sub-'+s);
     if(panel)panel.style.display=s===sub?'block':'none';
     const btn=document.querySelector(`.prod-subtab[data-sub="${s}"]`);
     if(btn){btn.style.color=s===sub?'var(--pine)':'var(--ink3)';btn.style.borderBottomColor=s===sub?'var(--pine)':'transparent';}
   });
   if(sub==='monitor')renderActivityMonitor();
+  if(sub==='progress')renderProgressReport();
+}
+function populateProgressReportFilters(){
+  const sel=document.getElementById('pr-counsellor');
+  if(!sel)return;
+  const names=[...new Set((teamList||[]).filter(t=>t.role==='Counsellor').map(t=>t.full_name).filter(Boolean))].sort();
+  sel.innerHTML='<option value="All">All counsellors</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+}
+// Looks up which country a counsellor belongs to via the team table —
+// call_logs itself has no country column, since a call log is about a
+// counsellor and a lead, not tied to an office directly. Matching on
+// name is the same approach the rest of the CRM already uses for
+// counsellor identification (leads.counsellor is also just a name).
+function getCounsellorCountryFromTeam(name){
+  const member=(teamList||[]).find(t=>(t.full_name||'').toLowerCase()===String(name||'').toLowerCase());
+  return member?(member.country||member.office||null):null;
+}
+function renderProgressReport(){
+  const tbody=document.getElementById('pr-tbody');
+  const emptyEl=document.getElementById('pr-empty');
+  if(!tbody)return;
+
+  const counsellorFilter=document.getElementById('pr-counsellor')?.value||'All';
+  const countryFilter=document.getElementById('pr-country')?.value||'All';
+  const fromDate=document.getElementById('pr-date-from')?.value||null;
+  const toDate=document.getElementById('pr-date-to')?.value||null;
+
+  let filtered=(callLogs||[]).filter(c=>{
+    if(counsellorFilter!=='All'&&c.counsellor!==counsellorFilter)return false;
+    if(countryFilter!=='All'){
+      const country=getCounsellorCountryFromTeam(c.counsellor);
+      // Matches loosely against office/country strings (e.g. "India HQ"
+      // contains "India") since team.country isn't always a clean
+      // exact match to these four canonical names.
+      if(!country||!country.toLowerCase().includes(countryFilter.toLowerCase()))return false;
+    }
+    if(fromDate&&c.call_date<fromDate)return false;
+    if(toDate&&c.call_date>toDate)return false;
+    return true;
+  });
+
+  // Group by counsellor + date — "date-wise reports of counsellors",
+  // one row per person per day they actually made calls.
+  const groups={};
+  filtered.forEach(c=>{
+    const key=`${c.counsellor||'(unknown)'}|${c.call_date||'(no date)'}`;
+    if(!groups[key])groups[key]={counsellor:c.counsellor||'(unknown)',date:c.call_date,calls:0,totalMins:0,leads:new Set(),notes:[]};
+    groups[key].calls++;
+    groups[key].totalMins+=(c.duration_mins||0);
+    if(c.lead_label)groups[key].leads.add(c.lead_label);
+    if(c.notes&&c.notes.trim())groups[key].notes.push(c.notes.trim());
+  });
+
+  const rows=Object.values(groups).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||a.counsellor.localeCompare(b.counsellor));
+
+  if(!rows.length){
+    tbody.innerHTML='';
+    if(emptyEl)emptyEl.style.display='block';
+    return;
+  }
+  if(emptyEl)emptyEl.style.display='none';
+
+  tbody.innerHTML=rows.map(r=>{
+    const dt=r.date?new Date(r.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
+    const notesPreview=r.notes.length
+      ? `<span title="${esc(r.notes.join(' | '))}" style="cursor:help;text-decoration:underline dotted">${r.notes.length} note${r.notes.length!==1?'s':''}</span>`
+      : '<span style="color:var(--ink3)">—</span>';
+    return `<tr>
+      <td style="font-size:12px">${dt}</td>
+      <td style="font-size:12px;font-weight:600">${esc(r.counsellor)}</td>
+      <td style="font-size:12px">${r.calls}</td>
+      <td style="font-size:12px">${r.totalMins} min</td>
+      <td style="font-size:12px">${r.leads.size}</td>
+      <td style="font-size:12px">${notesPreview}</td>
+    </tr>`;
+  }).join('');
 }
 async function submitDailyUpdate(){
   const dateEl=document.getElementById('du-date');

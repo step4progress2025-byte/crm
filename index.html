@@ -904,13 +904,17 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div id="management-team-section"></div>
         <div id="operations-team-section"></div>
         <div id="domestic-team-section"></div>
-        <div id="agent-team-section"></div>
         <div id="team-members-card" style="display:none">
           <div class="dsec" style="margin-bottom:2px">By office / branch</div>
           <div id="team-icon-legend" style="font-size:11px;color:var(--ink3);margin-bottom:10px"></div>
           <div id="team-grid"></div>
         </div>
         <button class="btn btn-p" id="create-user-btn" onclick="openCreateUser()" style="display:none;margin-top:12px;font-size:12px;padding:5px 10px"><i class="ti ti-user-plus"></i>Create user</button>
+        <!-- Agent Portal is placed last, deliberately — external
+             partners are a distinct category from internal staff, so
+             it sits after every internal team section including the
+             by-office/branch listing. -->
+        <div id="agent-team-section"></div>
       </section>
 
       <!-- Events --><section id="sc-events" class="screen"><div class="card" style="margin-bottom:20px"><div class="card-h"><span class="card-t">Events calendar</span><button class="btn btn-p" onclick="openAddEvent()"><i class="ti ti-plus"></i>Add event</button></div><div id="events-calendar"></div></div><div class="card"><div class="card-h"><span class="card-t">Upcoming this month</span></div><div id="events-list"></div></div></section> <!-- Import -->
@@ -3628,7 +3632,12 @@ function nav(id,btn){
   // staff (blocked from Finance/Team/etc, same as Counsellors) but need
   // through to the one screen their whole role exists for.
   if(id==='digitalmarketing'&&roleIsCounsellor&&myRole!=='Digital Marketing'){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
-  if(id==='team'&&roleIsCounsellor){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
+  // Team visibility is intentionally open to everyone — anyone can see
+  // who's on the team. Actions within it (removing a member) stay
+  // restricted to isSuperAdmin further down in renderTeam/
+  // renderManagementAndOperationsTeams, which already only shows the
+  // delete button for Owner/Platform Administrator/Super Admin (all
+  // three covered by the single isSuperAdmin flag).
   // Productivity used to be Admin-tier only — now everyone needs in for
   // "My Daily Update", so the blanket block is gone. Call Recorder and
   // Activity Monitor stay restricted via initProductivity() below instead,
@@ -5460,8 +5469,18 @@ function renderManagementAndOperationsTeams(team){
   </div>`;
 
   // ── Domestic Operations (UK-internal, no round-robin, Management-assigned only) ──
+  // Only shown when a Super Admin has explicitly chosen the Domestic ops
+  // view — previously this rendered unconditionally regardless of
+  // International/Domestic selection, so switching to International
+  // still left Domestic Operations visible on the Team page. Anyone who
+  // ISN'T a Super Admin (no ops-view concept at all) still sees this
+  // section by default, matching prior behaviour for them.
   const domesticEl=document.getElementById('domestic-team-section');
   if(domesticEl){
+    const shouldShowDomestic=!isSuperAdmin||!superAdminOpsView||superAdminOpsView==='Domestic';
+    if(!shouldShowDomestic){
+      domesticEl.innerHTML='';
+    } else {
     const domestic=(team||[]).filter(t=>t.team_category==='Domestic');
     domesticEl.innerHTML=`<div class="card" style="margin-bottom:16px">
       <div class="card-h"><span class="card-t">🇬🇧 Domestic Operations</span><span style="font-size:11px;color:var(--ink3)">${domestic.length} member${domestic.length!==1?'s':''} — UK-internal only, never receives leads automatically</span></div>
@@ -5471,6 +5490,7 @@ function renderManagementAndOperationsTeams(team){
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('🇬🇧','No Domestic team members yet.')}</div>
     </div>`;
+    }
   }
 
   // ── Agent Portal (external partners, single flat role, no hierarchy) ──
@@ -6294,12 +6314,14 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
       ['ls-src','ls-from','ls-to'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='block';el.style.minWidth='140px';}});
     }
 
-    // Counsellors: hide Finance & Team nav entirely. Productivity stays
-    // visible to everyone — "My Daily Update" is for the whole team;
-    // Call Recorder and Activity Monitor are still gated internally by
-    // initProductivity(), sub-tab by sub-tab.
+    // Counsellors: hide Finance nav entirely (Team is now visible to
+    // everyone — only actions within it, like removing a member, stay
+    // restricted to Super Admin/Owner/Platform Administrator).
+    // Productivity stays visible to everyone too — "My Daily Update" is
+    // for the whole team; Call Recorder and Activity Monitor are still
+    // gated internally by initProductivity(), sub-tab by sub-tab.
     if(isCounsellor){
-      const restricted=['finance','team','reports','subteam-detail'];
+      const restricted=['finance','reports','subteam-detail'];
       document.querySelectorAll('.ni').forEach(btn=>{
         const onclick=btn.getAttribute('onclick')||'';
         restricted.forEach(r=>{if(onclick.includes("nav('"+r+"'"))btn.style.display='none';});
@@ -7328,10 +7350,21 @@ function renderAnnouncementFeed(){
   if(!mine.length){el.innerHTML=emptyState('📢','Nothing here yet.');return;}
   el.innerHTML=mine.map(a=>{
     const attachHtml=a.attachment_url?`<div style="margin-top:6px"><a href="${esc(a.attachment_url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i>${esc(a.attachment_filename||'Attachment')}</a></div>`:'';
+    // Edit/Delete — Super Admin only (which already covers Owner and
+    // Platform Administrator, same single flag used everywhere else
+    // for this tier of access). Edit re-opens the same composer used
+    // to create announcements, pre-filled with this one's content.
+    const editDeleteHtml=isSuperAdmin?`<div style="display:flex;gap:6px;flex-shrink:0">
+        <button onclick='openAnnouncementComposer(${JSON.stringify(a).replace(/'/g,"&#39;")})' title="Edit" style="background:none;border:none;color:var(--sky);cursor:pointer;font-size:14px;padding:2px"><i class="ti ti-pencil"></i></button>
+        <button onclick="deleteAnnouncement('${a.id}')" title="Delete" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px"><i class="ti ti-trash"></i></button>
+      </div>`:'';
     return `<div style="border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:10px;background:var(--paper)">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div style="font-size:13px;font-weight:700">${esc(a.author_name||'Someone')}</div>
-        <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:10px">${esc(a.target_label||'Everyone')}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:10px">${esc(a.target_label||'Everyone')}</span>
+          ${editDeleteHtml}
+        </div>
       </div>
       <div style="font-size:11px;color:var(--ink3);margin-bottom:6px">${new Date(a.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
       <div style="font-size:13px;line-height:1.6;white-space:pre-wrap">${esc(a.message)}</div>
@@ -7363,18 +7396,27 @@ async function postAnnouncementReply(announcementId){
   if(error){toast('Error posting reply: '+error.message);return;}
   loadAnnouncementReplies(announcementId);
 }
-function openAnnouncementComposer(){
+function openAnnouncementComposer(editAnnouncement){
   document.getElementById('ann-composer').style.display='block';
-  document.getElementById('ann-target-type').value='all';
-  document.getElementById('ann-message').value='';
-  stagedAnnAttachment=null;
-  document.getElementById('ann-attach-preview').textContent='';
+  editingAnnouncementId=editAnnouncement?editAnnouncement.id:null;
+  document.getElementById('ann-target-type').value=editAnnouncement?editAnnouncement.target_type:'all';
+  document.getElementById('ann-message').value=editAnnouncement?editAnnouncement.message:'';
+  stagedAnnAttachment=editAnnouncement&&editAnnouncement.attachment_url?{url:editAnnouncement.attachment_url,filename:editAnnouncement.attachment_filename}:null;
+  document.getElementById('ann-attach-preview').innerHTML=stagedAnnAttachment?`<i class="ti ti-paperclip"></i> ${esc(stagedAnnAttachment.filename||'Attachment')}`:'';
   const personSel=document.getElementById('ann-person-value');
   personSel.innerHTML=(teamList||[]).filter(t=>t.id!==currentUser?.id).map(t=>`<option value="${t.id}">${esc(t.full_name||t.email||'—')}</option>`).join('');
+  if(editAnnouncement&&editAnnouncement.target_type==='team')document.getElementById('ann-team-value').value=editAnnouncement.target_value||'';
+  if(editAnnouncement&&editAnnouncement.target_type==='individual')personSel.value=editAnnouncement.target_value||'';
+  // Post button label reflects the actual action being taken, so it's
+  // never ambiguous whether this creates a new announcement or updates
+  // an existing one.
+  const postBtn=document.querySelector('#ann-composer .btn-p');
+  if(postBtn)postBtn.textContent=editAnnouncement?'Save changes':'Post';
   syncAnnouncementTargetUI();
 }
 function closeAnnouncementComposer(){
   document.getElementById('ann-composer').style.display='none';
+  editingAnnouncementId=null;
 }
 function syncAnnouncementTargetUI(){
   const type=document.getElementById('ann-target-type').value;
@@ -7393,6 +7435,7 @@ async function handleAnnAttachSelected(file){
   stagedAnnAttachment={url:pub?.publicUrl||null,filename:file.name};
   preview.innerHTML=`<i class="ti ti-paperclip"></i> ${esc(file.name)}`;
 }
+let editingAnnouncementId=null;
 async function postAnnouncement(){
   if(isRestrictedStaffRole()){toast('Only Admin, Manager, Director, Super Admin, or Owner can post announcements.');return;}
   const type=document.getElementById('ann-target-type').value;
@@ -7409,16 +7452,47 @@ async function postAnnouncement(){
     if(!target_value){toast('Pick a person to send this to.');return;}
   }
 
-  const{error}=await sb.from('announcements').insert({
-    author_id:currentUser?.id,author_name:myName,
+  const payload={
     target_type:type,target_value,target_label,
     message,
     attachment_url:stagedAnnAttachment?.url||null,
     attachment_filename:stagedAnnAttachment?.filename||null,
+  };
+
+  if(editingAnnouncementId){
+    // Editing an existing announcement — Super Admin only, enforced
+    // both here and by only ever showing the Edit button to
+    // isSuperAdmin in renderAnnouncementFeed(). Author/created_at are
+    // deliberately left untouched, so it's clear this was an edit to
+    // the original post, not a brand new one from whoever edited it.
+    if(!isSuperAdmin){toast('Only Super Admin can edit announcements.');return;}
+    const{error}=await sb.from('announcements').update(payload).eq('id',editingAnnouncementId);
+    if(error){toast('Error saving changes: '+error.message);return;}
+    closeAnnouncementComposer();
+    toast('Announcement updated.');
+    loadAnnouncements();
+    return;
+  }
+
+  const{error}=await sb.from('announcements').insert({
+    author_id:currentUser?.id,author_name:myName,
+    ...payload,
   });
   if(error){toast('Error posting announcement: '+error.message);return;}
   closeAnnouncementComposer();
   toast('Announcement posted!');
+  loadAnnouncements();
+}
+async function deleteAnnouncement(id){
+  if(!isSuperAdmin){toast('Only Super Admin can delete announcements.');return;}
+  if(!confirm('Delete this announcement? This also removes any replies to it and cannot be undone.'))return;
+  // Replies reference the announcement by id — clear those first so no
+  // orphaned rows are left behind if there's no cascading delete set up
+  // at the database level.
+  await sb.from('announcement_replies').delete().eq('announcement_id',id);
+  const{error}=await sb.from('announcements').delete().eq('id',id);
+  if(error){toast('Error deleting: '+error.message);return;}
+  toast('Announcement deleted.');
   loadAnnouncements();
 }
 async function checkUnreadAnnouncementsCount(){

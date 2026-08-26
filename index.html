@@ -1278,6 +1278,14 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div class="es-sub">Once you log a call above, it'll show up here.</div>
         </div>
         <div id="cl-content" style="display:none">
+          <div class="card" style="margin-bottom:14px">
+            <div class="fg">
+              <div class="ff"><label>Counsellor</label><select id="cl-filter-counsellor" onchange="renderCallLogs()"><option value="All">All counsellors</option></select></div>
+              <div class="ff"><label>Country</label><select id="cl-filter-country" onchange="renderCallLogs()"><option value="All">All countries</option><option>India</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option></select></div>
+              <div class="ff"><label>From</label><input type="date" id="cl-filter-date-from" onchange="renderCallLogs()"></div>
+              <div class="ff"><label>To</label><input type="date" id="cl-filter-date-to" onchange="renderCallLogs()"></div>
+            </div>
+          </div>
           <div class="clabel" id="cl-count"></div>
           <div class="tw">
             <table class="tbl">
@@ -5567,6 +5575,17 @@ function renderTeam(team){
     legend.textContent=parts.join(' · ');
   }
 
+  // Same International/Domestic symmetry as
+  // renderManagementAndOperationsTeams above — this "by office" listing
+  // (India HQ/UK HQ/Pakistan/Bangladesh) only ever shows International
+  // staff by construction (excludes team_category==='Domestic'
+  // unconditionally), so it needs the same hide-when-Domestic-selected
+  // treatment, or it stays visible regardless of which ops view is active.
+  const hideInternationalByOffice=isSuperAdmin&&superAdminOpsView==='Domestic';
+  if(hideInternationalByOffice){
+    tg.innerHTML='';
+  } else {
+
   // Build all offices from OFFICE_MAP, then group real team members into them
   const allOffices=[];
   Object.entries(OFFICE_MAP).forEach(([country,offices])=>{
@@ -5622,6 +5641,8 @@ function renderTeam(team){
       <div class="${members.length?'team-grid':''}">${cards}</div>
     </div>`;
   }).join('');
+
+  } // end of hideInternationalByOffice else block
 
   // update follow-up counsellor filter
   const fp=document.getElementById('fp-co');
@@ -8120,15 +8141,42 @@ async function loadCallLogs(){
   if(!error&&data) callLogs=data;
   else if(error) callLogs=[];
 }
+function populateCallLogFilters(){
+  const sel=document.getElementById('cl-filter-counsellor');
+  if(!sel)return;
+  const names=[...new Set((teamList||[]).filter(t=>t.role==='Counsellor').map(t=>t.full_name).filter(Boolean))].sort();
+  sel.innerHTML='<option value="All">All counsellors</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+}
 function renderCallLogs(){
   const empty=document.getElementById('cl-empty'), content=document.getElementById('cl-content');
   if(!empty||!content)return;
   if(!callLogs.length){empty.style.display='flex';content.style.display='none';return;}
   empty.style.display='none';content.style.display='block';
+
+  // Same three filters as Progress Report, applied here to the raw
+  // per-call log list rather than the date-grouped summary — lets an
+  // admin narrow down to a specific counsellor/country/date range and
+  // actually find and play an individual recording, not just see totals.
+  const counsellorFilter=document.getElementById('cl-filter-counsellor')?.value||'All';
+  const countryFilter=document.getElementById('cl-filter-country')?.value||'All';
+  const fromDate=document.getElementById('cl-filter-date-from')?.value||null;
+  const toDate=document.getElementById('cl-filter-date-to')?.value||null;
+
+  const filteredLogs=callLogs.filter(c=>{
+    if(counsellorFilter!=='All'&&c.counsellor!==counsellorFilter)return false;
+    if(countryFilter!=='All'){
+      const country=getCounsellorCountryFromTeam(c.counsellor);
+      if(!country||!country.toLowerCase().includes(countryFilter.toLowerCase()))return false;
+    }
+    if(fromDate&&c.call_date<fromDate)return false;
+    if(toDate&&c.call_date>toDate)return false;
+    return true;
+  });
+
   const canDelete=isSuperAdmin||myRole==='Admin'||myRole==='Director';
-  document.getElementById('cl-count').textContent=callLogs.length+' call'+(callLogs.length!==1?'s':'')+' logged';
+  document.getElementById('cl-count').textContent=filteredLogs.length+' call'+(filteredLogs.length!==1?'s':'')+' logged'+(filteredLogs.length!==callLogs.length?` (of ${callLogs.length} total)`:'');
   const statusColors={initiated:['var(--gold-l)','var(--gold)'],ringing:['var(--gold-l)','var(--gold)'],'in-progress':['var(--sage-l)','#0F6E56'],completed:['var(--sage-l)','#0F6E56'],'no-answer':['#FCEBEB','#A32D2D'],failed:['#FCEBEB','#A32D2D'],busy:['#FCEBEB','#A32D2D']};
-  document.getElementById('cl-tbody').innerHTML=callLogs.map(c=>{
+  document.getElementById('cl-tbody').innerHTML=filteredLogs.map(c=>{
     const dt=c.call_date?new Date(c.call_date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
     const rec=c.recording_url?`<a href="${c.recording_url}" target="_blank" style="color:var(--pine);font-weight:600;text-decoration:underline">▶ Play</a>`:c.auto_recorded?'<span style="color:var(--ink3);font-style:italic">Recording processing…</span>':'<span style="color:var(--ink3);font-style:italic">No recording</span>';
     const outcomeBadge=c.outcome
@@ -8201,6 +8249,7 @@ function initProductivity(){
     loadCallLogs().then(()=>{ renderCallLogs(); renderProgressReport(); });
     populateActivityMonitorCountryFilter();
     populateProgressReportFilters();
+    populateCallLogFilters();
   } else {
     setProdSubtab('myupdate');
   }

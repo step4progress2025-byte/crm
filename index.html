@@ -519,6 +519,26 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
 <!-- ── APP ────────────────────────────────────────────────────── -->
 <div class="app" id="app">
+  <!-- Keyboard shortcuts help — press ? from anywhere. Purely
+       informational, no new logic of its own; just makes the shortcuts
+       that already exist (Ctrl+K, N, /) actually discoverable. -->
+  <div id="shortcuts-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,16,12,.55);z-index:2500;align-items:center;justify-content:center" onclick="if(event.target===this)closeShortcutsHelp()">
+    <div style="background:var(--paper);width:92%;max-width:420px;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.35);padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <span style="font-size:16px;font-weight:700;color:var(--ink)">⌨️ Keyboard Shortcuts</span>
+        <span onclick="closeShortcutsHelp()" style="cursor:pointer;color:var(--ink3);font-size:20px;line-height:1">×</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:var(--ink)">Open quick search</span><span style="font-size:11px;border:1px solid var(--line);border-radius:5px;padding:2px 7px;color:var(--ink3)">Ctrl K</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:var(--ink)">Add a new lead</span><span style="font-size:11px;border:1px solid var(--line);border-radius:5px;padding:2px 7px;color:var(--ink3)">N</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:var(--ink)">Search leads (or open search)</span><span style="font-size:11px;border:1px solid var(--line);border-radius:5px;padding:2px 7px;color:var(--ink3)">/</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:var(--ink)">Show this panel</span><span style="font-size:11px;border:1px solid var(--line);border-radius:5px;padding:2px 7px;color:var(--ink3)">?</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:var(--ink)">Close any panel</span><span style="font-size:11px;border:1px solid var(--line);border-radius:5px;padding:2px 7px;color:var(--ink3)">Esc</span></div>
+      </div>
+      <p style="font-size:11px;color:var(--ink3);margin-top:16px;margin-bottom:0;font-style:italic">Shortcuts are disabled while typing in any text field.</p>
+    </div>
+  </div>
+
   <!-- Super Admin ops-view choice — International vs Domestic (UK).
        Only ever shown to Super Admin accounts, once per session
        (stored in sessionStorage, so it re-asks on a genuinely new
@@ -710,6 +730,20 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <div class="card"><div class="card-h"><span class="card-t">Pipeline status</span></div><div id="pipe-list"></div></div>
             <div class="card"><div class="card-h"><span class="card-t">Recent activity</span></div><div id="act-list"></div></div>
             <div class="card" style="margin-top:16px" id="country-breakdown-card"><div class="card-h"><span class="card-t">🌍 Leads by country</span></div><div id="country-breakdown"></div></div>
+
+            <!-- Global Reach visual — a stylized (not geographically
+                 traced) map showing genuine relative positions of the 4
+                 operating countries, node size scaled by lead volume,
+                 connected to a central hub with a subtle pulse
+                 animation. Reuses the exact same per-country
+                 aggregation as the bar-chart breakdown above — this is
+                 a different VIEW of the same data, not a second data
+                 source to keep in sync. -->
+            <div class="card" style="margin-top:16px" id="global-reach-card">
+              <div class="card-h"><span class="card-t">🌐 Global Reach</span></div>
+              <div id="global-reach-map" style="position:relative;width:100%;max-width:520px;margin:0 auto"></div>
+              <div id="global-reach-empty" style="display:none;color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>
+            </div>
             <div class="card" style="margin-top:16px" id="counsel-rank-card"><div class="card-h"><span class="card-t">🏆 Counsellor ranking</span></div><div id="counsel-rank"></div></div>
           </div>
         </div>
@@ -780,7 +814,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <thead><tr>
                 <th style="width:36px"><input type="checkbox" id="bulk-select-all" onchange="toggleSelectAllLeads(this.checked)" style="cursor:pointer"></th>
                 <th>#</th><th>ID</th><th>Name</th><th>Mobile</th><th>Contact</th><th>Program</th>
-                <th>Destination</th><th>Captured</th><th>Status</th><th>Priority</th><th>Counsellor</th><th>Application</th><th>Visa</th><th>SOP</th>
+                <th>Destination</th><th>Captured</th><th>Status</th><th title="A rule-based estimate of engagement/conversion likelihood — recency of contact, pipeline stage, and follow-up activity. Not AI-generated; instant and free to compute on every lead.">Score 🎯</th><th>Priority</th><th>Counsellor</th><th>Application</th><th>Visa</th><th>SOP</th>
               </tr></thead>
               <tbody id="lead-tbody"></tbody>
             </table>
@@ -2928,6 +2962,62 @@ function setupAssignModeUI(){
 // everyone else who can already see a lead — since loadLeads() already
 // scopes visibility to "leads that are actually theirs," there's no need
 // for a separate role check here.
+// ── Lead scoring — instant, rule-based, free to compute on every lead ──
+// Deliberately NOT an AI call (unlike the per-lead insight card) — this
+// needs to render on potentially hundreds of rows in the main Leads
+// table simultaneously, which an AI round-trip per row could never do
+// responsively or affordably. A transparent point system instead:
+// pipeline stage + recency of activity + active follow-up management.
+const LEAD_SCORE_TERMINAL={
+  'Enrolled':{label:'✅ Won',},'Fees Paid':{label:'✅ Won'},'Onboarded Student':{label:'✅ Won'},
+  'Commission Received':{label:'✅ Won'},'Process Completed':{label:'✅ Won'},
+  'Not Interested':{label:'⚪ Closed'},'Dropped':{label:'⚪ Closed'},
+};
+// Base score by real pipeline stage (from the actual STATUSES list) —
+// roughly reflects how far along an ACTIVE lead already is. Setback
+// statuses (Interview Failed, Visa Rejected) score low despite being
+// "late stage," since being far along didn't mean success here.
+const LEAD_SCORE_STAGE_BASE={
+  'New Enquiry':10,'Follow Up':20,'Interested':25,'Contacted':22,'Callback Later':18,
+  'Counselling Done':30,'University Shortlist':38,'Documents Pending':42,
+  'Application Submitted':48,'Received Conditional':55,'Received Unconditional':60,
+  'Conditional Cleared':62,'Interview Passed':65,'Interview Failed':15,
+  'Deposit Paid':70,'CAS Applied':75,'CAS Received':80,
+  'Visa Application Submitted':85,'Visa Interview':87,'Visa Received':95,'Visa Rejected':12,
+  'Defer':20,'Pending':25,'Ongoing':35,
+};
+function computeLeadScore(l){
+  if(LEAD_SCORE_TERMINAL[l.status])return{terminal:true,label:LEAD_SCORE_TERMINAL[l.status].label};
+
+  let score=LEAD_SCORE_STAGE_BASE[l.status]??30; // any future/unmapped status falls back to a neutral mid score
+
+  // Recency of last update — momentum matters as much as raw stage;
+  // a lead that hasn't moved in 10+ days is cooling regardless of how
+  // far along it got before going quiet.
+  if(l.updated_at){
+    const days=(Date.now()-new Date(l.updated_at).getTime())/86400000;
+    if(days<2)score+=15;
+    else if(days<5)score+=5;
+    else if(days<10)score-=10;
+    else score-=20;
+  }
+
+  // An active, future-dated follow-up shows the counsellor is genuinely
+  // managing this lead, not letting it drift.
+  if(l.next_followup&&l.next_followup>=new Date().toISOString().substring(0,10))score+=10;
+
+  score=Math.max(0,Math.min(100,score));
+  const tier=score>=70?{emoji:'🔥',label:'Hot',color:'#B91C1C',bg:'#FEE2E2'}
+    :score>=40?{emoji:'🌤️',label:'Warm',color:'#B45309',bg:'#FEF3C7'}
+    :{emoji:'❄️',label:'Cool',color:'#1D4ED8',bg:'#DBEAFE'};
+  return{terminal:false,score,tier};
+}
+function leadScoreBadge(l){
+  const r=computeLeadScore(l);
+  if(r.terminal)return `<span style="font-size:11px;color:var(--ink3)">${r.label}</span>`;
+  return `<span class="pill" style="background:${r.tier.bg};color:${r.tier.color}" title="Score: ${r.score}/100 — based on pipeline stage, recency of activity, and follow-up scheduling">${r.tier.emoji} ${r.tier.label}</span>`;
+}
+
 function renderPriorityCell(l){
   const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
   return `<select onchange="quickChangePriority('${l.id}',this.value)" style="font-size:12px;padding:4px 6px;border-radius:99px;border:none;background:${ps.bg};color:${ps.tx};font-family:var(--font-b);font-weight:600;cursor:pointer">
@@ -3438,6 +3528,11 @@ document.addEventListener('keydown',(e)=>{
     else if(e.key==='Enter'){e.preventDefault();if(cmdkResults[cmdkSelectedIndex])executeCommandResult(cmdkResults[cmdkSelectedIndex]);}
     return;
   }
+  const shortcutsOverlay=document.getElementById('shortcuts-overlay');
+  if(shortcutsOverlay&&shortcutsOverlay.style.display==='flex'){
+    if(e.key==='Escape'){e.preventDefault();closeShortcutsHelp();}
+    return;
+  }
   // "N" and "/" shortcuts — only when not typing in any field, so normal
   // typing (including a name that happens to contain n or /) is never
   // interrupted.
@@ -3455,8 +3550,17 @@ document.addEventListener('keydown',(e)=>{
     } else {
       openCommandPalette();
     }
+  } else if(e.key==='?'){
+    e.preventDefault();
+    openShortcutsHelp();
   }
 });
+function openShortcutsHelp(){
+  document.getElementById('shortcuts-overlay').style.display='flex';
+}
+function closeShortcutsHelp(){
+  document.getElementById('shortcuts-overlay').style.display='none';
+}
 function openCommandPalette(){
   document.getElementById('cmdk-overlay').style.display='flex';
   document.getElementById('cmdk-input').value='';
@@ -3896,6 +4000,7 @@ function renderDash(){
     `<div class="aitem" onclick="openLeadDetail('${l.id}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><div class="adot" style="background:${dotC[l.status]||'#999'}"></div><div><div class="atext">${esc(l.name)} — ${l.status.toLowerCase()}</div><div class="atime">${ago(l.created_at)}${l.source?' · '+l.source:''}</div></div></div>`
   ).join('');
   renderCountryBreakdown();
+  renderGlobalReachMap();
   renderCounsellorRank();
   renderRecentLeads();
   renderLatestPayments();
@@ -4205,7 +4310,7 @@ function renderLeads(){
   if(empty)return;
   document.getElementById('lcount').textContent=`Showing ${f.length} of ${leads.length} leads`;
   const tb=document.getElementById('lead-tbody');tb.innerHTML='';
-  if(!f.length){tb.innerHTML=`<tr><td colspan="15">${emptyState('🔍','No leads match your filters.')}</td></tr>`;return;}
+  if(!f.length){tb.innerHTML=`<tr><td colspan="16">${emptyState('🔍','No leads match your filters.')}</td></tr>`;return;}
   // Single-assignment .map().join() instead of accumulating with += in
   // the loop — the += pattern re-parses the ENTIRE growing HTML string
   // on every single iteration (O(n²) work), which is a real, measurable
@@ -4228,6 +4333,7 @@ function renderLeads(){
       <td style="font-size:12px">${esc(l.destination||'—')}</td>
       <td style="font-size:11px;color:var(--ink3);white-space:nowrap">${capturedStr}</td>
       <td><span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span>${docsBadge(l.id)}</td>
+      <td onclick="event.stopPropagation()">${leadScoreBadge(l)}</td>
       <td onclick="event.stopPropagation()">${renderPriorityCell(l)}</td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderCounsellorCell(l)}</td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'application_team','Application Team')}</td>
@@ -6547,7 +6653,78 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
       return `<div class="prow" onclick="navFilter('ls-st','')" style="cursor:pointer"><span class="pill" style="background:var(--gold-l);color:var(--gold);min-width:130px">${esc(intake)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--gold)"></div></div><span class="pn" style="color:var(--gold)">${n}</span></div>`;
     }).join('');
   }
-  function renderCountryBreakdown(){const card=document.getElementById('country-breakdown-card');const el=document.getElementById('country-breakdown');if(!el||!card)return;if(isRestrictedStaffRole()){card.style.display='none';return;}card.style.display='block';const titleEl=card.querySelector('.card-t');if(titleEl)titleEl.textContent=isSuperAdmin?'🌍 Country breakdown':'🌍 '+(myCountry||'Your country')+' breakdown';const map={};leads.forEach(l=>{const c=l.country||'Unspecified';if(!map[c])map[c]={country:c,total:0,enrolled:0};map[c].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[c].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.total-a.total);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}const flagMap={India:'🇮🇳',UK:'🇬🇧',Pakistan:'🇵🇰',Bangladesh:'🇧🇩'};const tot=leads.length||1;el.innerHTML=sorted.map(c=>{const w=Math.round(c.total/tot*100);const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;return`<div class="prow" onclick="navFilter('ls-country','${c.country}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:110px">${flagMap[c.country]||''} ${esc(c.country)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${c.total}</span><span style="font-size:11px;color:var(--ink3);min-width:60px;text-align:right">${pct}% enr.</span></div>`;}).join('');}
+function renderCountryBreakdown(){const card=document.getElementById('country-breakdown-card');const el=document.getElementById('country-breakdown');if(!el||!card)return;if(isRestrictedStaffRole()){card.style.display='none';return;}card.style.display='block';const titleEl=card.querySelector('.card-t');if(titleEl)titleEl.textContent=isSuperAdmin?'🌍 Country breakdown':'🌍 '+(myCountry||'Your country')+' breakdown';const map={};leads.forEach(l=>{const c=l.country||'Unspecified';if(!map[c])map[c]={country:c,total:0,enrolled:0};map[c].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[c].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.total-a.total);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}const flagMap={India:'🇮🇳',UK:'🇬🇧',Pakistan:'🇵🇰',Bangladesh:'🇧🇩'};const tot=leads.length||1;el.innerHTML=sorted.map(c=>{const w=Math.round(c.total/tot*100);const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;return`<div class="prow" onclick="navFilter('ls-country','${c.country}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:110px">${flagMap[c.country]||''} ${esc(c.country)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${c.total}</span><span style="font-size:11px;color:var(--ink3);min-width:60px;text-align:right">${pct}% enr.</span></div>`;}).join('');}
+
+// ── Global Reach visual ──────────────────────────────────────────
+// Stylized, not a geographically-traced map — genuine relative
+// positions of the 4 operating countries (UK far west/north; Pakistan,
+// India, Bangladesh roughly west-to-east in South Asia), each node
+// sized by lead volume, connected to a central hub with a live pulse.
+// Deliberately reuses the SAME per-country counts as the bar-chart
+// breakdown above — this is a different view of that data, not a
+// second source of truth to keep in sync.
+const GLOBAL_REACH_NODES=[
+  {country:'UK',flag:'🇬🇧',x:70,y:90},
+  {country:'Pakistan',flag:'🇵🇰',x:270,y:130},
+  {country:'India',flag:'🇮🇳',x:335,y:190},
+  {country:'Bangladesh',flag:'🇧🇩',x:415,y:200},
+];
+const GLOBAL_REACH_HUB={x:250,y:255};
+function renderGlobalReachMap(){
+  const el=document.getElementById('global-reach-map');
+  const emptyEl=document.getElementById('global-reach-empty');
+  const card=document.getElementById('global-reach-card');
+  if(!el||!card)return;
+  if(isRestrictedStaffRole()){card.style.display='none';return;}
+  card.style.display='block';
+
+  const scopedLeads=opsViewScopedLeads(leads);
+  const counts={};
+  scopedLeads.forEach(l=>{
+    const c=l.country;
+    if(!c)return;
+    if(!counts[c])counts[c]={total:0,enrolled:0};
+    counts[c].total++;
+    if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))counts[c].enrolled++;
+  });
+
+  const maxCount=Math.max(...GLOBAL_REACH_NODES.map(n=>counts[n.country]?.total||0));
+  if(maxCount===0){
+    el.innerHTML='';
+    emptyEl.style.display='block';
+    return;
+  }
+  emptyEl.style.display='none';
+
+  const minR=14,maxR=38;
+  const linesHtml=GLOBAL_REACH_NODES.map(n=>
+    `<line x1="${GLOBAL_REACH_HUB.x}" y1="${GLOBAL_REACH_HUB.y}" x2="${n.x}" y2="${n.y}" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="4,4"/>`
+  ).join('');
+
+  const nodesHtml=GLOBAL_REACH_NODES.map(n=>{
+    const data=counts[n.country]||{total:0,enrolled:0};
+    const r=data.total>0?minR+((data.total/maxCount)*(maxR-minR)):minR*0.55;
+    const pct=data.total>0?Math.round(data.enrolled/data.total*100):0;
+    return `
+      <g onclick="navFilter('ls-country','${n.country}')" style="cursor:pointer">
+        <circle cx="${n.x}" cy="${n.y}" r="${r}" fill="var(--pine3)" opacity=".85">
+          <animate attributeName="r" values="${r};${r*1.6};${r}" dur="2.6s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".5;0;.5" dur="2.6s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="${n.x}" cy="${n.y}" r="${r}" fill="var(--pine3)"/>
+        <title>${n.flag} ${n.country}: ${data.total} lead${data.total!==1?'s':''}, ${pct}% enrolled</title>
+        <text x="${n.x}" y="${n.y+5}" text-anchor="middle" font-size="13" fill="#fff" font-weight="700">${data.total}</text>
+        <text x="${n.x}" y="${n.y+r+20}" text-anchor="middle" font-size="18">${n.flag}</text>
+      </g>`;
+  }).join('');
+
+  el.innerHTML=`<svg viewBox="0 0 500 300" style="width:100%;height:auto">
+    ${linesHtml}
+    <circle cx="${GLOBAL_REACH_HUB.x}" cy="${GLOBAL_REACH_HUB.y}" r="9" fill="var(--gold)"/>
+    <text x="${GLOBAL_REACH_HUB.x}" y="${GLOBAL_REACH_HUB.y+26}" text-anchor="middle" font-size="11" fill="var(--ink3)" font-style="italic">HQ</text>
+    ${nodesHtml}
+  </svg>`;
+}
   function renderCounsellorRank(){
     const el=document.getElementById('counsel-rank');
     const card=document.getElementById('counsel-rank-card');

@@ -3172,6 +3172,14 @@ function chooseOpsView(view){
   renderLeads();
   badges();
   renderFU();
+  // Team was missing from this refresh list entirely — meaning
+  // switching the toggle while already on the Team screen left it
+  // showing whichever view was rendered before the switch, completely
+  // unaffected by the very fixes meant to make it respect this toggle.
+  // renderTeam only actually does anything once teamList has loaded at
+  // least once, so this check avoids an error on a very first login
+  // before that's happened yet.
+  if(teamList&&teamList.length)renderTeam(teamList);
 }
 function reopenOpsViewModal(){
   document.getElementById('ops-view-modal').style.display='flex';
@@ -3710,6 +3718,13 @@ function nav(id,btn){
   if(id==='teamchat')initTeamChat();
   if(id==='coaching')renderCoaching();
   if(id==='followup')renderFU();
+  // Every other screen above re-renders itself on navigation — this was
+  // the one genuinely missing. Team was ONLY ever rendered once, at
+  // initial login; simply clicking into the tab afterward showed
+  // whatever was rendered back then, completely unaffected by the
+  // Domestic/International toggle regardless of any fix made to the
+  // rendering logic itself, since that logic was never being re-run.
+  if(id==='team')renderTeam(teamList);
 }
 function navFilter(filterId,value){nav('leads',document.querySelector('.ni[data-nav="leads"]'));setTimeout(()=>{const el=document.getElementById(filterId);if(el){el.value=value;renderLeads();}},300);}
 

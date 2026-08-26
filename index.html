@@ -588,6 +588,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <span><span class="sync-dot" id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--ink3)"></span></span>
       </div>
       <div class="tb-right">
+        <button onclick="openCommandPalette()" title="Quick search (Ctrl+K)" style="display:flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--ink3);font-size:13px">
+          <i class="ti ti-search" style="font-size:14px"></i>Search
+          <span style="font-size:10px;border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-left:2px">Ctrl K</span>
+        </button>
         <span class="online-count" id="online-count"><span class="online-dot-sm"></span><span id="online-num">1</span> online</span>
         <button class="btn btn-ai" onclick="nav('ai',document.querySelector('.ni[data-nav=&quot;ai&quot;]'))"><i class="ti ti-robot"></i>AI</button>
         <button class="btn btn-p" onclick="openAddLead()"><i class="ti ti-plus"></i>Add lead</button>
@@ -3635,6 +3639,14 @@ function startWorldClock(){
   if(worldClockInterval)clearInterval(worldClockInterval);
   worldClockInterval=setInterval(renderWorldClock,1000);
 }
+// ── COMMAND PALETTE (Ctrl+K / Cmd+K) ────────────────────────────────
+// Search-and-jump: any screen, a handful of quick actions, or a live
+// lead search — all from the keyboard. Built as a self-contained
+// overlay that only ever READS from state already loaded elsewhere
+// (leads, myRole, etc.) and calls existing functions (nav, openAddLead,
+// etc.) — it doesn't introduce any new data flow of its own, which
+// keeps it safe to add without risk to anything already working.
+
 function nav(id,btn){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));

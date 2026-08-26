@@ -1341,7 +1341,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div id="prod-sub-progress" style="display:none">
           <div class="card" style="margin-bottom:16px">
             <div class="card-h"><span class="card-t">📈 Progress Report</span></div>
-            <p style="font-size:12px;color:var(--ink3);margin-bottom:14px;line-height:1.6">Date-wise counsellor performance — calls made, total call duration, and distinct leads spoken to. Automatically pulled from the Call Recorder log, including calls synced in from the mobile Call Sync app.</p>
+            <p style="font-size:12px;color:var(--ink3);margin-bottom:14px;line-height:1.6">Tap a counsellor to see their day-by-day breakdown. Automatically pulled from the Call Recorder log, including calls synced in from the mobile Call Sync app.</p>
             <div class="fg">
               <div class="ff"><label>Counsellor</label><select id="pr-counsellor" onchange="renderProgressReport()"><option value="All">All counsellors</option></select></div>
               <div class="ff"><label>Country</label><select id="pr-country" onchange="renderProgressReport()"><option value="All">All countries</option><option>India</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option></select></div>
@@ -1349,17 +1349,34 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <div class="ff"><label>To</label><input type="date" id="pr-date-to" onchange="renderProgressReport()"></div>
             </div>
           </div>
-          <div class="card">
-            <div style="overflow-x:auto">
-              <table class="tbl">
-                <thead><tr><th>Date</th><th>Counsellor</th><th>Calls</th><th>Total Duration</th><th>Distinct Leads</th><th>Notes</th></tr></thead>
-                <tbody id="pr-tbody"></tbody>
-              </table>
-            </div>
-            <div id="pr-empty" class="empty" style="display:none">No calls logged for this filter combination yet.</div>
-          </div>
+          <div id="pr-cards"></div>
+          <div id="pr-empty" class="empty" style="display:none">No calls logged for this filter combination yet.</div>
         </div>
       </section>
+
+      <style>
+        /* Progress Report — counsellor summary cards, expand on click */
+        .pr-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);margin-bottom:12px;overflow:hidden;box-shadow:var(--sh);transition:box-shadow .2s ease, transform .2s ease}
+        .pr-card:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.08)}
+        .pr-card-head{display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;user-select:none}
+        .pr-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--pine),var(--pine3));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+        .pr-stat{text-align:center;min-width:64px}
+        .pr-stat b{display:block;font-size:18px;color:var(--pine);line-height:1.2}
+        .pr-stat span{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em}
+        .pr-bar-track{flex:1;height:6px;background:var(--line);border-radius:99px;overflow:hidden;min-width:60px}
+        .pr-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--pine));border-radius:99px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+        .pr-chevron{font-size:14px;color:var(--ink3);transition:transform .25s ease;flex-shrink:0}
+        .pr-card.expanded .pr-chevron{transform:rotate(180deg)}
+        .pr-detail{max-height:0;overflow:hidden;transition:max-height .35s ease}
+        .pr-card.expanded .pr-detail{max-height:2000px}
+        .pr-detail-inner{padding:0 20px 18px;border-top:1px solid var(--line)}
+        .pr-day-row{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px dashed var(--line)}
+        .pr-day-row:last-child{border-bottom:none}
+        .pr-day-date{font-size:12px;font-weight:600;color:var(--ink);min-width:90px}
+        .pr-day-metric{font-size:11.5px;color:var(--ink3)}
+        .pr-day-notes{font-size:11.5px;color:var(--ink3);font-style:italic;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      </style>
+
 
       <!-- Student Portal — Owner/Platform Administrator/Super Admin only.
            Reads from the SEPARATE student-portal Supabase project via a
@@ -8280,10 +8297,14 @@ function getCounsellorCountryFromTeam(name){
   const member=(teamList||[]).find(t=>(t.full_name||'').toLowerCase()===String(name||'').toLowerCase());
   return member?(member.country||member.office||null):null;
 }
+function togglePrCard(idx){
+  const card=document.querySelector(`.pr-card[data-idx="${idx}"]`);
+  if(card)card.classList.toggle('expanded');
+}
 function renderProgressReport(){
-  const tbody=document.getElementById('pr-tbody');
+  const cardsEl=document.getElementById('pr-cards');
   const emptyEl=document.getElementById('pr-empty');
-  if(!tbody)return;
+  if(!cardsEl)return;
 
   const counsellorFilter=document.getElementById('pr-counsellor')?.value||'All';
   const countryFilter=document.getElementById('pr-country')?.value||'All';
@@ -8294,9 +8315,6 @@ function renderProgressReport(){
     if(counsellorFilter!=='All'&&c.counsellor!==counsellorFilter)return false;
     if(countryFilter!=='All'){
       const country=getCounsellorCountryFromTeam(c.counsellor);
-      // Matches loosely against office/country strings (e.g. "India HQ"
-      // contains "India") since team.country isn't always a clean
-      // exact match to these four canonical names.
       if(!country||!country.toLowerCase().includes(countryFilter.toLowerCase()))return false;
     }
     if(fromDate&&c.call_date<fromDate)return false;
@@ -8304,40 +8322,67 @@ function renderProgressReport(){
     return true;
   });
 
-  // Group by counsellor + date — "date-wise reports of counsellors",
-  // one row per person per day they actually made calls.
-  const groups={};
-  filtered.forEach(c=>{
-    const key=`${c.counsellor||'(unknown)'}|${c.call_date||'(no date)'}`;
-    if(!groups[key])groups[key]={counsellor:c.counsellor||'(unknown)',date:c.call_date,calls:0,totalMins:0,leads:new Set(),notes:[]};
-    groups[key].calls++;
-    groups[key].totalMins+=(c.duration_mins||0);
-    if(c.lead_label)groups[key].leads.add(c.lead_label);
-    if(c.notes&&c.notes.trim())groups[key].notes.push(c.notes.trim());
-  });
-
-  const rows=Object.values(groups).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||a.counsellor.localeCompare(b.counsellor));
-
-  if(!rows.length){
-    tbody.innerHTML='';
+  if(!filtered.length){
+    cardsEl.innerHTML='';
     if(emptyEl)emptyEl.style.display='block';
     return;
   }
   if(emptyEl)emptyEl.style.display='none';
 
-  tbody.innerHTML=rows.map(r=>{
-    const dt=r.date?new Date(r.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
-    const notesPreview=r.notes.length
-      ? `<span title="${esc(r.notes.join(' | '))}" style="cursor:help;text-decoration:underline dotted">${r.notes.length} note${r.notes.length!==1?'s':''}</span>`
-      : '<span style="color:var(--ink3)">—</span>';
-    return `<tr>
-      <td style="font-size:12px">${dt}</td>
-      <td style="font-size:12px;font-weight:600">${esc(r.counsellor)}</td>
-      <td style="font-size:12px">${r.calls}</td>
-      <td style="font-size:12px">${r.totalMins} min</td>
-      <td style="font-size:12px">${r.leads.size}</td>
-      <td style="font-size:12px">${notesPreview}</td>
-    </tr>`;
+  // Two levels of grouping: by counsellor alone (the card summary, and
+  // what the click-to-expand reveals), and within that, by date (the
+  // day-by-day rows shown once expanded) — built in one pass over the
+  // already-filtered logs rather than querying twice.
+  const byCounsellor={};
+  filtered.forEach(c=>{
+    const name=c.counsellor||'(unknown)';
+    if(!byCounsellor[name])byCounsellor[name]={counsellor:name,calls:0,totalMins:0,leads:new Set(),byDate:{}};
+    const g=byCounsellor[name];
+    g.calls++;
+    g.totalMins+=(c.duration_mins||0);
+    if(c.lead_label)g.leads.add(c.lead_label);
+
+    const dateKey=c.call_date||'(no date)';
+    if(!g.byDate[dateKey])g.byDate[dateKey]={date:dateKey,calls:0,totalMins:0,leads:new Set(),notes:[]};
+    g.byDate[dateKey].calls++;
+    g.byDate[dateKey].totalMins+=(c.duration_mins||0);
+    if(c.lead_label)g.byDate[dateKey].leads.add(c.lead_label);
+    if(c.notes&&c.notes.trim())g.byDate[dateKey].notes.push(c.notes.trim());
+  });
+
+  const summaries=Object.values(byCounsellor).sort((a,b)=>b.calls-a.calls);
+  const maxCalls=Math.max(...summaries.map(s=>s.calls),1);
+
+  cardsEl.innerHTML=summaries.map((s,idx)=>{
+    const barPct=Math.round((s.calls/maxCalls)*100);
+    const dayRows=Object.values(s.byDate).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    const detailHtml=dayRows.map(d=>{
+      const dt=d.date!=='(no date)'?new Date(d.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—';
+      const notesPreview=d.notes.length?esc(d.notes.join(' · ')):'';
+      return `<div class="pr-day-row">
+        <span class="pr-day-date">${dt}</span>
+        <span class="pr-day-metric">${d.calls} call${d.calls!==1?'s':''}</span>
+        <span class="pr-day-metric">${d.totalMins} min</span>
+        <span class="pr-day-metric">${d.leads.size} lead${d.leads.size!==1?'s':''}</span>
+        <span class="pr-day-notes" title="${notesPreview}">${notesPreview||'—'}</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="pr-card" data-idx="${idx}">
+      <div class="pr-card-head" onclick="togglePrCard(${idx})">
+        <div class="pr-avatar">${ini(s.counsellor)}</div>
+        <div style="flex:0 0 140px">
+          <div style="font-weight:700;font-size:14px;color:var(--ink)">${esc(s.counsellor)}</div>
+          <div style="font-size:11px;color:var(--ink3)">${dayRows.length} active day${dayRows.length!==1?'s':''}</div>
+        </div>
+        <div class="pr-stat"><b>${s.calls}</b><span>Calls</span></div>
+        <div class="pr-stat"><b>${s.totalMins}</b><span>Minutes</span></div>
+        <div class="pr-stat"><b>${s.leads.size}</b><span>Leads</span></div>
+        <div class="pr-bar-track"><div class="pr-bar-fill" style="width:${barPct}%"></div></div>
+        <i class="ti ti-chevron-down pr-chevron"></i>
+      </div>
+      <div class="pr-detail"><div class="pr-detail-inner">${detailHtml}</div></div>
+    </div>`;
   }).join('');
 }
 async function submitDailyUpdate(){

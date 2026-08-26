@@ -1980,6 +1980,18 @@ What would you like help with today?</div>
         <div id="ld-office-badge"></div>
         <div id="ld-counsel-badge"></div>
       </div>
+
+      <!-- Proactive AI insight — same idea as the existing "Ask AI"
+           button, but shown automatically the instant the lead opens,
+           no click or navigating away required. Cached per lead per
+           day (same pattern as the Dashboard's daily briefing) so
+           reopening the same lead repeatedly doesn't re-trigger the AI
+           call every time. -->
+      <div style="background:var(--cream);border:1px solid var(--pine3);border-radius:var(--rl);padding:14px 20px;margin-bottom:24px;display:flex;align-items:center;gap:14px">
+        <i class="ti ti-bulb" style="font-size:20px;color:var(--pine3);flex-shrink:0"></i>
+        <div style="flex:1;font-size:13px;color:var(--ink);line-height:1.5" id="ld-ai-insight">Thinking about the best next step…</div>
+        <button onclick="loadLeadInsight(true)" title="Regenerate" style="background:none;border:none;color:var(--pine3);cursor:pointer;font-size:15px;flex-shrink:0"><i class="ti ti-refresh" id="ld-insight-refresh-icon"></i></button>
+      </div>
       <!-- 3 columns -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
         <!-- Col 1: Contact + Program -->
@@ -4349,6 +4361,7 @@ function openLeadDetail(id){
   const l=leads.find(x=>x.id===id);if(!l)return;
   curId=id;
   logViewIfNeeded(id);
+  loadLeadInsight(false);
   document.getElementById('ld-id').textContent=l.lead_id||id.substring(0,8);
   document.getElementById('ld-captured-at').textContent=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'Unknown';
   document.getElementById('ld-name').textContent=l.name;
@@ -4439,6 +4452,63 @@ async function updateStatusFS(){
 function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
 async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
+
+// Proactive per-lead insight — same underlying idea as aiAboutLeadFS
+// above (asking the AI for a recommended next action), but shown
+// automatically the instant a lead opens rather than requiring a click
+// that navigates away to a different screen entirely. Cached per lead
+// per day in localStorage, same pattern as loadDailyBriefing, so
+// reopening the same lead repeatedly during a day doesn't repeatedly
+// call the AI for something that hasn't meaningfully changed.
+async function loadLeadInsight(force){
+  if(!curId)return;
+  const l=leads.find(x=>x.id===curId);
+  if(!l)return;
+  const textEl=document.getElementById('ld-ai-insight');
+  const iconEl=document.getElementById('ld-insight-refresh-icon');
+  if(!textEl)return;
+
+  const todayStr=new Date().toISOString().substring(0,10);
+  const cacheKey='s4p_lead_insight_'+l.id+'_'+todayStr;
+
+  if(!force){
+    const cached=localStorage.getItem(cacheKey);
+    if(cached){textEl.textContent=cached;return;}
+  }
+
+  textEl.textContent='Thinking about the best next step…';
+  if(iconEl)iconEl.style.animation='spin 1s linear infinite';
+
+  try{
+    const daysSinceUpdate=l.updated_at?Math.floor((Date.now()-new Date(l.updated_at).getTime())/86400000):null;
+    const summary=[
+      `Name: ${l.name}`,
+      `Status: ${l.status}`,
+      `Program/Destination: ${l.program||'—'} → ${l.destination||'—'}`,
+      `Days since last update: ${daysSinceUpdate!==null?daysSinceUpdate:'unknown'}`,
+      `Next follow-up set: ${l.next_followup||'none set'}`,
+      `Visa deadline: ${l.visa_deadline||'none'}`,
+      `Notes: ${l.notes||'none'}`,
+    ].join('\n');
+
+    const r=await fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/ai-proxy',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:100,
+        system:'You are a study-abroad consultancy assistant. Given one lead\'s details, respond with exactly ONE short, specific, actionable sentence recommending what the counsellor should do next with THIS lead. No greeting, no preamble, no bullet points — just the one sentence. If the lead looks genuinely on track with nothing urgent, say so plainly instead of inventing a task.',
+        messages:[{role:'user',content:summary}]
+      })
+    });
+    const d=await r.json();
+    const insight=d.content?.[0]?.text?.trim()||'Could not generate an insight right now.';
+    textEl.textContent=insight;
+    localStorage.setItem(cacheKey,insight);
+  }catch(e){
+    textEl.textContent='Could not generate an insight right now.';
+  }finally{
+    if(iconEl)iconEl.style.animation='';
+  }
+}
 function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
 // FS versions of doc/reminder/uni functions
 async function loadDocsFS(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-doc-list');if(!el)return;if(error||!data||!data.length){el.innerHTML=emptyState('📋','No checklist yet.');return;}await loadDocFilesFor(data.map(d=>d.id));el.innerHTML=data.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',true)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',true)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiryFS('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}

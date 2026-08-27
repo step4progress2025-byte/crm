@@ -452,6 +452,11 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .rpt-lb-medal{width:26px;font-size:16px;text-align:center;flex-shrink:0}
 .rpt-lb-bar-t{flex:1;background:var(--cream);border-radius:99px;height:8px;overflow:hidden}
 .rpt-lb-bar-f{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--pine3),var(--gold))}
+@keyframes confettiFall{
+  0%{transform:translateY(0) rotate(0deg);opacity:1}
+  100%{transform:translateY(100vh) rotate(540deg);opacity:0}
+}
+.board-card:active{cursor:grabbing!important}
 </style>
 </head>
 <body>
@@ -790,7 +795,13 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <input type="date" id="ls-from" onchange="renderLeads()">
             <input type="date" id="ls-to" onchange="renderLeads()">
           </div>
-          <div class="clabel" id="lcount"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div class="clabel" id="lcount" style="margin-bottom:0"></div>
+            <div style="display:flex;gap:4px;background:var(--cream);border-radius:8px;padding:3px">
+              <button id="leads-view-list-btn" onclick="switchLeadsView('list')" style="border:none;background:var(--paper);box-shadow:var(--sh);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;color:var(--ink)"><i class="ti ti-list"></i> List</button>
+              <button id="leads-view-board-btn" onclick="switchLeadsView('board')" style="border:none;background:transparent;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;color:var(--ink3)"><i class="ti ti-layout-kanban"></i> Board</button>
+            </div>
+          </div>
           <div id="bulk-actions-bar" style="display:none;align-items:center;gap:10px;background:var(--pine);color:#fff;padding:10px 16px;border-radius:var(--r);margin-bottom:10px;flex-wrap:wrap">
             <span id="bulk-count-label" style="font-size:13px;font-weight:600;margin-right:6px"></span>
             <select id="bulk-status-select" style="font-size:12px;padding:5px 8px;border-radius:6px;border:none"></select>
@@ -818,6 +829,19 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               </tr></thead>
               <tbody id="lead-tbody"></tbody>
             </table>
+          </div>
+
+          <!-- Board (Kanban) view — an alternate VIEW of the exact same
+               filtered lead set the list view shows, never a second
+               data source. Columns are built dynamically from whatever
+               statuses actually have leads right now, ordered to
+               roughly follow the real pipeline, rather than a fixed
+               30-column layout that would be unusable. Dragging a card
+               to a different column updates that lead's real status
+               via the same underlying update call the list view's
+               status dropdown already uses. -->
+          <div id="leads-board-view" style="display:none;overflow-x:auto;padding-bottom:12px">
+            <div id="leads-board-columns" style="display:flex;gap:14px;align-items:flex-start;min-height:200px"></div>
           </div>
         </div>
       </section>
@@ -4271,6 +4295,144 @@ function renderSubTeamDetail(){
     </tr>`;
   }).join('');
 }
+// ── Leads Board (Kanban) view ────────────────────────────────────
+// Deliberately reuses opsViewScopedLeads + the exact same filter
+// predicate renderLeads() already applies, so switching between List
+// and Board never shows a different SET of leads — only a different
+// arrangement of the identical result.
+function getCurrentFilteredLeads(){
+  const scopedLeads=opsViewScopedLeads(leads);
+  const q=(document.getElementById('ls-q').value||'').toLowerCase();
+  const sf=document.getElementById('ls-st').value;
+  const pf=document.getElementById('ls-pr').value;
+  const df=document.getElementById('ls-de').value;
+  const cf=document.getElementById('ls-country').value;
+  const srcf=document.getElementById('ls-src').value;
+  const counsel=document.getElementById('ls-counsel').value;
+  const from=document.getElementById('ls-from').value;
+  const to=document.getElementById('ls-to').value;
+  const assignF=document.getElementById('ls-assign').value;
+  return scopedLeads.filter(l=>(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!srcf||l.source===srcf)&&(!counsel||l.counsellor===counsel)&&(!from||l.created_at.substring(0,10)>=from)&&(!to||l.created_at.substring(0,10)<=to)&&(!assignF||(assignF==='assigned'?!!l.counsellor:!l.counsellor))&&smartLeadMatch(l,q));
+}
+function switchLeadsView(mode){
+  localStorage.setItem('s4p_leads_view',mode);
+  const listBtn=document.getElementById('leads-view-list-btn');
+  const boardBtn=document.getElementById('leads-view-board-btn');
+  document.getElementById('leads-table-wrap').style.display=mode==='list'?'block':'none';
+  document.getElementById('leads-top-scroll').style.display=mode==='list'?'block':'none';
+  document.getElementById('leads-board-view').style.display=mode==='board'?'block':'none';
+  if(listBtn){listBtn.style.background=mode==='list'?'var(--paper)':'transparent';listBtn.style.boxShadow=mode==='list'?'var(--sh)':'none';listBtn.style.color=mode==='list'?'var(--ink)':'var(--ink3)';}
+  if(boardBtn){boardBtn.style.background=mode==='board'?'var(--paper)':'transparent';boardBtn.style.boxShadow=mode==='board'?'var(--sh)':'none';boardBtn.style.color=mode==='board'?'var(--ink)':'var(--ink3)';}
+  if(mode==='board')renderLeadsBoard();
+}
+function renderLeadsBoard(){
+  const colsEl=document.getElementById('leads-board-columns');
+  if(!colsEl)return;
+  const f=getCurrentFilteredLeads();
+
+  const byStatus={};
+  f.forEach(l=>{
+    const s=l.status||'(no status)';
+    if(!byStatus[s])byStatus[s]=[];
+    byStatus[s].push(l);
+  });
+  // Order columns to roughly follow the real pipeline (using the same
+  // STATUSES array order everywhere else in the app), rather than
+  // whatever order they happened to appear in the data.
+  const orderedStatuses=STATUSES.filter(s=>byStatus[s]&&byStatus[s].length);
+
+  if(!orderedStatuses.length){
+    colsEl.innerHTML=emptyState('🔍','No leads match your filters.');
+    return;
+  }
+
+  colsEl.innerHTML=orderedStatuses.map(status=>{
+    const colLeads=byStatus[status];
+    const ss=SS[status]||{bg:'#eee',tx:'#555'};
+    const cardsHtml=colLeads.map(l=>{
+      const scoreR=computeLeadScore(l);
+      const scoreBadge=scoreR.terminal?'':`<span style="font-size:10px">${scoreR.tier.emoji}</span>`;
+      return `<div class="board-card" draggable="true" ondragstart="onBoardCardDragStart(event,'${l.id}')" onclick="openLeadDetail('${l.id}')"
+        style="background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:grab;box-shadow:var(--sh)">
+        <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px">${esc(l.name||'(no name)')} ${scoreBadge}</div>
+        <div style="font-size:11px;color:var(--ink3)">${esc(l.program||'—')} → ${esc(l.destination||'—')}</div>
+        <div style="font-size:10px;color:var(--ink3);margin-top:4px">${esc(l.counsellor||'Unassigned')}</div>
+      </div>`;
+    }).join('');
+    return `<div class="board-column" data-status="${esc(status)}"
+      ondragover="onBoardColumnDragOver(event)" ondragleave="onBoardColumnDragLeave(event)" ondrop="onBoardColumnDrop(event,'${esc(status)}')"
+      style="flex:0 0 260px;background:var(--cream);border-radius:10px;padding:10px;transition:background .15s ease">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:0 2px">
+        <span class="pill" style="background:${ss.bg};color:${ss.tx};font-size:11px">${esc(status)}</span>
+        <span style="font-size:11px;color:var(--ink3);margin-left:auto">${colLeads.length}</span>
+      </div>
+      ${cardsHtml}
+    </div>`;
+  }).join('');
+}
+let boardDraggedLeadId=null;
+function onBoardCardDragStart(e,leadId){
+  boardDraggedLeadId=leadId;
+  e.dataTransfer.effectAllowed='move';
+}
+function onBoardColumnDragOver(e){
+  e.preventDefault();
+  e.currentTarget.style.background='var(--pine-l,#E8F2ED)';
+}
+function onBoardColumnDragLeave(e){
+  e.currentTarget.style.background='var(--cream)';
+}
+async function onBoardColumnDrop(e,newStatus){
+  e.preventDefault();
+  e.currentTarget.style.background='var(--cream)';
+  const leadId=boardDraggedLeadId;
+  boardDraggedLeadId=null;
+  if(!leadId)return;
+  const l=leads.find(x=>x.id===leadId);
+  if(!l||l.status===newStatus)return; // dropped back in the same column — nothing to do
+  await updateLeadStatusDirect(leadId,newStatus);
+  renderLeadsBoard();
+}
+
+// Reusable single-lead status update, callable with any lead id — not
+// just curId the way updateStatusFS (used by the lead detail modal) is.
+// Mirrors the same permission check, DB update, local state sync, and
+// activity logging updateStatusFS already does, so a status change
+// behaves identically regardless of whether it came from the detail
+// modal or a Board drag-and-drop.
+async function updateLeadStatusDirect(leadId,newStatus){
+  const l=leads.find(x=>x.id===leadId);
+  if(!l)return;
+  if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}
+  const oldStatus=l.status;
+  setSyncing();
+  const{error}=await sb.from('leads').update({status:newStatus}).eq('id',leadId);
+  if(error){setSyncErr();toast('Error updating status.');return;}
+  l.status=newStatus;
+  setSynced();renderDash();badges();toast('Status → '+newStatus);
+  autoCreateTaskForStatus(l,newStatus);
+  if(oldStatus&&oldStatus!==newStatus)logActivity(leadId,'status_change',`Status: ${oldStatus} → ${newStatus}`);
+  if(LEAD_SCORE_TERMINAL[newStatus]&&LEAD_SCORE_TERMINAL[newStatus].label==='✅ Won')celebrateConversion();
+}
+
+// Small, safe, purely-decorative celebration — fires only on a genuine
+// conversion (reuses the exact same "Won" status list as the scoring
+// system, so this can never drift out of sync with what scoring
+// considers a win). No new data, no new state — just confetti.
+function celebrateConversion(){
+  const container=document.createElement('div');
+  container.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:5000;overflow:hidden';
+  const colors=['#1E5F4E','#E08429','#3B82F6','#DC2626','#B8860B'];
+  for(let i=0;i<40;i++){
+    const piece=document.createElement('div');
+    const size=6+Math.random()*6;
+    piece.style.cssText=`position:absolute;top:-20px;left:${Math.random()*100}%;width:${size}px;height:${size}px;background:${colors[i%colors.length]};opacity:${.7+Math.random()*.3};border-radius:${Math.random()>.5?'50%':'2px'};animation:confettiFall ${1.8+Math.random()*1.2}s ease-in forwards;animation-delay:${Math.random()*.3}s;transform:rotate(${Math.random()*360}deg)`;
+    container.appendChild(piece);
+  }
+  document.body.appendChild(container);
+  setTimeout(()=>container.remove(),3500);
+}
+
 function renderLeads(){
   document.getElementById('leads-loading').style.display='none';
   // Bulk actions (select, reassign, status/priority change) are Management
@@ -4349,6 +4511,11 @@ function renderLeads(){
     const inner=document.getElementById('leads-top-scroll-inner');
     if(wrap&&inner)inner.style.width=wrap.scrollWidth+'px';
   },0);
+  // If Board view is currently the visible one, keep it in sync with
+  // whatever filter just changed — otherwise it would silently show a
+  // stale arrangement until the user manually clicks back into it.
+  const boardView=document.getElementById('leads-board-view');
+  if(boardView&&boardView.style.display==='block')renderLeadsBoard();
 }
 
 // ── TOOL LEADS (filtered view of the same Leads table) ────────────

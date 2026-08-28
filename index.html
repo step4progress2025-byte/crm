@@ -1387,7 +1387,12 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div class="es-title">No call logs yet</div>
           <div class="es-sub">Once you log a call above, it'll show up here.</div>
         </div>
-        <div id="cl-content" style="display:none">
+        <div id="cl-toggle-header" style="display:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--cream);border-radius:10px;margin-bottom:0" onclick="toggleCallLogList()">
+          <i class="ti ti-chevron-right" id="cl-toggle-icon" style="font-size:14px;color:var(--pine3);transition:transform .2s ease"></i>
+          <span style="font-weight:600;font-size:13.5px;color:var(--ink)">📋 View call logs</span>
+          <span id="cl-toggle-count" style="font-size:12px;color:var(--ink3)"></span>
+        </div>
+        <div id="cl-content" style="display:none;margin-top:14px">
           <div class="card" style="margin-bottom:14px">
             <div class="fg">
               <div class="ff"><label>Counsellor</label><select id="cl-filter-counsellor" onchange="renderCallLogs()"><option value="All">All counsellors</option></select></div>
@@ -8805,17 +8810,51 @@ function toggleRecordingPlayer(callLogId){
   const player=document.getElementById('rec-player-'+callLogId);
   if(!player)return;
   const isHidden=player.style.display==='none';
+
+  // Close any other currently-open player first — only one recording
+  // should ever be expanded at a time, rather than the list slowly
+  // filling up with every player anyone has ever clicked.
+  document.querySelectorAll('[id^="rec-player-"]').forEach(p=>{
+    if(p!==player&&p.style.display!=='none'){
+      p.style.display='none';
+      const otherAudio=p.querySelector('audio');
+      if(otherAudio)otherAudio.pause();
+    }
+  });
+
   player.style.display=isHidden?'block':'none';
   if(!isHidden){
     const audioEl=player.querySelector('audio');
     if(audioEl)audioEl.pause();
   }
 }
+function toggleCallLogList(){
+  const content=document.getElementById('cl-content');
+  const icon=document.getElementById('cl-toggle-icon');
+  const isHidden=content.style.display==='none';
+  content.style.display=isHidden?'block':'none';
+  if(icon)icon.style.transform=isHidden?'rotate(90deg)':'rotate(0deg)';
+}
 function renderCallLogs(){
   const empty=document.getElementById('cl-empty'), content=document.getElementById('cl-content');
+  const toggleHeader=document.getElementById('cl-toggle-header');
   if(!empty||!content)return;
-  if(!callLogs.length){empty.style.display='flex';content.style.display='none';return;}
-  empty.style.display='none';content.style.display='block';
+  if(!callLogs.length){
+    empty.style.display='flex';
+    if(toggleHeader)toggleHeader.style.display='none';
+    content.style.display='none';
+    return;
+  }
+  empty.style.display='none';
+  // The list itself stays closed by default — only the toggle header
+  // shows right away. Whether content is currently open or closed is
+  // left exactly as it already was (so re-filtering doesn't force it
+  // shut on someone who deliberately opened it), rather than always
+  // resetting to open the way it used to unconditionally.
+  if(toggleHeader){
+    toggleHeader.style.display='flex';
+    document.getElementById('cl-toggle-count').textContent=`(${callLogs.length})`;
+  }
 
   // Same three filters as Progress Report, applied here to the raw
   // per-call log list rather than the date-grouped summary — lets an

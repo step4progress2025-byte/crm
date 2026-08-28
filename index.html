@@ -548,6 +548,46 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
        Only ever shown to Super Admin accounts, once per session
        (stored in sessionStorage, so it re-asks on a genuinely new
        login but not on every page refresh within the same session). -->
+  <!-- Duplicate-lead warning — replaces a native browser confirm()
+       with something that actually matches the rest of the app,
+       rather than a jarring default dialog box. Purely a UI upgrade
+       around the EXISTING findDuplicateLead() logic, which already
+       worked correctly — nothing about the matching itself changes. -->
+  <div id="dup-lead-modal" style="display:none;position:fixed;inset:0;background:rgba(28,23,18,.6);z-index:2200;align-items:center;justify-content:center">
+    <div style="background:var(--paper);border-radius:14px;padding:26px 28px;max-width:440px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,.35)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <span style="font-size:24px">⚠️</span>
+        <span style="font-size:16px;font-weight:700;color:var(--ink)">Possible duplicate lead</span>
+      </div>
+      <p style="font-size:13.5px;color:var(--ink3);line-height:1.6;margin-bottom:14px">A lead matching this name or mobile number already exists:</p>
+      <div id="dup-lead-details" style="background:var(--cream);border-radius:10px;padding:12px 14px;margin-bottom:18px;font-size:13px;color:var(--ink)"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="closeDupLeadModal(false)" class="btn" style="background:var(--paper);border:1px solid var(--line)">Cancel — look it up instead</button>
+        <button onclick="closeDupLeadModal(true)" class="btn btn-p">Add anyway</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk email compose — reuses the exact same send-email Edge
+       Function already used for status-change notifications
+       elsewhere, just looping it across every selected lead that has
+       an email address on file. -->
+  <div id="bulk-email-modal" style="display:none;position:fixed;inset:0;background:rgba(28,23,18,.6);z-index:2200;align-items:center;justify-content:center">
+    <div style="background:var(--paper);border-radius:14px;padding:26px 28px;max-width:480px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,.35)">
+      <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:4px">✉️ Email selected leads</div>
+      <div id="bulk-email-count" style="font-size:12.5px;color:var(--ink3);margin-bottom:16px"></div>
+      <label style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em">Subject</label>
+      <input type="text" id="bulk-email-subject" placeholder="e.g. Quick update on your application" style="width:100%;margin:6px 0 14px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13.5px">
+      <label style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em">Message</label>
+      <textarea id="bulk-email-message" rows="6" placeholder="Hi {{name}}, ..." style="width:100%;margin:6px 0 6px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;font-family:var(--font-b);resize:vertical"></textarea>
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:16px;font-style:italic">Use {{name}} anywhere in your message — it'll be replaced with each lead's actual name.</div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="closeBulkEmailModal()" class="btn" style="background:var(--paper);border:1px solid var(--line)">Cancel</button>
+        <button onclick="sendBulkEmail()" class="btn btn-p" id="bulk-email-send-btn"><i class="ti ti-send"></i>Send</button>
+      </div>
+    </div>
+  </div>
+
   <div id="ops-view-modal" style="display:none;position:fixed;inset:0;background:rgba(28,23,18,.6);z-index:2000;align-items:center;justify-content:center">
     <div style="background:#fff;border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)">
       <div style="font-size:38px;margin-bottom:8px">🌍</div>
@@ -771,6 +811,13 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <button class="btn btn-p" onclick="openAddLead()"><i class="ti ti-plus"></i>Add lead</button>
         </div>
         <div id="leads-content" style="display:none">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <select id="saved-views-select" onchange="applySavedView(this.value)" style="font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--line);color:var(--ink3)">
+              <option value="">📁 My saved views</option>
+            </select>
+            <button class="btn" onclick="saveCurrentView()" style="font-size:12px;padding:5px 10px"><i class="ti ti-device-floppy"></i>Save current filters</button>
+            <button class="btn" onclick="deleteSavedView()" id="delete-saved-view-btn" style="font-size:12px;padding:5px 10px;display:none;color:var(--rose)"><i class="ti ti-trash"></i>Delete this view</button>
+          </div>
           <div class="fbar">
             <input type="text" id="ls-q" placeholder="Search name, phone, program, notes, destination, status…" oninput="renderLeads()">
             <select id="ls-st" onchange="renderLeads()">
@@ -810,6 +857,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="btn" onclick="bulkChangePriority()" style="font-size:12px;padding:5px 10px">Apply priority</button>
             <select id="bulk-counsellor-select" style="font-size:12px;padding:5px 8px;border-radius:6px;border:none"></select>
             <button class="btn" onclick="bulkReassignCounsellor()" style="font-size:12px;padding:5px 10px">Reassign</button>
+            <button class="btn" onclick="openBulkEmailModal()" style="font-size:12px;padding:5px 10px"><i class="ti ti-mail"></i>Email selected</button>
             <button class="btn" onclick="bulkDeleteLeads()" style="font-size:12px;padding:5px 10px;background:var(--rose);color:#fff;border:none"><i class="ti ti-trash"></i>Delete selected</button>
             <button class="btn" onclick="exportSelectedLeads()" style="font-size:12px;padding:5px 10px;margin-left:auto"><i class="ti ti-download"></i>Export selected</button>
             <button class="btn" onclick="clearBulkSelection()" style="font-size:12px;padding:5px 10px;background:rgba(255,255,255,.15);color:#fff;border:none">Clear selection</button>
@@ -3855,7 +3903,7 @@ function nav(id,btn){
   // "My Daily Update", so the blanket block is gone. Call Recorder and
   // Activity Monitor stay restricted via initProductivity() below instead,
   // sub-tab by sub-tab, rather than blocking the whole screen.
-  if(id==='leads'){loadDocumentsCountByLead().then(renderLeads);renderLeads();setTimeout(applyRoleUI,500);}
+  if(id==='leads'){loadDocumentsCountByLead().then(renderLeads);renderLeads();populateSavedViewsDropdown();setTimeout(applyRoleUI,500);}
   if(id==='toolleads'){renderToolLeads();}
   if(id==='events'){loadEvents();}
   if(id==='import'){populateExportCounsellorDropdown();const note=document.getElementById('import-counsellor-note');if(note)note.style.display=(myRole==='Counsellor'&&!isSuperAdmin)?'block':'none';}
@@ -5310,6 +5358,22 @@ function closeModal(id){document.getElementById(id).classList.remove('open');if(
 function normalizePhone(raw){
   return (raw||'').replace(/\D/g,'').slice(-10);
 }
+let dupLeadResolve=null;
+function showDupLeadModal(dup){
+  return new Promise(resolve=>{
+    dupLeadResolve=resolve;
+    document.getElementById('dup-lead-details').innerHTML=`
+      <div style="font-weight:700;margin-bottom:4px">${esc(dup.name||'—')} (${esc(dup.lead_id||dup.id.substring(0,8))})</div>
+      <div>Mobile: ${esc(dup.mobile||'—')}</div>
+      <div>Status: ${esc(dup.status||'—')}</div>`;
+    document.getElementById('dup-lead-modal').style.display='flex';
+  });
+}
+function closeDupLeadModal(proceed){
+  document.getElementById('dup-lead-modal').style.display='none';
+  if(dupLeadResolve)dupLeadResolve(proceed);
+  dupLeadResolve=null;
+}
 function findDuplicateLead(name,mobile,email,excludeId){
   const normMobile=normalizePhone(mobile);
   const normName=(name||'').trim().toLowerCase();
@@ -5349,7 +5413,7 @@ async function saveLead(){
     const mobileFullCheck=!mobileNumValCheck?'':(mobileNumValCheck.startsWith('+')?mobileNumValCheck:`${mobileCodeValCheck} ${mobileNumValCheck}`);
     const dup=findDuplicateLead(name,mobileFullCheck,document.getElementById('f-email').value,null);
     if(dup){
-      const proceed=confirm(`Possible duplicate found:\n\n${dup.name} (${dup.lead_id||dup.id.substring(0,8)})\nMobile: ${dup.mobile||'—'}\nStatus: ${dup.status}\n\nAdd this as a new lead anyway? Click Cancel to stop and look up the existing one instead.`);
+      const proceed=await showDupLeadModal(dup);
       if(!proceed)return;
     }
   }
@@ -5920,15 +5984,52 @@ function renderManagementAndOperationsTeams(team){
     if(!shouldShowDomestic){
       domesticEl.innerHTML='';
     } else {
-    const domestic=(team||[]).filter(t=>t.team_category==='Domestic');
-    domesticEl.innerHTML=`<div class="card" style="margin-bottom:16px">
-      <div class="card-h"><span class="card-t">🇬🇧 Domestic Operations</span><span style="font-size:11px;color:var(--ink3)">${domestic.length} member${domestic.length!==1?'s':''} — UK-internal only, never receives leads automatically</span></div>
-      <div class="team-grid">${domestic.length?domestic.map(t=>`<div class="tcard">
+    const domesticAll=(team||[]).filter(t=>t.team_category==='Domestic');
+    // Split into the same shape as International — Management,
+    // Operations (Application/Visa/SOP), and Counsellors — rather than
+    // one flat undifferentiated list. Domestic has no multi-country
+    // "by office" breakdown the way International does (it's all one
+    // UK-internal group), so Counsellors gets its own section here
+    // instead of a per-office split.
+    const mgmtRoles=['Manager','Admin','Director'];
+    const dMgmt=domesticAll.filter(t=>mgmtRoles.includes(t.role));
+    const dCounsellors=domesticAll.filter(t=>t.role==='Counsellor');
+    const dOpsRoles=[['Application Team','📝'],['Visa Team','🛂'],['SOP Team','✍️']];
+
+    const tcard=(t)=>`<div class="tcard">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
-        </div>`).join(''):emptyState('🇬🇧','No Domestic team members yet.')}</div>
-    </div>`;
+        </div>`;
+
+    const opsCols=dOpsRoles.map(([roleName,icon])=>{
+      const members=domesticAll.filter(t=>t.role===roleName);
+      return `<div style="flex:1;min-width:220px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line)">
+          <span style="font-weight:600;font-size:13px;color:var(--pine)">${icon} ${roleName}</span>
+          <span style="font-size:10px;color:var(--ink3);font-style:italic">${members.length} member${members.length!==1?'s':''}</span>
+        </div>
+        ${members.length?members.map(t=>`<div class="tcard" style="margin-bottom:8px">
+            <div class="tcard-av">${ini(t.full_name||t.email)}</div>
+            <div style="flex:1;min-width:0"><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-email">${esc(t.email||'')}</div></div>
+            ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          </div>`).join(''):`<div style="font-size:11px;color:var(--ink3);font-style:italic">No one assigned yet.</div>`}
+      </div>`;
+    }).join('');
+
+    domesticEl.innerHTML=`
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-h"><span class="card-t">🇬🇧 Domestic — Management</span><span style="font-size:11px;color:var(--ink3)">${dMgmt.length} member${dMgmt.length!==1?'s':''} — UK-internal only</span></div>
+        <div class="team-grid">${dMgmt.length?dMgmt.map(tcard).join(''):emptyState('🏛️','No Domestic Management members yet.')}</div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-h"><span class="card-t">🇬🇧 Domestic — Operations</span><span style="font-size:11px;color:var(--ink3)">Application, Visa & SOP — UK-internal only</span></div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap">${opsCols}</div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-h"><span class="card-t">🇬🇧 Domestic — Counsellors</span><span style="font-size:11px;color:var(--ink3)">${dCounsellors.length} member${dCounsellors.length!==1?'s':''} — never receives leads automatically</span></div>
+        <div class="team-grid">${dCounsellors.length?dCounsellors.map(tcard).join(''):emptyState('🇬🇧','No Domestic Counsellors yet.')}</div>
+      </div>`;
     }
   }
 
@@ -6199,6 +6300,59 @@ function populateExportCounsellorDropdown(){
 // ══ BULK ACTIONS on the Leads table ═══════════════════════════════
 // Select multiple rows, apply one action to all of them at once —
 // pure frontend + a single batch Supabase call, zero new infrastructure.
+// ── Saved filter views ──────────────────────────────────────────
+// Stored in localStorage, per-browser — a convenience layer on top of
+// filters that already exist, not new data that needs a database
+// table, RLS, or a migration. Each saved view is just a snapshot of
+// what these exact filter fields held at save time.
+const SAVED_VIEWS_KEY='s4p_saved_lead_views';
+const SAVED_VIEW_FIELDS=['ls-q','ls-st','ls-pr','ls-country','ls-de','ls-src','ls-counsel','ls-assign','ls-from','ls-to'];
+function getSavedViews(){
+  try{return JSON.parse(localStorage.getItem(SAVED_VIEWS_KEY)||'[]');}catch(e){return[];}
+}
+function populateSavedViewsDropdown(){
+  const sel=document.getElementById('saved-views-select');
+  if(!sel)return;
+  const views=getSavedViews();
+  sel.innerHTML='<option value="">📁 My saved views</option>'+views.map((v,i)=>`<option value="${i}">${esc(v.name)}</option>`).join('');
+}
+function saveCurrentView(){
+  const name=prompt('Name this view (e.g. "My hot India leads this week"):');
+  if(!name||!name.trim())return;
+  const filters={};
+  SAVED_VIEW_FIELDS.forEach(id=>{const el=document.getElementById(id);if(el)filters[id]=el.value;});
+  const views=getSavedViews();
+  views.push({name:name.trim(),filters});
+  localStorage.setItem(SAVED_VIEWS_KEY,JSON.stringify(views));
+  populateSavedViewsDropdown();
+  document.getElementById('saved-views-select').value=views.length-1;
+  document.getElementById('delete-saved-view-btn').style.display='inline-flex';
+  toast('View saved.');
+}
+function applySavedView(indexStr){
+  const deleteBtn=document.getElementById('delete-saved-view-btn');
+  if(indexStr===''){deleteBtn.style.display='none';return;}
+  const views=getSavedViews();
+  const view=views[parseInt(indexStr,10)];
+  if(!view)return;
+  SAVED_VIEW_FIELDS.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&view.filters[id]!==undefined)el.value=view.filters[id];
+  });
+  deleteBtn.style.display='inline-flex';
+  renderLeads();
+}
+function deleteSavedView(){
+  const sel=document.getElementById('saved-views-select');
+  const idx=parseInt(sel.value,10);
+  if(isNaN(idx))return;
+  const views=getSavedViews();
+  const removed=views.splice(idx,1);
+  localStorage.setItem(SAVED_VIEWS_KEY,JSON.stringify(views));
+  populateSavedViewsDropdown();
+  document.getElementById('delete-saved-view-btn').style.display='none';
+  toast(`Deleted "${removed[0]?.name||'view'}".`);
+}
 function getSelectedLeadIds(){
   return Array.from(document.querySelectorAll('.bulk-lead-checkbox:checked')).map(cb=>cb.dataset.id);
 }
@@ -6228,6 +6382,48 @@ function clearBulkSelection(){
   document.querySelectorAll('.bulk-lead-checkbox').forEach(cb=>cb.checked=false);
   document.getElementById('bulk-select-all').checked=false;
   document.getElementById('bulk-actions-bar').style.display='none';
+}
+function openBulkEmailModal(){
+  const ids=getSelectedLeadIds();
+  if(!ids.length)return;
+  const withEmail=ids.filter(id=>{const l=leads.find(x=>x.id===id);return l&&l.email;});
+  document.getElementById('bulk-email-count').textContent=
+    `${withEmail.length} of ${ids.length} selected lead${ids.length!==1?'s':''} ${withEmail.length!==1?'have':'has'} an email on file — only those will receive this.`;
+  document.getElementById('bulk-email-subject').value='';
+  document.getElementById('bulk-email-message').value='';
+  document.getElementById('bulk-email-modal').style.display='flex';
+}
+function closeBulkEmailModal(){
+  document.getElementById('bulk-email-modal').style.display='none';
+}
+async function sendBulkEmail(){
+  const ids=getSelectedLeadIds();
+  const subject=document.getElementById('bulk-email-subject').value.trim();
+  const message=document.getElementById('bulk-email-message').value.trim();
+  if(!subject||!message){toast('Please fill in both a subject and a message.');return;}
+  const targets=ids.map(id=>leads.find(x=>x.id===id)).filter(l=>l&&l.email);
+  if(!targets.length){toast('None of the selected leads have an email on file.');return;}
+
+  const btn=document.getElementById('bulk-email-send-btn');
+  btn.disabled=true;btn.textContent='Sending…';
+
+  let sent=0,failed=0;
+  for(const l of targets){
+    const personalizedMessage=message.replace(/\{\{name\}\}/g,l.name||'there');
+    try{
+      const r=await fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/send-email',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2cmVnbHFycmRud3R0amFzdndnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDM3NzEsImV4cCI6MjA5NTQxOTc3MX0.I_X-ljOPlLFYLeWz6hE15nL8z0MPqmsSdWcgwole8GE'},
+        body:JSON.stringify({to:l.email,name:l.name,subject,message:personalizedMessage})
+      });
+      if(r.ok){sent++;logActivity(l.id,'email_sent',`Bulk email: "${subject}"`);}
+      else failed++;
+    }catch(e){failed++;}
+  }
+
+  btn.disabled=false;btn.textContent='Send';
+  closeBulkEmailModal();
+  toast(`✉️ Sent to ${sent} lead${sent!==1?'s':''}${failed?`, ${failed} failed`:''}.`);
 }
 async function bulkChangeStatus(){
   const ids=getSelectedLeadIds();
@@ -8605,6 +8801,16 @@ function populateCallLogFilters(){
   const names=[...new Set((teamList||[]).filter(t=>t.role==='Counsellor').map(t=>t.full_name).filter(Boolean))].sort();
   sel.innerHTML='<option value="All">All counsellors</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
 }
+function toggleRecordingPlayer(callLogId){
+  const player=document.getElementById('rec-player-'+callLogId);
+  if(!player)return;
+  const isHidden=player.style.display==='none';
+  player.style.display=isHidden?'block':'none';
+  if(!isHidden){
+    const audioEl=player.querySelector('audio');
+    if(audioEl)audioEl.pause();
+  }
+}
 function renderCallLogs(){
   const empty=document.getElementById('cl-empty'), content=document.getElementById('cl-content');
   if(!empty||!content)return;
@@ -8636,7 +8842,7 @@ function renderCallLogs(){
   const statusColors={initiated:['var(--gold-l)','var(--gold)'],ringing:['var(--gold-l)','var(--gold)'],'in-progress':['var(--sage-l)','#0F6E56'],completed:['var(--sage-l)','#0F6E56'],'no-answer':['#FCEBEB','#A32D2D'],failed:['#FCEBEB','#A32D2D'],busy:['#FCEBEB','#A32D2D']};
   document.getElementById('cl-tbody').innerHTML=filteredLogs.map(c=>{
     const dt=c.call_date?new Date(c.call_date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
-    const rec=c.recording_url?`<a href="${c.recording_url}" target="_blank" style="color:var(--pine);font-weight:600;text-decoration:underline">▶ Play</a>`:c.auto_recorded?'<span style="color:var(--ink3);font-style:italic">Recording processing…</span>':'<span style="color:var(--ink3);font-style:italic">No recording</span>';
+    const rec=c.recording_url?`<button onclick="toggleRecordingPlayer('${c.id}')" style="background:none;border:1px solid var(--pine3);color:var(--pine3);border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer">▶ Play</button><div id="rec-player-${c.id}" style="display:none;margin-top:6px"><audio controls preload="none" style="height:32px;max-width:220px"><source src="${c.recording_url}"></audio></div>`:c.auto_recorded?'<span style="color:var(--ink3);font-style:italic">Recording processing…</span>':'<span style="color:var(--ink3);font-style:italic">No recording</span>';
     const outcomeBadge=c.outcome
       ? `<span class="pill" style="background:var(--sky-l);color:var(--sky)">${esc(c.outcome)}</span>`
       : c.call_status

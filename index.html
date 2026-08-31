@@ -1264,8 +1264,14 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <div id="rpt-subteam-breakdown"></div>
             </div>
             <div class="rpt-card" style="grid-column:1/-1">
-              <div class="rpt-card-h">🕐 Activity log — who did what, and when (this report's scope)</div>
-              <div id="rpt-activity-log" style="max-height:400px;overflow-y:auto"></div>
+              <div class="rpt-card-h" style="cursor:pointer;display:flex;align-items:center;gap:8px" onclick="toggleActivityLogSection()">
+                <i class="ti ti-chevron-right" id="rpt-activity-toggle-icon" style="font-size:14px;transition:transform .2s ease"></i>
+                🕐 Activity log — who did what, and when (this report's scope)
+                <span id="rpt-activity-count" style="font-weight:400;font-size:12px;color:var(--ink3);margin-left:auto"></span>
+              </div>
+              <div id="rpt-activity-log-wrap" style="display:none;margin-top:10px">
+                <div id="rpt-activity-log" style="max-height:400px;overflow-y:auto"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -6892,11 +6898,19 @@ async function saveReportNotes(){
 // exactly the same country/date range already selected for this report.
 // This is the audit-trail view: who captured each lead, who it was
 // assigned/reassigned to, and every status change, all in one place.
+function toggleActivityLogSection(){
+  const wrap=document.getElementById('rpt-activity-log-wrap');
+  const icon=document.getElementById('rpt-activity-toggle-icon');
+  const isHidden=wrap.style.display==='none';
+  wrap.style.display=isHidden?'block':'none';
+  if(icon)icon.style.transform=isHidden?'rotate(90deg)':'rotate(0deg)';
+}
 async function loadGlobalActivityLog(scopedLeads,start,end){
   const el=document.getElementById('rpt-activity-log');
+  const countEl=document.getElementById('rpt-activity-count');
   if(!el)return;
   const leadIds=scopedLeads.map(l=>l.id);
-  if(!leadIds.length){el.innerHTML=emptyState('📭','No leads in this scope.');return;}
+  if(!leadIds.length){el.innerHTML=emptyState('📭','No leads in this scope.');if(countEl)countEl.textContent='0 entries';return;}
   const leadNameById={};scopedLeads.forEach(l=>{leadNameById[l.id]=l.name;});
   const{data,error}=await sb.from('activity_log').select('*')
     .in('lead_id',leadIds)
@@ -6905,7 +6919,8 @@ async function loadGlobalActivityLog(scopedLeads,start,end){
     .order('created_at',{ascending:false})
     .limit(200);
   if(error){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load activity log — has activity_log been created in Supabase yet?</div>';return;}
-  if(!data||!data.length){el.innerHTML=emptyState('🕐','No activity recorded in this period yet.');return;}
+  if(!data||!data.length){el.innerHTML=emptyState('🕐','No activity recorded in this period yet.');if(countEl)countEl.textContent='0 entries';return;}
+  if(countEl)countEl.textContent=`${data.length} entr${data.length!==1?'ies':'y'}`;
   const icons={created:'✨',imported:'📥',status_change:'🔄',reassigned:'👤',field_edit:'✏️',viewed:'👁️'};
   el.innerHTML=data.map(e=>`<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;cursor:pointer" onclick="openLeadDetail('${e.lead_id}')">
     <span>${icons[e.event_type]||'•'}</span>

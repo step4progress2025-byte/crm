@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Step4Progress — Application Status</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #FDFBF7;
+    color: #2A2620;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.06);
+    padding: 32px 28px;
+    max-width: 420px;
+    width: 100%;
+  }
+  .brand { font-size: 13px; font-weight: 700; color: #1E5F4E; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .brand-sub { font-size: 12px; color: #8a8378; margin-bottom: 24px; }
+  h1 { font-size: 22px; color: #1E5F4E; margin-bottom: 4px; }
+  .program-line { font-size: 14px; color: #6B6459; margin-bottom: 20px; }
+  .status-pill {
+    display: inline-block;
+    background: #EEEDFE;
+    color: #1E5F4E;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+  }
+  .updated { font-size: 12px; color: #8a8378; margin-bottom: 24px; }
+  .footer-note { font-size: 12px; color: #8a8378; line-height: 1.6; border-top: 1px solid #EEE7D9; padding-top: 16px; }
+  .loading, .error { text-align: center; color: #6B6459; font-size: 14px; padding: 20px 0; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">Step4Progress</div>
+    <div class="brand-sub">Application Status</div>
+    <div id="content">
+      <div class="loading">Loading…</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // No login required by design — this page exists specifically so
+    // a parent/sponsor can check status without an account. Security
+    // lives entirely in the narrow get_sponsor_view() database
+    // function this calls: it can only ever return name, program,
+    // destination, status, and updated_at — nothing else on the lead,
+    // regardless of what a wrong or guessed token is tried against it.
+    const sb = supabase.createClient(
+      'https://jvreglqrrdnwttjasvwg.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2cmVnbHFycmRud3R0amFzdndnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDM3NzEsImV4cCI6MjA5NTQxOTc3MX0.I_X-ljOPlLFYLeWz6hE15nL8z0MPqmsSdWcgwole8GE'
+    );
+
+    async function loadStatus() {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      const content = document.getElementById('content');
+
+      if (!token) {
+        content.innerHTML = '<div class="error">No status link provided. Please check the link you were sent.</div>';
+        return;
+      }
+
+      const { data, error } = await sb.rpc('get_sponsor_view', { p_token: token });
+
+      if (error || !data || !data.length) {
+        content.innerHTML = '<div class="error">This link isn\'t valid, or the status page is no longer available. Please contact your Step4Progress counsellor directly.</div>';
+        return;
+      }
+
+      const row = data[0];
+      const updatedDate = row.updated_at
+        ? new Date(row.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+        : 'Not yet available';
+
+      content.innerHTML = `
+        <h1>${escapeHtml(row.name || 'Applicant')}</h1>
+        <div class="program-line">${escapeHtml(row.program || '')}${row.destination ? ' → ' + escapeHtml(row.destination) : ''}</div>
+        <div class="status-pill">${escapeHtml(row.status || 'Status pending')}</div>
+        <div class="updated">Last updated: ${updatedDate}</div>
+        <div class="footer-note">This page shows only current application status. For any questions, please reach out directly to your Step4Progress counsellor.</div>
+      `;
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    loadStatus();
+  </script>
+</body>
+</html>

@@ -559,6 +559,23 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
        scratch every time. Personalizes with the lead's real details
        before opening WhatsApp — the template is a starting point, not
        a rigid script. -->
+  <!-- Activity Timeline — shared modal, used for BOTH the Lead
+       Journey (everything that happened to one lead) and the
+       Counsellor Activity view (everything one staff member has
+       done). Same underlying activity_log table and rendering, just
+       filtered differently — not two separate features to keep in
+       sync, one feature with two entry points. -->
+  <div id="activity-timeline-modal" style="display:none;position:fixed;inset:0;background:rgba(28,23,18,.6);z-index:2300;align-items:center;justify-content:center">
+    <div style="background:var(--paper);border-radius:14px;padding:22px 24px;max-width:520px;width:92%;max-height:80vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.35)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span id="activity-timeline-title" style="font-size:16px;font-weight:700;color:var(--ink)"></span>
+        <span onclick="document.getElementById('activity-timeline-modal').style.display='none'" style="cursor:pointer;color:var(--ink3);font-size:20px;line-height:1">×</span>
+      </div>
+      <div id="activity-timeline-list"></div>
+      <div id="activity-timeline-empty" style="display:none;color:var(--ink3);font-style:italic;font-size:13px;padding:20px 0;text-align:center">No activity recorded yet.</div>
+    </div>
+  </div>
+
   <div id="msg-template-modal" style="display:none;position:fixed;inset:0;background:rgba(28,23,18,.6);z-index:2200;align-items:center;justify-content:center">
     <div style="background:var(--paper);border-radius:14px;padding:22px 24px;max-width:480px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,.35);max-height:80vh;overflow-y:auto">
       <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:14px">💬 Choose a message template</div>
@@ -686,6 +703,18 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <section id="sc-home" class="screen active">
         <div id="home-greeting" style="font-family:var(--font-h);font-size:26px;font-weight:600;color:var(--ink);margin-bottom:4px"></div>
         <div style="font-size:13px;color:var(--ink3);margin-bottom:20px" id="home-date"></div>
+
+        <!-- Today's Priorities — computed directly from real lead
+             data (overdue follow-up dates, hot leads gone quiet,
+             pending documents), not from manually-created task
+             records the way "My Tasks" below is. Nothing needs to be
+             created for something to show up here — if the
+             underlying lead data suggests it needs attention, it just
+             appears. -->
+        <div class="card" id="priorities-widget" style="margin-bottom:18px;border-left:3px solid var(--gold)">
+          <div class="card-h"><span class="card-t">🎯 Today's Priorities</span></div>
+          <div id="priorities-list"></div>
+        </div>
 
         <div class="card" style="margin-bottom:18px">
           <div class="card-h"><span class="card-t">🌍 World Clock</span></div>
@@ -2124,6 +2153,7 @@ What would you like help with today?</div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-ai" onclick="aiAboutLeadFS()"><i class="ti ti-robot"></i>Ask AI</button>
         <button class="btn" style="background:var(--sky-l);color:var(--sky);border-color:var(--sky)" onclick="generateSponsorLink()"><i class="ti ti-link"></i>Sponsor Link</button>
+        <button class="btn" style="background:var(--cream);color:var(--ink2);border-color:var(--line)" onclick="openLeadJourney(curId)"><i class="ti ti-route"></i>Journey</button>
         <button class="btn" style="background:var(--gold-l);color:var(--gold);border-color:var(--gold)" onclick="openCourseFinderForLead(curId)"><i class="ti ti-search"></i>Find Courses</button>
         <button class="btn" style="background:#25D366;color:#fff;border-color:#25D366" onclick="waFollowUpFS()"><i class="ti ti-brand-whatsapp"></i></button>
         <button class="btn" id="btn-edit-lead-fs" onclick="editLeadFS()"><i class="ti ti-edit"></i>Edit</button>
@@ -3523,6 +3553,7 @@ async function onLogin(user){
   loadDashReminders();
   loadExpiryAlerts();
   loadMyTasks();
+  loadTodaysPriorities();
   await loadNotificationSettings();
   checkUnreadDmCount();
   startNotificationEngine();
@@ -4835,6 +4866,57 @@ async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===cur
 // than exposing anything about the leads table directly — the token
 // generated here can only ever return the 5 safe fields defined in
 // that function, never notes or anything else on the lead.
+// Shared rendering for both entry points below — same icon mapping
+// already established in the Reports tab's global activity log, kept
+// consistent rather than inventing a second version.
+const ACTIVITY_ICONS={created:'✨',imported:'📥',status_change:'🔄',reassigned:'👤',field_edit:'✏️',viewed:'👁️',email_sent:'✉️'};
+function renderActivityTimelineEntries(data,showLeadName){
+  const listEl=document.getElementById('activity-timeline-list');
+  const emptyEl=document.getElementById('activity-timeline-empty');
+  if(!data||!data.length){
+    listEl.innerHTML='';
+    emptyEl.style.display='block';
+    return;
+  }
+  emptyEl.style.display='none';
+  listEl.innerHTML=data.map(e=>{
+    const dt=new Date(e.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    return `<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;${showLeadName?'cursor:pointer':''}" ${showLeadName?`onclick="closeActivityTimelineAndOpenLead('${e.lead_id}')"`:''}>
+      <span style="font-size:16px;flex-shrink:0">${ACTIVITY_ICONS[e.event_type]||'•'}</span>
+      <div style="flex:1">
+        <div style="color:var(--ink)">${esc(e.detail||e.event_type)}</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:2px">${e.actor_name?esc(e.actor_name)+' · ':''}${dt}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function closeActivityTimelineAndOpenLead(leadId){
+  document.getElementById('activity-timeline-modal').style.display='none';
+  openLeadDetail(leadId);
+}
+// Lead Journey — everything that's happened to ONE specific lead,
+// chronologically, in one place instead of scattered across tabs.
+async function openLeadJourney(leadId){
+  const l=leads.find(x=>x.id===leadId);
+  if(!l)return;
+  document.getElementById('activity-timeline-title').textContent=`🛤️ ${l.name}'s Journey`;
+  document.getElementById('activity-timeline-modal').style.display='flex';
+  document.getElementById('activity-timeline-list').innerHTML='<div style="text-align:center;color:var(--ink3);font-size:13px;padding:20px 0">Loading…</div>';
+  const{data,error}=await sb.from('activity_log').select('*').eq('lead_id',leadId).order('created_at',{ascending:false}).limit(100);
+  if(error){document.getElementById('activity-timeline-list').innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load activity.</div>';return;}
+  renderActivityTimelineEntries(data,false);
+}
+// Counsellor Activity — everything ONE staff member has done, across
+// every lead they've touched. Same underlying table and rendering as
+// Lead Journey, filtered by actor_name instead of lead_id.
+async function openCounsellorJourney(counsellorName){
+  document.getElementById('activity-timeline-title').textContent=`👤 ${counsellorName}'s Activity`;
+  document.getElementById('activity-timeline-modal').style.display='flex';
+  document.getElementById('activity-timeline-list').innerHTML='<div style="text-align:center;color:var(--ink3);font-size:13px;padding:20px 0">Loading…</div>';
+  const{data,error}=await sb.from('activity_log').select('*').eq('actor_name',counsellorName).order('created_at',{ascending:false}).limit(100);
+  if(error){document.getElementById('activity-timeline-list').innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load activity.</div>';return;}
+  renderActivityTimelineEntries(data,true);
+}
 async function generateSponsorLink(){
   if(!curId)return;
   const{data,error}=await sb.rpc('generate_sponsor_view_token',{p_lead_id:curId});
@@ -6103,6 +6185,7 @@ function renderManagementAndOperationsTeams(team){
     const tcard=(t)=>`<div class="tcard">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+          <button onclick="openCounsellorJourney('${esc((t.full_name||'').replace(/'/g,"\\'"))}')" title="View activity" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-route"></i></button>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`;
 
@@ -6217,6 +6300,7 @@ function renderTeam(team){
             ${unavail?`<div style="font-size:10px;color:var(--rose);font-weight:600;margin-top:3px">🚫 Unavailable until ${new Date(unavail.to_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${unavail.reason?' — '+esc(unavail.reason):''}</div>`:''}
           </div>
           ${canManage?`<button onclick="openUnavailabilityModal('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Mark unavailable" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-calendar-off"></i></button>`:''}
+          <button onclick="openCounsellorJourney('${esc((t.full_name||'').replace(/'/g,"\\'"))}')" title="View activity" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-route"></i></button>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc(t.full_name||t.email||'').replace(/'/g,"\'")}')" title="Remove team member" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`;
         }).join('')
@@ -8193,6 +8277,56 @@ async function loadExpiryAlerts(){
 // Counsellors see only tasks assigned to them. Manager/Admin see every
 // open task within their own country (via the linked lead). Super Admin
 // sees everything. Overdue tasks always sort first.
+// ── Today's Priorities ────────────────────────────────────────────
+// Computed directly from real lead data — overdue follow-ups, hot
+// leads that have gone quiet, and documents-pending leads with
+// nothing uploaded yet. Deliberately different from "My Tasks" below:
+// nothing needs to be created for something to show up here, it's a
+// live read of what the data itself suggests needs attention right
+// now. Reuses the exact same "Hot" tier and "Won/Closed" definitions
+// lead scoring already established, so this can't quietly disagree
+// with what that system already says about a lead.
+function loadTodaysPriorities(){
+  const el=document.getElementById('priorities-list');
+  if(!el||!leads)return;
+
+  let scoped=(myRole==='Counsellor'&&!isSuperAdmin)
+    ? leads.filter(l=>l.counsellor===myName)
+    : opsViewScopedLeads(leads);
+  scoped=scoped.filter(l=>!LEAD_SCORE_TERMINAL[l.status]); // already-resolved leads aren't a priority
+
+  const today=new Date().toISOString().substring(0,10);
+  const items=[];
+
+  scoped.filter(l=>l.next_followup&&l.next_followup<today).forEach(l=>{
+    items.push({icon:'📅',urgency:0,text:`Follow-up overdue: ${l.name}`,sub:`Was due ${new Date(l.next_followup).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`,leadId:l.id});
+  });
+
+  scoped.forEach(l=>{
+    const scoreResult=computeLeadScore(l);
+    if(!scoreResult.terminal&&scoreResult.tier.label==='Hot'&&l.updated_at){
+      const daysSince=(Date.now()-new Date(l.updated_at).getTime())/86400000;
+      if(daysSince>2)items.push({icon:'🔥',urgency:1,text:`Hot lead gone quiet: ${l.name}`,sub:`No activity for ${Math.floor(daysSince)} days`,leadId:l.id});
+    }
+  });
+
+  scoped.filter(l=>l.status==='Documents Pending'&&!documentsUploadedLeadIds.has(l.id)).forEach(l=>{
+    items.push({icon:'📄',urgency:2,text:`Documents needed: ${l.name}`,sub:'Nothing uploaded yet',leadId:l.id});
+  });
+
+  items.sort((a,b)=>a.urgency-b.urgency);
+
+  if(!items.length){el.innerHTML=emptyState('🎉','Nothing urgent right now — great work staying on top of things.');return;}
+
+  el.innerHTML=items.slice(0,6).map(it=>`
+    <div onclick="openLeadDetail('${it.leadId}')" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer">
+      <span style="font-size:17px">${it.icon}</span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:var(--ink)">${esc(it.text)}</div>
+        <div style="font-size:11.5px;color:var(--ink3)">${esc(it.sub)}</div>
+      </div>
+    </div>`).join('');
+}
 async function loadMyTasks(){
   const el=document.getElementById('my-tasks-list');
   if(!el)return;

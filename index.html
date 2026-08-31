@@ -553,6 +553,20 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
        rather than a jarring default dialog box. Purely a UI upgrade
        around the EXISTING findDuplicateLead() logic, which already
        worked correctly — nothing about the matching itself changes. -->
+  <!-- Message Templates — canned starting points for common
+       communications (document reminder, visa update, missed-call
+       catch-up) so staff aren't retyping the same message from
+       scratch every time. Personalizes with the lead's real details
+       before opening WhatsApp — the template is a starting point, not
+       a rigid script. -->
+  <div id="msg-template-modal" style="display:none;position:fixed;inset:0;background:rgba(28,23,18,.6);z-index:2200;align-items:center;justify-content:center">
+    <div style="background:var(--paper);border-radius:14px;padding:22px 24px;max-width:480px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,.35);max-height:80vh;overflow-y:auto">
+      <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:14px">💬 Choose a message template</div>
+      <div id="msg-template-list"></div>
+      <button onclick="document.getElementById('msg-template-modal').style.display='none'" class="btn" style="width:100%;margin-top:8px;background:var(--paper);border:1px solid var(--line)">Cancel</button>
+    </div>
+  </div>
+
   <div id="dup-lead-modal" style="display:none;position:fixed;inset:0;background:rgba(28,23,18,.6);z-index:2200;align-items:center;justify-content:center">
     <div style="background:var(--paper);border-radius:14px;padding:26px 28px;max-width:440px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,.35)">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
@@ -802,6 +816,22 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <div class="card-h"><span class="card-t">🎉 This Week's Wins</span><span style="font-size:11px;color:var(--ink3)" id="weekly-wins-range"></span></div>
               <div id="weekly-wins-list"></div>
               <div id="weekly-wins-empty" style="display:none;color:var(--ink3);font-style:italic;font-size:13px;padding:8px 0">No conversions logged yet this week.</div>
+            </div>
+            <!-- Data-Health Digest — flags leads with no email, no
+                 phone, or untouched for 30+ days, so nothing quietly
+                 falls through the cracks from simple oversight.
+                 Collapsed by default, same pattern as Activity Log and
+                 Call Recorder — a count is genuinely useful to see at
+                 a glance, the full list only when you want to act on it. -->
+            <div class="card" style="margin-top:16px" id="data-health-card">
+              <div class="card-h" style="cursor:pointer" onclick="toggleDataHealthSection()">
+                <span class="card-t"><i class="ti ti-chevron-right" id="data-health-toggle-icon" style="font-size:13px;transition:transform .2s ease;display:inline-block;margin-right:4px"></i>🩺 Data Health</span>
+                <span style="font-size:11px;color:var(--ink3)" id="data-health-count"></span>
+              </div>
+              <div id="data-health-wrap" style="display:none;margin-top:10px">
+                <div id="data-health-list"></div>
+                <div id="data-health-empty" style="display:none;color:var(--ink3);font-style:italic;font-size:13px;padding:8px 0">Everything looks healthy — no missing info or stale leads found.</div>
+              </div>
             </div>
           </div>
         </div>
@@ -2093,6 +2123,7 @@ What would you like help with today?</div>
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-ai" onclick="aiAboutLeadFS()"><i class="ti ti-robot"></i>Ask AI</button>
+        <button class="btn" style="background:var(--sky-l);color:var(--sky);border-color:var(--sky)" onclick="generateSponsorLink()"><i class="ti ti-link"></i>Sponsor Link</button>
         <button class="btn" style="background:var(--gold-l);color:var(--gold);border-color:var(--gold)" onclick="openCourseFinderForLead(curId)"><i class="ti ti-search"></i>Find Courses</button>
         <button class="btn" style="background:#25D366;color:#fff;border-color:#25D366" onclick="waFollowUpFS()"><i class="ti ti-brand-whatsapp"></i></button>
         <button class="btn" id="btn-edit-lead-fs" onclick="editLeadFS()"><i class="ti ti-edit"></i>Edit</button>
@@ -4098,6 +4129,7 @@ function renderDash(){
   renderCountryBreakdown();
   renderGlobalReachMap();
   renderWeeklyWins();
+  renderDataHealth();
   renderCounsellorRank();
   renderRecentLeads();
   renderLatestPayments();
@@ -4797,6 +4829,23 @@ async function updateStatusFS(){
 }
 function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
 async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
+// Sponsor/customer view — a shareable, no-login status page for
+// whoever's paying but isn't the student or staff (a parent, a
+// sponsor). Deliberately calls a narrow security-definer RPC rather
+// than exposing anything about the leads table directly — the token
+// generated here can only ever return the 5 safe fields defined in
+// that function, never notes or anything else on the lead.
+async function generateSponsorLink(){
+  if(!curId)return;
+  const{data,error}=await sb.rpc('generate_sponsor_view_token',{p_lead_id:curId});
+  if(error){toast('Error generating link: '+error.message);return;}
+  const url=`https://step4progress2025-byte.github.io/crm/sponsor.html?token=${data}`;
+  navigator.clipboard.writeText(url).then(()=>{
+    toast('Sponsor link copied — send it directly to the parent/sponsor.');
+  }).catch(()=>{
+    prompt('Copy this link to share with the parent/sponsor:',url);
+  });
+}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 
 // Proactive per-lead insight — same underlying idea as aiAboutLeadFS
@@ -4855,7 +4904,37 @@ async function loadLeadInsight(force){
     if(iconEl)iconEl.style.animation='';
   }
 }
-function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
+// Message Templates — each a function of the lead, so the message is
+// genuinely personalized (name, program, destination) rather than a
+// generic string with blanks left unfilled.
+const MESSAGE_TEMPLATES=[
+  {label:'General Follow-up',build:l=>`Hi ${l.name}, this is a follow-up from Step4Progress regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`},
+  {label:'Document Reminder',build:l=>`Hi ${l.name}, just a quick reminder that we're still waiting on a few documents to move your ${l.program||'application'} forward. Could you please share them at your earliest convenience? Happy to help if you have any questions about what's needed.`},
+  {label:'Visa Update',build:l=>`Hi ${l.name}, wanted to give you an update on your visa process for ${l.destination||'your destination'}. Your current status is: ${l.status}. Let us know if you have any questions — we're here to help.`},
+  {label:"Haven't Heard From You",build:l=>`Hi ${l.name}, we haven't heard from you in a little while regarding your ${l.program||'enquiry'}. We just wanted to check in and see how things are going, and if there's anything we can help with to keep things moving.`},
+  {label:'Missed Call Catch-up',build:l=>`Hi ${l.name}, sorry we missed you on the phone earlier! This is Step4Progress calling about your ${l.program||'enquiry'}. Could you let us know a good time to call back, or feel free to reach out whenever works for you.`},
+  {label:'Application Status Update',build:l=>`Hi ${l.name}, quick update on your application — you're currently at the "${l.status}" stage. We'll keep you posted as things progress. Let us know if you have any questions in the meantime!`},
+];
+function waFollowUpFS(){
+  if(!curId)return;
+  const l=leads.find(x=>x.id===curId);
+  if(!l)return;
+  const listEl=document.getElementById('msg-template-list');
+  listEl.innerHTML=MESSAGE_TEMPLATES.map((t,i)=>`
+    <div onclick="sendTemplatedMessage(${i})" style="padding:12px 14px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:background .15s ease" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
+      <div style="font-weight:600;font-size:13.5px;color:var(--ink)">${esc(t.label)}</div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:3px;line-height:1.4">${esc(t.build(l)).substring(0,90)}…</div>
+    </div>`).join('');
+  document.getElementById('msg-template-modal').style.display='flex';
+}
+function sendTemplatedMessage(templateIndex){
+  if(!curId)return;
+  const l=leads.find(x=>x.id===curId);
+  if(!l)return;
+  const message=MESSAGE_TEMPLATES[templateIndex].build(l);
+  document.getElementById('msg-template-modal').style.display='none';
+  window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${encodeURIComponent(message)}`,'_blank');
+}
 // FS versions of doc/reminder/uni functions
 async function loadDocsFS(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-doc-list');if(!el)return;if(error||!data||!data.length){el.innerHTML=emptyState('📋','No checklist yet.');return;}await loadDocFilesFor(data.map(d=>d.id));el.innerHTML=data.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',true)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',true)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiryFS('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
 function setDocExpiryFS(id,current){openQuickInput('Set expiry date','Expiry date','date',current,(val)=>{sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocsFS(curId);toast('Expiry date updated.');});});}
@@ -6898,6 +6977,55 @@ async function saveReportNotes(){
 // exactly the same country/date range already selected for this report.
 // This is the audit-trail view: who captured each lead, who it was
 // assigned/reassigned to, and every status change, all in one place.
+function toggleDataHealthSection(){
+  const wrap=document.getElementById('data-health-wrap');
+  const icon=document.getElementById('data-health-toggle-icon');
+  const isHidden=wrap.style.display==='none';
+  wrap.style.display=isHidden?'block':'none';
+  if(icon)icon.style.transform=isHidden?'rotate(90deg)':'rotate(0deg)';
+}
+// Excludes already-resolved leads (Won/Closed, per the same
+// LEAD_SCORE_TERMINAL definition used everywhere else) — a stale or
+// incomplete lead that's already Enrolled or already marked Not
+// Interested isn't a data-health problem worth flagging, it's simply
+// finished.
+function renderDataHealth(){
+  const countEl=document.getElementById('data-health-count');
+  const listEl=document.getElementById('data-health-list');
+  const emptyEl=document.getElementById('data-health-empty');
+  if(!countEl)return;
+
+  const scoped=opsViewScopedLeads(leads).filter(l=>!LEAD_SCORE_TERMINAL[l.status]);
+  const staleThreshold=new Date(); staleThreshold.setDate(staleThreshold.getDate()-30);
+
+  const noEmail=scoped.filter(l=>!l.email);
+  const noPhone=scoped.filter(l=>!l.mobile);
+  const stale=scoped.filter(l=>l.updated_at&&new Date(l.updated_at)<staleThreshold);
+
+  const totalIssues=noEmail.length+noPhone.length+stale.length;
+  countEl.textContent=totalIssues?`${totalIssues} issue${totalIssues!==1?'s':''} to review`:'All clear';
+
+  if(!totalIssues){
+    listEl.innerHTML='';
+    emptyEl.style.display='block';
+    return;
+  }
+  emptyEl.style.display='none';
+
+  const section=(title,icon,items)=>{
+    if(!items.length)return'';
+    return `<div style="margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:6px">${icon} ${title} (${items.length})</div>
+      ${items.slice(0,8).map(l=>`<div onclick="openLeadDetail('${l.id}')" style="padding:6px 0;font-size:12.5px;color:var(--ink);cursor:pointer;border-bottom:1px dashed var(--line)">${esc(l.name||'—')} <span style="color:var(--ink3)">· ${esc(l.counsellor||'Unassigned')}</span></div>`).join('')}
+      ${items.length>8?`<div style="font-size:11px;color:var(--ink3);padding-top:4px">+${items.length-8} more</div>`:''}
+    </div>`;
+  };
+
+  listEl.innerHTML=
+    section('No email on file','✉️',noEmail)+
+    section('No phone number on file','📵',noPhone)+
+    section('Untouched for 30+ days','🕸️',stale);
+}
 function toggleActivityLogSection(){
   const wrap=document.getElementById('rpt-activity-log-wrap');
   const icon=document.getElementById('rpt-activity-toggle-icon');

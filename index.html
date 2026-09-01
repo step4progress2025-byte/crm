@@ -121,6 +121,14 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
   .fg{grid-template-columns:1fr!important}
   .modal{width:94vw!important;padding:var(--sp-4)!important}
   .card{padding:var(--sp-4)!important}
+  /* Kanban board on mobile — native HTML5 drag-and-drop (what the
+     board also supports for mouse users) genuinely doesn't work via
+     touch on most mobile browsers. Rather than just explaining that
+     limitation, every card now has a real, working <select> dropdown
+     for changing status — functions identically on touch and desktop,
+     so mobile use isn't actually degraded here, just uses a different
+     control than the mouse-drag path. */
+  .board-column{flex:0 0 220px!important}
 }
 @media (max-width:420px){
   .rpt-hero-grid,[style*="grid-template-columns:repeat(4"],[style*="grid-template-columns:repeat(2"]{grid-template-columns:1fr!important}
@@ -565,6 +573,26 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
        done). Same underlying activity_log table and rendering, just
        filtered differently — not two separate features to keep in
        sync, one feature with two entry points. -->
+  <!-- Schedule Meeting — genuine per-lead calendar booking, distinct
+       from the company-wide Events list. Feeds the "My Meetings"
+       widget on the Home screen for the assigned counsellor. -->
+  <div id="schedule-meeting-modal" style="display:none;position:fixed;inset:0;background:rgba(28,23,18,.6);z-index:2300;align-items:center;justify-content:center">
+    <div style="background:var(--paper);border-radius:14px;padding:24px 26px;max-width:420px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,.35)">
+      <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:14px">📅 Schedule a Meeting</div>
+      <div class="ff"><label>Title</label><input type="text" id="meeting-title" placeholder="e.g. Visa document review call"></div>
+      <div style="display:flex;gap:10px">
+        <div class="ff" style="flex:1"><label>Date</label><input type="date" id="meeting-date"></div>
+        <div class="ff" style="flex:1"><label>Time</label><input type="time" id="meeting-time"></div>
+      </div>
+      <div class="ff"><label>Duration (minutes)</label><input type="number" id="meeting-duration" value="30" min="5" step="5"></div>
+      <div class="ff"><label>Notes (optional)</label><textarea id="meeting-notes" rows="2" placeholder="What's this call about?"></textarea></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+        <button onclick="document.getElementById('schedule-meeting-modal').style.display='none'" class="btn" style="background:var(--paper);border:1px solid var(--line)">Cancel</button>
+        <button onclick="saveScheduledMeeting()" class="btn btn-p"><i class="ti ti-check"></i>Schedule</button>
+      </div>
+    </div>
+  </div>
+
   <div id="activity-timeline-modal" style="display:none;position:fixed;inset:0;background:rgba(28,23,18,.6);z-index:2300;align-items:center;justify-content:center">
     <div style="background:var(--paper);border-radius:14px;padding:22px 24px;max-width:520px;width:92%;max-height:80vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.35)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
@@ -714,6 +742,16 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div class="card" id="priorities-widget" style="margin-bottom:18px;border-left:3px solid var(--gold)">
           <div class="card-h"><span class="card-t">🎯 Today's Priorities</span></div>
           <div id="priorities-list"></div>
+        </div>
+
+        <!-- My Meetings — genuinely different from Today's Priorities:
+             these are things the counsellor deliberately scheduled
+             themselves, not something the data pattern suggests needs
+             attention. Hidden entirely when there's nothing upcoming,
+             rather than showing an empty card. -->
+        <div class="card" id="my-meetings-card" style="display:none;margin-bottom:18px;border-left:3px solid var(--sage)">
+          <div class="card-h"><span class="card-t">📅 My Upcoming Meetings</span></div>
+          <div id="my-meetings-list"></div>
         </div>
 
         <div class="card" style="margin-bottom:18px">
@@ -2154,6 +2192,7 @@ What would you like help with today?</div>
         <button class="btn btn-ai" onclick="aiAboutLeadFS()"><i class="ti ti-robot"></i>Ask AI</button>
         <button class="btn" style="background:var(--sky-l);color:var(--sky);border-color:var(--sky)" onclick="generateSponsorLink()"><i class="ti ti-link"></i>Sponsor Link</button>
         <button class="btn" style="background:var(--cream);color:var(--ink2);border-color:var(--line)" onclick="openLeadJourney(curId)"><i class="ti ti-route"></i>Journey</button>
+        <button class="btn" style="background:var(--sage-l);color:var(--sage);border-color:var(--sage)" onclick="openScheduleMeetingModal(curId)"><i class="ti ti-calendar-plus"></i>Schedule Meeting</button>
         <button class="btn" style="background:var(--gold-l);color:var(--gold);border-color:var(--gold)" onclick="openCourseFinderForLead(curId)"><i class="ti ti-search"></i>Find Courses</button>
         <button class="btn" style="background:#25D366;color:#fff;border-color:#25D366" onclick="waFollowUpFS()"><i class="ti ti-brand-whatsapp"></i></button>
         <button class="btn" id="btn-edit-lead-fs" onclick="editLeadFS()"><i class="ti ti-edit"></i>Edit</button>
@@ -3554,6 +3593,7 @@ async function onLogin(user){
   loadExpiryAlerts();
   loadMyTasks();
   loadTodaysPriorities();
+  loadMyMeetings();
   await loadNotificationSettings();
   checkUnreadDmCount();
   startNotificationEngine();
@@ -4488,11 +4528,24 @@ function renderLeadsBoard(){
     const cardsHtml=colLeads.map(l=>{
       const scoreR=computeLeadScore(l);
       const scoreBadge=scoreR.terminal?'':`<span style="font-size:10px">${scoreR.tier.emoji}</span>`;
-      return `<div class="board-card" draggable="true" ondragstart="onBoardCardDragStart(event,'${l.id}')" onclick="openLeadDetail('${l.id}')"
+      // A native <select> for changing status — works identically on
+      // touch and desktop, unlike drag-and-drop which genuinely
+      // doesn't function via touch in most mobile browsers (a real
+      // platform limitation, not something a hint text actually
+      // fixes). Uses the exact same updateLeadStatusDirect() the
+      // drag-and-drop flow already calls, so a status change behaves
+      // identically regardless of which way it was triggered.
+      const statusOptions=STATUSES.map(s=>`<option value="${esc(s)}"${s===status?' selected':''}>${esc(s)}</option>`).join('');
+      return `<div class="board-card" draggable="true" ondragstart="onBoardCardDragStart(event,'${l.id}')"
         style="background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:grab;box-shadow:var(--sh)">
-        <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px">${esc(l.name||'(no name)')} ${scoreBadge}</div>
-        <div style="font-size:11px;color:var(--ink3)">${esc(l.program||'—')} → ${esc(l.destination||'—')}</div>
-        <div style="font-size:10px;color:var(--ink3);margin-top:4px">${esc(l.counsellor||'Unassigned')}</div>
+        <div onclick="openLeadDetail('${l.id}')" style="cursor:pointer">
+          <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px">${esc(l.name||'(no name)')} ${scoreBadge}</div>
+          <div style="font-size:11px;color:var(--ink3)">${esc(l.program||'—')} → ${esc(l.destination||'—')}</div>
+          <div style="font-size:10px;color:var(--ink3);margin-top:4px">${esc(l.counsellor||'Unassigned')}</div>
+        </div>
+        <select onclick="event.stopPropagation()" onchange="onBoardCardMoveSelect(event,'${l.id}')" style="width:100%;margin-top:8px;font-size:11px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;background:var(--cream);color:var(--ink2)">
+          ${statusOptions}
+        </select>
       </div>`;
     }).join('');
     return `<div class="board-column" data-status="${esc(status)}"
@@ -4526,6 +4579,16 @@ async function onBoardColumnDrop(e,newStatus){
   if(!leadId)return;
   const l=leads.find(x=>x.id===leadId);
   if(!l||l.status===newStatus)return; // dropped back in the same column — nothing to do
+  await updateLeadStatusDirect(leadId,newStatus);
+  renderLeadsBoard();
+}
+// The tap-friendly alternative to drag-and-drop — a plain <select> on
+// each card. Calls the exact same update function drag-and-drop uses,
+// so status changes behave identically either way, on any device.
+async function onBoardCardMoveSelect(e,leadId){
+  const newStatus=e.target.value;
+  const l=leads.find(x=>x.id===leadId);
+  if(!l||l.status===newStatus)return;
   await updateLeadStatusDirect(leadId,newStatus);
   renderLeadsBoard();
 }
@@ -8286,6 +8349,71 @@ async function loadExpiryAlerts(){
 // now. Reuses the exact same "Hot" tier and "Won/Closed" definitions
 // lead scoring already established, so this can't quietly disagree
 // with what that system already says about a lead.
+// Schedule Meeting — genuine per-lead calendar booking. Uses the
+// lead's own assigned counsellor as the meeting owner (not
+// necessarily whoever clicks the button, since an Admin might
+// schedule on a counsellor's behalf) — falls back to the current
+// user's name only if the lead has no counsellor assigned yet.
+let scheduleMeetingLeadId=null;
+function openScheduleMeetingModal(leadId){
+  scheduleMeetingLeadId=leadId;
+  const l=leads.find(x=>x.id===leadId);
+  document.getElementById('meeting-title').value=l?`Call with ${l.name}`:'';
+  document.getElementById('meeting-date').value=new Date().toISOString().substring(0,10);
+  document.getElementById('meeting-time').value='';
+  document.getElementById('meeting-duration').value='30';
+  document.getElementById('meeting-notes').value='';
+  document.getElementById('schedule-meeting-modal').style.display='flex';
+}
+async function saveScheduledMeeting(){
+  const l=leads.find(x=>x.id===scheduleMeetingLeadId);
+  if(!l)return;
+  const title=document.getElementById('meeting-title').value.trim();
+  const date=document.getElementById('meeting-date').value;
+  const time=document.getElementById('meeting-time').value;
+  const duration=parseInt(document.getElementById('meeting-duration').value,10)||30;
+  const notes=document.getElementById('meeting-notes').value.trim();
+  if(!title||!date||!time){toast('Please fill in title, date, and time.');return;}
+
+  const scheduledAt=new Date(`${date}T${time}`).toISOString();
+  const{error}=await sb.from('meetings').insert({
+    lead_id:l.id,
+    counsellor_name:l.counsellor||myName,
+    title,scheduled_at:scheduledAt,duration_minutes:duration,notes:notes||null,
+  });
+  if(error){toast('Error scheduling meeting: '+error.message);return;}
+  document.getElementById('schedule-meeting-modal').style.display='none';
+  toast('Meeting scheduled.');
+  loadMyMeetings();
+}
+// "My Meetings" — upcoming scheduled meetings for the CURRENT logged
+// in person specifically, shown on the Home screen alongside Today's
+// Priorities. Genuinely different from that widget: these are things
+// the counsellor themselves booked, not something the data pattern
+// suggests needs attention.
+async function loadMyMeetings(){
+  const el=document.getElementById('my-meetings-list');
+  const card=document.getElementById('my-meetings-card');
+  if(!el||!card)return;
+  const{data,error}=await sb.from('meetings').select('*').eq('counsellor_name',myName).gte('scheduled_at',new Date().toISOString()).order('scheduled_at',{ascending:true}).limit(5);
+  if(error||!data||!data.length){card.style.display='none';return;}
+  card.style.display='block';
+  el.innerHTML=data.map(m=>{
+    const dt=new Date(m.scheduled_at);
+    const dateStr=dt.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    const timeStr=dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    return `<div onclick="openLeadDetail('${m.lead_id}')" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer">
+      <div style="text-align:center;min-width:44px;background:var(--sage-l);border-radius:8px;padding:4px">
+        <div style="font-size:11px;font-weight:700;color:var(--sage)">${dateStr}</div>
+        <div style="font-size:10px;color:var(--ink3)">${timeStr}</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:var(--ink)">${esc(m.title)}</div>
+        <div style="font-size:11px;color:var(--ink3)">${m.duration_minutes} min${m.notes?' · '+esc(m.notes):''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
 function loadTodaysPriorities(){
   const el=document.getElementById('priorities-list');
   if(!el||!leads)return;

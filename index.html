@@ -1580,7 +1580,14 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <div class="ff"><label>To</label><input type="date" id="pr-date-to" onchange="renderProgressReport()"></div>
             </div>
           </div>
-          <div id="pr-cards"></div>
+          <div id="pr-toggle-header" style="display:none;cursor:pointer;align-items:center;gap:8px;padding:12px 16px;background:var(--cream);border-radius:10px" onclick="togglePrList()">
+            <i class="ti ti-chevron-right" id="pr-toggle-icon" style="font-size:14px;color:var(--pine3);transition:transform .2s ease"></i>
+            <span style="font-weight:600;font-size:13.5px;color:var(--ink)">📈 View Progress Report</span>
+            <span id="pr-toggle-count" style="font-size:12px;color:var(--ink3)"></span>
+          </div>
+          <div id="pr-cards-wrap" style="display:none;margin-top:14px">
+            <div id="pr-cards"></div>
+          </div>
           <div id="pr-empty" class="empty" style="display:none">No calls logged for this filter combination yet.</div>
         </div>
       </section>
@@ -8395,9 +8402,20 @@ async function loadMyMeetings(){
   const el=document.getElementById('my-meetings-list');
   const card=document.getElementById('my-meetings-card');
   if(!el||!card)return;
-  const{data,error}=await sb.from('meetings').select('*').eq('counsellor_name',myName).gte('scheduled_at',new Date().toISOString()).order('scheduled_at',{ascending:true}).limit(5);
+  // Same scoping principle as Today's Priorities: a regular counsellor
+  // sees only their own meetings, but Admin/Owner/Super Admin see
+  // across the whole team — otherwise scheduling a meeting on someone
+  // else's lead (very normal for a manager to do) would show up for
+  // nobody at all, since it's attributed to that lead's actual
+  // counsellor, not whoever clicked the button.
+  let query=sb.from('meetings').select('*').gte('scheduled_at',new Date().toISOString()).order('scheduled_at',{ascending:true}).limit(8);
+  if(myRole==='Counsellor'&&!isSuperAdmin){
+    query=query.eq('counsellor_name',myName);
+  }
+  const{data,error}=await query;
   if(error||!data||!data.length){card.style.display='none';return;}
   card.style.display='block';
+  const showCounsellorName=!(myRole==='Counsellor'&&!isSuperAdmin);
   el.innerHTML=data.map(m=>{
     const dt=new Date(m.scheduled_at);
     const dateStr=dt.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
@@ -8409,7 +8427,7 @@ async function loadMyMeetings(){
       </div>
       <div style="flex:1">
         <div style="font-size:13px;font-weight:600;color:var(--ink)">${esc(m.title)}</div>
-        <div style="font-size:11px;color:var(--ink3)">${m.duration_minutes} min${m.notes?' · '+esc(m.notes):''}</div>
+        <div style="font-size:11px;color:var(--ink3)">${m.duration_minutes} min${showCounsellorName?' · '+esc(m.counsellor_name||'Unassigned'):''}${m.notes?' · '+esc(m.notes):''}</div>
       </div>
     </div>`;
   }).join('');
@@ -9461,9 +9479,17 @@ function togglePrCard(idx){
   const card=document.querySelector(`.pr-card[data-idx="${idx}"]`);
   if(card)card.classList.toggle('expanded');
 }
+function togglePrList(){
+  const wrap=document.getElementById('pr-cards-wrap');
+  const icon=document.getElementById('pr-toggle-icon');
+  const isHidden=wrap.style.display==='none';
+  wrap.style.display=isHidden?'block':'none';
+  if(icon)icon.style.transform=isHidden?'rotate(90deg)':'rotate(0deg)';
+}
 function renderProgressReport(){
   const cardsEl=document.getElementById('pr-cards');
   const emptyEl=document.getElementById('pr-empty');
+  const toggleHeader=document.getElementById('pr-toggle-header');
   if(!cardsEl)return;
 
   const counsellorFilter=document.getElementById('pr-counsellor')?.value||'All';
@@ -9484,6 +9510,7 @@ function renderProgressReport(){
 
   if(!filtered.length){
     cardsEl.innerHTML='';
+    if(toggleHeader)toggleHeader.style.display='none';
     if(emptyEl)emptyEl.style.display='block';
     return;
   }
@@ -9512,6 +9539,11 @@ function renderProgressReport(){
 
   const summaries=Object.values(byCounsellor).sort((a,b)=>b.calls-a.calls);
   const maxCalls=Math.max(...summaries.map(s=>s.calls),1);
+
+  if(toggleHeader){
+    toggleHeader.style.display='flex';
+    document.getElementById('pr-toggle-count').textContent=`(${summaries.length} counsellor${summaries.length!==1?'s':''})`;
+  }
 
   cardsEl.innerHTML=summaries.map((s,idx)=>{
     const barPct=Math.round((s.calls/maxCalls)*100);

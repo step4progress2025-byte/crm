@@ -1473,6 +1473,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <section id="sc-productivity" class="screen">
         <div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:0">
           <button class="prod-subtab active" data-sub="calls" onclick="setProdSubtab('calls')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent">🎧 Call Recorder</button>
+          <button class="prod-subtab" data-sub="whatsapp" id="prod-tab-whatsapp" onclick="setProdSubtab('whatsapp')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent">📱 WhatsApp Calls</button>
           <button class="prod-subtab" data-sub="myupdate" onclick="setProdSubtab('myupdate')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent">📝 My Daily Update</button>
           <button class="prod-subtab" data-sub="monitor" id="prod-tab-monitor" onclick="setProdSubtab('monitor')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent;display:none">📊 Activity Monitor</button>
           <button class="prod-subtab" data-sub="progress" id="prod-tab-progress" onclick="setProdSubtab('progress')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent;display:none">📈 Progress Report</button>
@@ -1525,6 +1526,39 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             </table>
           </div>
         </div>
+        </div>
+
+        <div id="prod-sub-whatsapp" style="display:none">
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-h"><span class="card-t">📱 WhatsApp Calls</span></div>
+            <p style="font-size:13px;color:var(--ink3);margin-bottom:0;line-height:1.6">Calls recorded via the WhatsApp desktop recorder, synced in automatically. Restricted to Admins and the Super Admin, same as Call Recorder.</p>
+          </div>
+          <div id="wc-empty" class="empty-state" style="display:none">
+            <div class="es-icon"><i class="ti ti-brand-whatsapp"></i></div>
+            <div class="es-title">No WhatsApp calls yet</div>
+            <div class="es-sub">Once a call syncs in from the desktop recorder, it will show up here.</div>
+          </div>
+          <div id="wc-toggle-header" style="display:none;cursor:pointer;align-items:center;gap:8px;padding:12px 16px;background:var(--cream);border-radius:10px;margin-bottom:0" onclick="toggleWhatsAppCallList()">
+            <i class="ti ti-chevron-right" id="wc-toggle-icon" style="font-size:14px;color:var(--pine3);transition:transform .2s ease"></i>
+            <span style="font-weight:600;font-size:13.5px;color:var(--ink)">📋 View WhatsApp calls</span>
+            <span id="wc-toggle-count" style="font-size:12px;color:var(--ink3)"></span>
+          </div>
+          <div id="wc-content" style="display:none;margin-top:14px">
+            <div class="card" style="margin-bottom:14px">
+              <div class="fg">
+                <div class="ff"><label>Counsellor</label><select id="wc-filter-counsellor" onchange="renderWhatsAppCalls()"><option value="All">All counsellors</option></select></div>
+                <div class="ff"><label>From</label><input type="date" id="wc-filter-date-from" onchange="renderWhatsAppCalls()"></div>
+                <div class="ff"><label>To</label><input type="date" id="wc-filter-date-to" onchange="renderWhatsAppCalls()"></div>
+              </div>
+            </div>
+            <div class="clabel" id="wc-count"></div>
+            <div class="tw">
+              <table class="tbl">
+                <thead><tr><th>Lead</th><th>Counsellor</th><th>Date</th><th>Duration</th><th>Status</th><th>Recording</th><th></th></tr></thead>
+                <tbody id="wc-tbody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         <div id="prod-sub-myupdate" style="display:none">
@@ -9428,6 +9462,115 @@ async function saveCallLog(){
   renderCallLogs();
   toast('Call logged.');
 }
+
+// ── Productivity: WhatsApp Calls ────────────────────────────────────
+// Reads from whatsapp_calls — a SEPARATE table from call_logs,
+// deployed specifically for the WhatsApp desktop recorder pipeline.
+// lead_id is a real foreign key into the SAME leads table call_logs
+// also uses, so it's embedded directly via Supabase relationship
+// syntax rather than needing a separate lookup.
+let whatsappCalls=[];
+async function loadWhatsAppCalls(){
+  const res=await sb.from('whatsapp_calls').select('*, leads(name,mobile)').order('started_at',{ascending:false});
+  const data=res.data, error=res.error;
+  if(!error&&data) whatsappCalls=data;
+  else if(error) whatsappCalls=[];
+}
+function populateWhatsAppCallFilters(){
+  const sel=document.getElementById('wc-filter-counsellor');
+  if(!sel)return;
+  const names=[...new Set((teamList||[]).filter(function(t){return t.role==='Counsellor';}).map(function(t){return t.full_name;}).filter(Boolean))].sort();
+  var opts='<option value="All">All counsellors</option>';
+  for(var i=0;i<names.length;i++){ opts+='<option value="'+esc(names[i])+'">'+esc(names[i])+'</option>'; }
+  sel.innerHTML=opts;
+}
+function toggleWhatsAppCallList(){
+  const content=document.getElementById('wc-content');
+  const icon=document.getElementById('wc-toggle-icon');
+  const isHidden=content.style.display==='none';
+  content.style.display=isHidden?'block':'none';
+  if(icon)icon.style.transform=isHidden?'rotate(90deg)':'rotate(0deg)';
+}
+function toggleWhatsAppRecordingPlayer(callId){
+  const player=document.getElementById('wc-rec-player-'+callId);
+  if(!player)return;
+  const isHidden=player.style.display==='none';
+  document.querySelectorAll('[id^="wc-rec-player-"]').forEach(function(p){
+    if(p!==player&&p.style.display!=='none'){
+      p.style.display='none';
+      const otherAudio=p.querySelector('audio');
+      if(otherAudio)otherAudio.pause();
+    }
+  });
+  player.style.display=isHidden?'block':'none';
+  if(!isHidden){
+    const audioEl=player.querySelector('audio');
+    if(audioEl)audioEl.pause();
+  }
+}
+function renderWhatsAppCalls(){
+  const empty=document.getElementById('wc-empty'), content=document.getElementById('wc-content');
+  const toggleHeader=document.getElementById('wc-toggle-header');
+  if(!empty||!content)return;
+  if(!whatsappCalls.length){
+    empty.style.display='flex';
+    if(toggleHeader)toggleHeader.style.display='none';
+    content.style.display='none';
+    return;
+  }
+  empty.style.display='none';
+  if(toggleHeader){
+    toggleHeader.style.display='flex';
+    document.getElementById('wc-toggle-count').textContent='('+whatsappCalls.length+')';
+  }
+
+  const counsellorFilter=(document.getElementById('wc-filter-counsellor')||{}).value||'All';
+  const fromDate=(document.getElementById('wc-filter-date-from')||{}).value||null;
+  const toDate=(document.getElementById('wc-filter-date-to')||{}).value||null;
+
+  const filteredCalls=whatsappCalls.filter(function(c){
+    if(counsellorFilter!=='All'&&c.counsellor!==counsellorFilter)return false;
+    const callDate=c.started_at?c.started_at.substring(0,10):null;
+    if(fromDate&&(!callDate||callDate<fromDate))return false;
+    if(toDate&&(!callDate||callDate>toDate))return false;
+    return true;
+  });
+
+  const canDelete=isSuperAdmin||myRole==='Admin'||myRole==='Director';
+  document.getElementById('wc-count').textContent=filteredCalls.length+' call'+(filteredCalls.length!==1?'s':'')+' logged'+(filteredCalls.length!==whatsappCalls.length?' (of '+whatsappCalls.length+' total)':'');
+
+  const statusColors={ringing:['var(--gold-l)','var(--gold)'],answered:['var(--sage-l)','#0F6E56'],completed:['var(--sage-l)','#0F6E56'],missed:['#FCEBEB','#A32D2D'],failed:['#FCEBEB','#A32D2D']};
+
+  document.getElementById('wc-tbody').innerHTML=filteredCalls.map(function(c){
+    const dt=c.started_at?new Date(c.started_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'-';
+    const durationMins=c.duration_seconds?Math.round(c.duration_seconds/60):null;
+    const rec=c.recording_url?('<button onclick="toggleWhatsAppRecordingPlayer(\''+c.id+'\')" style="background:none;border:1px solid var(--pine3);color:var(--pine3);border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer">▶ Play</button><div id="wc-rec-player-'+c.id+'" style="display:none;margin-top:6px"><audio controls preload="none" style="height:32px;max-width:220px"><source src="'+c.recording_url+'"></audio></div>'):'<span style="color:var(--ink3);font-style:italic">No recording</span>';
+    const sc=statusColors[c.status]||['var(--sky-l)','var(--sky)'];
+    const statusBadge='<span class="pill" style="background:'+sc[0]+';color:'+sc[1]+'">'+esc(c.status||'-')+'</span>';
+    const leadName=(c.leads&&c.leads.name)?c.leads.name:'(unattached)';
+    const leadCell=c.lead_id
+      ? ('<span onclick="openLeadDetail(\''+c.lead_id+'\')" style="cursor:pointer;color:var(--pine);text-decoration:underline">'+esc(leadName)+'</span>')
+      : esc(leadName);
+    return '<tr>'
+      +'<td style="font-weight:600"><i class="ti ti-brand-whatsapp" title="WhatsApp call" style="color:#25D366;font-size:13px;margin-right:5px"></i>'+leadCell+'</td>'
+      +'<td style="font-size:12px;color:var(--ink3)">'+esc(c.counsellor||'-')+'</td>'
+      +'<td style="font-size:12px;color:var(--ink3)">'+dt+'</td>'
+      +'<td style="font-size:12px">'+(durationMins?durationMins+' min':'-')+'</td>'
+      +'<td style="font-size:12px">'+statusBadge+'</td>'
+      +'<td>'+rec+'</td>'
+      +'<td>'+(canDelete?('<button onclick="deleteWhatsAppCall(\''+c.id+'\')" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:0 4px" title="Delete"><i class="ti ti-trash"></i></button>'):'')+'</td>'
+      +'</tr>';
+  }).join('');
+}
+async function deleteWhatsAppCall(id){
+  if(!confirm('Delete this WhatsApp call log? This cannot be undone.'))return;
+  const res=await sb.from('whatsapp_calls').delete().eq('id',id);
+  if(res.error){toast('Error deleting: '+res.error.message);return;}
+  whatsappCalls=whatsappCalls.filter(function(c){return c.id!==id;});
+  renderWhatsAppCalls();
+  toast('WhatsApp call log deleted.');
+}
+
 // ── Productivity: sub-tabs, My Daily Update, Activity Monitor ──────
 function initProductivity(){
   const dateEl=document.getElementById('du-date');
@@ -9441,19 +9584,23 @@ function initProductivity(){
   if(monitorTab)monitorTab.style.display=isAdminTier?'':'none';
   const progressTab=document.getElementById('prod-tab-progress');
   if(progressTab)progressTab.style.display=isAdminTier?'':'none';
+  const whatsappTab=document.getElementById('prod-tab-whatsapp');
+  if(whatsappTab)whatsappTab.style.display=isAdminTier?'':'none';
 
   if(isAdminTier){
     loadCallLogs().then(()=>{ renderCallLogs(); renderProgressReport(); });
+    loadWhatsAppCalls().then(renderWhatsAppCalls);
     populateActivityMonitorCountryFilter();
     populateProgressReportFilters();
     populateCallLogFilters();
+    populateWhatsAppCallFilters();
   } else {
     setProdSubtab('myupdate');
   }
   loadMyDailyUpdates();
 }
 function setProdSubtab(sub){
-  ['calls','myupdate','monitor','progress'].forEach(s=>{
+  ['calls','whatsapp','myupdate','monitor','progress'].forEach(s=>{
     const panel=document.getElementById('prod-sub-'+s);
     if(panel)panel.style.display=s===sub?'block':'none';
     const btn=document.querySelector(`.prod-subtab[data-sub="${s}"]`);
@@ -9461,6 +9608,7 @@ function setProdSubtab(sub){
   });
   if(sub==='monitor')renderActivityMonitor();
   if(sub==='progress')renderProgressReport();
+  if(sub==='whatsapp')renderWhatsAppCalls();
 }
 function populateProgressReportFilters(){
   const sel=document.getElementById('pr-counsellor');

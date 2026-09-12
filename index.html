@@ -7855,7 +7855,7 @@ async function refreshMetaData(){
   if(fb.error){
     kpis.push(['Facebook',`⚠️ ${safeErrorText(fb.error)}`,'c7']);
   } else {
-    kpis.push(['Page followers',fb.page_fans??'—','c1']);
+    kpis.push(['Page followers',fb.page_follows??'—','c1']);
     // Engagement/reach metrics removed for now — Meta keeps rejecting
     // every name tried so far. Once a working metric name is confirmed
     // via the ?metric= override, add it back here.

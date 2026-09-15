@@ -121,14 +121,6 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
   .fg{grid-template-columns:1fr!important}
   .modal{width:94vw!important;padding:var(--sp-4)!important}
   .card{padding:var(--sp-4)!important}
-  /* Kanban board on mobile — native HTML5 drag-and-drop (what the
-     board also supports for mouse users) genuinely doesn't work via
-     touch on most mobile browsers. Rather than just explaining that
-     limitation, every card now has a real, working <select> dropdown
-     for changing status — functions identically on touch and desktop,
-     so mobile use isn't actually degraded here, just uses a different
-     control than the mouse-drag path. */
-  .board-column{flex:0 0 220px!important}
 }
 @media (max-width:420px){
   .rpt-hero-grid,[style*="grid-template-columns:repeat(4"],[style*="grid-template-columns:repeat(2"]{grid-template-columns:1fr!important}
@@ -460,11 +452,6 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .rpt-lb-medal{width:26px;font-size:16px;text-align:center;flex-shrink:0}
 .rpt-lb-bar-t{flex:1;background:var(--cream);border-radius:99px;height:8px;overflow:hidden}
 .rpt-lb-bar-f{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--pine3),var(--gold))}
-@keyframes confettiFall{
-  0%{transform:translateY(0) rotate(0deg);opacity:1}
-  100%{transform:translateY(100vh) rotate(540deg);opacity:0}
-}
-.board-card:active{cursor:grabbing!important}
 </style>
 </head>
 <body>
@@ -532,121 +519,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
 <!-- ── APP ────────────────────────────────────────────────────── -->
 <div class="app" id="app">
-  <!-- Keyboard shortcuts help — press ? from anywhere. Purely
-       informational, no new logic of its own; just makes the shortcuts
-       that already exist (Ctrl+K, N, /) actually discoverable. -->
-  <div id="shortcuts-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,16,12,.55);z-index:2500;align-items:center;justify-content:center" onclick="if(event.target===this)closeShortcutsHelp()">
-    <div style="background:var(--paper);width:92%;max-width:420px;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.35);padding:24px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <span style="font-size:16px;font-weight:700;color:var(--ink)">⌨️ Keyboard Shortcuts</span>
-        <span onclick="closeShortcutsHelp()" style="cursor:pointer;color:var(--ink3);font-size:20px;line-height:1">×</span>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:var(--ink)">Open quick search</span><span style="font-size:11px;border:1px solid var(--line);border-radius:5px;padding:2px 7px;color:var(--ink3)">Ctrl K</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:var(--ink)">Add a new lead</span><span style="font-size:11px;border:1px solid var(--line);border-radius:5px;padding:2px 7px;color:var(--ink3)">N</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:var(--ink)">Search leads (or open search)</span><span style="font-size:11px;border:1px solid var(--line);border-radius:5px;padding:2px 7px;color:var(--ink3)">/</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:var(--ink)">Show this panel</span><span style="font-size:11px;border:1px solid var(--line);border-radius:5px;padding:2px 7px;color:var(--ink3)">?</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:var(--ink)">Close any panel</span><span style="font-size:11px;border:1px solid var(--line);border-radius:5px;padding:2px 7px;color:var(--ink3)">Esc</span></div>
-      </div>
-      <p style="font-size:11px;color:var(--ink3);margin-top:16px;margin-bottom:0;font-style:italic">Shortcuts are disabled while typing in any text field.</p>
-    </div>
-  </div>
-
   <!-- Super Admin ops-view choice — International vs Domestic (UK).
        Only ever shown to Super Admin accounts, once per session
        (stored in sessionStorage, so it re-asks on a genuinely new
        login but not on every page refresh within the same session). -->
-  <!-- Duplicate-lead warning — replaces a native browser confirm()
-       with something that actually matches the rest of the app,
-       rather than a jarring default dialog box. Purely a UI upgrade
-       around the EXISTING findDuplicateLead() logic, which already
-       worked correctly — nothing about the matching itself changes. -->
-  <!-- Message Templates — canned starting points for common
-       communications (document reminder, visa update, missed-call
-       catch-up) so staff aren't retyping the same message from
-       scratch every time. Personalizes with the lead's real details
-       before opening WhatsApp — the template is a starting point, not
-       a rigid script. -->
-  <!-- Activity Timeline — shared modal, used for BOTH the Lead
-       Journey (everything that happened to one lead) and the
-       Counsellor Activity view (everything one staff member has
-       done). Same underlying activity_log table and rendering, just
-       filtered differently — not two separate features to keep in
-       sync, one feature with two entry points. -->
-  <!-- Schedule Meeting — genuine per-lead calendar booking, distinct
-       from the company-wide Events list. Feeds the "My Meetings"
-       widget on the Home screen for the assigned counsellor. -->
-  <div id="schedule-meeting-modal" style="display:none;position:fixed;inset:0;background:rgba(28,23,18,.6);z-index:2300;align-items:center;justify-content:center">
-    <div style="background:var(--paper);border-radius:14px;padding:24px 26px;max-width:420px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,.35)">
-      <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:14px">📅 Schedule a Meeting</div>
-      <div class="ff"><label>Title</label><input type="text" id="meeting-title" placeholder="e.g. Visa document review call"></div>
-      <div style="display:flex;gap:10px">
-        <div class="ff" style="flex:1"><label>Date</label><input type="date" id="meeting-date"></div>
-        <div class="ff" style="flex:1"><label>Time</label><input type="time" id="meeting-time"></div>
-      </div>
-      <div class="ff"><label>Duration (minutes)</label><input type="number" id="meeting-duration" value="30" min="5" step="5"></div>
-      <div class="ff"><label>Notes (optional)</label><textarea id="meeting-notes" rows="2" placeholder="What's this call about?"></textarea></div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
-        <button onclick="document.getElementById('schedule-meeting-modal').style.display='none'" class="btn" style="background:var(--paper);border:1px solid var(--line)">Cancel</button>
-        <button onclick="saveScheduledMeeting()" class="btn btn-p"><i class="ti ti-check"></i>Schedule</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="activity-timeline-modal" style="display:none;position:fixed;inset:0;background:rgba(28,23,18,.6);z-index:2300;align-items:center;justify-content:center">
-    <div style="background:var(--paper);border-radius:14px;padding:22px 24px;max-width:520px;width:92%;max-height:80vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.35)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <span id="activity-timeline-title" style="font-size:16px;font-weight:700;color:var(--ink)"></span>
-        <span onclick="document.getElementById('activity-timeline-modal').style.display='none'" style="cursor:pointer;color:var(--ink3);font-size:20px;line-height:1">×</span>
-      </div>
-      <div id="activity-timeline-list"></div>
-      <div id="activity-timeline-empty" style="display:none;color:var(--ink3);font-style:italic;font-size:13px;padding:20px 0;text-align:center">No activity recorded yet.</div>
-    </div>
-  </div>
-
-  <div id="msg-template-modal" style="display:none;position:fixed;inset:0;background:rgba(28,23,18,.6);z-index:2200;align-items:center;justify-content:center">
-    <div style="background:var(--paper);border-radius:14px;padding:22px 24px;max-width:480px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,.35);max-height:80vh;overflow-y:auto">
-      <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:14px">💬 Choose a message template</div>
-      <div id="msg-template-list"></div>
-      <button onclick="document.getElementById('msg-template-modal').style.display='none'" class="btn" style="width:100%;margin-top:8px;background:var(--paper);border:1px solid var(--line)">Cancel</button>
-    </div>
-  </div>
-
-  <div id="dup-lead-modal" style="display:none;position:fixed;inset:0;background:rgba(28,23,18,.6);z-index:2200;align-items:center;justify-content:center">
-    <div style="background:var(--paper);border-radius:14px;padding:26px 28px;max-width:440px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,.35)">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-        <span style="font-size:24px">⚠️</span>
-        <span style="font-size:16px;font-weight:700;color:var(--ink)">Possible duplicate lead</span>
-      </div>
-      <p style="font-size:13.5px;color:var(--ink3);line-height:1.6;margin-bottom:14px">A lead matching this name or mobile number already exists:</p>
-      <div id="dup-lead-details" style="background:var(--cream);border-radius:10px;padding:12px 14px;margin-bottom:18px;font-size:13px;color:var(--ink)"></div>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button onclick="closeDupLeadModal(false)" class="btn" style="background:var(--paper);border:1px solid var(--line)">Cancel — look it up instead</button>
-        <button onclick="closeDupLeadModal(true)" class="btn btn-p">Add anyway</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Bulk email compose — reuses the exact same send-email Edge
-       Function already used for status-change notifications
-       elsewhere, just looping it across every selected lead that has
-       an email address on file. -->
-  <div id="bulk-email-modal" style="display:none;position:fixed;inset:0;background:rgba(28,23,18,.6);z-index:2200;align-items:center;justify-content:center">
-    <div style="background:var(--paper);border-radius:14px;padding:26px 28px;max-width:480px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,.35)">
-      <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:4px">✉️ Email selected leads</div>
-      <div id="bulk-email-count" style="font-size:12.5px;color:var(--ink3);margin-bottom:16px"></div>
-      <label style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em">Subject</label>
-      <input type="text" id="bulk-email-subject" placeholder="e.g. Quick update on your application" style="width:100%;margin:6px 0 14px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13.5px">
-      <label style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em">Message</label>
-      <textarea id="bulk-email-message" rows="6" placeholder="Hi {{name}}, ..." style="width:100%;margin:6px 0 6px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;font-family:var(--font-b);resize:vertical"></textarea>
-      <div style="font-size:11px;color:var(--ink3);margin-bottom:16px;font-style:italic">Use {{name}} anywhere in your message — it'll be replaced with each lead's actual name.</div>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button onclick="closeBulkEmailModal()" class="btn" style="background:var(--paper);border:1px solid var(--line)">Cancel</button>
-        <button onclick="sendBulkEmail()" class="btn btn-p" id="bulk-email-send-btn"><i class="ti ti-send"></i>Send</button>
-      </div>
-    </div>
-  </div>
-
   <div id="ops-view-modal" style="display:none;position:fixed;inset:0;background:rgba(28,23,18,.6);z-index:2000;align-items:center;justify-content:center">
     <div style="background:#fff;border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)">
       <div style="font-size:38px;margin-bottom:8px">🌍</div>
@@ -712,10 +588,6 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <span><span class="sync-dot" id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--ink3)"></span></span>
       </div>
       <div class="tb-right">
-        <button onclick="openCommandPalette()" title="Quick search (Ctrl+K)" style="display:flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--ink3);font-size:13px">
-          <i class="ti ti-search" style="font-size:14px"></i>Search
-          <span style="font-size:10px;border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-left:2px">Ctrl K</span>
-        </button>
         <span class="online-count" id="online-count"><span class="online-dot-sm"></span><span id="online-num">1</span> online</span>
         <button class="btn btn-ai" onclick="nav('ai',document.querySelector('.ni[data-nav=&quot;ai&quot;]'))"><i class="ti ti-robot"></i>AI</button>
         <button class="btn btn-p" onclick="openAddLead()"><i class="ti ti-plus"></i>Add lead</button>
@@ -731,28 +603,6 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <section id="sc-home" class="screen active">
         <div id="home-greeting" style="font-family:var(--font-h);font-size:26px;font-weight:600;color:var(--ink);margin-bottom:4px"></div>
         <div style="font-size:13px;color:var(--ink3);margin-bottom:20px" id="home-date"></div>
-
-        <!-- Today's Priorities — computed directly from real lead
-             data (overdue follow-up dates, hot leads gone quiet,
-             pending documents), not from manually-created task
-             records the way "My Tasks" below is. Nothing needs to be
-             created for something to show up here — if the
-             underlying lead data suggests it needs attention, it just
-             appears. -->
-        <div class="card" id="priorities-widget" style="margin-bottom:18px;border-left:3px solid var(--gold)">
-          <div class="card-h"><span class="card-t">🎯 Today's Priorities</span></div>
-          <div id="priorities-list"></div>
-        </div>
-
-        <!-- My Meetings — genuinely different from Today's Priorities:
-             these are things the counsellor deliberately scheduled
-             themselves, not something the data pattern suggests needs
-             attention. Hidden entirely when there's nothing upcoming,
-             rather than showing an empty card. -->
-        <div class="card" id="my-meetings-card" style="display:none;margin-bottom:18px;border-left:3px solid var(--sage)">
-          <div class="card-h"><span class="card-t">📅 My Upcoming Meetings</span></div>
-          <div id="my-meetings-list"></div>
-        </div>
 
         <div class="card" style="margin-bottom:18px">
           <div class="card-h"><span class="card-t">🌍 World Clock</span></div>
@@ -856,50 +706,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <div class="card"><div class="card-h"><span class="card-t">Pipeline status</span></div><div id="pipe-list"></div></div>
             <div class="card"><div class="card-h"><span class="card-t">Recent activity</span></div><div id="act-list"></div></div>
             <div class="card" style="margin-top:16px" id="country-breakdown-card"><div class="card-h"><span class="card-t">🌍 Leads by country</span></div><div id="country-breakdown"></div></div>
-
-            <!-- Global Reach visual — a stylized (not geographically
-                 traced) map showing genuine relative positions of the 4
-                 operating countries, node size scaled by lead volume,
-                 connected to a central hub with a subtle pulse
-                 animation. Reuses the exact same per-country
-                 aggregation as the bar-chart breakdown above — this is
-                 a different VIEW of the same data, not a second data
-                 source to keep in sync. -->
-            <div class="card" style="margin-top:16px" id="global-reach-card">
-              <div class="card-h"><span class="card-t">🌐 Global Reach</span></div>
-              <div id="global-reach-map" style="position:relative;width:100%;max-width:520px;margin:0 auto"></div>
-              <div id="global-reach-empty" style="display:none;color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>
-            </div>
             <div class="card" style="margin-top:16px" id="counsel-rank-card"><div class="card-h"><span class="card-t">🏆 Counsellor ranking</span></div><div id="counsel-rank"></div></div>
-            <!-- Weekly Wins — team-wide visibility into who converted
-                 a lead this week. Deliberately reuses the SAME "Won"
-                 status definition already established by lead
-                 scoring (LEAD_SCORE_TERMINAL), so this can never
-                 quietly disagree with what scoring already considers
-                 a win. Visible to everyone, not gated to management —
-                 the whole point is making a currently-invisible thing
-                 visible team-wide, like a weekly wall of fame. -->
-            <div class="card" style="margin-top:16px" id="weekly-wins-card">
-              <div class="card-h"><span class="card-t">🎉 This Week's Wins</span><span style="font-size:11px;color:var(--ink3)" id="weekly-wins-range"></span></div>
-              <div id="weekly-wins-list"></div>
-              <div id="weekly-wins-empty" style="display:none;color:var(--ink3);font-style:italic;font-size:13px;padding:8px 0">No conversions logged yet this week.</div>
-            </div>
-            <!-- Data-Health Digest — flags leads with no email, no
-                 phone, or untouched for 30+ days, so nothing quietly
-                 falls through the cracks from simple oversight.
-                 Collapsed by default, same pattern as Activity Log and
-                 Call Recorder — a count is genuinely useful to see at
-                 a glance, the full list only when you want to act on it. -->
-            <div class="card" style="margin-top:16px" id="data-health-card">
-              <div class="card-h" style="cursor:pointer" onclick="toggleDataHealthSection()">
-                <span class="card-t"><i class="ti ti-chevron-right" id="data-health-toggle-icon" style="font-size:13px;transition:transform .2s ease;display:inline-block;margin-right:4px"></i>🩺 Data Health</span>
-                <span style="font-size:11px;color:var(--ink3)" id="data-health-count"></span>
-              </div>
-              <div id="data-health-wrap" style="display:none;margin-top:10px">
-                <div id="data-health-list"></div>
-                <div id="data-health-empty" style="display:none;color:var(--ink3);font-style:italic;font-size:13px;padding:8px 0">Everything looks healthy — no missing info or stale leads found.</div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -921,13 +728,6 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <button class="btn btn-p" onclick="openAddLead()"><i class="ti ti-plus"></i>Add lead</button>
         </div>
         <div id="leads-content" style="display:none">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-            <select id="saved-views-select" onchange="applySavedView(this.value)" style="font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--line);color:var(--ink3)">
-              <option value="">📁 My saved views</option>
-            </select>
-            <button class="btn" onclick="saveCurrentView()" style="font-size:12px;padding:5px 10px"><i class="ti ti-device-floppy"></i>Save current filters</button>
-            <button class="btn" onclick="deleteSavedView()" id="delete-saved-view-btn" style="font-size:12px;padding:5px 10px;display:none;color:var(--rose)"><i class="ti ti-trash"></i>Delete this view</button>
-          </div>
           <div class="fbar">
             <input type="text" id="ls-q" placeholder="Search name, phone, program, notes, destination, status…" oninput="renderLeads()">
             <select id="ls-st" onchange="renderLeads()">
@@ -952,13 +752,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <input type="date" id="ls-from" onchange="renderLeads()">
             <input type="date" id="ls-to" onchange="renderLeads()">
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <div class="clabel" id="lcount" style="margin-bottom:0"></div>
-            <div style="display:flex;gap:4px;background:var(--cream);border-radius:8px;padding:3px">
-              <button id="leads-view-list-btn" onclick="switchLeadsView('list')" style="border:none;background:var(--paper);box-shadow:var(--sh);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;color:var(--ink)"><i class="ti ti-list"></i> List</button>
-              <button id="leads-view-board-btn" onclick="switchLeadsView('board')" style="border:none;background:transparent;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;color:var(--ink3)"><i class="ti ti-layout-kanban"></i> Board</button>
-            </div>
-          </div>
+          <div class="clabel" id="lcount"></div>
           <div id="bulk-actions-bar" style="display:none;align-items:center;gap:10px;background:var(--pine);color:#fff;padding:10px 16px;border-radius:var(--r);margin-bottom:10px;flex-wrap:wrap">
             <span id="bulk-count-label" style="font-size:13px;font-weight:600;margin-right:6px"></span>
             <select id="bulk-status-select" style="font-size:12px;padding:5px 8px;border-radius:6px;border:none"></select>
@@ -967,7 +761,6 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="btn" onclick="bulkChangePriority()" style="font-size:12px;padding:5px 10px">Apply priority</button>
             <select id="bulk-counsellor-select" style="font-size:12px;padding:5px 8px;border-radius:6px;border:none"></select>
             <button class="btn" onclick="bulkReassignCounsellor()" style="font-size:12px;padding:5px 10px">Reassign</button>
-            <button class="btn" onclick="openBulkEmailModal()" style="font-size:12px;padding:5px 10px"><i class="ti ti-mail"></i>Email selected</button>
             <button class="btn" onclick="bulkDeleteLeads()" style="font-size:12px;padding:5px 10px;background:var(--rose);color:#fff;border:none"><i class="ti ti-trash"></i>Delete selected</button>
             <button class="btn" onclick="exportSelectedLeads()" style="font-size:12px;padding:5px 10px;margin-left:auto"><i class="ti ti-download"></i>Export selected</button>
             <button class="btn" onclick="clearBulkSelection()" style="font-size:12px;padding:5px 10px;background:rgba(255,255,255,.15);color:#fff;border:none">Clear selection</button>
@@ -983,23 +776,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <thead><tr>
                 <th style="width:36px"><input type="checkbox" id="bulk-select-all" onchange="toggleSelectAllLeads(this.checked)" style="cursor:pointer"></th>
                 <th>#</th><th>ID</th><th>Name</th><th>Mobile</th><th>Contact</th><th>Program</th>
-                <th>Destination</th><th>Captured</th><th>Status</th><th title="A rule-based estimate of engagement/conversion likelihood — recency of contact, pipeline stage, and follow-up activity. Not AI-generated; instant and free to compute on every lead.">Score 🎯</th><th>Priority</th><th>Counsellor</th><th>Application</th><th>Visa</th><th>SOP</th>
+                <th>Destination</th><th>Captured</th><th>Status</th><th>Priority</th><th>Counsellor</th><th>Application</th><th>Visa</th><th>SOP</th>
               </tr></thead>
               <tbody id="lead-tbody"></tbody>
             </table>
-          </div>
-
-          <!-- Board (Kanban) view — an alternate VIEW of the exact same
-               filtered lead set the list view shows, never a second
-               data source. Columns are built dynamically from whatever
-               statuses actually have leads right now, ordered to
-               roughly follow the real pipeline, rather than a fixed
-               30-column layout that would be unusable. Dragging a card
-               to a different column updates that lead's real status
-               via the same underlying update call the list view's
-               status dropdown already uses. -->
-          <div id="leads-board-view" style="display:none;overflow-x:auto;padding-bottom:12px">
-            <div id="leads-board-columns" style="display:flex;gap:14px;align-items:flex-start;min-height:200px"></div>
           </div>
         </div>
       </section>
@@ -1124,17 +904,13 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div id="management-team-section"></div>
         <div id="operations-team-section"></div>
         <div id="domestic-team-section"></div>
+        <div id="agent-team-section"></div>
         <div id="team-members-card" style="display:none">
           <div class="dsec" style="margin-bottom:2px">By office / branch</div>
           <div id="team-icon-legend" style="font-size:11px;color:var(--ink3);margin-bottom:10px"></div>
           <div id="team-grid"></div>
         </div>
         <button class="btn btn-p" id="create-user-btn" onclick="openCreateUser()" style="display:none;margin-top:12px;font-size:12px;padding:5px 10px"><i class="ti ti-user-plus"></i>Create user</button>
-        <!-- Agent Portal is placed last, deliberately — external
-             partners are a distinct category from internal staff, so
-             it sits after every internal team section including the
-             by-office/branch listing. -->
-        <div id="agent-team-section"></div>
       </section>
 
       <!-- Events --><section id="sc-events" class="screen"><div class="card" style="margin-bottom:20px"><div class="card-h"><span class="card-t">Events calendar</span><button class="btn btn-p" onclick="openAddEvent()"><i class="ti ti-plus"></i>Add event</button></div><div id="events-calendar"></div></div><div class="card"><div class="card-h"><span class="card-t">Upcoming this month</span></div><div id="events-list"></div></div></section> <!-- Import -->
@@ -1361,14 +1137,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <div id="rpt-subteam-breakdown"></div>
             </div>
             <div class="rpt-card" style="grid-column:1/-1">
-              <div class="rpt-card-h" style="cursor:pointer;display:flex;align-items:center;gap:8px" onclick="toggleActivityLogSection()">
-                <i class="ti ti-chevron-right" id="rpt-activity-toggle-icon" style="font-size:14px;transition:transform .2s ease"></i>
-                🕐 Activity log — who did what, and when (this report's scope)
-                <span id="rpt-activity-count" style="font-weight:400;font-size:12px;color:var(--ink3);margin-left:auto"></span>
-              </div>
-              <div id="rpt-activity-log-wrap" style="display:none;margin-top:10px">
-                <div id="rpt-activity-log" style="max-height:400px;overflow-y:auto"></div>
-              </div>
+              <div class="rpt-card-h">🕐 Activity log — who did what, and when (this report's scope)</div>
+              <div id="rpt-activity-log" style="max-height:400px;overflow-y:auto"></div>
             </div>
           </div>
         </div>
@@ -1473,10 +1243,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <section id="sc-productivity" class="screen">
         <div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:0">
           <button class="prod-subtab active" data-sub="calls" onclick="setProdSubtab('calls')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent">🎧 Call Recorder</button>
-          <button class="prod-subtab" data-sub="whatsapp" id="prod-tab-whatsapp" onclick="setProdSubtab('whatsapp')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent">📱 WhatsApp Calls</button>
           <button class="prod-subtab" data-sub="myupdate" onclick="setProdSubtab('myupdate')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent">📝 My Daily Update</button>
           <button class="prod-subtab" data-sub="monitor" id="prod-tab-monitor" onclick="setProdSubtab('monitor')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent;display:none">📊 Activity Monitor</button>
-          <button class="prod-subtab" data-sub="progress" id="prod-tab-progress" onclick="setProdSubtab('progress')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent;display:none">📈 Progress Report</button>
         </div>
 
         <div id="prod-sub-calls">
@@ -1504,20 +1272,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div class="es-title">No call logs yet</div>
           <div class="es-sub">Once you log a call above, it'll show up here.</div>
         </div>
-        <div id="cl-toggle-header" style="display:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--cream);border-radius:10px;margin-bottom:0" onclick="toggleCallLogList()">
-          <i class="ti ti-chevron-right" id="cl-toggle-icon" style="font-size:14px;color:var(--pine3);transition:transform .2s ease"></i>
-          <span style="font-weight:600;font-size:13.5px;color:var(--ink)">📋 View call logs</span>
-          <span id="cl-toggle-count" style="font-size:12px;color:var(--ink3)"></span>
-        </div>
-        <div id="cl-content" style="display:none;margin-top:14px">
-          <div class="card" style="margin-bottom:14px">
-            <div class="fg">
-              <div class="ff"><label>Counsellor</label><select id="cl-filter-counsellor" onchange="renderCallLogs()"><option value="All">All counsellors</option></select></div>
-              <div class="ff"><label>Country</label><select id="cl-filter-country" onchange="renderCallLogs()"><option value="All">All countries</option><option>India</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option></select></div>
-              <div class="ff"><label>From</label><input type="date" id="cl-filter-date-from" onchange="renderCallLogs()"></div>
-              <div class="ff"><label>To</label><input type="date" id="cl-filter-date-to" onchange="renderCallLogs()"></div>
-            </div>
-          </div>
+        <div id="cl-content" style="display:none">
           <div class="clabel" id="cl-count"></div>
           <div class="tw">
             <table class="tbl">
@@ -1526,39 +1281,6 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             </table>
           </div>
         </div>
-        </div>
-
-        <div id="prod-sub-whatsapp" style="display:none">
-          <div class="card" style="margin-bottom:16px">
-            <div class="card-h"><span class="card-t">📱 WhatsApp Calls</span></div>
-            <p style="font-size:13px;color:var(--ink3);margin-bottom:0;line-height:1.6">Calls recorded via the WhatsApp desktop recorder, synced in automatically. Restricted to Admins and the Super Admin, same as Call Recorder.</p>
-          </div>
-          <div id="wc-empty" class="empty-state" style="display:none">
-            <div class="es-icon"><i class="ti ti-brand-whatsapp"></i></div>
-            <div class="es-title">No WhatsApp calls yet</div>
-            <div class="es-sub">Once a call syncs in from the desktop recorder, it will show up here.</div>
-          </div>
-          <div id="wc-toggle-header" style="display:none;cursor:pointer;align-items:center;gap:8px;padding:12px 16px;background:var(--cream);border-radius:10px;margin-bottom:0" onclick="toggleWhatsAppCallList()">
-            <i class="ti ti-chevron-right" id="wc-toggle-icon" style="font-size:14px;color:var(--pine3);transition:transform .2s ease"></i>
-            <span style="font-weight:600;font-size:13.5px;color:var(--ink)">📋 View WhatsApp calls</span>
-            <span id="wc-toggle-count" style="font-size:12px;color:var(--ink3)"></span>
-          </div>
-          <div id="wc-content" style="display:none;margin-top:14px">
-            <div class="card" style="margin-bottom:14px">
-              <div class="fg">
-                <div class="ff"><label>Counsellor</label><select id="wc-filter-counsellor" onchange="renderWhatsAppCalls()"><option value="All">All counsellors</option></select></div>
-                <div class="ff"><label>From</label><input type="date" id="wc-filter-date-from" onchange="renderWhatsAppCalls()"></div>
-                <div class="ff"><label>To</label><input type="date" id="wc-filter-date-to" onchange="renderWhatsAppCalls()"></div>
-              </div>
-            </div>
-            <div class="clabel" id="wc-count"></div>
-            <div class="tw">
-              <table class="tbl">
-                <thead><tr><th>Lead</th><th>Counsellor</th><th>Date</th><th>Duration</th><th>Status</th><th>Recording</th><th></th></tr></thead>
-                <tbody id="wc-tbody"></tbody>
-              </table>
-            </div>
-          </div>
         </div>
 
         <div id="prod-sub-myupdate" style="display:none">
@@ -1597,58 +1319,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           </div>
           <div id="am-list"></div>
         </div>
-
-        <!-- Progress Report — datewise counsellor performance, fully
-             automated from call_logs (the same table the CallSync
-             mobile app and web tool write into, alongside manual
-             entries here). No separate data entry — this is purely a
-             reporting view over data that already exists. -->
-        <div id="prod-sub-progress" style="display:none">
-          <div class="card" style="margin-bottom:16px">
-            <div class="card-h"><span class="card-t">📈 Progress Report</span></div>
-            <p style="font-size:12px;color:var(--ink3);margin-bottom:14px;line-height:1.6">Tap a counsellor to see their day-by-day breakdown. Automatically pulled from the Call Recorder log, including calls synced in from the mobile Call Sync app.</p>
-            <div class="fg">
-              <div class="ff"><label>Counsellor</label><select id="pr-counsellor" onchange="renderProgressReport()"><option value="All">All counsellors</option></select></div>
-              <div class="ff"><label>Country</label><select id="pr-country" onchange="renderProgressReport()"><option value="All">All countries</option><option>India</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option></select></div>
-              <div class="ff"><label>From</label><input type="date" id="pr-date-from" onchange="renderProgressReport()"></div>
-              <div class="ff"><label>To</label><input type="date" id="pr-date-to" onchange="renderProgressReport()"></div>
-            </div>
-          </div>
-          <div id="pr-toggle-header" style="display:none;cursor:pointer;align-items:center;gap:8px;padding:12px 16px;background:var(--cream);border-radius:10px" onclick="togglePrList()">
-            <i class="ti ti-chevron-right" id="pr-toggle-icon" style="font-size:14px;color:var(--pine3);transition:transform .2s ease"></i>
-            <span style="font-weight:600;font-size:13.5px;color:var(--ink)">📈 View Progress Report</span>
-            <span id="pr-toggle-count" style="font-size:12px;color:var(--ink3)"></span>
-          </div>
-          <div id="pr-cards-wrap" style="display:none;margin-top:14px">
-            <div id="pr-cards"></div>
-          </div>
-          <div id="pr-empty" class="empty" style="display:none">No calls logged for this filter combination yet.</div>
-        </div>
       </section>
-
-      <style>
-        /* Progress Report — counsellor summary cards, expand on click */
-        .pr-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);margin-bottom:12px;overflow:hidden;box-shadow:var(--sh);transition:box-shadow .2s ease, transform .2s ease}
-        .pr-card:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.08)}
-        .pr-card-head{display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;user-select:none}
-        .pr-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--pine),var(--pine3));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
-        .pr-stat{text-align:center;min-width:64px}
-        .pr-stat b{display:block;font-size:18px;color:var(--pine);line-height:1.2}
-        .pr-stat span{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em}
-        .pr-bar-track{flex:1;height:6px;background:var(--line);border-radius:99px;overflow:hidden;min-width:60px}
-        .pr-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--pine));border-radius:99px;transition:width .6s cubic-bezier(.4,0,.2,1)}
-        .pr-chevron{font-size:14px;color:var(--ink3);transition:transform .25s ease;flex-shrink:0}
-        .pr-card.expanded .pr-chevron{transform:rotate(180deg)}
-        .pr-detail{max-height:0;overflow:hidden;transition:max-height .35s ease}
-        .pr-card.expanded .pr-detail{max-height:2000px}
-        .pr-detail-inner{padding:0 20px 18px;border-top:1px solid var(--line)}
-        .pr-day-row{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px dashed var(--line)}
-        .pr-day-row:last-child{border-bottom:none}
-        .pr-day-date{font-size:12px;font-weight:600;color:var(--ink);min-width:90px}
-        .pr-day-metric{font-size:11.5px;color:var(--ink3)}
-        .pr-day-notes{font-size:11.5px;color:var(--ink3);font-style:italic;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      </style>
-
 
       <!-- Student Portal — Owner/Platform Administrator/Super Admin only.
            Reads from the SEPARATE student-portal Supabase project via a
@@ -2231,9 +1902,6 @@ What would you like help with today?</div>
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-ai" onclick="aiAboutLeadFS()"><i class="ti ti-robot"></i>Ask AI</button>
-        <button class="btn" style="background:var(--sky-l);color:var(--sky);border-color:var(--sky)" onclick="generateSponsorLink()"><i class="ti ti-link"></i>Sponsor Link</button>
-        <button class="btn" style="background:var(--cream);color:var(--ink2);border-color:var(--line)" onclick="openLeadJourney(curId)"><i class="ti ti-route"></i>Journey</button>
-        <button class="btn" style="background:var(--sage-l);color:var(--sage);border-color:var(--sage)" onclick="openScheduleMeetingModal(curId)"><i class="ti ti-calendar-plus"></i>Schedule Meeting</button>
         <button class="btn" style="background:var(--gold-l);color:var(--gold);border-color:var(--gold)" onclick="openCourseFinderForLead(curId)"><i class="ti ti-search"></i>Find Courses</button>
         <button class="btn" style="background:#25D366;color:#fff;border-color:#25D366" onclick="waFollowUpFS()"><i class="ti ti-brand-whatsapp"></i></button>
         <button class="btn" id="btn-edit-lead-fs" onclick="editLeadFS()"><i class="ti ti-edit"></i>Edit</button>
@@ -2250,18 +1918,6 @@ What would you like help with today?</div>
         <div id="ld-priority-badge"></div>
         <div id="ld-office-badge"></div>
         <div id="ld-counsel-badge"></div>
-      </div>
-
-      <!-- Proactive AI insight — same idea as the existing "Ask AI"
-           button, but shown automatically the instant the lead opens,
-           no click or navigating away required. Cached per lead per
-           day (same pattern as the Dashboard's daily briefing) so
-           reopening the same lead repeatedly doesn't re-trigger the AI
-           call every time. -->
-      <div style="background:var(--cream);border:1px solid var(--pine3);border-radius:var(--rl);padding:14px 20px;margin-bottom:24px;display:flex;align-items:center;gap:14px">
-        <i class="ti ti-bulb" style="font-size:20px;color:var(--pine3);flex-shrink:0"></i>
-        <div style="flex:1;font-size:13px;color:var(--ink);line-height:1.5" id="ld-ai-insight">Thinking about the best next step…</div>
-        <button onclick="loadLeadInsight(true)" title="Regenerate" style="background:none;border:none;color:var(--pine3);cursor:pointer;font-size:15px;flex-shrink:0"><i class="ti ti-refresh" id="ld-insight-refresh-icon"></i></button>
       </div>
       <!-- 3 columns -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
@@ -2456,7 +2112,7 @@ What would you like help with today?</div>
 </div>
 
 <div id="events-widget" style="position:fixed;bottom:80px;right:18px;width:260px;background:var(--pine);border-radius:12px;padding:12px 14px;z-index:400;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.2)"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"> <span style="color:#fff;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Upcoming events</span> <span onclick="document.getElementById('events-widget').style.display='none'" style="color:rgba(255,255,255,0.6);cursor:pointer;font-size:18px;line-height:1">&times;</span> </div> <div id="events-ticker" style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.6"></div> </div> <div id="dm-bell" onclick="openDmInbox()" style="position:fixed;bottom:24px;right:74px;width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-message-circle-2" style="color:#fff;font-size:20px"></i> <span id="dm-badge" style="position:absolute;top:-2px;right:-2px;background:var(--rose);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div>
-<div id="events-bell" onclick="toggleEventsWidget()" style="position:fixed;bottom:24px;right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> <span id="events-badge" style="position:absolute;top:-2px;right:-2px;background:#F1239;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="ann-bell" onclick="openAnnouncements()" style="position:fixed;bottom:24px;right:130px;width:44px;height:44px;border-radius:50%;background:var(--ember);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-speakerphone" style="color:#fff;font-size:19px"></i> <span id="ann-badge" style="position:absolute;top:-2px;right:-2px;background:var(--rose);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="super-admin-notif-list" style="position:fixed;bottom:24px;left:18px;z-index:500;display:flex;flex-direction:column-reverse;gap:8px;max-width:320px"></div>
+<div id="events-bell" onclick="toggleEventsWidget()" style="position:fixed;top:calc(50% - 60px);right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> <span id="events-badge" style="position:absolute;top:-2px;right:-2px;background:#F1239;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="ann-bell" onclick="openAnnouncements()" style="position:fixed;top:calc(50% + 0px);right:18px;width:44px;height:44px;border-radius:50%;background:var(--ember);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-speakerphone" style="color:#fff;font-size:19px"></i> <span id="ann-badge" style="position:absolute;top:-2px;right:-2px;background:var(--rose);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="super-admin-notif-list" style="position:fixed;bottom:24px;left:18px;z-index:500;display:flex;flex-direction:column-reverse;gap:8px;max-width:320px"></div>
 <div id="urgent-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,20,20,.6);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
   <div id="urgent-popup-card" style="background:#fff;border-radius:18px;padding:0;max-width:460px;width:92%;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden"></div>
 </div>
@@ -3199,62 +2855,6 @@ function setupAssignModeUI(){
 // everyone else who can already see a lead — since loadLeads() already
 // scopes visibility to "leads that are actually theirs," there's no need
 // for a separate role check here.
-// ── Lead scoring — instant, rule-based, free to compute on every lead ──
-// Deliberately NOT an AI call (unlike the per-lead insight card) — this
-// needs to render on potentially hundreds of rows in the main Leads
-// table simultaneously, which an AI round-trip per row could never do
-// responsively or affordably. A transparent point system instead:
-// pipeline stage + recency of activity + active follow-up management.
-const LEAD_SCORE_TERMINAL={
-  'Enrolled':{label:'✅ Won',},'Fees Paid':{label:'✅ Won'},'Onboarded Student':{label:'✅ Won'},
-  'Commission Received':{label:'✅ Won'},'Process Completed':{label:'✅ Won'},
-  'Not Interested':{label:'⚪ Closed'},'Dropped':{label:'⚪ Closed'},
-};
-// Base score by real pipeline stage (from the actual STATUSES list) —
-// roughly reflects how far along an ACTIVE lead already is. Setback
-// statuses (Interview Failed, Visa Rejected) score low despite being
-// "late stage," since being far along didn't mean success here.
-const LEAD_SCORE_STAGE_BASE={
-  'New Enquiry':10,'Follow Up':20,'Interested':25,'Contacted':22,'Callback Later':18,
-  'Counselling Done':30,'University Shortlist':38,'Documents Pending':42,
-  'Application Submitted':48,'Received Conditional':55,'Received Unconditional':60,
-  'Conditional Cleared':62,'Interview Passed':65,'Interview Failed':15,
-  'Deposit Paid':70,'CAS Applied':75,'CAS Received':80,
-  'Visa Application Submitted':85,'Visa Interview':87,'Visa Received':95,'Visa Rejected':12,
-  'Defer':20,'Pending':25,'Ongoing':35,
-};
-function computeLeadScore(l){
-  if(LEAD_SCORE_TERMINAL[l.status])return{terminal:true,label:LEAD_SCORE_TERMINAL[l.status].label};
-
-  let score=LEAD_SCORE_STAGE_BASE[l.status]??30; // any future/unmapped status falls back to a neutral mid score
-
-  // Recency of last update — momentum matters as much as raw stage;
-  // a lead that hasn't moved in 10+ days is cooling regardless of how
-  // far along it got before going quiet.
-  if(l.updated_at){
-    const days=(Date.now()-new Date(l.updated_at).getTime())/86400000;
-    if(days<2)score+=15;
-    else if(days<5)score+=5;
-    else if(days<10)score-=10;
-    else score-=20;
-  }
-
-  // An active, future-dated follow-up shows the counsellor is genuinely
-  // managing this lead, not letting it drift.
-  if(l.next_followup&&l.next_followup>=new Date().toISOString().substring(0,10))score+=10;
-
-  score=Math.max(0,Math.min(100,score));
-  const tier=score>=70?{emoji:'🔥',label:'Hot',color:'#B91C1C',bg:'#FEE2E2'}
-    :score>=40?{emoji:'🌤️',label:'Warm',color:'#B45309',bg:'#FEF3C7'}
-    :{emoji:'❄️',label:'Cool',color:'#1D4ED8',bg:'#DBEAFE'};
-  return{terminal:false,score,tier};
-}
-function leadScoreBadge(l){
-  const r=computeLeadScore(l);
-  if(r.terminal)return `<span style="font-size:11px;color:var(--ink3)">${r.label}</span>`;
-  return `<span class="pill" style="background:${r.tier.bg};color:${r.tier.color}" title="Score: ${r.score}/100 — based on pipeline stage, recency of activity, and follow-up scheduling">${r.tier.emoji} ${r.tier.label}</span>`;
-}
-
 function renderPriorityCell(l){
   const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
   return `<select onchange="quickChangePriority('${l.id}',this.value)" style="font-size:12px;padding:4px 6px;border-radius:99px;border:none;background:${ps.bg};color:${ps.tx};font-family:var(--font-b);font-weight:600;cursor:pointer">
@@ -3515,14 +3115,6 @@ function chooseOpsView(view){
   renderLeads();
   badges();
   renderFU();
-  // Team was missing from this refresh list entirely — meaning
-  // switching the toggle while already on the Team screen left it
-  // showing whichever view was rendered before the switch, completely
-  // unaffected by the very fixes meant to make it respect this toggle.
-  // renderTeam only actually does anything once teamList has loaded at
-  // least once, so this check avoids an error on a very first login
-  // before that's happened yet.
-  if(teamList&&teamList.length)renderTeam(teamList);
 }
 function reopenOpsViewModal(){
   document.getElementById('ops-view-modal').style.display='flex';
@@ -3633,8 +3225,6 @@ async function onLogin(user){
   loadDashReminders();
   loadExpiryAlerts();
   loadMyTasks();
-  loadTodaysPriorities();
-  loadMyMeetings();
   await loadNotificationSettings();
   checkUnreadDmCount();
   startNotificationEngine();
@@ -3767,11 +3357,6 @@ document.addEventListener('keydown',(e)=>{
     else if(e.key==='Enter'){e.preventDefault();if(cmdkResults[cmdkSelectedIndex])executeCommandResult(cmdkResults[cmdkSelectedIndex]);}
     return;
   }
-  const shortcutsOverlay=document.getElementById('shortcuts-overlay');
-  if(shortcutsOverlay&&shortcutsOverlay.style.display==='flex'){
-    if(e.key==='Escape'){e.preventDefault();closeShortcutsHelp();}
-    return;
-  }
   // "N" and "/" shortcuts — only when not typing in any field, so normal
   // typing (including a name that happens to contain n or /) is never
   // interrupted.
@@ -3789,17 +3374,8 @@ document.addEventListener('keydown',(e)=>{
     } else {
       openCommandPalette();
     }
-  } else if(e.key==='?'){
-    e.preventDefault();
-    openShortcutsHelp();
   }
 });
-function openShortcutsHelp(){
-  document.getElementById('shortcuts-overlay').style.display='flex';
-}
-function closeShortcutsHelp(){
-  document.getElementById('shortcuts-overlay').style.display='none';
-}
 function openCommandPalette(){
   document.getElementById('cmdk-overlay').style.display='flex';
   document.getElementById('cmdk-input').value='';
@@ -3994,14 +3570,6 @@ function startWorldClock(){
   if(worldClockInterval)clearInterval(worldClockInterval);
   worldClockInterval=setInterval(renderWorldClock,1000);
 }
-// ── COMMAND PALETTE (Ctrl+K / Cmd+K) ────────────────────────────────
-// Search-and-jump: any screen, a handful of quick actions, or a live
-// lead search — all from the keyboard. Built as a self-contained
-// overlay that only ever READS from state already loaded elsewhere
-// (leads, myRole, etc.) and calls existing functions (nav, openAddLead,
-// etc.) — it doesn't introduce any new data flow of its own, which
-// keeps it safe to add without risk to anything already working.
-
 function nav(id,btn){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
@@ -4060,17 +3628,12 @@ function nav(id,btn){
   // staff (blocked from Finance/Team/etc, same as Counsellors) but need
   // through to the one screen their whole role exists for.
   if(id==='digitalmarketing'&&roleIsCounsellor&&myRole!=='Digital Marketing'){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
-  // Team visibility is intentionally open to everyone — anyone can see
-  // who's on the team. Actions within it (removing a member) stay
-  // restricted to isSuperAdmin further down in renderTeam/
-  // renderManagementAndOperationsTeams, which already only shows the
-  // delete button for Owner/Platform Administrator/Super Admin (all
-  // three covered by the single isSuperAdmin flag).
+  if(id==='team'&&roleIsCounsellor){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
   // Productivity used to be Admin-tier only — now everyone needs in for
   // "My Daily Update", so the blanket block is gone. Call Recorder and
   // Activity Monitor stay restricted via initProductivity() below instead,
   // sub-tab by sub-tab, rather than blocking the whole screen.
-  if(id==='leads'){loadDocumentsCountByLead().then(renderLeads);renderLeads();populateSavedViewsDropdown();setTimeout(applyRoleUI,500);}
+  if(id==='leads'){loadDocumentsCountByLead().then(renderLeads);renderLeads();setTimeout(applyRoleUI,500);}
   if(id==='toolleads'){renderToolLeads();}
   if(id==='events'){loadEvents();}
   if(id==='import'){populateExportCounsellorDropdown();const note=document.getElementById('import-counsellor-note');if(note)note.style.display=(myRole==='Counsellor'&&!isSuperAdmin)?'block':'none';}
@@ -4085,13 +3648,6 @@ function nav(id,btn){
   if(id==='teamchat')initTeamChat();
   if(id==='coaching')renderCoaching();
   if(id==='followup')renderFU();
-  // Every other screen above re-renders itself on navigation — this was
-  // the one genuinely missing. Team was ONLY ever rendered once, at
-  // initial login; simply clicking into the tab afterward showed
-  // whatever was rendered back then, completely unaffected by the
-  // Domestic/International toggle regardless of any fix made to the
-  // rendering logic itself, since that logic was never being re-run.
-  if(id==='team')renderTeam(teamList);
 }
 function navFilter(filterId,value){nav('leads',document.querySelector('.ni[data-nav="leads"]'));setTimeout(()=>{const el=document.getElementById(filterId);if(el){el.value=value;renderLeads();}},300);}
 
@@ -4239,9 +3795,6 @@ function renderDash(){
     `<div class="aitem" onclick="openLeadDetail('${l.id}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><div class="adot" style="background:${dotC[l.status]||'#999'}"></div><div><div class="atext">${esc(l.name)} — ${l.status.toLowerCase()}</div><div class="atime">${ago(l.created_at)}${l.source?' · '+l.source:''}</div></div></div>`
   ).join('');
   renderCountryBreakdown();
-  renderGlobalReachMap();
-  renderWeeklyWins();
-  renderDataHealth();
   renderCounsellorRank();
   renderRecentLeads();
   renderLatestPayments();
@@ -4512,167 +4065,6 @@ function renderSubTeamDetail(){
     </tr>`;
   }).join('');
 }
-// ── Leads Board (Kanban) view ────────────────────────────────────
-// Deliberately reuses opsViewScopedLeads + the exact same filter
-// predicate renderLeads() already applies, so switching between List
-// and Board never shows a different SET of leads — only a different
-// arrangement of the identical result.
-function getCurrentFilteredLeads(){
-  const scopedLeads=opsViewScopedLeads(leads);
-  const q=(document.getElementById('ls-q').value||'').toLowerCase();
-  const sf=document.getElementById('ls-st').value;
-  const pf=document.getElementById('ls-pr').value;
-  const df=document.getElementById('ls-de').value;
-  const cf=document.getElementById('ls-country').value;
-  const srcf=document.getElementById('ls-src').value;
-  const counsel=document.getElementById('ls-counsel').value;
-  const from=document.getElementById('ls-from').value;
-  const to=document.getElementById('ls-to').value;
-  const assignF=document.getElementById('ls-assign').value;
-  return scopedLeads.filter(l=>(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!srcf||l.source===srcf)&&(!counsel||l.counsellor===counsel)&&(!from||l.created_at.substring(0,10)>=from)&&(!to||l.created_at.substring(0,10)<=to)&&(!assignF||(assignF==='assigned'?!!l.counsellor:!l.counsellor))&&smartLeadMatch(l,q));
-}
-function switchLeadsView(mode){
-  localStorage.setItem('s4p_leads_view',mode);
-  const listBtn=document.getElementById('leads-view-list-btn');
-  const boardBtn=document.getElementById('leads-view-board-btn');
-  document.getElementById('leads-table-wrap').style.display=mode==='list'?'block':'none';
-  document.getElementById('leads-top-scroll').style.display=mode==='list'?'block':'none';
-  document.getElementById('leads-board-view').style.display=mode==='board'?'block':'none';
-  if(listBtn){listBtn.style.background=mode==='list'?'var(--paper)':'transparent';listBtn.style.boxShadow=mode==='list'?'var(--sh)':'none';listBtn.style.color=mode==='list'?'var(--ink)':'var(--ink3)';}
-  if(boardBtn){boardBtn.style.background=mode==='board'?'var(--paper)':'transparent';boardBtn.style.boxShadow=mode==='board'?'var(--sh)':'none';boardBtn.style.color=mode==='board'?'var(--ink)':'var(--ink3)';}
-  if(mode==='board')renderLeadsBoard();
-}
-function renderLeadsBoard(){
-  const colsEl=document.getElementById('leads-board-columns');
-  if(!colsEl)return;
-  const f=getCurrentFilteredLeads();
-
-  const byStatus={};
-  f.forEach(l=>{
-    const s=l.status||'(no status)';
-    if(!byStatus[s])byStatus[s]=[];
-    byStatus[s].push(l);
-  });
-  // Order columns to roughly follow the real pipeline (using the same
-  // STATUSES array order everywhere else in the app), rather than
-  // whatever order they happened to appear in the data.
-  const orderedStatuses=STATUSES.filter(s=>byStatus[s]&&byStatus[s].length);
-
-  if(!orderedStatuses.length){
-    colsEl.innerHTML=emptyState('🔍','No leads match your filters.');
-    return;
-  }
-
-  colsEl.innerHTML=orderedStatuses.map(status=>{
-    const colLeads=byStatus[status];
-    const ss=SS[status]||{bg:'#eee',tx:'#555'};
-    const cardsHtml=colLeads.map(l=>{
-      const scoreR=computeLeadScore(l);
-      const scoreBadge=scoreR.terminal?'':`<span style="font-size:10px">${scoreR.tier.emoji}</span>`;
-      // A native <select> for changing status — works identically on
-      // touch and desktop, unlike drag-and-drop which genuinely
-      // doesn't function via touch in most mobile browsers (a real
-      // platform limitation, not something a hint text actually
-      // fixes). Uses the exact same updateLeadStatusDirect() the
-      // drag-and-drop flow already calls, so a status change behaves
-      // identically regardless of which way it was triggered.
-      const statusOptions=STATUSES.map(s=>`<option value="${esc(s)}"${s===status?' selected':''}>${esc(s)}</option>`).join('');
-      return `<div class="board-card" draggable="true" ondragstart="onBoardCardDragStart(event,'${l.id}')"
-        style="background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:grab;box-shadow:var(--sh)">
-        <div onclick="openLeadDetail('${l.id}')" style="cursor:pointer">
-          <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px">${esc(l.name||'(no name)')} ${scoreBadge}</div>
-          <div style="font-size:11px;color:var(--ink3)">${esc(l.program||'—')} → ${esc(l.destination||'—')}</div>
-          <div style="font-size:10px;color:var(--ink3);margin-top:4px">${esc(l.counsellor||'Unassigned')}</div>
-        </div>
-        <select onclick="event.stopPropagation()" onchange="onBoardCardMoveSelect(event,'${l.id}')" style="width:100%;margin-top:8px;font-size:11px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;background:var(--cream);color:var(--ink2)">
-          ${statusOptions}
-        </select>
-      </div>`;
-    }).join('');
-    return `<div class="board-column" data-status="${esc(status)}"
-      ondragover="onBoardColumnDragOver(event)" ondragleave="onBoardColumnDragLeave(event)" ondrop="onBoardColumnDrop(event,'${esc(status)}')"
-      style="flex:0 0 260px;background:var(--cream);border-radius:10px;padding:10px;transition:background .15s ease">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:0 2px">
-        <span class="pill" style="background:${ss.bg};color:${ss.tx};font-size:11px">${esc(status)}</span>
-        <span style="font-size:11px;color:var(--ink3);margin-left:auto">${colLeads.length}</span>
-      </div>
-      ${cardsHtml}
-    </div>`;
-  }).join('');
-}
-let boardDraggedLeadId=null;
-function onBoardCardDragStart(e,leadId){
-  boardDraggedLeadId=leadId;
-  e.dataTransfer.effectAllowed='move';
-}
-function onBoardColumnDragOver(e){
-  e.preventDefault();
-  e.currentTarget.style.background='var(--pine-l,#E8F2ED)';
-}
-function onBoardColumnDragLeave(e){
-  e.currentTarget.style.background='var(--cream)';
-}
-async function onBoardColumnDrop(e,newStatus){
-  e.preventDefault();
-  e.currentTarget.style.background='var(--cream)';
-  const leadId=boardDraggedLeadId;
-  boardDraggedLeadId=null;
-  if(!leadId)return;
-  const l=leads.find(x=>x.id===leadId);
-  if(!l||l.status===newStatus)return; // dropped back in the same column — nothing to do
-  await updateLeadStatusDirect(leadId,newStatus);
-  renderLeadsBoard();
-}
-// The tap-friendly alternative to drag-and-drop — a plain <select> on
-// each card. Calls the exact same update function drag-and-drop uses,
-// so status changes behave identically either way, on any device.
-async function onBoardCardMoveSelect(e,leadId){
-  const newStatus=e.target.value;
-  const l=leads.find(x=>x.id===leadId);
-  if(!l||l.status===newStatus)return;
-  await updateLeadStatusDirect(leadId,newStatus);
-  renderLeadsBoard();
-}
-
-// Reusable single-lead status update, callable with any lead id — not
-// just curId the way updateStatusFS (used by the lead detail modal) is.
-// Mirrors the same permission check, DB update, local state sync, and
-// activity logging updateStatusFS already does, so a status change
-// behaves identically regardless of whether it came from the detail
-// modal or a Board drag-and-drop.
-async function updateLeadStatusDirect(leadId,newStatus){
-  const l=leads.find(x=>x.id===leadId);
-  if(!l)return;
-  if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}
-  const oldStatus=l.status;
-  setSyncing();
-  const{error}=await sb.from('leads').update({status:newStatus}).eq('id',leadId);
-  if(error){setSyncErr();toast('Error updating status.');return;}
-  l.status=newStatus;
-  setSynced();renderDash();badges();toast('Status → '+newStatus);
-  autoCreateTaskForStatus(l,newStatus);
-  if(oldStatus&&oldStatus!==newStatus)logActivity(leadId,'status_change',`Status: ${oldStatus} → ${newStatus}`);
-  if(LEAD_SCORE_TERMINAL[newStatus]&&LEAD_SCORE_TERMINAL[newStatus].label==='✅ Won')celebrateConversion();
-}
-
-// Small, safe, purely-decorative celebration — fires only on a genuine
-// conversion (reuses the exact same "Won" status list as the scoring
-// system, so this can never drift out of sync with what scoring
-// considers a win). No new data, no new state — just confetti.
-function celebrateConversion(){
-  const container=document.createElement('div');
-  container.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:5000;overflow:hidden';
-  const colors=['#1E5F4E','#E08429','#3B82F6','#DC2626','#B8860B'];
-  for(let i=0;i<40;i++){
-    const piece=document.createElement('div');
-    const size=6+Math.random()*6;
-    piece.style.cssText=`position:absolute;top:-20px;left:${Math.random()*100}%;width:${size}px;height:${size}px;background:${colors[i%colors.length]};opacity:${.7+Math.random()*.3};border-radius:${Math.random()>.5?'50%':'2px'};animation:confettiFall ${1.8+Math.random()*1.2}s ease-in forwards;animation-delay:${Math.random()*.3}s;transform:rotate(${Math.random()*360}deg)`;
-    container.appendChild(piece);
-  }
-  document.body.appendChild(container);
-  setTimeout(()=>container.remove(),3500);
-}
-
 function renderLeads(){
   document.getElementById('leads-loading').style.display='none';
   // Bulk actions (select, reassign, status/priority change) are Management
@@ -4712,7 +4104,7 @@ function renderLeads(){
   if(empty)return;
   document.getElementById('lcount').textContent=`Showing ${f.length} of ${leads.length} leads`;
   const tb=document.getElementById('lead-tbody');tb.innerHTML='';
-  if(!f.length){tb.innerHTML=`<tr><td colspan="16">${emptyState('🔍','No leads match your filters.')}</td></tr>`;return;}
+  if(!f.length){tb.innerHTML=`<tr><td colspan="15">${emptyState('🔍','No leads match your filters.')}</td></tr>`;return;}
   // Single-assignment .map().join() instead of accumulating with += in
   // the loop — the += pattern re-parses the ENTIRE growing HTML string
   // on every single iteration (O(n²) work), which is a real, measurable
@@ -4735,7 +4127,6 @@ function renderLeads(){
       <td style="font-size:12px">${esc(l.destination||'—')}</td>
       <td style="font-size:11px;color:var(--ink3);white-space:nowrap">${capturedStr}</td>
       <td><span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span>${docsBadge(l.id)}</td>
-      <td onclick="event.stopPropagation()">${leadScoreBadge(l)}</td>
       <td onclick="event.stopPropagation()">${renderPriorityCell(l)}</td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderCounsellorCell(l)}</td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'application_team','Application Team')}</td>
@@ -4751,11 +4142,6 @@ function renderLeads(){
     const inner=document.getElementById('leads-top-scroll-inner');
     if(wrap&&inner)inner.style.width=wrap.scrollWidth+'px';
   },0);
-  // If Board view is currently the visible one, keep it in sync with
-  // whatever filter just changed — otherwise it would silently show a
-  // stale arrangement until the user manually clicks back into it.
-  const boardView=document.getElementById('leads-board-view');
-  if(boardView&&boardView.style.display==='block')renderLeadsBoard();
 }
 
 // ── TOOL LEADS (filtered view of the same Leads table) ────────────
@@ -4874,7 +4260,6 @@ function openLeadDetail(id){
   const l=leads.find(x=>x.id===id);if(!l)return;
   curId=id;
   logViewIfNeeded(id);
-  loadLeadInsight(false);
   document.getElementById('ld-id').textContent=l.lead_id||id.substring(0,8);
   document.getElementById('ld-captured-at').textContent=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'Unknown';
   document.getElementById('ld-name').textContent=l.name;
@@ -4964,163 +4349,8 @@ async function updateStatusFS(){
 }
 function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
 async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
-// Sponsor/customer view — a shareable, no-login status page for
-// whoever's paying but isn't the student or staff (a parent, a
-// sponsor). Deliberately calls a narrow security-definer RPC rather
-// than exposing anything about the leads table directly — the token
-// generated here can only ever return the 5 safe fields defined in
-// that function, never notes or anything else on the lead.
-// Shared rendering for both entry points below — same icon mapping
-// already established in the Reports tab's global activity log, kept
-// consistent rather than inventing a second version.
-const ACTIVITY_ICONS={created:'✨',imported:'📥',status_change:'🔄',reassigned:'👤',field_edit:'✏️',viewed:'👁️',email_sent:'✉️'};
-function renderActivityTimelineEntries(data,showLeadName){
-  const listEl=document.getElementById('activity-timeline-list');
-  const emptyEl=document.getElementById('activity-timeline-empty');
-  if(!data||!data.length){
-    listEl.innerHTML='';
-    emptyEl.style.display='block';
-    return;
-  }
-  emptyEl.style.display='none';
-  listEl.innerHTML=data.map(e=>{
-    const dt=new Date(e.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-    return `<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;${showLeadName?'cursor:pointer':''}" ${showLeadName?`onclick="closeActivityTimelineAndOpenLead('${e.lead_id}')"`:''}>
-      <span style="font-size:16px;flex-shrink:0">${ACTIVITY_ICONS[e.event_type]||'•'}</span>
-      <div style="flex:1">
-        <div style="color:var(--ink)">${esc(e.detail||e.event_type)}</div>
-        <div style="font-size:11px;color:var(--ink3);margin-top:2px">${e.actor_name?esc(e.actor_name)+' · ':''}${dt}</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-function closeActivityTimelineAndOpenLead(leadId){
-  document.getElementById('activity-timeline-modal').style.display='none';
-  openLeadDetail(leadId);
-}
-// Lead Journey — everything that's happened to ONE specific lead,
-// chronologically, in one place instead of scattered across tabs.
-async function openLeadJourney(leadId){
-  const l=leads.find(x=>x.id===leadId);
-  if(!l)return;
-  document.getElementById('activity-timeline-title').textContent=`🛤️ ${l.name}'s Journey`;
-  document.getElementById('activity-timeline-modal').style.display='flex';
-  document.getElementById('activity-timeline-list').innerHTML='<div style="text-align:center;color:var(--ink3);font-size:13px;padding:20px 0">Loading…</div>';
-  const{data,error}=await sb.from('activity_log').select('*').eq('lead_id',leadId).order('created_at',{ascending:false}).limit(100);
-  if(error){document.getElementById('activity-timeline-list').innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load activity.</div>';return;}
-  renderActivityTimelineEntries(data,false);
-}
-// Counsellor Activity — everything ONE staff member has done, across
-// every lead they've touched. Same underlying table and rendering as
-// Lead Journey, filtered by actor_name instead of lead_id.
-async function openCounsellorJourney(counsellorName){
-  document.getElementById('activity-timeline-title').textContent=`👤 ${counsellorName}'s Activity`;
-  document.getElementById('activity-timeline-modal').style.display='flex';
-  document.getElementById('activity-timeline-list').innerHTML='<div style="text-align:center;color:var(--ink3);font-size:13px;padding:20px 0">Loading…</div>';
-  const{data,error}=await sb.from('activity_log').select('*').eq('actor_name',counsellorName).order('created_at',{ascending:false}).limit(100);
-  if(error){document.getElementById('activity-timeline-list').innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load activity.</div>';return;}
-  renderActivityTimelineEntries(data,true);
-}
-async function generateSponsorLink(){
-  if(!curId)return;
-  const{data,error}=await sb.rpc('generate_sponsor_view_token',{p_lead_id:curId});
-  if(error){toast('Error generating link: '+error.message);return;}
-  const url=`https://step4progress2025-byte.github.io/crm/sponsor.html?token=${data}`;
-  navigator.clipboard.writeText(url).then(()=>{
-    toast('Sponsor link copied — send it directly to the parent/sponsor.');
-  }).catch(()=>{
-    prompt('Copy this link to share with the parent/sponsor:',url);
-  });
-}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
-
-// Proactive per-lead insight — same underlying idea as aiAboutLeadFS
-// above (asking the AI for a recommended next action), but shown
-// automatically the instant a lead opens rather than requiring a click
-// that navigates away to a different screen entirely. Cached per lead
-// per day in localStorage, same pattern as loadDailyBriefing, so
-// reopening the same lead repeatedly during a day doesn't repeatedly
-// call the AI for something that hasn't meaningfully changed.
-async function loadLeadInsight(force){
-  if(!curId)return;
-  const l=leads.find(x=>x.id===curId);
-  if(!l)return;
-  const textEl=document.getElementById('ld-ai-insight');
-  const iconEl=document.getElementById('ld-insight-refresh-icon');
-  if(!textEl)return;
-
-  const todayStr=new Date().toISOString().substring(0,10);
-  const cacheKey='s4p_lead_insight_'+l.id+'_'+todayStr;
-
-  if(!force){
-    const cached=localStorage.getItem(cacheKey);
-    if(cached){textEl.textContent=cached;return;}
-  }
-
-  textEl.textContent='Thinking about the best next step…';
-  if(iconEl)iconEl.style.animation='spin 1s linear infinite';
-
-  try{
-    const daysSinceUpdate=l.updated_at?Math.floor((Date.now()-new Date(l.updated_at).getTime())/86400000):null;
-    const summary=[
-      `Name: ${l.name}`,
-      `Status: ${l.status}`,
-      `Program/Destination: ${l.program||'—'} → ${l.destination||'—'}`,
-      `Days since last update: ${daysSinceUpdate!==null?daysSinceUpdate:'unknown'}`,
-      `Next follow-up set: ${l.next_followup||'none set'}`,
-      `Visa deadline: ${l.visa_deadline||'none'}`,
-      `Notes: ${l.notes||'none'}`,
-    ].join('\n');
-
-    const r=await fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/ai-proxy',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:100,
-        system:'You are a study-abroad consultancy assistant. Given one lead\'s details, respond with exactly ONE short, specific, actionable sentence recommending what the counsellor should do next with THIS lead. No greeting, no preamble, no bullet points — just the one sentence. If the lead looks genuinely on track with nothing urgent, say so plainly instead of inventing a task.',
-        messages:[{role:'user',content:summary}]
-      })
-    });
-    const d=await r.json();
-    const insight=d.content?.[0]?.text?.trim()||'Could not generate an insight right now.';
-    textEl.textContent=insight;
-    localStorage.setItem(cacheKey,insight);
-  }catch(e){
-    textEl.textContent='Could not generate an insight right now.';
-  }finally{
-    if(iconEl)iconEl.style.animation='';
-  }
-}
-// Message Templates — each a function of the lead, so the message is
-// genuinely personalized (name, program, destination) rather than a
-// generic string with blanks left unfilled.
-const MESSAGE_TEMPLATES=[
-  {label:'General Follow-up',build:l=>`Hi ${l.name}, this is a follow-up from Step4Progress regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`},
-  {label:'Document Reminder',build:l=>`Hi ${l.name}, just a quick reminder that we're still waiting on a few documents to move your ${l.program||'application'} forward. Could you please share them at your earliest convenience? Happy to help if you have any questions about what's needed.`},
-  {label:'Visa Update',build:l=>`Hi ${l.name}, wanted to give you an update on your visa process for ${l.destination||'your destination'}. Your current status is: ${l.status}. Let us know if you have any questions — we're here to help.`},
-  {label:"Haven't Heard From You",build:l=>`Hi ${l.name}, we haven't heard from you in a little while regarding your ${l.program||'enquiry'}. We just wanted to check in and see how things are going, and if there's anything we can help with to keep things moving.`},
-  {label:'Missed Call Catch-up',build:l=>`Hi ${l.name}, sorry we missed you on the phone earlier! This is Step4Progress calling about your ${l.program||'enquiry'}. Could you let us know a good time to call back, or feel free to reach out whenever works for you.`},
-  {label:'Application Status Update',build:l=>`Hi ${l.name}, quick update on your application — you're currently at the "${l.status}" stage. We'll keep you posted as things progress. Let us know if you have any questions in the meantime!`},
-];
-function waFollowUpFS(){
-  if(!curId)return;
-  const l=leads.find(x=>x.id===curId);
-  if(!l)return;
-  const listEl=document.getElementById('msg-template-list');
-  listEl.innerHTML=MESSAGE_TEMPLATES.map((t,i)=>`
-    <div onclick="sendTemplatedMessage(${i})" style="padding:12px 14px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:background .15s ease" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background=''">
-      <div style="font-weight:600;font-size:13.5px;color:var(--ink)">${esc(t.label)}</div>
-      <div style="font-size:12px;color:var(--ink3);margin-top:3px;line-height:1.4">${esc(t.build(l)).substring(0,90)}…</div>
-    </div>`).join('');
-  document.getElementById('msg-template-modal').style.display='flex';
-}
-function sendTemplatedMessage(templateIndex){
-  if(!curId)return;
-  const l=leads.find(x=>x.id===curId);
-  if(!l)return;
-  const message=MESSAGE_TEMPLATES[templateIndex].build(l);
-  document.getElementById('msg-template-modal').style.display='none';
-  window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${encodeURIComponent(message)}`,'_blank');
-}
+function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
 // FS versions of doc/reminder/uni functions
 async function loadDocsFS(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-doc-list');if(!el)return;if(error||!data||!data.length){el.innerHTML=emptyState('📋','No checklist yet.');return;}await loadDocFilesFor(data.map(d=>d.id));el.innerHTML=data.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',true)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',true)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiryFS('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
 function setDocExpiryFS(id,current){openQuickInput('Set expiry date','Expiry date','date',current,(val)=>{sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocsFS(curId);toast('Expiry date updated.');});});}
@@ -5648,22 +4878,6 @@ function closeModal(id){document.getElementById(id).classList.remove('open');if(
 function normalizePhone(raw){
   return (raw||'').replace(/\D/g,'').slice(-10);
 }
-let dupLeadResolve=null;
-function showDupLeadModal(dup){
-  return new Promise(resolve=>{
-    dupLeadResolve=resolve;
-    document.getElementById('dup-lead-details').innerHTML=`
-      <div style="font-weight:700;margin-bottom:4px">${esc(dup.name||'—')} (${esc(dup.lead_id||dup.id.substring(0,8))})</div>
-      <div>Mobile: ${esc(dup.mobile||'—')}</div>
-      <div>Status: ${esc(dup.status||'—')}</div>`;
-    document.getElementById('dup-lead-modal').style.display='flex';
-  });
-}
-function closeDupLeadModal(proceed){
-  document.getElementById('dup-lead-modal').style.display='none';
-  if(dupLeadResolve)dupLeadResolve(proceed);
-  dupLeadResolve=null;
-}
 function findDuplicateLead(name,mobile,email,excludeId){
   const normMobile=normalizePhone(mobile);
   const normName=(name||'').trim().toLowerCase();
@@ -5703,7 +4917,7 @@ async function saveLead(){
     const mobileFullCheck=!mobileNumValCheck?'':(mobileNumValCheck.startsWith('+')?mobileNumValCheck:`${mobileCodeValCheck} ${mobileNumValCheck}`);
     const dup=findDuplicateLead(name,mobileFullCheck,document.getElementById('f-email').value,null);
     if(dup){
-      const proceed=await showDupLeadModal(dup);
+      const proceed=confirm(`Possible duplicate found:\n\n${dup.name} (${dup.lead_id||dup.id.substring(0,8)})\nMobile: ${dup.mobile||'—'}\nStatus: ${dup.status}\n\nAdd this as a new lead anyway? Click Cancel to stop and look up the existing one instead.`);
       if(!proceed)return;
     }
   }
@@ -6214,20 +5428,6 @@ function renderManagementAndOperationsTeams(team){
   const opsEl=document.getElementById('operations-team-section');
   if(!mgmtEl||!opsEl)return;
 
-  // Full symmetry with the Domestic Operations fix below: these two
-  // sections are explicitly labeled "International," so they should
-  // hide just as completely when a Super Admin has chosen the Domestic
-  // ops view — previously only Domestic Operations respected this
-  // toggle, leaving International's own sections visible regardless of
-  // which view was selected. Applies to Super Admin/Owner/Platform
-  // Administrator alike, since they all share the same isSuperAdmin
-  // flag and the same superAdminOpsView state.
-  const hideInternational=isSuperAdmin&&superAdminOpsView==='Domestic';
-  if(hideInternational){
-    mgmtEl.innerHTML='';
-    opsEl.innerHTML='';
-  } else {
-
   const mgmtRoles=['Manager','Admin','Director'];
   const mgmt=(team||[]).filter(t=>mgmtRoles.includes(t.role)&&t.team_category!=='Domestic');
   mgmtEl.innerHTML=`<div class="card" style="margin-bottom:16px">
@@ -6259,69 +5459,18 @@ function renderManagementAndOperationsTeams(team){
     <div style="display:flex;gap:20px;flex-wrap:wrap">${opsCols}</div>
   </div>`;
 
-  } // end of hideInternational else block
-
   // ── Domestic Operations (UK-internal, no round-robin, Management-assigned only) ──
-  // Only shown when a Super Admin has explicitly chosen the Domestic ops
-  // view — previously this rendered unconditionally regardless of
-  // International/Domestic selection, so switching to International
-  // still left Domestic Operations visible on the Team page. Anyone who
-  // ISN'T a Super Admin (no ops-view concept at all) still sees this
-  // section by default, matching prior behaviour for them.
   const domesticEl=document.getElementById('domestic-team-section');
   if(domesticEl){
-    const shouldShowDomestic=!isSuperAdmin||!superAdminOpsView||superAdminOpsView==='Domestic';
-    if(!shouldShowDomestic){
-      domesticEl.innerHTML='';
-    } else {
-    const domesticAll=(team||[]).filter(t=>t.team_category==='Domestic');
-    // Split into the same shape as International — Management,
-    // Operations (Application/Visa/SOP), and Counsellors — rather than
-    // one flat undifferentiated list. Domestic has no multi-country
-    // "by office" breakdown the way International does (it's all one
-    // UK-internal group), so Counsellors gets its own section here
-    // instead of a per-office split.
-    const mgmtRoles=['Manager','Admin','Director'];
-    const dMgmt=domesticAll.filter(t=>mgmtRoles.includes(t.role));
-    const dCounsellors=domesticAll.filter(t=>t.role==='Counsellor');
-    const dOpsRoles=[['Application Team','📝'],['Visa Team','🛂'],['SOP Team','✍️']];
-
-    const tcard=(t)=>`<div class="tcard">
+    const domestic=(team||[]).filter(t=>t.team_category==='Domestic');
+    domesticEl.innerHTML=`<div class="card" style="margin-bottom:16px">
+      <div class="card-h"><span class="card-t">🇬🇧 Domestic Operations</span><span style="font-size:11px;color:var(--ink3)">${domestic.length} member${domestic.length!==1?'s':''} — UK-internal only, never receives leads automatically</span></div>
+      <div class="team-grid">${domestic.length?domestic.map(t=>`<div class="tcard">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
-          <button onclick="openCounsellorJourney('${esc((t.full_name||'').replace(/'/g,"\\'"))}')" title="View activity" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-route"></i></button>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
-        </div>`;
-
-    const opsCols=dOpsRoles.map(([roleName,icon])=>{
-      const members=domesticAll.filter(t=>t.role===roleName);
-      return `<div style="flex:1;min-width:220px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line)">
-          <span style="font-weight:600;font-size:13px;color:var(--pine)">${icon} ${roleName}</span>
-          <span style="font-size:10px;color:var(--ink3);font-style:italic">${members.length} member${members.length!==1?'s':''}</span>
-        </div>
-        ${members.length?members.map(t=>`<div class="tcard" style="margin-bottom:8px">
-            <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-            <div style="flex:1;min-width:0"><div class="tcard-name">${esc(t.full_name||'—')}</div><div class="tcard-email">${esc(t.email||'')}</div></div>
-            ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
-          </div>`).join(''):`<div style="font-size:11px;color:var(--ink3);font-style:italic">No one assigned yet.</div>`}
-      </div>`;
-    }).join('');
-
-    domesticEl.innerHTML=`
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-h"><span class="card-t">🇬🇧 Domestic — Management</span><span style="font-size:11px;color:var(--ink3)">${dMgmt.length} member${dMgmt.length!==1?'s':''} — UK-internal only</span></div>
-        <div class="team-grid">${dMgmt.length?dMgmt.map(tcard).join(''):emptyState('🏛️','No Domestic Management members yet.')}</div>
-      </div>
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-h"><span class="card-t">🇬🇧 Domestic — Operations</span><span style="font-size:11px;color:var(--ink3)">Application, Visa & SOP — UK-internal only</span></div>
-        <div style="display:flex;gap:20px;flex-wrap:wrap">${opsCols}</div>
-      </div>
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-h"><span class="card-t">🇬🇧 Domestic — Counsellors</span><span style="font-size:11px;color:var(--ink3)">${dCounsellors.length} member${dCounsellors.length!==1?'s':''} — never receives leads automatically</span></div>
-        <div class="team-grid">${dCounsellors.length?dCounsellors.map(tcard).join(''):emptyState('🇬🇧','No Domestic Counsellors yet.')}</div>
-      </div>`;
-    }
+        </div>`).join(''):emptyState('🇬🇧','No Domestic team members yet.')}</div>
+    </div>`;
   }
 
   // ── Agent Portal (external partners, single flat role, no hierarchy) ──
@@ -6353,17 +5502,6 @@ function renderTeam(team){
     if(isSuperAdmin) parts.push('🗑️ = remove from team');
     legend.textContent=parts.join(' · ');
   }
-
-  // Same International/Domestic symmetry as
-  // renderManagementAndOperationsTeams above — this "by office" listing
-  // (India HQ/UK HQ/Pakistan/Bangladesh) only ever shows International
-  // staff by construction (excludes team_category==='Domestic'
-  // unconditionally), so it needs the same hide-when-Domestic-selected
-  // treatment, or it stays visible regardless of which ops view is active.
-  const hideInternationalByOffice=isSuperAdmin&&superAdminOpsView==='Domestic';
-  if(hideInternationalByOffice){
-    tg.innerHTML='';
-  } else {
 
   // Build all offices from OFFICE_MAP, then group real team members into them
   const allOffices=[];
@@ -6404,7 +5542,6 @@ function renderTeam(team){
             ${unavail?`<div style="font-size:10px;color:var(--rose);font-weight:600;margin-top:3px">🚫 Unavailable until ${new Date(unavail.to_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${unavail.reason?' — '+esc(unavail.reason):''}</div>`:''}
           </div>
           ${canManage?`<button onclick="openUnavailabilityModal('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Mark unavailable" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-calendar-off"></i></button>`:''}
-          <button onclick="openCounsellorJourney('${esc((t.full_name||'').replace(/'/g,"\\'"))}')" title="View activity" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-route"></i></button>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc(t.full_name||t.email||'').replace(/'/g,"\'")}')" title="Remove team member" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`;
         }).join('')
@@ -6421,8 +5558,6 @@ function renderTeam(team){
       <div class="${members.length?'team-grid':''}">${cards}</div>
     </div>`;
   }).join('');
-
-  } // end of hideInternationalByOffice else block
 
   // update follow-up counsellor filter
   const fp=document.getElementById('fp-co');
@@ -6592,59 +5727,6 @@ function populateExportCounsellorDropdown(){
 // ══ BULK ACTIONS on the Leads table ═══════════════════════════════
 // Select multiple rows, apply one action to all of them at once —
 // pure frontend + a single batch Supabase call, zero new infrastructure.
-// ── Saved filter views ──────────────────────────────────────────
-// Stored in localStorage, per-browser — a convenience layer on top of
-// filters that already exist, not new data that needs a database
-// table, RLS, or a migration. Each saved view is just a snapshot of
-// what these exact filter fields held at save time.
-const SAVED_VIEWS_KEY='s4p_saved_lead_views';
-const SAVED_VIEW_FIELDS=['ls-q','ls-st','ls-pr','ls-country','ls-de','ls-src','ls-counsel','ls-assign','ls-from','ls-to'];
-function getSavedViews(){
-  try{return JSON.parse(localStorage.getItem(SAVED_VIEWS_KEY)||'[]');}catch(e){return[];}
-}
-function populateSavedViewsDropdown(){
-  const sel=document.getElementById('saved-views-select');
-  if(!sel)return;
-  const views=getSavedViews();
-  sel.innerHTML='<option value="">📁 My saved views</option>'+views.map((v,i)=>`<option value="${i}">${esc(v.name)}</option>`).join('');
-}
-function saveCurrentView(){
-  const name=prompt('Name this view (e.g. "My hot India leads this week"):');
-  if(!name||!name.trim())return;
-  const filters={};
-  SAVED_VIEW_FIELDS.forEach(id=>{const el=document.getElementById(id);if(el)filters[id]=el.value;});
-  const views=getSavedViews();
-  views.push({name:name.trim(),filters});
-  localStorage.setItem(SAVED_VIEWS_KEY,JSON.stringify(views));
-  populateSavedViewsDropdown();
-  document.getElementById('saved-views-select').value=views.length-1;
-  document.getElementById('delete-saved-view-btn').style.display='inline-flex';
-  toast('View saved.');
-}
-function applySavedView(indexStr){
-  const deleteBtn=document.getElementById('delete-saved-view-btn');
-  if(indexStr===''){deleteBtn.style.display='none';return;}
-  const views=getSavedViews();
-  const view=views[parseInt(indexStr,10)];
-  if(!view)return;
-  SAVED_VIEW_FIELDS.forEach(id=>{
-    const el=document.getElementById(id);
-    if(el&&view.filters[id]!==undefined)el.value=view.filters[id];
-  });
-  deleteBtn.style.display='inline-flex';
-  renderLeads();
-}
-function deleteSavedView(){
-  const sel=document.getElementById('saved-views-select');
-  const idx=parseInt(sel.value,10);
-  if(isNaN(idx))return;
-  const views=getSavedViews();
-  const removed=views.splice(idx,1);
-  localStorage.setItem(SAVED_VIEWS_KEY,JSON.stringify(views));
-  populateSavedViewsDropdown();
-  document.getElementById('delete-saved-view-btn').style.display='none';
-  toast(`Deleted "${removed[0]?.name||'view'}".`);
-}
 function getSelectedLeadIds(){
   return Array.from(document.querySelectorAll('.bulk-lead-checkbox:checked')).map(cb=>cb.dataset.id);
 }
@@ -6674,48 +5756,6 @@ function clearBulkSelection(){
   document.querySelectorAll('.bulk-lead-checkbox').forEach(cb=>cb.checked=false);
   document.getElementById('bulk-select-all').checked=false;
   document.getElementById('bulk-actions-bar').style.display='none';
-}
-function openBulkEmailModal(){
-  const ids=getSelectedLeadIds();
-  if(!ids.length)return;
-  const withEmail=ids.filter(id=>{const l=leads.find(x=>x.id===id);return l&&l.email;});
-  document.getElementById('bulk-email-count').textContent=
-    `${withEmail.length} of ${ids.length} selected lead${ids.length!==1?'s':''} ${withEmail.length!==1?'have':'has'} an email on file — only those will receive this.`;
-  document.getElementById('bulk-email-subject').value='';
-  document.getElementById('bulk-email-message').value='';
-  document.getElementById('bulk-email-modal').style.display='flex';
-}
-function closeBulkEmailModal(){
-  document.getElementById('bulk-email-modal').style.display='none';
-}
-async function sendBulkEmail(){
-  const ids=getSelectedLeadIds();
-  const subject=document.getElementById('bulk-email-subject').value.trim();
-  const message=document.getElementById('bulk-email-message').value.trim();
-  if(!subject||!message){toast('Please fill in both a subject and a message.');return;}
-  const targets=ids.map(id=>leads.find(x=>x.id===id)).filter(l=>l&&l.email);
-  if(!targets.length){toast('None of the selected leads have an email on file.');return;}
-
-  const btn=document.getElementById('bulk-email-send-btn');
-  btn.disabled=true;btn.textContent='Sending…';
-
-  let sent=0,failed=0;
-  for(const l of targets){
-    const personalizedMessage=message.replace(/\{\{name\}\}/g,l.name||'there');
-    try{
-      const r=await fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/send-email',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2cmVnbHFycmRud3R0amFzdndnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDM3NzEsImV4cCI6MjA5NTQxOTc3MX0.I_X-ljOPlLFYLeWz6hE15nL8z0MPqmsSdWcgwole8GE'},
-        body:JSON.stringify({to:l.email,name:l.name,subject,message:personalizedMessage})
-      });
-      if(r.ok){sent++;logActivity(l.id,'email_sent',`Bulk email: "${subject}"`);}
-      else failed++;
-    }catch(e){failed++;}
-  }
-
-  btn.disabled=false;btn.textContent='Send';
-  closeBulkEmailModal();
-  toast(`✉️ Sent to ${sent} lead${sent!==1?'s':''}${failed?`, ${failed} failed`:''}.`);
 }
 async function bulkChangeStatus(){
   const ids=getSelectedLeadIds();
@@ -7165,68 +6205,11 @@ async function saveReportNotes(){
 // exactly the same country/date range already selected for this report.
 // This is the audit-trail view: who captured each lead, who it was
 // assigned/reassigned to, and every status change, all in one place.
-function toggleDataHealthSection(){
-  const wrap=document.getElementById('data-health-wrap');
-  const icon=document.getElementById('data-health-toggle-icon');
-  const isHidden=wrap.style.display==='none';
-  wrap.style.display=isHidden?'block':'none';
-  if(icon)icon.style.transform=isHidden?'rotate(90deg)':'rotate(0deg)';
-}
-// Excludes already-resolved leads (Won/Closed, per the same
-// LEAD_SCORE_TERMINAL definition used everywhere else) — a stale or
-// incomplete lead that's already Enrolled or already marked Not
-// Interested isn't a data-health problem worth flagging, it's simply
-// finished.
-function renderDataHealth(){
-  const countEl=document.getElementById('data-health-count');
-  const listEl=document.getElementById('data-health-list');
-  const emptyEl=document.getElementById('data-health-empty');
-  if(!countEl)return;
-
-  const scoped=opsViewScopedLeads(leads).filter(l=>!LEAD_SCORE_TERMINAL[l.status]);
-  const staleThreshold=new Date(); staleThreshold.setDate(staleThreshold.getDate()-30);
-
-  const noEmail=scoped.filter(l=>!l.email);
-  const noPhone=scoped.filter(l=>!l.mobile);
-  const stale=scoped.filter(l=>l.updated_at&&new Date(l.updated_at)<staleThreshold);
-
-  const totalIssues=noEmail.length+noPhone.length+stale.length;
-  countEl.textContent=totalIssues?`${totalIssues} issue${totalIssues!==1?'s':''} to review`:'All clear';
-
-  if(!totalIssues){
-    listEl.innerHTML='';
-    emptyEl.style.display='block';
-    return;
-  }
-  emptyEl.style.display='none';
-
-  const section=(title,icon,items)=>{
-    if(!items.length)return'';
-    return `<div style="margin-bottom:14px">
-      <div style="font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:6px">${icon} ${title} (${items.length})</div>
-      ${items.slice(0,8).map(l=>`<div onclick="openLeadDetail('${l.id}')" style="padding:6px 0;font-size:12.5px;color:var(--ink);cursor:pointer;border-bottom:1px dashed var(--line)">${esc(l.name||'—')} <span style="color:var(--ink3)">· ${esc(l.counsellor||'Unassigned')}</span></div>`).join('')}
-      ${items.length>8?`<div style="font-size:11px;color:var(--ink3);padding-top:4px">+${items.length-8} more</div>`:''}
-    </div>`;
-  };
-
-  listEl.innerHTML=
-    section('No email on file','✉️',noEmail)+
-    section('No phone number on file','📵',noPhone)+
-    section('Untouched for 30+ days','🕸️',stale);
-}
-function toggleActivityLogSection(){
-  const wrap=document.getElementById('rpt-activity-log-wrap');
-  const icon=document.getElementById('rpt-activity-toggle-icon');
-  const isHidden=wrap.style.display==='none';
-  wrap.style.display=isHidden?'block':'none';
-  if(icon)icon.style.transform=isHidden?'rotate(90deg)':'rotate(0deg)';
-}
 async function loadGlobalActivityLog(scopedLeads,start,end){
   const el=document.getElementById('rpt-activity-log');
-  const countEl=document.getElementById('rpt-activity-count');
   if(!el)return;
   const leadIds=scopedLeads.map(l=>l.id);
-  if(!leadIds.length){el.innerHTML=emptyState('📭','No leads in this scope.');if(countEl)countEl.textContent='0 entries';return;}
+  if(!leadIds.length){el.innerHTML=emptyState('📭','No leads in this scope.');return;}
   const leadNameById={};scopedLeads.forEach(l=>{leadNameById[l.id]=l.name;});
   const{data,error}=await sb.from('activity_log').select('*')
     .in('lead_id',leadIds)
@@ -7235,8 +6218,7 @@ async function loadGlobalActivityLog(scopedLeads,start,end){
     .order('created_at',{ascending:false})
     .limit(200);
   if(error){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load activity log — has activity_log been created in Supabase yet?</div>';return;}
-  if(!data||!data.length){el.innerHTML=emptyState('🕐','No activity recorded in this period yet.');if(countEl)countEl.textContent='0 entries';return;}
-  if(countEl)countEl.textContent=`${data.length} entr${data.length!==1?'ies':'y'}`;
+  if(!data||!data.length){el.innerHTML=emptyState('🕐','No activity recorded in this period yet.');return;}
   const icons={created:'✨',imported:'📥',status_change:'🔄',reassigned:'👤',field_edit:'✏️',viewed:'👁️'};
   el.innerHTML=data.map(e=>`<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;cursor:pointer" onclick="openLeadDetail('${e.lead_id}')">
     <span>${icons[e.event_type]||'•'}</span>
@@ -7312,14 +6294,12 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
       ['ls-src','ls-from','ls-to'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='block';el.style.minWidth='140px';}});
     }
 
-    // Counsellors: hide Finance nav entirely (Team is now visible to
-    // everyone — only actions within it, like removing a member, stay
-    // restricted to Super Admin/Owner/Platform Administrator).
-    // Productivity stays visible to everyone too — "My Daily Update" is
-    // for the whole team; Call Recorder and Activity Monitor are still
-    // gated internally by initProductivity(), sub-tab by sub-tab.
+    // Counsellors: hide Finance & Team nav entirely. Productivity stays
+    // visible to everyone — "My Daily Update" is for the whole team;
+    // Call Recorder and Activity Monitor are still gated internally by
+    // initProductivity(), sub-tab by sub-tab.
     if(isCounsellor){
-      const restricted=['finance','reports','subteam-detail'];
+      const restricted=['finance','team','reports','subteam-detail'];
       document.querySelectorAll('.ni').forEach(btn=>{
         const onclick=btn.getAttribute('onclick')||'';
         restricted.forEach(r=>{if(onclick.includes("nav('"+r+"'"))btn.style.display='none';});
@@ -7366,133 +6346,7 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
       return `<div class="prow" onclick="navFilter('ls-st','')" style="cursor:pointer"><span class="pill" style="background:var(--gold-l);color:var(--gold);min-width:130px">${esc(intake)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--gold)"></div></div><span class="pn" style="color:var(--gold)">${n}</span></div>`;
     }).join('');
   }
-function renderCountryBreakdown(){const card=document.getElementById('country-breakdown-card');const el=document.getElementById('country-breakdown');if(!el||!card)return;if(isRestrictedStaffRole()){card.style.display='none';return;}card.style.display='block';const titleEl=card.querySelector('.card-t');if(titleEl)titleEl.textContent=isSuperAdmin?'🌍 Country breakdown':'🌍 '+(myCountry||'Your country')+' breakdown';const map={};leads.forEach(l=>{const c=l.country||'Unspecified';if(!map[c])map[c]={country:c,total:0,enrolled:0};map[c].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[c].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.total-a.total);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}const flagMap={India:'🇮🇳',UK:'🇬🇧',Pakistan:'🇵🇰',Bangladesh:'🇧🇩'};const tot=leads.length||1;el.innerHTML=sorted.map(c=>{const w=Math.round(c.total/tot*100);const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;return`<div class="prow" onclick="navFilter('ls-country','${c.country}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:110px">${flagMap[c.country]||''} ${esc(c.country)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${c.total}</span><span style="font-size:11px;color:var(--ink3);min-width:60px;text-align:right">${pct}% enr.</span></div>`;}).join('');}
-
-// ── Global Reach visual ──────────────────────────────────────────
-// Stylized, not a geographically-traced map — genuine relative
-// positions of the 4 operating countries (UK far west/north; Pakistan,
-// India, Bangladesh roughly west-to-east in South Asia), each node
-// sized by lead volume, connected to a central hub with a live pulse.
-// Deliberately reuses the SAME per-country counts as the bar-chart
-// breakdown above — this is a different view of that data, not a
-// second source of truth to keep in sync.
-const GLOBAL_REACH_NODES=[
-  {country:'UK',flag:'🇬🇧',x:70,y:90},
-  {country:'Pakistan',flag:'🇵🇰',x:270,y:130},
-  {country:'India',flag:'🇮🇳',x:335,y:190},
-  {country:'Bangladesh',flag:'🇧🇩',x:415,y:200},
-];
-const GLOBAL_REACH_HUB={x:250,y:255};
-// ── Weekly Wins ───────────────────────────────────────────────────
-// Team-wide visibility into who converted a lead this week —
-// currently invisible outside the individual counsellor and their
-// manager. Deliberately reuses LEAD_SCORE_TERMINAL's exact "Won"
-// definition rather than a second, separate list that could quietly
-// drift out of sync with what lead scoring already calls a win.
-// updated_at is used as a proxy for "when did this conversion
-// happen" — the same convention already used elsewhere in this file
-// for staleness/recency checks — not a perfectly precise "exact
-// moment of conversion" timestamp, but the best available without a
-// dedicated field.
-function renderWeeklyWins(){
-  const listEl=document.getElementById('weekly-wins-list');
-  const emptyEl=document.getElementById('weekly-wins-empty');
-  const rangeEl=document.getElementById('weekly-wins-range');
-  if(!listEl)return;
-
-  const now=new Date();
-  const dayOfWeek=(now.getDay()+6)%7; // Monday=0
-  const monday=new Date(now); monday.setDate(now.getDate()-dayOfWeek); monday.setHours(0,0,0,0);
-  const sunday=new Date(monday); sunday.setDate(monday.getDate()+6); sunday.setHours(23,59,59,999);
-
-  rangeEl.textContent=`${monday.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} – ${sunday.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`;
-
-  const scoped=opsViewScopedLeads(leads);
-  const wins=scoped.filter(l=>{
-    if(!LEAD_SCORE_TERMINAL[l.status]||LEAD_SCORE_TERMINAL[l.status].label!=='✅ Won')return false;
-    if(!l.updated_at)return false;
-    const updated=new Date(l.updated_at);
-    return updated>=monday&&updated<=sunday;
-  });
-
-  if(!wins.length){
-    listEl.innerHTML='';
-    emptyEl.style.display='block';
-    return;
-  }
-  emptyEl.style.display='none';
-
-  const byCounsellor={};
-  wins.forEach(l=>{
-    const name=l.counsellor||'Unassigned';
-    if(!byCounsellor[name])byCounsellor[name]=[];
-    byCounsellor[name].push(l);
-  });
-
-  listEl.innerHTML=Object.entries(byCounsellor).sort((a,b)=>b[1].length-a[1].length).map(([name,wonLeads])=>`
-    <div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)">
-      <div class="tcard-av" style="flex-shrink:0">${ini(name)}</div>
-      <div style="flex:1">
-        <div style="font-weight:700;font-size:13.5px;color:var(--ink)">${esc(name)} <span style="font-weight:400;color:var(--ink3);font-size:12px">— ${wonLeads.length} win${wonLeads.length!==1?'s':''}</span></div>
-        <div style="font-size:12px;color:var(--ink3);margin-top:2px">${wonLeads.map(l=>esc(l.name||'—')).join(', ')}</div>
-      </div>
-    </div>`).join('');
-}
-function renderGlobalReachMap(){
-  const el=document.getElementById('global-reach-map');
-  const emptyEl=document.getElementById('global-reach-empty');
-  const card=document.getElementById('global-reach-card');
-  if(!el||!card)return;
-  if(isRestrictedStaffRole()){card.style.display='none';return;}
-  card.style.display='block';
-
-  const scopedLeads=opsViewScopedLeads(leads);
-  const counts={};
-  scopedLeads.forEach(l=>{
-    const c=l.country;
-    if(!c)return;
-    if(!counts[c])counts[c]={total:0,enrolled:0};
-    counts[c].total++;
-    if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))counts[c].enrolled++;
-  });
-
-  const maxCount=Math.max(...GLOBAL_REACH_NODES.map(n=>counts[n.country]?.total||0));
-  if(maxCount===0){
-    el.innerHTML='';
-    emptyEl.style.display='block';
-    return;
-  }
-  emptyEl.style.display='none';
-
-  const minR=14,maxR=38;
-  const linesHtml=GLOBAL_REACH_NODES.map(n=>
-    `<line x1="${GLOBAL_REACH_HUB.x}" y1="${GLOBAL_REACH_HUB.y}" x2="${n.x}" y2="${n.y}" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="4,4"/>`
-  ).join('');
-
-  const nodesHtml=GLOBAL_REACH_NODES.map(n=>{
-    const data=counts[n.country]||{total:0,enrolled:0};
-    const r=data.total>0?minR+((data.total/maxCount)*(maxR-minR)):minR*0.55;
-    const pct=data.total>0?Math.round(data.enrolled/data.total*100):0;
-    return `
-      <g onclick="navFilter('ls-country','${n.country}')" style="cursor:pointer">
-        <circle cx="${n.x}" cy="${n.y}" r="${r}" fill="var(--pine3)" opacity=".85">
-          <animate attributeName="r" values="${r};${r*1.6};${r}" dur="2.6s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" values=".5;0;.5" dur="2.6s" repeatCount="indefinite"/>
-        </circle>
-        <circle cx="${n.x}" cy="${n.y}" r="${r}" fill="var(--pine3)"/>
-        <title>${n.flag} ${n.country}: ${data.total} lead${data.total!==1?'s':''}, ${pct}% enrolled</title>
-        <text x="${n.x}" y="${n.y+5}" text-anchor="middle" font-size="13" fill="#fff" font-weight="700">${data.total}</text>
-        <text x="${n.x}" y="${n.y+r+20}" text-anchor="middle" font-size="18">${n.flag}</text>
-      </g>`;
-  }).join('');
-
-  el.innerHTML=`<svg viewBox="0 0 500 300" style="width:100%;height:auto">
-    ${linesHtml}
-    <circle cx="${GLOBAL_REACH_HUB.x}" cy="${GLOBAL_REACH_HUB.y}" r="9" fill="var(--gold)"/>
-    <text x="${GLOBAL_REACH_HUB.x}" y="${GLOBAL_REACH_HUB.y+26}" text-anchor="middle" font-size="11" fill="var(--ink3)" font-style="italic">HQ</text>
-    ${nodesHtml}
-  </svg>`;
-}
+  function renderCountryBreakdown(){const card=document.getElementById('country-breakdown-card');const el=document.getElementById('country-breakdown');if(!el||!card)return;if(isRestrictedStaffRole()){card.style.display='none';return;}card.style.display='block';const titleEl=card.querySelector('.card-t');if(titleEl)titleEl.textContent=isSuperAdmin?'🌍 Country breakdown':'🌍 '+(myCountry||'Your country')+' breakdown';const map={};leads.forEach(l=>{const c=l.country||'Unspecified';if(!map[c])map[c]={country:c,total:0,enrolled:0};map[c].total++;if(['Enrolled','Fees Paid','Commission Received'].includes(l.status))map[c].enrolled++;});const sorted=Object.values(map).sort((a,b)=>b.total-a.total);if(!sorted.length){el.innerHTML='<div style="color:var(--ink3);font-style:italic;font-size:13px">No data yet.</div>';return;}const flagMap={India:'🇮🇳',UK:'🇬🇧',Pakistan:'🇵🇰',Bangladesh:'🇧🇩'};const tot=leads.length||1;el.innerHTML=sorted.map(c=>{const w=Math.round(c.total/tot*100);const pct=c.total>0?Math.round(c.enrolled/c.total*100):0;return`<div class="prow" onclick="navFilter('ls-country','${c.country}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:110px">${flagMap[c.country]||''} ${esc(c.country)}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${c.total}</span><span style="font-size:11px;color:var(--ink3);min-width:60px;text-align:right">${pct}% enr.</span></div>`;}).join('');}
   function renderCounsellorRank(){
     const el=document.getElementById('counsel-rank');
     const card=document.getElementById('counsel-rank-card');
@@ -7778,11 +6632,9 @@ async function checkUnreadDmCount(){
 // re-call the AI every time the Dashboard re-renders.
 // ══ DIGITAL MARKETING DASHBOARD ═════════════════════════════════════
 const META_PULL_URL='https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/meta-data-pull';
-// India and Bangladesh have real Meta credentials connected. Bangladesh's
-// GA4 property still isn't set up, so GA4 history will just come back
-// empty for Bangladesh until that's sorted separately - Meta data (ad
-// spend, leads by ad, posts) will show correctly though.
-const DM_CONNECTED_COUNTRIES=['India','Bangladesh','Pakistan'];
+// Only India has real Meta/GA4 credentials connected so far - other
+// countries show a clean placeholder until their own credentials exist.
+const DM_CONNECTED_COUNTRIES=['India'];
 let dmActiveCountry='India';
 function initDigitalMarketing(){
   document.getElementById('dm-post-date').value=new Date().toISOString().substring(0,10);
@@ -7855,7 +6707,7 @@ async function refreshMetaData(){
   if(fb.error){
     kpis.push(['Facebook',`⚠️ ${safeErrorText(fb.error)}`,'c7']);
   } else {
-    kpis.push(['Page followers',fb.page_follows??'—','c1']);
+    kpis.push(['Page followers',fb.page_fans??'—','c1']);
     // Engagement/reach metrics removed for now — Meta keeps rejecting
     // every name tried so far. Once a working metric name is confirmed
     // via the ?metric= override, add it back here.
@@ -8383,132 +7235,6 @@ async function loadExpiryAlerts(){
 // Counsellors see only tasks assigned to them. Manager/Admin see every
 // open task within their own country (via the linked lead). Super Admin
 // sees everything. Overdue tasks always sort first.
-// ── Today's Priorities ────────────────────────────────────────────
-// Computed directly from real lead data — overdue follow-ups, hot
-// leads that have gone quiet, and documents-pending leads with
-// nothing uploaded yet. Deliberately different from "My Tasks" below:
-// nothing needs to be created for something to show up here, it's a
-// live read of what the data itself suggests needs attention right
-// now. Reuses the exact same "Hot" tier and "Won/Closed" definitions
-// lead scoring already established, so this can't quietly disagree
-// with what that system already says about a lead.
-// Schedule Meeting — genuine per-lead calendar booking. Uses the
-// lead's own assigned counsellor as the meeting owner (not
-// necessarily whoever clicks the button, since an Admin might
-// schedule on a counsellor's behalf) — falls back to the current
-// user's name only if the lead has no counsellor assigned yet.
-let scheduleMeetingLeadId=null;
-function openScheduleMeetingModal(leadId){
-  scheduleMeetingLeadId=leadId;
-  const l=leads.find(x=>x.id===leadId);
-  document.getElementById('meeting-title').value=l?`Call with ${l.name}`:'';
-  document.getElementById('meeting-date').value=new Date().toISOString().substring(0,10);
-  document.getElementById('meeting-time').value='';
-  document.getElementById('meeting-duration').value='30';
-  document.getElementById('meeting-notes').value='';
-  document.getElementById('schedule-meeting-modal').style.display='flex';
-}
-async function saveScheduledMeeting(){
-  const l=leads.find(x=>x.id===scheduleMeetingLeadId);
-  if(!l)return;
-  const title=document.getElementById('meeting-title').value.trim();
-  const date=document.getElementById('meeting-date').value;
-  const time=document.getElementById('meeting-time').value;
-  const duration=parseInt(document.getElementById('meeting-duration').value,10)||30;
-  const notes=document.getElementById('meeting-notes').value.trim();
-  if(!title||!date||!time){toast('Please fill in title, date, and time.');return;}
-
-  const scheduledAt=new Date(`${date}T${time}`).toISOString();
-  const{error}=await sb.from('meetings').insert({
-    lead_id:l.id,
-    counsellor_name:l.counsellor||myName,
-    title,scheduled_at:scheduledAt,duration_minutes:duration,notes:notes||null,
-  });
-  if(error){toast('Error scheduling meeting: '+error.message);return;}
-  document.getElementById('schedule-meeting-modal').style.display='none';
-  toast('Meeting scheduled.');
-  loadMyMeetings();
-}
-// "My Meetings" — upcoming scheduled meetings for the CURRENT logged
-// in person specifically, shown on the Home screen alongside Today's
-// Priorities. Genuinely different from that widget: these are things
-// the counsellor themselves booked, not something the data pattern
-// suggests needs attention.
-async function loadMyMeetings(){
-  const el=document.getElementById('my-meetings-list');
-  const card=document.getElementById('my-meetings-card');
-  if(!el||!card)return;
-  // Same scoping principle as Today's Priorities: a regular counsellor
-  // sees only their own meetings, but Admin/Owner/Super Admin see
-  // across the whole team — otherwise scheduling a meeting on someone
-  // else's lead (very normal for a manager to do) would show up for
-  // nobody at all, since it's attributed to that lead's actual
-  // counsellor, not whoever clicked the button.
-  let query=sb.from('meetings').select('*').gte('scheduled_at',new Date().toISOString()).order('scheduled_at',{ascending:true}).limit(8);
-  if(myRole==='Counsellor'&&!isSuperAdmin){
-    query=query.eq('counsellor_name',myName);
-  }
-  const{data,error}=await query;
-  if(error||!data||!data.length){card.style.display='none';return;}
-  card.style.display='block';
-  const showCounsellorName=!(myRole==='Counsellor'&&!isSuperAdmin);
-  el.innerHTML=data.map(m=>{
-    const dt=new Date(m.scheduled_at);
-    const dateStr=dt.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-    const timeStr=dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-    return `<div onclick="openLeadDetail('${m.lead_id}')" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer">
-      <div style="text-align:center;min-width:44px;background:var(--sage-l);border-radius:8px;padding:4px">
-        <div style="font-size:11px;font-weight:700;color:var(--sage)">${dateStr}</div>
-        <div style="font-size:10px;color:var(--ink3)">${timeStr}</div>
-      </div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600;color:var(--ink)">${esc(m.title)}</div>
-        <div style="font-size:11px;color:var(--ink3)">${m.duration_minutes} min${showCounsellorName?' · '+esc(m.counsellor_name||'Unassigned'):''}${m.notes?' · '+esc(m.notes):''}</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-function loadTodaysPriorities(){
-  const el=document.getElementById('priorities-list');
-  if(!el||!leads)return;
-
-  let scoped=(myRole==='Counsellor'&&!isSuperAdmin)
-    ? leads.filter(l=>l.counsellor===myName)
-    : opsViewScopedLeads(leads);
-  scoped=scoped.filter(l=>!LEAD_SCORE_TERMINAL[l.status]); // already-resolved leads aren't a priority
-
-  const today=new Date().toISOString().substring(0,10);
-  const items=[];
-
-  scoped.filter(l=>l.next_followup&&l.next_followup<today).forEach(l=>{
-    items.push({icon:'📅',urgency:0,text:`Follow-up overdue: ${l.name}`,sub:`Was due ${new Date(l.next_followup).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`,leadId:l.id});
-  });
-
-  scoped.forEach(l=>{
-    const scoreResult=computeLeadScore(l);
-    if(!scoreResult.terminal&&scoreResult.tier.label==='Hot'&&l.updated_at){
-      const daysSince=(Date.now()-new Date(l.updated_at).getTime())/86400000;
-      if(daysSince>2)items.push({icon:'🔥',urgency:1,text:`Hot lead gone quiet: ${l.name}`,sub:`No activity for ${Math.floor(daysSince)} days`,leadId:l.id});
-    }
-  });
-
-  scoped.filter(l=>l.status==='Documents Pending'&&!documentsUploadedLeadIds.has(l.id)).forEach(l=>{
-    items.push({icon:'📄',urgency:2,text:`Documents needed: ${l.name}`,sub:'Nothing uploaded yet',leadId:l.id});
-  });
-
-  items.sort((a,b)=>a.urgency-b.urgency);
-
-  if(!items.length){el.innerHTML=emptyState('🎉','Nothing urgent right now — great work staying on top of things.');return;}
-
-  el.innerHTML=items.slice(0,6).map(it=>`
-    <div onclick="openLeadDetail('${it.leadId}')" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer">
-      <span style="font-size:17px">${it.icon}</span>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600;color:var(--ink)">${esc(it.text)}</div>
-        <div style="font-size:11.5px;color:var(--ink3)">${esc(it.sub)}</div>
-      </div>
-    </div>`).join('');
-}
 async function loadMyTasks(){
   const el=document.getElementById('my-tasks-list');
   if(!el)return;
@@ -8602,21 +7328,10 @@ function renderAnnouncementFeed(){
   if(!mine.length){el.innerHTML=emptyState('📢','Nothing here yet.');return;}
   el.innerHTML=mine.map(a=>{
     const attachHtml=a.attachment_url?`<div style="margin-top:6px"><a href="${esc(a.attachment_url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i>${esc(a.attachment_filename||'Attachment')}</a></div>`:'';
-    // Edit/Delete — Super Admin only (which already covers Owner and
-    // Platform Administrator, same single flag used everywhere else
-    // for this tier of access). Edit re-opens the same composer used
-    // to create announcements, pre-filled with this one's content.
-    const editDeleteHtml=isSuperAdmin?`<div style="display:flex;gap:6px;flex-shrink:0">
-        <button onclick='openAnnouncementComposer(${JSON.stringify(a).replace(/'/g,"&#39;")})' title="Edit" style="background:none;border:none;color:var(--sky);cursor:pointer;font-size:14px;padding:2px"><i class="ti ti-pencil"></i></button>
-        <button onclick="deleteAnnouncement('${a.id}')" title="Delete" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px"><i class="ti ti-trash"></i></button>
-      </div>`:'';
     return `<div style="border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:10px;background:var(--paper)">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div style="font-size:13px;font-weight:700">${esc(a.author_name||'Someone')}</div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:10px">${esc(a.target_label||'Everyone')}</span>
-          ${editDeleteHtml}
-        </div>
+        <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:10px">${esc(a.target_label||'Everyone')}</span>
       </div>
       <div style="font-size:11px;color:var(--ink3);margin-bottom:6px">${new Date(a.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
       <div style="font-size:13px;line-height:1.6;white-space:pre-wrap">${esc(a.message)}</div>
@@ -8648,27 +7363,18 @@ async function postAnnouncementReply(announcementId){
   if(error){toast('Error posting reply: '+error.message);return;}
   loadAnnouncementReplies(announcementId);
 }
-function openAnnouncementComposer(editAnnouncement){
+function openAnnouncementComposer(){
   document.getElementById('ann-composer').style.display='block';
-  editingAnnouncementId=editAnnouncement?editAnnouncement.id:null;
-  document.getElementById('ann-target-type').value=editAnnouncement?editAnnouncement.target_type:'all';
-  document.getElementById('ann-message').value=editAnnouncement?editAnnouncement.message:'';
-  stagedAnnAttachment=editAnnouncement&&editAnnouncement.attachment_url?{url:editAnnouncement.attachment_url,filename:editAnnouncement.attachment_filename}:null;
-  document.getElementById('ann-attach-preview').innerHTML=stagedAnnAttachment?`<i class="ti ti-paperclip"></i> ${esc(stagedAnnAttachment.filename||'Attachment')}`:'';
+  document.getElementById('ann-target-type').value='all';
+  document.getElementById('ann-message').value='';
+  stagedAnnAttachment=null;
+  document.getElementById('ann-attach-preview').textContent='';
   const personSel=document.getElementById('ann-person-value');
   personSel.innerHTML=(teamList||[]).filter(t=>t.id!==currentUser?.id).map(t=>`<option value="${t.id}">${esc(t.full_name||t.email||'—')}</option>`).join('');
-  if(editAnnouncement&&editAnnouncement.target_type==='team')document.getElementById('ann-team-value').value=editAnnouncement.target_value||'';
-  if(editAnnouncement&&editAnnouncement.target_type==='individual')personSel.value=editAnnouncement.target_value||'';
-  // Post button label reflects the actual action being taken, so it's
-  // never ambiguous whether this creates a new announcement or updates
-  // an existing one.
-  const postBtn=document.querySelector('#ann-composer .btn-p');
-  if(postBtn)postBtn.textContent=editAnnouncement?'Save changes':'Post';
   syncAnnouncementTargetUI();
 }
 function closeAnnouncementComposer(){
   document.getElementById('ann-composer').style.display='none';
-  editingAnnouncementId=null;
 }
 function syncAnnouncementTargetUI(){
   const type=document.getElementById('ann-target-type').value;
@@ -8687,7 +7393,6 @@ async function handleAnnAttachSelected(file){
   stagedAnnAttachment={url:pub?.publicUrl||null,filename:file.name};
   preview.innerHTML=`<i class="ti ti-paperclip"></i> ${esc(file.name)}`;
 }
-let editingAnnouncementId=null;
 async function postAnnouncement(){
   if(isRestrictedStaffRole()){toast('Only Admin, Manager, Director, Super Admin, or Owner can post announcements.');return;}
   const type=document.getElementById('ann-target-type').value;
@@ -8704,47 +7409,16 @@ async function postAnnouncement(){
     if(!target_value){toast('Pick a person to send this to.');return;}
   }
 
-  const payload={
+  const{error}=await sb.from('announcements').insert({
+    author_id:currentUser?.id,author_name:myName,
     target_type:type,target_value,target_label,
     message,
     attachment_url:stagedAnnAttachment?.url||null,
     attachment_filename:stagedAnnAttachment?.filename||null,
-  };
-
-  if(editingAnnouncementId){
-    // Editing an existing announcement — Super Admin only, enforced
-    // both here and by only ever showing the Edit button to
-    // isSuperAdmin in renderAnnouncementFeed(). Author/created_at are
-    // deliberately left untouched, so it's clear this was an edit to
-    // the original post, not a brand new one from whoever edited it.
-    if(!isSuperAdmin){toast('Only Super Admin can edit announcements.');return;}
-    const{error}=await sb.from('announcements').update(payload).eq('id',editingAnnouncementId);
-    if(error){toast('Error saving changes: '+error.message);return;}
-    closeAnnouncementComposer();
-    toast('Announcement updated.');
-    loadAnnouncements();
-    return;
-  }
-
-  const{error}=await sb.from('announcements').insert({
-    author_id:currentUser?.id,author_name:myName,
-    ...payload,
   });
   if(error){toast('Error posting announcement: '+error.message);return;}
   closeAnnouncementComposer();
   toast('Announcement posted!');
-  loadAnnouncements();
-}
-async function deleteAnnouncement(id){
-  if(!isSuperAdmin){toast('Only Super Admin can delete announcements.');return;}
-  if(!confirm('Delete this announcement? This also removes any replies to it and cannot be undone.'))return;
-  // Replies reference the announcement by id — clear those first so no
-  // orphaned rows are left behind if there's no cascading delete set up
-  // at the database level.
-  await sb.from('announcement_replies').delete().eq('announcement_id',id);
-  const{error}=await sb.from('announcements').delete().eq('id',id);
-  if(error){toast('Error deleting: '+error.message);return;}
-  toast('Announcement deleted.');
   loadAnnouncements();
 }
 async function checkUnreadAnnouncementsCount(){
@@ -9328,88 +8002,17 @@ async function loadCallLogs(){
   if(!error&&data) callLogs=data;
   else if(error) callLogs=[];
 }
-function populateCallLogFilters(){
-  const sel=document.getElementById('cl-filter-counsellor');
-  if(!sel)return;
-  const names=[...new Set((teamList||[]).filter(t=>t.role==='Counsellor').map(t=>t.full_name).filter(Boolean))].sort();
-  sel.innerHTML='<option value="All">All counsellors</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
-}
-function toggleRecordingPlayer(callLogId){
-  const player=document.getElementById('rec-player-'+callLogId);
-  if(!player)return;
-  const isHidden=player.style.display==='none';
-
-  // Close any other currently-open player first — only one recording
-  // should ever be expanded at a time, rather than the list slowly
-  // filling up with every player anyone has ever clicked.
-  document.querySelectorAll('[id^="rec-player-"]').forEach(p=>{
-    if(p!==player&&p.style.display!=='none'){
-      p.style.display='none';
-      const otherAudio=p.querySelector('audio');
-      if(otherAudio)otherAudio.pause();
-    }
-  });
-
-  player.style.display=isHidden?'block':'none';
-  if(!isHidden){
-    const audioEl=player.querySelector('audio');
-    if(audioEl)audioEl.pause();
-  }
-}
-function toggleCallLogList(){
-  const content=document.getElementById('cl-content');
-  const icon=document.getElementById('cl-toggle-icon');
-  const isHidden=content.style.display==='none';
-  content.style.display=isHidden?'block':'none';
-  if(icon)icon.style.transform=isHidden?'rotate(90deg)':'rotate(0deg)';
-}
 function renderCallLogs(){
   const empty=document.getElementById('cl-empty'), content=document.getElementById('cl-content');
-  const toggleHeader=document.getElementById('cl-toggle-header');
   if(!empty||!content)return;
-  if(!callLogs.length){
-    empty.style.display='flex';
-    if(toggleHeader)toggleHeader.style.display='none';
-    content.style.display='none';
-    return;
-  }
-  empty.style.display='none';
-  // The list itself stays closed by default — only the toggle header
-  // shows right away. Whether content is currently open or closed is
-  // left exactly as it already was (so re-filtering doesn't force it
-  // shut on someone who deliberately opened it), rather than always
-  // resetting to open the way it used to unconditionally.
-  if(toggleHeader){
-    toggleHeader.style.display='flex';
-    document.getElementById('cl-toggle-count').textContent=`(${callLogs.length})`;
-  }
-
-  // Same three filters as Progress Report, applied here to the raw
-  // per-call log list rather than the date-grouped summary — lets an
-  // admin narrow down to a specific counsellor/country/date range and
-  // actually find and play an individual recording, not just see totals.
-  const counsellorFilter=document.getElementById('cl-filter-counsellor')?.value||'All';
-  const countryFilter=document.getElementById('cl-filter-country')?.value||'All';
-  const fromDate=document.getElementById('cl-filter-date-from')?.value||null;
-  const toDate=document.getElementById('cl-filter-date-to')?.value||null;
-
-  const filteredLogs=callLogs.filter(c=>{
-    if(counsellorFilter!=='All'&&c.counsellor!==counsellorFilter)return false;
-    if(countryFilter!=='All'){
-      const country=getCounsellorCountryFromTeam(c.counsellor);
-      if(!country||!country.toLowerCase().includes(countryFilter.toLowerCase()))return false;
-    }
-    if(fromDate&&c.call_date<fromDate)return false;
-    if(toDate&&c.call_date>toDate)return false;
-    return true;
-  });
-
+  if(!callLogs.length){empty.style.display='flex';content.style.display='none';return;}
+  empty.style.display='none';content.style.display='block';
   const canDelete=isSuperAdmin||myRole==='Admin'||myRole==='Director';
-  document.getElementById('cl-count').textContent=filteredLogs.length+' call'+(filteredLogs.length!==1?'s':'')+' logged'+(filteredLogs.length!==callLogs.length?` (of ${callLogs.length} total)`:'');
+  document.getElementById('cl-count').textContent=callLogs.length+' call'+(callLogs.length!==1?'s':'')+' logged';
   const statusColors={initiated:['var(--gold-l)','var(--gold)'],ringing:['var(--gold-l)','var(--gold)'],'in-progress':['var(--sage-l)','#0F6E56'],completed:['var(--sage-l)','#0F6E56'],'no-answer':['#FCEBEB','#A32D2D'],failed:['#FCEBEB','#A32D2D'],busy:['#FCEBEB','#A32D2D']};
-  document.getElementById('cl-tbody').innerHTML=filteredLogs.map(c=>{
+  document.getElementById('cl-tbody').innerHTML=callLogs.map(c=>{
     const dt=c.call_date?new Date(c.call_date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
-    const rec=c.recording_url?`<button onclick="toggleRecordingPlayer('${c.id}')" style="background:none;border:1px solid var(--pine3);color:var(--pine3);border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer">▶ Play</button><div id="rec-player-${c.id}" style="display:none;margin-top:6px"><audio controls preload="none" style="height:32px;max-width:220px"><source src="${c.recording_url}"></audio></div>`:c.auto_recorded?'<span style="color:var(--ink3);font-style:italic">Recording processing…</span>':'<span style="color:var(--ink3);font-style:italic">No recording</span>';
+    const rec=c.recording_url?`<a href="${c.recording_url}" target="_blank" style="color:var(--pine);font-weight:600;text-decoration:underline">▶ Play</a>`:c.auto_recorded?'<span style="color:var(--ink3);font-style:italic">Recording processing…</span>':'<span style="color:var(--ink3);font-style:italic">No recording</span>';
     const outcomeBadge=c.outcome
       ? `<span class="pill" style="background:var(--sky-l);color:var(--sky)">${esc(c.outcome)}</span>`
       : c.call_status
@@ -9462,115 +8065,6 @@ async function saveCallLog(){
   renderCallLogs();
   toast('Call logged.');
 }
-
-// ── Productivity: WhatsApp Calls ────────────────────────────────────
-// Reads from whatsapp_calls — a SEPARATE table from call_logs,
-// deployed specifically for the WhatsApp desktop recorder pipeline.
-// lead_id is a real foreign key into the SAME leads table call_logs
-// also uses, so it's embedded directly via Supabase relationship
-// syntax rather than needing a separate lookup.
-let whatsappCalls=[];
-async function loadWhatsAppCalls(){
-  const res=await sb.from('whatsapp_calls').select('*, leads(name,mobile)').order('started_at',{ascending:false});
-  const data=res.data, error=res.error;
-  if(!error&&data) whatsappCalls=data;
-  else if(error) whatsappCalls=[];
-}
-function populateWhatsAppCallFilters(){
-  const sel=document.getElementById('wc-filter-counsellor');
-  if(!sel)return;
-  const names=[...new Set((teamList||[]).filter(function(t){return t.role==='Counsellor';}).map(function(t){return t.full_name;}).filter(Boolean))].sort();
-  var opts='<option value="All">All counsellors</option>';
-  for(var i=0;i<names.length;i++){ opts+='<option value="'+esc(names[i])+'">'+esc(names[i])+'</option>'; }
-  sel.innerHTML=opts;
-}
-function toggleWhatsAppCallList(){
-  const content=document.getElementById('wc-content');
-  const icon=document.getElementById('wc-toggle-icon');
-  const isHidden=content.style.display==='none';
-  content.style.display=isHidden?'block':'none';
-  if(icon)icon.style.transform=isHidden?'rotate(90deg)':'rotate(0deg)';
-}
-function toggleWhatsAppRecordingPlayer(callId){
-  const player=document.getElementById('wc-rec-player-'+callId);
-  if(!player)return;
-  const isHidden=player.style.display==='none';
-  document.querySelectorAll('[id^="wc-rec-player-"]').forEach(function(p){
-    if(p!==player&&p.style.display!=='none'){
-      p.style.display='none';
-      const otherAudio=p.querySelector('audio');
-      if(otherAudio)otherAudio.pause();
-    }
-  });
-  player.style.display=isHidden?'block':'none';
-  if(!isHidden){
-    const audioEl=player.querySelector('audio');
-    if(audioEl)audioEl.pause();
-  }
-}
-function renderWhatsAppCalls(){
-  const empty=document.getElementById('wc-empty'), content=document.getElementById('wc-content');
-  const toggleHeader=document.getElementById('wc-toggle-header');
-  if(!empty||!content)return;
-  if(!whatsappCalls.length){
-    empty.style.display='flex';
-    if(toggleHeader)toggleHeader.style.display='none';
-    content.style.display='none';
-    return;
-  }
-  empty.style.display='none';
-  if(toggleHeader){
-    toggleHeader.style.display='flex';
-    document.getElementById('wc-toggle-count').textContent='('+whatsappCalls.length+')';
-  }
-
-  const counsellorFilter=(document.getElementById('wc-filter-counsellor')||{}).value||'All';
-  const fromDate=(document.getElementById('wc-filter-date-from')||{}).value||null;
-  const toDate=(document.getElementById('wc-filter-date-to')||{}).value||null;
-
-  const filteredCalls=whatsappCalls.filter(function(c){
-    if(counsellorFilter!=='All'&&c.counsellor!==counsellorFilter)return false;
-    const callDate=c.started_at?c.started_at.substring(0,10):null;
-    if(fromDate&&(!callDate||callDate<fromDate))return false;
-    if(toDate&&(!callDate||callDate>toDate))return false;
-    return true;
-  });
-
-  const canDelete=isSuperAdmin||myRole==='Admin'||myRole==='Director';
-  document.getElementById('wc-count').textContent=filteredCalls.length+' call'+(filteredCalls.length!==1?'s':'')+' logged'+(filteredCalls.length!==whatsappCalls.length?' (of '+whatsappCalls.length+' total)':'');
-
-  const statusColors={ringing:['var(--gold-l)','var(--gold)'],answered:['var(--sage-l)','#0F6E56'],completed:['var(--sage-l)','#0F6E56'],missed:['#FCEBEB','#A32D2D'],failed:['#FCEBEB','#A32D2D']};
-
-  document.getElementById('wc-tbody').innerHTML=filteredCalls.map(function(c){
-    const dt=c.started_at?new Date(c.started_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'-';
-    const durationMins=c.duration_seconds?Math.round(c.duration_seconds/60):null;
-    const rec=c.recording_url?('<button onclick="toggleWhatsAppRecordingPlayer(\''+c.id+'\')" style="background:none;border:1px solid var(--pine3);color:var(--pine3);border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer">▶ Play</button><div id="wc-rec-player-'+c.id+'" style="display:none;margin-top:6px"><audio controls preload="none" style="height:32px;max-width:220px"><source src="'+c.recording_url+'"></audio></div>'):'<span style="color:var(--ink3);font-style:italic">No recording</span>';
-    const sc=statusColors[c.status]||['var(--sky-l)','var(--sky)'];
-    const statusBadge='<span class="pill" style="background:'+sc[0]+';color:'+sc[1]+'">'+esc(c.status||'-')+'</span>';
-    const leadName=(c.leads&&c.leads.name)?c.leads.name:'(unattached)';
-    const leadCell=c.lead_id
-      ? ('<span onclick="openLeadDetail(\''+c.lead_id+'\')" style="cursor:pointer;color:var(--pine);text-decoration:underline">'+esc(leadName)+'</span>')
-      : esc(leadName);
-    return '<tr>'
-      +'<td style="font-weight:600"><i class="ti ti-brand-whatsapp" title="WhatsApp call" style="color:#25D366;font-size:13px;margin-right:5px"></i>'+leadCell+'</td>'
-      +'<td style="font-size:12px;color:var(--ink3)">'+esc(c.counsellor||'-')+'</td>'
-      +'<td style="font-size:12px;color:var(--ink3)">'+dt+'</td>'
-      +'<td style="font-size:12px">'+(durationMins?durationMins+' min':'-')+'</td>'
-      +'<td style="font-size:12px">'+statusBadge+'</td>'
-      +'<td>'+rec+'</td>'
-      +'<td>'+(canDelete?('<button onclick="deleteWhatsAppCall(\''+c.id+'\')" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:0 4px" title="Delete"><i class="ti ti-trash"></i></button>'):'')+'</td>'
-      +'</tr>';
-  }).join('');
-}
-async function deleteWhatsAppCall(id){
-  if(!confirm('Delete this WhatsApp call log? This cannot be undone.'))return;
-  const res=await sb.from('whatsapp_calls').delete().eq('id',id);
-  if(res.error){toast('Error deleting: '+res.error.message);return;}
-  whatsappCalls=whatsappCalls.filter(function(c){return c.id!==id;});
-  renderWhatsAppCalls();
-  toast('WhatsApp call log deleted.');
-}
-
 // ── Productivity: sub-tabs, My Daily Update, Activity Monitor ──────
 function initProductivity(){
   const dateEl=document.getElementById('du-date');
@@ -9582,150 +8076,23 @@ function initProductivity(){
   document.querySelectorAll('.prod-subtab[data-sub="calls"]').forEach(b=>b.style.display=isAdminTier?'':'none');
   const monitorTab=document.getElementById('prod-tab-monitor');
   if(monitorTab)monitorTab.style.display=isAdminTier?'':'none';
-  const progressTab=document.getElementById('prod-tab-progress');
-  if(progressTab)progressTab.style.display=isAdminTier?'':'none';
-  const whatsappTab=document.getElementById('prod-tab-whatsapp');
-  if(whatsappTab)whatsappTab.style.display=isAdminTier?'':'none';
 
   if(isAdminTier){
-    loadCallLogs().then(()=>{ renderCallLogs(); renderProgressReport(); });
-    loadWhatsAppCalls().then(renderWhatsAppCalls);
+    loadCallLogs().then(renderCallLogs);
     populateActivityMonitorCountryFilter();
-    populateProgressReportFilters();
-    populateCallLogFilters();
-    populateWhatsAppCallFilters();
   } else {
     setProdSubtab('myupdate');
   }
   loadMyDailyUpdates();
 }
 function setProdSubtab(sub){
-  ['calls','whatsapp','myupdate','monitor','progress'].forEach(s=>{
+  ['calls','myupdate','monitor'].forEach(s=>{
     const panel=document.getElementById('prod-sub-'+s);
     if(panel)panel.style.display=s===sub?'block':'none';
     const btn=document.querySelector(`.prod-subtab[data-sub="${s}"]`);
     if(btn){btn.style.color=s===sub?'var(--pine)':'var(--ink3)';btn.style.borderBottomColor=s===sub?'var(--pine)':'transparent';}
   });
   if(sub==='monitor')renderActivityMonitor();
-  if(sub==='progress')renderProgressReport();
-  if(sub==='whatsapp')renderWhatsAppCalls();
-}
-function populateProgressReportFilters(){
-  const sel=document.getElementById('pr-counsellor');
-  if(!sel)return;
-  const names=[...new Set((teamList||[]).filter(t=>t.role==='Counsellor').map(t=>t.full_name).filter(Boolean))].sort();
-  sel.innerHTML='<option value="All">All counsellors</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
-}
-// Looks up which country a counsellor belongs to via the team table —
-// call_logs itself has no country column, since a call log is about a
-// counsellor and a lead, not tied to an office directly. Matching on
-// name is the same approach the rest of the CRM already uses for
-// counsellor identification (leads.counsellor is also just a name).
-function getCounsellorCountryFromTeam(name){
-  const member=(teamList||[]).find(t=>(t.full_name||'').toLowerCase()===String(name||'').toLowerCase());
-  return member?(member.country||member.office||null):null;
-}
-function togglePrCard(idx){
-  const card=document.querySelector(`.pr-card[data-idx="${idx}"]`);
-  if(card)card.classList.toggle('expanded');
-}
-function togglePrList(){
-  const wrap=document.getElementById('pr-cards-wrap');
-  const icon=document.getElementById('pr-toggle-icon');
-  const isHidden=wrap.style.display==='none';
-  wrap.style.display=isHidden?'block':'none';
-  if(icon)icon.style.transform=isHidden?'rotate(90deg)':'rotate(0deg)';
-}
-function renderProgressReport(){
-  const cardsEl=document.getElementById('pr-cards');
-  const emptyEl=document.getElementById('pr-empty');
-  const toggleHeader=document.getElementById('pr-toggle-header');
-  if(!cardsEl)return;
-
-  const counsellorFilter=document.getElementById('pr-counsellor')?.value||'All';
-  const countryFilter=document.getElementById('pr-country')?.value||'All';
-  const fromDate=document.getElementById('pr-date-from')?.value||null;
-  const toDate=document.getElementById('pr-date-to')?.value||null;
-
-  let filtered=(callLogs||[]).filter(c=>{
-    if(counsellorFilter!=='All'&&c.counsellor!==counsellorFilter)return false;
-    if(countryFilter!=='All'){
-      const country=getCounsellorCountryFromTeam(c.counsellor);
-      if(!country||!country.toLowerCase().includes(countryFilter.toLowerCase()))return false;
-    }
-    if(fromDate&&c.call_date<fromDate)return false;
-    if(toDate&&c.call_date>toDate)return false;
-    return true;
-  });
-
-  if(!filtered.length){
-    cardsEl.innerHTML='';
-    if(toggleHeader)toggleHeader.style.display='none';
-    if(emptyEl)emptyEl.style.display='block';
-    return;
-  }
-  if(emptyEl)emptyEl.style.display='none';
-
-  // Two levels of grouping: by counsellor alone (the card summary, and
-  // what the click-to-expand reveals), and within that, by date (the
-  // day-by-day rows shown once expanded) — built in one pass over the
-  // already-filtered logs rather than querying twice.
-  const byCounsellor={};
-  filtered.forEach(c=>{
-    const name=c.counsellor||'(unknown)';
-    if(!byCounsellor[name])byCounsellor[name]={counsellor:name,calls:0,totalMins:0,leads:new Set(),byDate:{}};
-    const g=byCounsellor[name];
-    g.calls++;
-    g.totalMins+=(c.duration_mins||0);
-    if(c.lead_label)g.leads.add(c.lead_label);
-
-    const dateKey=c.call_date||'(no date)';
-    if(!g.byDate[dateKey])g.byDate[dateKey]={date:dateKey,calls:0,totalMins:0,leads:new Set(),notes:[]};
-    g.byDate[dateKey].calls++;
-    g.byDate[dateKey].totalMins+=(c.duration_mins||0);
-    if(c.lead_label)g.byDate[dateKey].leads.add(c.lead_label);
-    if(c.notes&&c.notes.trim())g.byDate[dateKey].notes.push(c.notes.trim());
-  });
-
-  const summaries=Object.values(byCounsellor).sort((a,b)=>b.calls-a.calls);
-  const maxCalls=Math.max(...summaries.map(s=>s.calls),1);
-
-  if(toggleHeader){
-    toggleHeader.style.display='flex';
-    document.getElementById('pr-toggle-count').textContent=`(${summaries.length} counsellor${summaries.length!==1?'s':''})`;
-  }
-
-  cardsEl.innerHTML=summaries.map((s,idx)=>{
-    const barPct=Math.round((s.calls/maxCalls)*100);
-    const dayRows=Object.values(s.byDate).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-    const detailHtml=dayRows.map(d=>{
-      const dt=d.date!=='(no date)'?new Date(d.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—';
-      const notesPreview=d.notes.length?esc(d.notes.join(' · ')):'';
-      return `<div class="pr-day-row">
-        <span class="pr-day-date">${dt}</span>
-        <span class="pr-day-metric">${d.calls} call${d.calls!==1?'s':''}</span>
-        <span class="pr-day-metric">${d.totalMins} min</span>
-        <span class="pr-day-metric">${d.leads.size} lead${d.leads.size!==1?'s':''}</span>
-        <span class="pr-day-notes" title="${notesPreview}">${notesPreview||'—'}</span>
-      </div>`;
-    }).join('');
-
-    return `<div class="pr-card" data-idx="${idx}">
-      <div class="pr-card-head" onclick="togglePrCard(${idx})">
-        <div class="pr-avatar">${ini(s.counsellor)}</div>
-        <div style="flex:0 0 140px">
-          <div style="font-weight:700;font-size:14px;color:var(--ink)">${esc(s.counsellor)}</div>
-          <div style="font-size:11px;color:var(--ink3)">${dayRows.length} active day${dayRows.length!==1?'s':''}</div>
-        </div>
-        <div class="pr-stat"><b>${s.calls}</b><span>Calls</span></div>
-        <div class="pr-stat"><b>${s.totalMins}</b><span>Minutes</span></div>
-        <div class="pr-stat"><b>${s.leads.size}</b><span>Leads</span></div>
-        <div class="pr-bar-track"><div class="pr-bar-fill" style="width:${barPct}%"></div></div>
-        <i class="ti ti-chevron-down pr-chevron"></i>
-      </div>
-      <div class="pr-detail"><div class="pr-detail-inner">${detailHtml}</div></div>
-    </div>`;
-  }).join('');
 }
 async function submitDailyUpdate(){
   const dateEl=document.getElementById('du-date');

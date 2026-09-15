@@ -4893,6 +4893,8 @@ function findDuplicateLead(name,mobile,email,excludeId){
 async function saveLead(){
   const name=document.getElementById('f-name').value.trim();
   if(!name){document.getElementById('f-name').focus();toast('Please enter a name.');return;}
+  const mobileNumEarlyCheck=document.getElementById('f-mobile').value.trim();
+  if(!mobileNumEarlyCheck){document.getElementById('f-mobile').focus();toast('Please enter a mobile number — this is required.');return;}
   const countryVal=document.getElementById('f-country').value;
   if(!countryVal){document.getElementById('f-country').focus();toast("Please select which office assistance is needed from — this is required and determines which branch handles the lead.");return;}
   // India view-only guard: a Super Admin can't edit an existing India
@@ -5367,6 +5369,35 @@ function isIndiaLeadReadOnly(lead){
 function isIndiaTeamReadOnly(t){
   return isIndiaLocked() && (t?.country==='India');
 }
+// ── Admin password reset ──
+// Passwords are one-way hashed by Supabase Auth and can never be viewed —
+// this sets a brand NEW password instead. The actual write happens inside
+// the admin-reset-password Edge Function using the service_role key, which
+// never touches the browser. This client only sends the caller's own
+// logged-in session token so the function can verify Super Admin status
+// server-side before doing anything.
+async function resetTeamMemberPassword(id,email,name){
+  if(!isSuperAdmin){toast('Only the Super Admin can reset passwords.');return;}
+  const newPass=prompt(`Set a NEW password for ${name} (${email}).\n\nMinimum 8 characters. Share it with them securely afterwards — this does not email them automatically.`);
+  if(newPass===null)return; // cancelled
+  if(newPass.trim().length<8){toast('Password must be at least 8 characters.');return;}
+  try{
+    const{data:sessionData}=await sb.auth.getSession();
+    const token=sessionData?.session?.access_token;
+    if(!token){toast('Could not verify your session — please log out and back in, then try again.');return;}
+    const res=await fetch(`https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/admin-reset-password`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+      body:JSON.stringify({userId:id,newPassword:newPass.trim()})
+    });
+    const out=await res.json().catch(()=>({}));
+    if(!res.ok){toast('Error resetting password: '+(out.error||`HTTP ${res.status}`));return;}
+    toast(`Password updated for ${name}. Share the new password with them securely.`);
+  }catch(err){
+    toast('Error resetting password: '+String(err));
+  }
+}
+
 async function deleteTeamMember(id,name){
   if(!isSuperAdmin){toast('Only the Super Admin can remove team members.');return;}
   const target=teamList.find(t=>t.id===id);
@@ -5542,6 +5573,7 @@ function renderTeam(team){
             ${unavail?`<div style="font-size:10px;color:var(--rose);font-weight:600;margin-top:3px">🚫 Unavailable until ${new Date(unavail.to_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${unavail.reason?' — '+esc(unavail.reason):''}</div>`:''}
           </div>
           ${canManage?`<button onclick="openUnavailabilityModal('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Mark unavailable" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-calendar-off"></i></button>`:''}
+          ${(isSuperAdmin&&!isIndiaTeamReadOnly(t))?`<button onclick="resetTeamMemberPassword('${t.id}','${esc(t.email||'')}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Reset password" style="background:none;border:none;color:var(--pine2);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-key"></i></button>`:''}
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc(t.full_name||t.email||'').replace(/'/g,"\'")}')" title="Remove team member" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`;
         }).join('')

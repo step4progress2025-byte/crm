@@ -561,7 +561,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <button class="ni" data-nav="team" onclick="nav('team',this)"><i class="ti ti-id-badge" style="color:var(--violet)"></i>Team</button>
       <button class="ni" data-nav="teamchat" onclick="nav('teamchat',this)"><i class="ti ti-brand-slack" style="color:var(--sky)"></i>Team Chat<span class="nbadge" id="nb-teamchat" style="display:none">0</span></button>
       <button class="ni" data-nav="events" onclick="nav('events',this)"><i class="ti ti-calendar-event" style="color:var(--gold)"></i>Events</button><button class="ni" data-nav="studentportal" id="ni-studentportal" onclick="nav('studentportal',this)" style="display:none"><i class="ti ti-school" style="color:var(--gold)"></i>Student Portal</button><button class="ni" data-nav="import" onclick="nav('import',this)"><i class="ti ti-file-import" style="color:var(--teal)"></i>Import data</button>
-      <button class="ni" data-nav="finance" id="ni-finance" style="display:none" onclick="nav('finance',this)"><i class="ti ti-cash" style="color:var(--sage)"></i>Finance</button>       <button class="ni" data-nav="digitalmarketing" id="ni-digitalmarketing" onclick="nav('digitalmarketing',this)"><i class="ti ti-speakerphone" style="color:var(--rose)"></i>Digital Marketing</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic" style="color:var(--sky)"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard" style="color:var(--violet)"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset" style="color:var(--pine3)"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search" style="color:var(--teal)"></i>Course Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books" style="color:var(--gold)"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv" style="color:var(--sky)"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot" style="color:var(--violet)"></i>AI Counsellor</button>
+      <button class="ni" data-nav="finance" id="ni-finance" style="display:none" onclick="nav('finance',this)"><i class="ti ti-cash" style="color:var(--sage)"></i>Finance</button>       <button class="ni" data-nav="digitalmarketing" id="ni-digitalmarketing" onclick="nav('digitalmarketing',this)"><i class="ti ti-speakerphone" style="color:var(--rose)"></i>Digital Marketing</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic" style="color:var(--sky)"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard" style="color:var(--violet)"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset" style="color:var(--pine3)"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search" style="color:var(--teal)"></i>Course Finder</button>      <button class="ni" data-nav="scholarships" onclick="nav('scholarships',this)"><i class="ti ti-award" style="color:var(--gold)"></i>Scholarship Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books" style="color:var(--gold)"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv" style="color:var(--sky)"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot" style="color:var(--violet)"></i>AI Counsellor</button>
     </div>
     <div class="sb-foot">
       <div class="sb-user">
@@ -1210,6 +1210,61 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         </div>
       </section>
 
+      <!-- Scholarship Finder -->
+      <section id="sc-scholarships" class="screen">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h"><span class="card-t">🏅 Scholarship Finder</span><span style="font-size:11px;color:var(--ink3)" id="sf-verified-count">verified reference data</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;background:var(--cream);border:1px dashed var(--line2);border-radius:var(--r);padding:12px 14px;margin-bottom:16px">
+            <div style="min-width:220px;flex:1">
+              <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Auto-fill from lead</div>
+              <select id="sf-lead" style="width:100%;font-size:13px;padding:9px 12px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)" onchange="onScholarshipLeadChange()">
+                <option value="">Select a lead…</option>
+              </select>
+            </div>
+            <button class="btn" onclick="clearScholarshipLead()" style="padding:9px 14px;white-space:nowrap"><i class="ti ti-x"></i>Clear</button>
+            <div style="font-size:11.5px;color:var(--ink3);flex-basis:100%">Fills destination, degree level (from Program interest) and a search hint (from Qualification). Gender isn't tracked on leads yet, so that filter always stays manual.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:10px;align-items:end">
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Destination</div>
+              <select id="sf-dest" style="width:100%;font-size:13px;padding:9px 12px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)" onchange="renderScholarshipResults()"><option value="">All destinations</option></select>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Degree level</div>
+              <select id="sf-degree" style="width:100%;font-size:13px;padding:9px 12px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)" onchange="renderScholarshipResults()"><option value="">All levels</option></select>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Gender eligibility</div>
+              <select id="sf-gender" style="width:100%;font-size:13px;padding:9px 12px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)" onchange="renderScholarshipResults()">
+                <option value="">All genders</option><option value="Women only">Women only</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Category</div>
+              <select id="sf-category" style="width:100%;font-size:13px;padding:9px 12px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)" onchange="renderScholarshipResults()"><option value="">All categories</option></select>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Search</div>
+              <input id="sf-search" type="text" placeholder="Name, field, eligibility…" style="width:100%;font-size:13px;padding:9px 12px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)" oninput="renderScholarshipResults()">
+            </div>
+            <button class="btn" onclick="resetScholarshipFilters()" style="padding:9px 16px;white-space:nowrap;background:var(--cream);border:1px solid var(--line2);color:var(--ink2)"><i class="ti ti-refresh"></i>Reset</button>
+          </div>
+          <div id="sf-count" style="font-size:12px;color:var(--ink3);margin-bottom:10px"></div>
+        </div>
+        <div id="sf-grid" style="display:grid;grid-template-columns:1fr;gap:14px"></div>
+        <div id="sf-empty" style="display:none;text-align:center;padding:36px;color:var(--ink3);font-style:italic">No scholarships match these filters.</div>
+
+        <div class="card" style="margin-top:20px">
+          <div class="card-h"><span class="card-t">✅ Verification log</span></div>
+          <div class="tw">
+            <table class="tbl">
+              <thead><tr><th>Scholarship</th><th>What was checked</th><th>Status</th><th>Source</th><th>Last checked</th></tr></thead>
+              <tbody id="sf-verify-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
     <!-- Resource Library -->
       <section id="sc-resources" class="screen">
         <div class="card" style="margin-bottom:16px">
@@ -1461,6 +1516,7 @@ What would you like help with today?</div>
       <div class="ff"><label>Mobile *</label>
         <div style="display:flex;gap:6px">
           <select id="f-mobile-code" style="display:none" tabindex="-1" aria-hidden="true">
+            <option value="">Select country code...</option>
             <option value="+91">India 🇮🇳 +91</option><option value="+44">UK 🇬🇧 +44</option><option value="+92">Pakistan 🇵🇰 +92</option><option value="+880">Bangladesh 🇧🇩 +880</option><option disabled>──────────</option><option value="+93">Afghanistan 🇦🇫 +93</option><option value="+355">Albania 🇦🇱 +355</option><option value="+213">Algeria 🇩🇿 +213</option><option value="+376">Andorra 🇦🇩 +376</option><option value="+244">Angola 🇦🇴 +244</option><option value="+54">Argentina 🇦🇷 +54</option><option value="+374">Armenia 🇦🇲 +374</option><option value="+61">Australia 🇦🇺 +61</option><option value="+43">Austria 🇦🇹 +43</option><option value="+994">Azerbaijan 🇦🇿 +994</option><option value="+973">Bahrain 🇧🇭 +973</option><option value="+375">Belarus 🇧🇾 +375</option><option value="+32">Belgium 🇧🇪 +32</option><option value="+501">Belize 🇧🇿 +501</option><option value="+229">Benin 🇧🇯 +229</option><option value="+975">Bhutan 🇧🇹 +975</option><option value="+591">Bolivia 🇧🇴 +591</option><option value="+387">Bosnia and Herzegovina 🇧🇦 +387</option><option value="+267">Botswana 🇧🇼 +267</option><option value="+55">Brazil 🇧🇷 +55</option><option value="+673">Brunei 🇧🇳 +673</option><option value="+359">Bulgaria 🇧🇬 +359</option><option value="+226">Burkina Faso 🇧🇫 +226</option><option value="+257">Burundi 🇧🇮 +257</option><option value="+855">Cambodia 🇰🇭 +855</option><option value="+237">Cameroon 🇨🇲 +237</option><option value="+1">Canada 🇨🇦 +1</option><option value="+238">Cape Verde 🇨🇻 +238</option><option value="+236">Central African Republic 🇨🇫 +236</option><option value="+235">Chad 🇹🇩 +235</option><option value="+56">Chile 🇨🇱 +56</option><option value="+86">China 🇨🇳 +86</option><option value="+57">Colombia 🇨🇴 +57</option><option value="+269">Comoros 🇰🇲 +269</option><option value="+506">Costa Rica 🇨🇷 +506</option><option value="+385">Croatia 🇭🇷 +385</option><option value="+53">Cuba 🇨🇺 +53</option><option value="+357">Cyprus 🇨🇾 +357</option><option value="+420">Czech Republic 🇨🇿 +420</option><option value="+243">DR Congo 🇨🇩 +243</option><option value="+45">Denmark 🇩🇰 +45</option><option value="+253">Djibouti 🇩🇯 +253</option><option value="+593">Ecuador 🇪🇨 +593</option><option value="+20">Egypt 🇪🇬 +20</option><option value="+503">El Salvador 🇸🇻 +503</option><option value="+240">Equatorial Guinea 🇬🇶 +240</option><option value="+291">Eritrea 🇪🇷 +291</option><option value="+372">Estonia 🇪🇪 +372</option><option value="+268">Eswatini 🇸🇿 +268</option><option value="+251">Ethiopia 🇪🇹 +251</option><option value="+679">Fiji 🇫🇯 +679</option><option value="+358">Finland 🇫🇮 +358</option><option value="+33">France 🇫🇷 +33</option><option value="+241">Gabon 🇬🇦 +241</option><option value="+220">Gambia 🇬🇲 +220</option><option value="+995">Georgia 🇬🇪 +995</option><option value="+49">Germany 🇩🇪 +49</option><option value="+233">Ghana 🇬🇭 +233</option><option value="+30">Greece 🇬🇷 +30</option><option value="+502">Guatemala 🇬🇹 +502</option><option value="+224">Guinea 🇬🇳 +224</option><option value="+592">Guyana 🇬🇾 +592</option><option value="+509">Haiti 🇭🇹 +509</option><option value="+504">Honduras 🇭🇳 +504</option><option value="+852">Hong Kong 🇭🇰 +852</option><option value="+36">Hungary 🇭🇺 +36</option><option value="+354">Iceland 🇮🇸 +354</option><option value="+62">Indonesia 🇮🇩 +62</option><option value="+98">Iran 🇮🇷 +98</option><option value="+964">Iraq 🇮🇶 +964</option><option value="+353">Ireland 🇮🇪 +353</option><option value="+972">Israel 🇮🇱 +972</option><option value="+39">Italy 🇮🇹 +39</option><option value="+225">Ivory Coast 🇨🇮 +225</option><option value="+81">Japan 🇯🇵 +81</option><option value="+962">Jordan 🇯🇴 +962</option><option value="+7">Kazakhstan 🇰🇿 +7</option><option value="+254">Kenya 🇰🇪 +254</option><option value="+686">Kiribati 🇰🇮 +686</option><option value="+965">Kuwait 🇰🇼 +965</option><option value="+996">Kyrgyzstan 🇰🇬 +996</option><option value="+856">Laos 🇱🇦 +856</option><option value="+371">Latvia 🇱🇻 +371</option><option value="+961">Lebanon 🇱🇧 +961</option><option value="+266">Lesotho 🇱🇸 +266</option><option value="+231">Liberia 🇱🇷 +231</option><option value="+218">Libya 🇱🇾 +218</option><option value="+423">Liechtenstein 🇱🇮 +423</option><option value="+370">Lithuania 🇱🇹 +370</option><option value="+352">Luxembourg 🇱🇺 +352</option><option value="+853">Macau 🇲🇴 +853</option><option value="+261">Madagascar 🇲🇬 +261</option><option value="+265">Malawi 🇲🇼 +265</option><option value="+60">Malaysia 🇲🇾 +60</option><option value="+960">Maldives 🇲🇻 +960</option><option value="+223">Mali 🇲🇱 +223</option><option value="+356">Malta 🇲🇹 +356</option><option value="+222">Mauritania 🇲🇷 +222</option><option value="+230">Mauritius 🇲🇺 +230</option><option value="+52">Mexico 🇲🇽 +52</option><option value="+373">Moldova 🇲🇩 +373</option><option value="+377">Monaco 🇲🇨 +377</option><option value="+976">Mongolia 🇲🇳 +976</option><option value="+382">Montenegro 🇲🇪 +382</option><option value="+212">Morocco 🇲🇦 +212</option><option value="+258">Mozambique 🇲🇿 +258</option><option value="+95">Myanmar 🇲🇲 +95</option><option value="+264">Namibia 🇳🇦 +264</option><option value="+977">Nepal 🇳🇵 +977</option><option value="+31">Netherlands 🇳🇱 +31</option><option value="+64">New Zealand 🇳🇿 +64</option><option value="+505">Nicaragua 🇳🇮 +505</option><option value="+227">Niger 🇳🇪 +227</option><option value="+234">Nigeria 🇳🇬 +234</option><option value="+850">North Korea 🇰🇵 +850</option><option value="+389">North Macedonia 🇲🇰 +389</option><option value="+47">Norway 🇳🇴 +47</option><option value="+968">Oman 🇴🇲 +968</option><option value="+507">Panama 🇵🇦 +507</option><option value="+675">Papua New Guinea 🇵🇬 +675</option><option value="+595">Paraguay 🇵🇾 +595</option><option value="+51">Peru 🇵🇪 +51</option><option value="+63">Philippines 🇵🇭 +63</option><option value="+48">Poland 🇵🇱 +48</option><option value="+351">Portugal 🇵🇹 +351</option><option value="+974">Qatar 🇶🇦 +974</option><option value="+242">Republic of the Congo 🇨🇬 +242</option><option value="+40">Romania 🇷🇴 +40</option><option value="+7">Russia 🇷🇺 +7</option><option value="+250">Rwanda 🇷🇼 +250</option><option value="+685">Samoa 🇼🇸 +685</option><option value="+378">San Marino 🇸🇲 +378</option><option value="+966">Saudi Arabia 🇸🇦 +966</option><option value="+221">Senegal 🇸🇳 +221</option><option value="+381">Serbia 🇷🇸 +381</option><option value="+248">Seychelles 🇸🇨 +248</option><option value="+232">Sierra Leone 🇸🇱 +232</option><option value="+65">Singapore 🇸🇬 +65</option><option value="+421">Slovakia 🇸🇰 +421</option><option value="+386">Slovenia 🇸🇮 +386</option><option value="+677">Solomon Islands 🇸🇧 +677</option><option value="+252">Somalia 🇸🇴 +252</option><option value="+27">South Africa 🇿🇦 +27</option><option value="+82">South Korea 🇰🇷 +82</option><option value="+211">South Sudan 🇸🇸 +211</option><option value="+34">Spain 🇪🇸 +34</option><option value="+94">Sri Lanka 🇱🇰 +94</option><option value="+249">Sudan 🇸🇩 +249</option><option value="+597">Suriname 🇸🇷 +597</option><option value="+46">Sweden 🇸🇪 +46</option><option value="+41">Switzerland 🇨🇭 +41</option><option value="+963">Syria 🇸🇾 +963</option><option value="+886">Taiwan 🇹🇼 +886</option><option value="+992">Tajikistan 🇹🇯 +992</option><option value="+255">Tanzania 🇹🇿 +255</option><option value="+66">Thailand 🇹🇭 +66</option><option value="+228">Togo 🇹🇬 +228</option><option value="+676">Tonga 🇹🇴 +676</option><option value="+216">Tunisia 🇹🇳 +216</option><option value="+90">Turkey 🇹🇷 +90</option><option value="+993">Turkmenistan 🇹🇲 +993</option><option value="+971">UAE 🇦🇪 +971</option><option value="+1">USA 🇺🇸 +1</option><option value="+256">Uganda 🇺🇬 +256</option><option value="+380">Ukraine 🇺🇦 +380</option><option value="+598">Uruguay 🇺🇾 +598</option><option value="+998">Uzbekistan 🇺🇿 +998</option><option value="+678">Vanuatu 🇻🇺 +678</option><option value="+58">Venezuela 🇻🇪 +58</option><option value="+84">Vietnam 🇻🇳 +84</option><option value="+967">Yemen 🇾🇪 +967</option><option value="+260">Zambia 🇿🇲 +260</option><option value="+263">Zimbabwe 🇿🇼 +263</option>
           </select>
           <div class="s4p-country-combo" style="position:relative;width:170px;flex-shrink:0" data-target="f-mobile-code">
@@ -1511,7 +1567,7 @@ What would you like help with today?</div>
         <select id="f-prio"><option>High</option><option selected>Medium</option><option>Low</option></select>
       </div>
       <div class="ff"><label>Assistance needed from *</label>
-        <select id="f-country" onchange="syncLeadOffice();syncMobileCode();populateCounsellorDropdown()">
+        <select id="f-country" onchange="syncLeadOffice();syncMobileCode();syncBudgetCurrency();populateCounsellorDropdown()">
           <option value="">Select assistance needed from...</option>
           <option value="India">India</option><option value="UK">UK</option><option value="Pakistan">Pakistan</option><option value="Bangladesh">Bangladesh</option>
           <option value="Other">Other (assigned to India — our base of operations)</option>
@@ -1549,7 +1605,14 @@ What would you like help with today?</div>
       <div class="ff"><label>SOP Team</label><select id="f-sop-team"><option value="">Unassigned</option></select></div>
       <div class="ff"><label>Next follow-up</label><input type="date" id="f-fu"></div>
       <div class="ff"><label>Visa deadline</label><input type="date" id="f-visa-deadline"></div>
-      <div class="sdiv">Additional Details</div>       <div class="ff"><label>Intake Month</label>         <select id="f-intake"><option value="">Select intake</option><option>January 2026</option><option>May 2026</option><option>September 2026</option><option>January 2027</option><option>May 2027</option><option>September 2027</option></select>       </div>       <div class="ff"><label>IELTS Status</label>         <select id="f-ielts-status"><option value="">Select status</option><option>Not taken</option><option>Appearing soon</option><option>Score available</option><option>Exempt</option></select>       </div>       <div class="ff"><label>IELTS / PTE Score</label><input id="f-ielts-score" placeholder="e.g. 6.5"></div>       <div class="ff"><label>Budget Range</label>         <select id="f-budget"><option value="">Select budget</option><option>Under £10,000</option><option>£10,000 - £15,000</option><option>£15,000 - £20,000</option><option>£20,000 - £30,000</option><option>Above £30,000</option></select>       </div>       <div class="ff"><label>English Proficiency</label>         <select id="f-english"><option value="">Select status</option><option>Native</option><option>Fluent</option><option>Intermediate</option><option>Basic</option></select>       </div>       <div class="ff"><label>WhatsApp Group Link</label><input id="f-walink" placeholder="https://chat.whatsapp.com/..."></div> <div class="ff"><label>Documents Folder Link</label><input id="f-doclink" placeholder="https://drive.google.com/..."></div>       <div class="ff full"><label>Notes / remarks</label><textarea id="f-notes" placeholder="Call notes, documents shared, student context…"></textarea></div>
+      <div class="sdiv">Additional Details</div>       <div class="ff"><label>Intake Month</label>         <select id="f-intake"><option value="">Select intake</option><option>January 2026</option><option>May 2026</option><option>September 2026</option><option>January 2027</option><option>May 2027</option><option>September 2027</option></select>       </div>       <div class="ff"><label>IELTS Status</label>         <select id="f-ielts-status"><option value="">Select status</option><option>Not taken</option><option>Appearing soon</option><option>Score available</option><option>Exempt</option></select>       </div>       <div class="ff"><label>IELTS / PTE Score</label><input id="f-ielts-score" placeholder="e.g. 6.5"></div>       <div class="ff"><label>Budget</label>
+        <div style="display:flex;gap:6px">
+          <select id="f-budget-currency" onchange="syncBudgetRangeOptions()" style="width:88px;flex-shrink:0;font-size:13px;padding:9px 8px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b)">
+            <option value="INR">₹ INR</option><option value="USD">$ USD</option><option value="GBP" selected>£ GBP</option><option value="EUR">€ EUR</option>
+          </select>
+          <select id="f-budget" style="flex:1"></select>
+        </div>
+      </div>       <div class="ff"><label>English Proficiency</label>         <select id="f-english"><option value="">Select status</option><option>Native</option><option>Fluent</option><option>Intermediate</option><option>Basic</option></select>       </div>       <div class="ff"><label>WhatsApp Group Link</label><input id="f-walink" placeholder="https://chat.whatsapp.com/..."></div> <div class="ff"><label>Documents Folder Link</label><input id="f-doclink" placeholder="https://drive.google.com/..."></div>       <div class="ff full"><label>Notes / remarks</label><textarea id="f-notes" placeholder="Call notes, documents shared, student context…"></textarea></div>
       <div class="ff full sdiv" id="modal-docs-section-divider" style="border-top:1px solid var(--line);margin-top:4px;padding-top:10px;display:none">Document Checklist</div>
       <div class="ff full" id="modal-docs-wrap" style="display:none">
         <div id="modal-doc-list" style="margin-bottom:8px"></div>
@@ -2447,6 +2510,17 @@ function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===
 // separate, narrower pool from getOfficeCounsellors(), which Management
 // still needs to include Domestic staff in for manual picking.
 function getRoundRobinCounsellorPool(office){return getOfficeCounsellors(office).filter(t=>t.team_category!=='Domestic');}
+// Broader than getOfficeCounsellors() on purpose — some Admins/Managers/
+// Directors personally handle counselling work too, on top of their main
+// role, but the single-role data model only stores one role per person.
+// Round-robin still uses the narrow Counsellor-only pool above (an Admin
+// shouldn't get flooded with auto-assigned leads); this wider pool is only
+// for MANUAL dropdowns, where a deliberate human choice to assign someone
+// like that is exactly the point.
+function getOfficeAssignableStaff(office){
+  const managementRoles=['Admin','Manager','Director'];
+  return(teamList||[]).filter(t=>t.office===office&&(t.role==='Counsellor'||managementRoles.includes(t.role))&&!isUnavailableToday(t.id));
+}
 // Application/Visa/SOP Team are operational staff, same restricted access
 // tier as Counsellor — not management. Used everywhere access is scoped.
 // Domestic and Agent are a separate dimension from role — a Domestic
@@ -2801,6 +2875,41 @@ function syncLeadOffice(){
   sel.innerHTML=(OFFICE_MAP[c]||[]).map(o=>`<option value="${o}">${o}</option>`).join('');
 }
 
+// ── Multi-currency budget field ──────────────────────────────────
+// Preset range brackets per currency, roughly aligned to the same real-world
+// tiers (not a live FX conversion — that would need an external rate API for
+// a field that's meant as a rough indicator, not an exact figure). The
+// currency symbol is baked directly into each option's text, and that full
+// string is what gets stored in `budget_range` — so a lead saved with any of
+// the four currencies displays unambiguously later, with no schema change
+// needed and no separate currency column to keep in sync.
+const BUDGET_RANGES_BY_CURRENCY={
+  GBP:[['Under £10,000','Under £10,000'],['£10,000 - £15,000','£10,000 - £15,000'],['£15,000 - £20,000','£15,000 - £20,000'],['£20,000 - £30,000','£20,000 - £30,000'],['Above £30,000','Above £30,000']],
+  USD:[['Under $12,000','Under $12,000'],['$12,000 - $18,000','$12,000 - $18,000'],['$18,000 - $25,000','$18,000 - $25,000'],['$25,000 - $35,000','$25,000 - $35,000'],['Above $35,000','Above $35,000']],
+  EUR:[['Under €12,000','Under €12,000'],['€12,000 - €17,000','€12,000 - €17,000'],['€17,000 - €23,000','€17,000 - €23,000'],['€23,000 - €32,000','€23,000 - €32,000'],['Above €32,000','Above €32,000']],
+  INR:[['Under ₹10,00,000','Under ₹10,00,000'],['₹10,00,000 - ₹15,00,000','₹10,00,000 - ₹15,00,000'],['₹15,00,000 - ₹20,00,000','₹15,00,000 - ₹20,00,000'],['₹20,00,000 - ₹30,00,000','₹20,00,000 - ₹30,00,000'],['Above ₹30,00,000','Above ₹30,00,000']],
+};
+function syncBudgetRangeOptions(preserveValue){
+  const curSel=document.getElementById('f-budget-currency');
+  const rangeSel=document.getElementById('f-budget');
+  if(!curSel||!rangeSel)return;
+  const prior=preserveValue!==undefined?preserveValue:rangeSel.value;
+  const ranges=BUDGET_RANGES_BY_CURRENCY[curSel.value]||BUDGET_RANGES_BY_CURRENCY.GBP;
+  rangeSel.innerHTML='<option value="">Select budget</option>'+ranges.map(([label,val])=>`<option value="${val}">${label}</option>`).join('');
+  if(prior&&ranges.some(([,val])=>val===prior)) rangeSel.value=prior;
+}
+// Detects which currency an already-saved budget_range string belongs to,
+// from its leading symbol — used when opening an existing lead for editing,
+// so the currency dropdown lands on the right selection instead of always
+// defaulting back to GBP regardless of what was actually saved.
+function detectBudgetCurrency(budgetStr){
+  if(!budgetStr)return'GBP';
+  if(budgetStr.includes('₹'))return'INR';
+  if(budgetStr.includes('$'))return'USD';
+  if(budgetStr.includes('€'))return'EUR';
+  return'GBP';
+}
+
 // ── Phone country code: auto-sync to the lead's native country, and let ──
 // the counsellor override the dialling code manually if needed.
 const COUNTRY_CODE_MAP={India:'+91',UK:'+44',Pakistan:'+92',Bangladesh:'+880',Other:'+91'};
@@ -2862,6 +2971,16 @@ function syncMobileCode(){
   const c=document.getElementById('f-country').value;
   const codeSel=document.getElementById('f-mobile-code');
   if(codeSel&&COUNTRY_CODE_MAP[c]){ codeSel.value=COUNTRY_CODE_MAP[c]; refreshCountryCombo('f-mobile-code'); }
+}
+// Only India and UK map cleanly onto one of the four supported budget
+// currencies (INR / GBP) — Pakistan and Bangladesh's own currencies aren't
+// in the list, so their selection is deliberately left as-is rather than
+// guessing a currency that isn't actually offered.
+const BUDGET_CURRENCY_BY_COUNTRY={India:'INR',UK:'GBP'};
+function syncBudgetCurrency(){
+  const c=document.getElementById('f-country').value;
+  const curSel=document.getElementById('f-budget-currency');
+  if(curSel&&BUDGET_CURRENCY_BY_COUNTRY[c]){ curSel.value=BUDGET_CURRENCY_BY_COUNTRY[c]; syncBudgetRangeOptions(); }
 }
 // Splits a stored mobile value like "+44 7911123456" back into code + number
 // for editing. Falls back to the country's default code if none is stored.
@@ -2952,7 +3071,7 @@ function renderCounsellorCell(l){
   if(isRestrictedStaffRole()){
     return esc(l.counsellor||'—');
   }
-  const pool=getOfficeCounsellors(l.office);
+  const pool=getOfficeAssignableStaff(l.office);
   // Only Management ever reaches this dropdown (Counsellors and sub-team
   // roles are blocked above), so it's safe to always offer Unassign here —
   // it's never available to the people actually holding the leads.
@@ -3038,7 +3157,7 @@ function populateCounsellorDropdown(){
     return;
   }
   sel.disabled=false;
-  const pool=getOfficeCounsellors(office);
+  const pool=getOfficeAssignableStaff(office);
   sel.innerHTML='<option value="">Auto-assign (round robin)</option>'+
     pool.map(c=>`<option value="${esc(c.full_name)}">${esc(c.full_name)}</option>`).join('');
   if(pool.some(c=>c.full_name===current)) sel.value=current;
@@ -3653,7 +3772,7 @@ function nav(id,btn){
     sbEl.classList.remove('mobile-open');
     document.getElementById('mobile-sidebar-overlay')?.classList.remove('open');
   }
-  const T={home:'Home',dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digitalmarketing:'Digital Marketing',reports:'Reports',coursefinder:'Course & University Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail',studentportal:'Student Portal',teamchat:'Team Chat'};
+  const T={home:'Home',dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digitalmarketing:'Digital Marketing',reports:'Reports',coursefinder:'Course & University Finder',scholarships:'Scholarship Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail',studentportal:'Student Portal',teamchat:'Team Chat'};
   document.getElementById('topbar-title').textContent=T[id]||id;
   // Persistent Home button — visible on every screen except the
   // dashboard itself, so there's always a way back to home that doesn't
@@ -3709,6 +3828,7 @@ function nav(id,btn){
   if(id==='events'){loadEvents();}
   if(id==='import'){populateExportCounsellorDropdown();const note=document.getElementById('import-counsellor-note');if(note)note.style.display=(myRole==='Counsellor'&&!isSuperAdmin)?'block':'none';}
   if(id==='coursefinder')initCourseFinder();
+  if(id==='scholarships')initScholarships();
   if(id==='resources')loadResourcesAdmin();
   if(id==='resumes'){loadResumes().then(renderResumesAdmin);}
   if(id==='finance')renderFinance();
@@ -3763,14 +3883,31 @@ function isToolLead(l){
     ||s.includes('life abroad hub')||s.includes('find your country')||s.includes('visa eligibility')
     ||s.includes('parent corner')||s.includes('self assessment');
 }
+// Smoothly animates a badge/counter from whatever it currently shows to
+// a new value, instead of snapping instantly — purely visual, changes
+// nothing about when or how often the underlying count itself updates.
+function animateCounterTo(el,newValue){
+  if(!el)return;
+  const oldValue=parseInt(el.textContent)||0;
+  if(oldValue===newValue){el.textContent=newValue;return;}
+  const duration=400,steps=12,stepTime=duration/steps;
+  const increment=(newValue-oldValue)/steps;
+  let current=oldValue,step=0;
+  const timer=setInterval(()=>{
+    step++;
+    current+=increment;
+    el.textContent=step>=steps?newValue:Math.round(current);
+    if(step>=steps)clearInterval(timer);
+  },stepTime);
+}
 function badges(){
   const scopedLeads=opsViewScopedLeads(leads); // same ops-view scoping as the Dashboard and Leads table — badges must agree with what's actually shown
-  document.getElementById('nb-leads').textContent=scopedLeads.length;
+  animateCounterTo(document.getElementById('nb-leads'),scopedLeads.length);
   const fu=scopedLeads.filter(l=>['New Enquiry','Contacted','Counselling Done','Defer'].includes(l.status)).length;
   const nb=document.getElementById('nb-fu');
-  nb.textContent=fu;nb.className='nbadge'+(fu>0?' hot':'');
+  animateCounterTo(nb,fu);nb.className='nbadge'+(fu>0?' hot':'');
   const tlBadge=document.getElementById('nb-toolleads');
-  if(tlBadge) tlBadge.textContent=scopedLeads.filter(isToolLead).length;
+  if(tlBadge) animateCounterTo(tlBadge,scopedLeads.filter(isToolLead).length);
 }
 
 // ── DASHBOARD ────────────────────────────────────────────────────
@@ -4445,7 +4582,7 @@ async function updateStatusFS(){
   loadTasksFS(curId);
   loadActivityLogFS(curId);
 }
-function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
+function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range);syncBudgetRangeOptions(l.budget_range||'');document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
 async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 // Generates a message genuinely suited to WHERE this lead actually is
@@ -5017,7 +5154,7 @@ function editLead(){
   }
   document.getElementById('f-fu').value=l.next_followup||'';
   document.getElementById('f-visa-deadline').value=l.visa_deadline||'';
-  document.getElementById('f-notes').value=l.notes||'';   document.getElementById('f-intake').value=l.intake_month||'';   document.getElementById('f-ielts-status').value=l.ielts_status||'';   document.getElementById('f-ielts-score').value=l.ielts_score||'';   document.getElementById('f-budget').value=l.budget_range||'';   document.getElementById('f-english').value=l.english_status||'';   document.getElementById('f-walink').value=l.whatsapp_group_link||'';   document.getElementById('f-doclink').value=l.doc_folder_link||'';
+  document.getElementById('f-notes').value=l.notes||'';   document.getElementById('f-intake').value=l.intake_month||'';   document.getElementById('f-ielts-status').value=l.ielts_status||'';   document.getElementById('f-ielts-score').value=l.ielts_score||'';   document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range);syncBudgetRangeOptions(l.budget_range||'');   document.getElementById('f-english').value=l.english_status||'';   document.getElementById('f-walink').value=l.whatsapp_group_link||'';   document.getElementById('f-doclink').value=l.doc_folder_link||'';
   document.getElementById('modal-lead').classList.add('open');
  document.getElementById('dover').classList.remove('open');
   document.getElementById('editing-notice').classList.remove('show');
@@ -5028,14 +5165,16 @@ function openAddLead(){
   editMode=false;curId=null;
   document.getElementById('modal-title').textContent='Add new lead';
   ['f-name','f-mobile','f-email','f-city','f-dob','f-qual','f-notes','f-fu','f-visa-deadline','f-ielts-score','f-walink','f-doclink'].forEach(id=>document.getElementById(id).value='');
-  ['f-intake','f-ielts-status','f-budget','f-english'].forEach(id=>document.getElementById(id).value='');
+  ['f-intake','f-ielts-status','f-english'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-budget-currency').value='GBP';
+  syncBudgetRangeOptions('');
   // Native country is mandatory — left blank so the counsellor must actively
   // choose it (this is also what drives office assignment, the mobile country
   // code default, and which country the lead is visible/scoped under).
   document.getElementById('f-country').value='';
   document.getElementById('f-nationality').value='';
   syncLeadOffice();
-  document.getElementById('f-mobile-code').value='+91';refreshCountryCombo('f-mobile-code');
+  document.getElementById('f-mobile-code').value='';refreshCountryCombo('f-mobile-code');
   document.getElementById('f-status').value='New Enquiry';
   document.getElementById('f-prio').value='Medium';
   populateCounsellorDropdown();
@@ -5082,6 +5221,8 @@ async function saveLead(){
   if(!name){document.getElementById('f-name').focus();toast('Please enter a name.');return;}
   const mobileNumEarlyCheck=document.getElementById('f-mobile').value.trim();
   if(!mobileNumEarlyCheck){document.getElementById('f-mobile').focus();toast('Please enter a mobile number — this is required.');return;}
+  const mobileCodeEarlyCheck=document.getElementById('f-mobile-code').value;
+  if(!mobileCodeEarlyCheck){toast('Please select the mobile number\'s country code — this is required.');return;}
   const countryVal=document.getElementById('f-country').value;
   if(!countryVal){document.getElementById('f-country').focus();toast("Please select which office assistance is needed from — this is required and determines which branch handles the lead.");return;}
   // India view-only guard: a Super Admin can't edit an existing India
@@ -7457,11 +7598,18 @@ async function loadExpiryAlerts(){
 async function loadMyTasks(){
   const el=document.getElementById('my-tasks-list');
   if(!el)return;
-  const{data,error}=await sb.from('tasks').select('*,leads(name,country)').eq('status','Open').order('due_date',{ascending:true}).limit(200);
+  const{data,error}=await sb.from('tasks').select('*,leads(name,country,nationality)').eq('status','Open').order('due_date',{ascending:true}).limit(200);
   if(error){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load tasks — has the tasks table been created yet?</div>';return;}
   let scoped=data||[];
   if(myRole==='Counsellor'&&!isSuperAdmin){
     scoped=scoped.filter(t=>t.assigned_to===myName);
+  } else if(isSuperAdmin&&superAdminOpsView){
+    // Must respect the Domestic/International ops-view toggle the same
+    // way the main Leads list does (via nationality, with a fallback to
+    // country for leads created before nationality was tracked) — this
+    // was missing here, meaning the toggle had zero effect on tasks.
+    const isDomesticLead=l=>l?.nationality?l.nationality==='UK':l?.country==='UK';
+    scoped=scoped.filter(t=>superAdminOpsView==='Domestic'?isDomesticLead(t.leads):!isDomesticLead(t.leads));
   } else if(!isSuperAdmin){
     scoped=scoped.filter(t=>t.leads?.country===myCountry);
   }
@@ -8139,6 +8287,143 @@ function openCourseFinderForLead(leadId){
     searchCourses();
   },300);
 }
+// ── SCHOLARSHIP FINDER ───────────────────────────────────────────────
+let scholarshipsData=[];
+let sfActiveLeadId='';
+function programToDegreeLevel(program){
+  // Maps the lead form's "Program interest" values to a degree level string
+  // matching scholarships.degree_levels. Program values that aren't a study
+  // level (IELTS Coaching, Visa Assistance, etc.) intentionally map to ''.
+  if(!program)return'';
+  if(program.includes('UG'))return"Bachelor's";
+  if(program.includes('PG')&&!program.includes('Diploma'))return"Master's";
+  if(program.includes('PhD'))return'PhD';
+  return'';
+}
+async function loadScholarships(){
+  if(scholarshipsData.length)return;
+  const{data,error}=await sb.from('scholarships').select('*').order('name',{ascending:true});
+  if(error){toast('Could not load scholarships — check the scholarships table exists.');return;}
+  scholarshipsData=data||[];
+}
+function initScholarships(){
+  loadScholarships().then(()=>{
+    populateScholarshipFilterOptions();
+    populateScholarshipLeadDropdown();
+    buildScholarshipVerifyLog();
+    renderScholarshipResults();
+  });
+}
+function populateScholarshipFilterOptions(){
+  const destSel=document.getElementById('sf-dest'),degSel=document.getElementById('sf-degree'),catSel=document.getElementById('sf-category');
+  const dests=[...new Set(scholarshipsData.map(s=>s.destination).filter(Boolean))].sort();
+  const degrees=[...new Set(scholarshipsData.flatMap(s=>s.degree_levels||[]))].sort();
+  const cats=[...new Set(scholarshipsData.map(s=>s.category).filter(Boolean))].sort();
+  destSel.innerHTML='<option value="">All destinations</option>'+dests.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  degSel.innerHTML='<option value="">All levels</option>'+degrees.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  catSel.innerHTML='<option value="">All categories</option>'+cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+}
+function populateScholarshipLeadDropdown(){
+  const sel=document.getElementById('sf-lead');
+  sel.innerHTML='<option value="">Select a lead…</option>'+
+    leads.map(l=>`<option value="${l.id}">${esc(l.name)} — ${esc(l.destination||'no destination')}, ${esc(l.country||'—')}</option>`).join('');
+}
+function onScholarshipLeadChange(){
+  const leadId=document.getElementById('sf-lead').value;
+  const l=leads.find(x=>x.id===leadId);
+  sfActiveLeadId=leadId;
+  if(!l)return;
+  const dests=[...new Set(scholarshipsData.map(s=>s.destination))];
+  document.getElementById('sf-dest').value=dests.includes(l.destination)?l.destination:'';
+  document.getElementById('sf-degree').value=programToDegreeLevel(l.program||'');
+  // No gender field on leads yet — deliberately left as-is (manual only).
+  document.getElementById('sf-search').value=l.qualification||'';
+  renderScholarshipResults();
+}
+function clearScholarshipLead(){
+  document.getElementById('sf-lead').value='';
+  sfActiveLeadId='';
+  resetScholarshipFilters();
+}
+function resetScholarshipFilters(){
+  document.getElementById('sf-dest').value='';
+  document.getElementById('sf-degree').value='';
+  document.getElementById('sf-gender').value='';
+  document.getElementById('sf-category').value='';
+  document.getElementById('sf-search').value='';
+  renderScholarshipResults();
+}
+function scholarshipMatches(s){
+  const dest=document.getElementById('sf-dest').value;
+  const degree=document.getElementById('sf-degree').value;
+  const gender=document.getElementById('sf-gender').value;
+  const category=document.getElementById('sf-category').value;
+  const search=document.getElementById('sf-search').value.trim().toLowerCase();
+  if(dest&&s.destination!==dest)return false;
+  if(degree&&!(s.degree_levels||[]).includes(degree))return false;
+  if(gender==='Women only'&&!(s.gender_eligibility||'').includes('Women'))return false;
+  if(category&&s.category!==category)return false;
+  if(search){
+    const haystack=(s.name+' '+(s.fields||[]).join(' ')+' '+(s.funding_summary||'')+' '+(s.eligibility||[]).join(' ')).toLowerCase();
+    if(haystack.indexOf(search)===-1)return false;
+  }
+  return true;
+}
+function scholarshipFlag(destination){
+  if(!destination)return'🌍';
+  if(destination.includes('UK'))return'🇬🇧';
+  if(destination.includes('USA'))return'🇺🇸';
+  if(destination.includes('Germany'))return'🇩🇪';
+  return'🌍';
+}
+function renderScholarshipCard(s){
+  const genderTag=(s.gender_eligibility||'').includes('Women')?`<span class="pill" style="background:var(--rose-l,#F7E3DF);color:var(--rose)">${esc(s.gender_eligibility)}</span>`:'';
+  const verified=s.source_status==='verified';
+  return `
+  <div class="card" style="margin-bottom:0;display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start">
+    <div>
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:600;font-size:15px">${scholarshipFlag(s.destination)} ${esc(s.name)}</div>
+          <div style="font-size:12px;color:var(--ink3)">${esc(s.provider||'')}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">
+        <span class="pill" style="background:var(--cream);color:var(--ink2)">${esc(s.category||'')}</span>
+        <span class="pill" style="background:var(--cream);color:var(--ink2)">${esc(s.popularity||'')}</span>
+        ${genderTag}
+      </div>
+      <div style="font-size:13px;line-height:1.6"><strong>${esc(s.funding_type||'')}.</strong> ${esc(s.funding_summary||'')}</div>
+      <details style="margin-top:8px">
+        <summary style="cursor:pointer;font-size:12.5px;color:var(--ink3)">Eligibility snapshot</summary>
+        <ul style="margin:8px 0 0;padding-left:18px;font-size:13px">${(s.eligibility||[]).map(e=>`<li>${esc(e)}</li>`).join('')}</ul>
+      </details>
+      <div style="margin-top:10px;font-size:11.5px;color:var(--ink3)">Source: ${esc(s.source_name||'')} ·
+        <span style="color:${verified?'var(--sage)':'var(--warn,#B8862E)'}">${verified?'verified':'partially verified'}</span>
+        · checked ${esc(s.source_checked||'')}
+        · <a href="${esc(s.official_url||'#')}" target="_blank" rel="noopener">Official page →</a>
+      </div>
+    </div>
+    <div style="text-align:right;min-width:120px;font-size:11.5px;color:var(--ink3)">${esc(s.deadline_info||'')}</div>
+  </div>`;
+}
+function renderScholarshipResults(){
+  if(!scholarshipsData.length)return;
+  const filtered=scholarshipsData.filter(scholarshipMatches);
+  document.getElementById('sf-grid').innerHTML=filtered.map(renderScholarshipCard).join('');
+  document.getElementById('sf-count').textContent=`${filtered.length} of ${scholarshipsData.length} scholarships`;
+  document.getElementById('sf-empty').style.display=filtered.length?'none':'block';
+}
+function buildScholarshipVerifyLog(){
+  document.getElementById('sf-verify-body').innerHTML=scholarshipsData.map(s=>`
+    <tr>
+      <td>${esc(s.name)}</td>
+      <td>Funding amount &amp; current deadline window</td>
+      <td style="color:${s.source_status==='verified'?'var(--sage)':'var(--warn,#B8862E)'}">${s.source_status==='verified'?'✅ Verified':'⚠️ Partially verified'}</td>
+      <td>${esc(s.source_name||'')}</td>
+      <td>Checked ${esc(s.source_checked||'')}${s.source_status!=='verified'?' — confirm before quoting':''}</td>
+    </tr>`).join('');
+}
 // ── RESOURCE LIBRARY ADMIN ────────────────────────────────────
 const RESOURCE_DEFS = [
   { key:'starter-kit', icon:'🎓', title:'The Study Abroad Starter Kit' },
@@ -8253,6 +8538,23 @@ async function loadCallLogs(){
   if(!error&&data) callLogs=data;
   else if(error) callLogs=[];
 }
+function toggleCallRecordingPlayer(callId){
+  const player=document.getElementById('cl-rec-player-'+callId);
+  if(!player)return;
+  const isHidden=player.style.display==='none';
+  document.querySelectorAll('[id^="cl-rec-player-"]').forEach(function(p){
+    if(p!==player&&p.style.display!=='none'){
+      p.style.display='none';
+      const otherAudio=p.querySelector('audio');
+      if(otherAudio)otherAudio.pause();
+    }
+  });
+  player.style.display=isHidden?'block':'none';
+  if(!isHidden){
+    const audioEl=player.querySelector('audio');
+    if(audioEl)audioEl.pause();
+  }
+}
 function renderCallLogs(){
   const empty=document.getElementById('cl-empty'), content=document.getElementById('cl-content');
   if(!empty||!content)return;
@@ -8263,7 +8565,7 @@ function renderCallLogs(){
   const statusColors={initiated:['var(--gold-l)','var(--gold)'],ringing:['var(--gold-l)','var(--gold)'],'in-progress':['var(--sage-l)','#0F6E56'],completed:['var(--sage-l)','#0F6E56'],'no-answer':['#FCEBEB','#A32D2D'],failed:['#FCEBEB','#A32D2D'],busy:['#FCEBEB','#A32D2D']};
   document.getElementById('cl-tbody').innerHTML=callLogs.map(c=>{
     const dt=c.call_date?new Date(c.call_date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
-    const rec=c.recording_url?`<a href="${c.recording_url}" target="_blank" style="color:var(--pine);font-weight:600;text-decoration:underline">▶ Play</a>`:c.auto_recorded?'<span style="color:var(--ink3);font-style:italic">Recording processing…</span>':'<span style="color:var(--ink3);font-style:italic">No recording</span>';
+    const rec=c.recording_url?(`<button onclick="toggleCallRecordingPlayer('${c.id}')" style="background:none;border:1px solid var(--pine);color:var(--pine);border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer">▶ Play</button><div id="cl-rec-player-${c.id}" style="display:none;margin-top:6px"><audio controls preload="none" style="height:32px;max-width:220px"><source src="${c.recording_url}"></audio></div>`):c.auto_recorded?'<span style="color:var(--ink3);font-style:italic">Recording processing…</span>':'<span style="color:var(--ink3);font-style:italic">No recording</span>';
     const outcomeBadge=c.outcome
       ? `<span class="pill" style="background:var(--sky-l);color:var(--sky)">${esc(c.outcome)}</span>`
       : c.call_status
@@ -8480,7 +8782,10 @@ async function renderTeamResponseStats(){
   const el=document.getElementById('team-response-stats');
   if(!el)return;
   el.innerHTML='<p style="font-size:13px;color:var(--ink3);font-style:italic">Calculating…</p>';
-  const scoped=isSuperAdmin?leads:leads.filter(l=>l.country===myCountry);
+  // Must respect the Domestic/International ops-view toggle the same
+  // way Dashboard and Leads already do — this was missed when first
+  // built, meaning Super Admin's toggle had zero effect here.
+  const scoped=isSuperAdmin?opsViewScopedLeads(leads):leads.filter(l=>l.country===myCountry);
   const stats=await loadResponseTimeStats(scoped);
   el.innerHTML=formatResponseStatsHtml(stats);
 }
@@ -8580,7 +8885,16 @@ async function renderActivityMonitor(){
   const teamFilter=teamSel?.value||'All';
 
   let members=(teamList||[]).filter(t=>{
-    if(countryFilter&&countryFilter!=='All'&&t.office!==countryFilter)return false;
+    if(countryFilter&&countryFilter!=='All'){
+      // Compare against the REAL office value(s) via OFFICE_MAP, not the
+      // plain country name directly — India/UK are stored as "India HQ"/
+      // "UK HQ" on team members, while Pakistan/Bangladesh have no
+      // suffix. Comparing t.office to the bare country name directly
+      // (as this used to do) meant India/UK never matched anything,
+      // while Pakistan/Bangladesh happened to work by coincidence.
+      const realOffices=OFFICE_MAP[countryFilter]||[countryFilter];
+      if(!realOffices.includes(t.office))return false;
+    }
     if(teamFilter&&teamFilter!=='All'&&(t.role||'Counsellor')!==teamFilter)return false;
     return true;
   });

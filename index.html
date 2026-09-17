@@ -8720,8 +8720,16 @@ function renderWhatsAppCalls(){
 }
 async function deleteWhatsAppCall(id){
   if(!confirm('Delete this WhatsApp call log? This cannot be undone.'))return;
-  const res=await sb.from('whatsapp_calls').delete().eq('id',id);
+  // .select() after .delete() makes Supabase return the row(s) it actually
+  // deleted. If RLS silently blocks the delete, res.error stays null but
+  // res.data comes back empty — this catches that case instead of falsely
+  // reporting success.
+  const res=await sb.from('whatsapp_calls').delete().eq('id',id).select();
   if(res.error){toast('Error deleting: '+res.error.message);return;}
+  if(!res.data||!res.data.length){
+    toast('Delete was blocked — you may not have permission to delete this (check Supabase RLS policies for whatsapp_calls).');
+    return;
+  }
   whatsappCalls=whatsappCalls.filter(function(c){return c.id!==id;});
   renderWhatsAppCalls();
   toast('WhatsApp call log deleted.');

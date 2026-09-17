@@ -5702,10 +5702,16 @@ function isIndiaTeamReadOnly(t){
 // this sets a brand NEW password instead. The actual write happens inside
 // the admin-reset-password Edge Function using the service_role key, which
 // never touches the browser. This client only sends the caller's own
-// logged-in session token so the function can verify Super Admin status
-// server-side before doing anything.
+// logged-in session token so the function can verify identity server-side
+// before doing anything.
+//
+// The 🔑 button is visible to everyone who can reach the Team tab, but
+// only India and Pavitra (isOwner — see the OWNERS object) can actually
+// use it. Everyone else who clicks it gets blocked here immediately, and
+// the Edge Function enforces the exact same rule again server-side, so
+// this isn't just a front-end illusion.
 async function resetTeamMemberPassword(id,email,name){
-  if(!isSuperAdmin){toast('Only the Super Admin can reset passwords.');return;}
+  if(!isOwner){toast('Only India and Pavitra can reset passwords.');return;}
   const newPass=prompt(`Set a NEW password for ${name} (${email}).\n\nMinimum 8 characters. Share it with them securely afterwards — this does not email them automatically.`);
   if(newPass===null)return; // cancelled
   if(newPass.trim().length<8){toast('Password must be at least 8 characters.');return;}
@@ -5901,7 +5907,7 @@ function renderTeam(team){
             ${unavail?`<div style="font-size:10px;color:var(--rose);font-weight:600;margin-top:3px">🚫 Unavailable until ${new Date(unavail.to_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${unavail.reason?' — '+esc(unavail.reason):''}</div>`:''}
           </div>
           ${canManage?`<button onclick="openUnavailabilityModal('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Mark unavailable" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-calendar-off"></i></button>`:''}
-          ${(isSuperAdmin&&!isIndiaTeamReadOnly(t))?`<button onclick="resetTeamMemberPassword('${t.id}','${esc(t.email||'')}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Reset password" style="background:none;border:none;color:var(--pine2);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-key"></i></button>`:''}
+          <button onclick="resetTeamMemberPassword('${t.id}','${esc(t.email||'')}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Reset password" style="background:none;border:none;color:var(--pine2);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-key"></i></button>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc(t.full_name||t.email||'').replace(/'/g,"\'")}')" title="Remove team member" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`;
         }).join('')

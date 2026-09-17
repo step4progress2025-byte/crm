@@ -452,6 +452,11 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .rpt-lb-medal{width:26px;font-size:16px;text-align:center;flex-shrink:0}
 .rpt-lb-bar-t{flex:1;background:var(--cream);border-radius:99px;height:8px;overflow:hidden}
 .rpt-lb-bar-f{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--pine3),var(--gold))}
+@keyframes newLeadFlash{
+  0%{background:var(--gold-l);}
+  100%{background:transparent;}
+}
+.new-lead-flash{animation:newLeadFlash 3s ease-out;}
 </style>
 </head>
 <body>
@@ -1318,6 +1323,11 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         </div>
 
         <div id="prod-sub-myupdate" style="display:none">
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-h"><span class="card-t">⏱️ Your Response Time</span></div>
+            <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">How quickly you're acting on your own leads once they arrive — calculated from real timestamps, not self-reported. This is for your own visibility, not a ranking.</p>
+            <div id="my-response-stats"></div>
+          </div>
           <div class="card" style="margin-bottom:16px;max-width:640px">
             <div class="card-h"><span class="card-t">📝 What did you work on today?</span></div>
             <div class="ff"><label>Date</label><input type="date" id="du-date"></div>
@@ -1331,6 +1341,11 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         </div>
 
         <div id="prod-sub-monitor" style="display:none">
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-h"><span class="card-t">⏱️ Team Response Time</span></div>
+            <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">Genuine operational visibility into how quickly new leads get a first response, company-wide — intended to spot process bottlenecks, not to rank individual staff.</p>
+            <div id="team-response-stats"></div>
+          </div>
           <div class="card" style="margin-bottom:16px">
             <div class="card-h"><span class="card-t">📊 Activity Monitor</span></div>
             <p style="font-size:12px;color:var(--ink3);margin-bottom:14px;line-height:1.6">Country-wise view of daily work updates across the team. Admins and Managers see only their own country; Directors, Super Admins, and Owners see everything.</p>
@@ -1942,6 +1957,7 @@ What would you like help with today?</div>
         <button class="btn btn-del" id="btn-delete-lead-fs" onclick="deleteLeadFS()"><i class="ti ti-trash"></i>Delete</button>
       </div>
     </div>
+    <div id="ld-response-stat-banner" style="background:var(--paper);color:var(--ink2);font-size:12px;padding:6px 32px;text-align:center;border-bottom:1px solid var(--line)"></div>
     <div id="ld-viewonly-banner" style="display:none;background:var(--gold-l);color:var(--gold);font-size:12px;font-weight:600;padding:8px 32px;text-align:center">👁️ View-only — India's leads can be viewed but not edited from your account.</div>
     <!-- Body: 3-column grid -->
     <div style="padding:28px 32px;flex:1;max-width:1400px;width:100%;margin:0 auto">
@@ -2013,7 +2029,10 @@ What would you like help with today?</div>
           <div class="card">
             <div class="card-h"><span class="card-t">Document checklist</span></div>
             <div id="ld-doc-list" style="margin-bottom:10px"></div>
-            <button onclick="initDocsFS()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-clipboard-list" style="font-size:13px"></i>Init checklist</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button onclick="initDocsFS()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-clipboard-list" style="font-size:13px"></i>Init checklist</button>
+              <button onclick="requestMissingDocuments(curId)" style="font-size:12px;padding:5px 10px;background:#25D366;color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-brand-whatsapp" style="font-size:13px"></i>Request missing</button>
+            </div>
           </div>
           <div class="card" style="margin-top:0">
             <div class="card-h"><span class="card-t">🎓 University Links (for SOP)</span></div>
@@ -2066,6 +2085,7 @@ What would you like help with today?</div>
       </div>
       <button class="mclose" style="color:rgba(255,255,255,.6)" onclick="closeDover(null)">×</button>
     </div>
+    <div id="d-response-stat-banner" style="background:var(--paper);color:var(--ink2);font-size:11.5px;padding:6px 20px;text-align:center;border-bottom:1px solid var(--line)"></div>
     <div class="dbody">
             <div class="editing-notice" id="editing-notice">
         <i class="ti ti-pencil"></i>
@@ -2106,7 +2126,10 @@ What would you like help with today?</div>
           <div class="dfield"><div class="dlabel">WhatsApp Group</div><div class="dvalue" id="d-walink"></div></div>           <div class="dfield"><div class="dlabel">Documents Folder</div><div class="dvalue" id="d-doclink"></div></div>
           <div class="dsec">Document Checklist</div>
       <div id="d-doc-list" style="margin-bottom:8px"></div>
-      <button onclick="initDocs()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px"><i class="ti ti-clipboard-list" style="font-size:13px"></i>Init checklist</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        <button onclick="initDocs()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-clipboard-list" style="font-size:13px"></i>Init checklist</button>
+        <button onclick="requestMissingDocuments(curId)" style="font-size:12px;padding:5px 10px;background:#25D366;color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-brand-whatsapp" style="font-size:13px"></i>Request missing</button>
+      </div>
       <div class="dsec">University Links (for SOP)</div>
           <div id="d-uni-link-list" style="margin-bottom:10px"></div>
           <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:3px">University name</label>
@@ -2228,6 +2251,7 @@ function reachedStage(status,stageName){
 // Not every status has an entry — terminal/negative statuses (Dropped,
 // Not Interested, etc.) deliberately have nothing to action.
 const STAGE_TASK_MAP={
+  'Contacted':{title:'Follow up if student has not responded',dueDays:3},
   'Counselling Done':{title:'Send university shortlist to student',dueDays:2},
   'University Shortlist':{title:'Follow up on shortlist selection',dueDays:3},
   'Documents Pending':{title:'Collect pending documents from student',dueDays:5},
@@ -2235,8 +2259,10 @@ const STAGE_TASK_MAP={
   'Received Conditional':{title:'Discuss conditional offer terms with student',dueDays:2},
   'Received Unconditional':{title:'Guide student through deposit payment',dueDays:3},
   'Deposit Paid':{title:'Request CAS/visa documents from student',dueDays:5},
+  'CAS Applied':{title:'Follow up on CAS application progress',dueDays:5},
   'CAS Received':{title:'Assist with visa application submission',dueDays:3},
   'Visa Application Submitted':{title:'Monitor visa application status',dueDays:14},
+  'Visa Interview':{title:'Prepare student for their visa interview',dueDays:2},
   'Visa Received':{title:'Send pre-departure guide to student',dueDays:5},
   'Visa Rejected':{title:'Discuss next steps / reapplication with student',dueDays:2},
   'Enrolled':{title:'Confirm enrolment documents received by university',dueDays:7},
@@ -3276,6 +3302,17 @@ async function onLogin(user){
     if(payload.eventType==='INSERT'&&payload.new&&relevantToMe){
       playNotificationChime();
       toast('📥 New lead: '+(payload.new.name||'Unnamed'));
+      const newId=payload.new.id;
+      loadLeads().then(()=>{
+        renderDash();renderLeads();renderFU();badges();
+        // Briefly highlight the new row so it's visually obvious where
+        // it landed, rather than silently appearing in the table.
+        setTimeout(()=>{
+          const row=document.querySelector(`[data-lead-id="${newId}"]`);
+          if(row)row.classList.add('new-lead-flash');
+        },50);
+      });
+      return;
     }
     loadLeads().then(()=>{renderDash();renderLeads();renderFU();badges();});
   }).subscribe();
@@ -3883,6 +3920,26 @@ async function loadDocumentsCountByLead(){
 // itself, without opening each lead individually. Colors: green (mostly
 // done), amber (partial), red (little/nothing done), gray (no
 // checklist created for this lead yet at all).
+// Lead Intelligence — a simple, transparent Hot/Warm/Cold tag computed
+// purely from data already on the lead (status + updated_at). Every
+// tag shows exactly why it was given via its title tooltip — never a
+// black-box score. Closed-out leads (enrolled, rejected, not
+// interested, deferred) get no tag at all, since "hot or cold" isn't
+// a meaningful question for something already finished.
+const CLOSED_STAGES=['Enrolled','Visa Received','Visa Rejected','Not Interested','Deferred'];
+const ADVANCED_STAGES=['Application Submitted','Received Conditional Offer','Received Unconditional Offer','Deposit Paid','CAS Applied','CAS Received','Visa Application Submitted','Visa Interview'];
+function getLeadIntelligenceTag(l){
+  if(CLOSED_STAGES.includes(l.status))return null;
+  const days=l.updated_at?Math.floor((Date.now()-new Date(l.updated_at).getTime())/86400000):999;
+  if(days>=14)return{tag:'Cold',icon:'🧊',bg:'#E0F2FE',tx:'#075985',reason:`No activity in ${days} days`};
+  if(ADVANCED_STAGES.includes(l.status)&&days<=3)return{tag:'Hot',icon:'🔥',bg:'#FFE4E6',tx:'#9F1239',reason:`Advanced stage, active ${days===0?'today':days+' day(s) ago'}`};
+  return{tag:'Warm',icon:'🟡',bg:'#FEF9C3',tx:'#854D0E',reason:`Active ${days===0?'today':days+' day(s) ago'}`};
+}
+function leadIntelligenceBadge(l){
+  const info=getLeadIntelligenceTag(l);
+  if(!info)return '';
+  return `<span class="pill" style="background:${info.bg};color:${info.tx};margin-left:6px;font-size:10px" title="${esc(info.reason)}">${info.icon} ${info.tag}</span>`;
+}
 function docsBadge(leadId){
   const c=documentsCountByLead[leadId];
   if(!c||!c.total) return `<span class="pill" style="background:#F1F5F9;color:#64748B;margin-left:6px;font-size:11px;font-weight:700;padding:3px 8px;display:inline-block" title="No document checklist created yet">📋 —/—</span>`;
@@ -4150,7 +4207,7 @@ function renderLeads(){
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
     const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
     const capturedStr=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
-    return `<tr onclick="openLeadDetail('${l.id}')">
+    return `<tr data-lead-id="${l.id}" onclick="openLeadDetail('${l.id}')">
       ${canBulkAct?`<td onclick="event.stopPropagation()"><input type="checkbox" class="bulk-lead-checkbox" data-id="${l.id}" onchange="onBulkCheckboxChange()" style="cursor:pointer"></td>`:''}
       <td style="font-size:12px;color:var(--ink3);font-weight:600">${i+1}</td>
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
@@ -4160,7 +4217,7 @@ function renderLeads(){
       <td style="font-size:12px">${esc(l.program||'—')}</td>
       <td style="font-size:12px">${esc(l.destination||'—')}</td>
       <td style="font-size:11px;color:var(--ink3);white-space:nowrap">${capturedStr}</td>
-      <td><span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span>${docsBadge(l.id)}</td>
+      <td><span class="pill" style="background:${ss.bg};color:${ss.tx}">${l.status}</span>${docsBadge(l.id)}${leadIntelligenceBadge(l)}</td>
       <td onclick="event.stopPropagation()">${renderPriorityCell(l)}</td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderCounsellorCell(l)}</td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'application_team','Application Team')}</td>
@@ -4225,7 +4282,7 @@ function renderToolLeads(){
   tb.innerHTML=f.map((l,i)=>{
     const[abg,atx]=AVC[i%AVC.length];
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
-    return `<tr onclick="openLeadDetail('${l.id}')">
+    return `<tr data-lead-id="${l.id}" onclick="openLeadDetail('${l.id}')">
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
       <td><div class="nc"><div class="av" style="background:${abg};color:${atx}">${ini(l.name)}</div><div><div class="ln">${esc(l.name)}</div></div></div></td>
       <td style="font-size:12px;color:var(--ink3)">${esc(l.mobile||'—')}</td>
@@ -4242,6 +4299,7 @@ function openDetail(id){
   const l=leads.find(x=>x.id===id);if(!l)return;
   curId=id;
   logViewIfNeeded(id);
+  loadActivityTimeline(id,'d-response-stat-banner');
   document.getElementById('d-id').textContent=l.lead_id||id.substring(0,8);
   document.getElementById('d-captured-at').textContent=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'Unknown';
   document.getElementById('d-name').textContent=l.name;
@@ -4290,10 +4348,16 @@ function closeDover(e){
 }
 
 // ── FULL-SCREEN LEAD DETAIL ──────────────────────────────────────
+// True Lead/Student Journey History — already fully built via
+// loadActivityTimeline() + the existing "View full activity log"
+// modal (confirmed: day-grouped timeline, time-to-first-action stat,
+// all event types). Nothing more to add here — see openActivityLogModal().
+
 function openLeadDetail(id){
   const l=leads.find(x=>x.id===id);if(!l)return;
   curId=id;
   logViewIfNeeded(id);
+  loadActivityTimeline(id,'ld-response-stat-banner');
   document.getElementById('ld-id').textContent=l.lead_id||id.substring(0,8);
   document.getElementById('ld-captured-at').textContent=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'Unknown';
   document.getElementById('ld-name').textContent=l.name;
@@ -4384,7 +4448,96 @@ async function updateStatusFS(){
 function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget').value=l.budget_range||'';document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
 async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
-function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
+// Generates a message genuinely suited to WHERE this lead actually is
+// in their journey, instead of the same generic "just checking in"
+// text regardless of status. Deliberately deterministic and simple —
+// every message is directly readable from the lead's current status,
+// nothing hidden or AI-guessed, so staff can trust exactly why a given
+// message was suggested.
+// Document Intelligence — one-click request for whichever specific
+// documents are actually still missing on this lead, reusing the same
+// WhatsApp + communication-logging pattern already built for status-
+// based messages. Fetches fresh from the database rather than relying
+// on whatever's currently rendered, so this is accurate even if the
+// checklist panel hasn't been opened yet in this session.
+async function requestMissingDocuments(leadId){
+  const l=leads.find(x=>x.id===leadId);
+  if(!l){toast('Lead not found.');return;}
+  const{data,error}=await sb.from('documents').select('doc_name,status').eq('lead_id',leadId);
+  if(error){toast('Could not load document checklist.');return;}
+  const missing=(data||[]).filter(d=>d.status!=='Done').map(d=>d.doc_name);
+  if(!missing.length){toast(data&&data.length?'All documents are already marked done!':'No document checklist started yet for this lead.');return;}
+  const list=missing.length<=4?missing.join(', '):missing.slice(0,4).join(', ')+`, and ${missing.length-4} more`;
+  const msgText=`Hi ${l.name}, just following up on your application — we're still waiting on: ${list}. Whenever you get a chance, please send these across so we can keep things moving. Let us know if you have any questions about what's needed!`;
+  const msg=encodeURIComponent(msgText);
+  window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');
+  logNoteText(leadId,`WhatsApp message sent (document request — ${missing.length} missing): "${msgText}"`);
+}
+
+function getContextualWhatsAppMessage(l){
+  const name=l.name||'there';
+  const program=l.program||'study abroad';
+  const dest=l.destination||'your chosen destination';
+  const docs=documentsCountByLead[l.id];
+  const status=l.status||'New Enquiry';
+
+  if(status==='New Enquiry'||status==='Contacted'){
+    return `Hi ${name}, this is Step4Progress reaching out about your ${program} enquiry. We'd love to understand your goals and help you take the next step — when's a good time for a quick call?`;
+  }
+  if(status==='Documents Pending'){
+    if(docs&&docs.total){
+      const remaining=docs.total-docs.done;
+      return `Hi ${name}, just a quick note on your application — you currently have ${remaining} of ${docs.total} required documents still pending. Whenever you get a chance, please send these across so we can keep things moving smoothly. Let us know if you have any questions about what's needed!`;
+    }
+    return `Hi ${name}, just checking in on your document checklist — please let us know if you need any help gathering what's required so we can keep your application on track.`;
+  }
+  if(status==='Application Submitted'){
+    return `Hi ${name}, good news — your application to ${dest} has been submitted! We're now waiting to hear back from the university and will update you the moment we have news.`;
+  }
+  if(status==='Received Conditional Offer'||status==='Received Unconditional Offer'){
+    return `Hi ${name}, congratulations! 🎉 You've received an offer for your ${program} application. This is a big step forward — let's schedule a quick call to walk through the next steps (deposit and conditions, if any).`;
+  }
+  if(status==='Deposit Paid'){
+    return `Hi ${name}, thank you for confirming your deposit! Your place is now secured. Next, we'll be working on your CAS — we'll keep you updated as this progresses.`;
+  }
+  if(status==='CAS Received'){
+    return `Hi ${name}, your CAS has been issued! This is an important document for your visa application — please keep it safe, and let's discuss preparing your visa application together.`;
+  }
+  if(status==='Visa Application Submitted'){
+    return `Hi ${name}, your visa application has been submitted. We'll monitor this closely and let you know the moment there's an update — in the meantime, let us know if you'd like help preparing for a visa interview, if one is required.`;
+  }
+  if(status==='Visa Interview'){
+    return `Hi ${name}, ahead of your visa interview, would you like to schedule a quick prep session with us? We're happy to go through likely questions together.`;
+  }
+  if(status==='Visa Received'){
+    return `Hi ${name}, wonderful news — your visa has been approved! 🎉 Huge congratulations. Let's connect on pre-departure preparations so you're fully ready.`;
+  }
+  if(status==='Visa Rejected'){
+    return `Hi ${name}, we understand this is disappointing news about your visa outcome. We're here to support you through the next steps — let's talk through the options together when you're ready.`;
+  }
+  if(status==='Enrolled'){
+    return `Hi ${name}, congratulations on starting your journey! 🎓 We're so glad to have been part of this with you. Please don't hesitate to reach out if you ever need support while abroad.`;
+  }
+  // Fallback for any other status — same as the original generic message.
+  return `Hi ${name}, this is a follow-up from Step4Progress regarding your ${program} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`;
+}
+
+// Reusable note-logging, extracted from quickAddNote's own save pattern
+// so other features (like the WhatsApp action below) can log a
+// communication the exact same way, without needing a textbox.
+async function logNoteText(leadId,text){
+  const l=leads.find(x=>x.id===leadId);
+  const timestamp=new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  const stamped=`[${timestamp} · ${myName||'someone'}] ${text}`;
+  const combined=l&&l.notes?`${l.notes}\n${stamped}`:stamped;
+  const{error}=await sb.from('leads').update({notes:combined}).eq('id',leadId);
+  if(error)return false;
+  if(l)l.notes=combined;
+  logActivity(leadId,'field_edit','Note added: '+text.substring(0,80)+(text.length>80?'…':''));
+  return true;
+}
+
+function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msgText=getContextualWhatsAppMessage(l);const msg=encodeURIComponent(msgText);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');logNoteText(curId,`WhatsApp message sent (${l.status}): "${msgText}"`);}
 // FS versions of doc/reminder/uni functions
 async function loadDocsFS(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-doc-list');if(!el)return;if(error||!data||!data.length){el.innerHTML=emptyState('📋','No checklist yet.');return;}await loadDocFilesFor(data.map(d=>d.id));el.innerHTML=data.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',true)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',true)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiryFS('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
 function setDocExpiryFS(id,current){openQuickInput('Set expiry date','Expiry date','date',current,(val)=>{sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocsFS(curId);toast('Expiry date updated.');});});}
@@ -7304,7 +7457,7 @@ async function loadExpiryAlerts(){
 async function loadMyTasks(){
   const el=document.getElementById('my-tasks-list');
   if(!el)return;
-  const{data,error}=await sb.from('tasks').select('*,leads(name,country)').eq('status','Open').order('due_date',{ascending:true}).limit(50);
+  const{data,error}=await sb.from('tasks').select('*,leads(name,country)').eq('status','Open').order('due_date',{ascending:true}).limit(200);
   if(error){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load tasks — has the tasks table been created yet?</div>';return;}
   let scoped=data||[];
   if(myRole==='Counsellor'&&!isSuperAdmin){
@@ -7313,15 +7466,47 @@ async function loadMyTasks(){
     scoped=scoped.filter(t=>t.leads?.country===myCountry);
   }
   if(!scoped.length){el.innerHTML=emptyState('🎉','No open tasks right now.');return;}
+
+  // Action Centre grouping — overdue is never capped or hidden, since
+  // these are the items most likely to genuinely need attention. Today
+  // and This Week are capped reasonably so the widget stays a quick
+  // glance, not a full task manager.
   const today=new Date().toISOString().substring(0,10);
-  el.innerHTML=scoped.slice(0,8).map(t=>{
-    const overdue=t.due_date&&t.due_date<today;
+  const weekAhead=new Date(Date.now()+7*86400000).toISOString().substring(0,10);
+  const groups={overdue:[],today:[],week:[],later:[]};
+  scoped.forEach(t=>{
+    if(!t.due_date){groups.later.push(t);return;}
+    if(t.due_date<today)groups.overdue.push(t);
+    else if(t.due_date===today)groups.today.push(t);
+    else if(t.due_date<=weekAhead)groups.week.push(t);
+    else groups.later.push(t);
+  });
+
+  const taskRow=(t)=>{
     const leadName=t.leads?.name||'Unknown lead';
-    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="openLeadDetail('${t.lead_id}')">
-      <span class="pill" style="background:${overdue?'var(--rose-l)':'var(--gold-l)'};color:${overdue?'var(--rose)':'var(--gold)'}">${t.due_date?(overdue?'Overdue':new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})):'No date'}</span>
+    const dateLabel=t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'No date';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="openLeadDetail('${t.lead_id}')">
       <div style="flex:1;font-size:13px"><b>${esc(leadName)}</b> — ${esc(t.title)}${t.source==='auto'?' <span style="color:var(--gold);font-size:10px">AUTO</span>':''}</div>
+      <span style="font-size:11px;color:var(--ink3);flex-shrink:0">${dateLabel}</span>
     </div>`;
-  }).join('');
+  };
+  const groupSection=(label,color,items,cap)=>{
+    if(!items.length)return '';
+    const shown=cap?items.slice(0,cap):items;
+    const moreCount=items.length-shown.length;
+    return `<div style="margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">${label} (${items.length})</div>
+      ${shown.map(taskRow).join('')}
+      ${moreCount>0?`<div style="font-size:11.5px;color:var(--ink3);padding:4px 0">+${moreCount} more</div>`:''}
+    </div>`;
+  };
+
+  el.innerHTML=[
+    groupSection('🔴 Overdue','var(--rose)',groups.overdue,null),
+    groupSection('🟡 Due Today','var(--gold)',groups.today,6),
+    groupSection('🔵 This Week','var(--pine)',groups.week,6),
+    groupSection('⚪ Later','var(--ink3)',groups.later,3),
+  ].join('')||emptyState('🎉','No open tasks right now.');
 }
 // ══ IN-APP NOTIFICATION ENGINE ═══════════════════════════════════
 // Everything here only works while the CRM is open in a browser tab —
@@ -7809,7 +7994,7 @@ function checkDailyFollowupPopup(){
 }
 
 function checkNoActivity(){const now=Date.now();const stale=leads.filter(l=>['New Enquiry','Contacted','Counselling Done'].includes(l.status)&&l.updated_at&&(now-new Date(l.updated_at).getTime())>2*86400000);const nb=document.getElementById('nb-fu');if(stale.length>0){nb.classList.add('hot');nb.textContent=stale.length;const existing=document.getElementById('stale-toast');if(!existing){const t=document.createElement('div');t.id='stale-toast';t.style.cssText='position:fixed;top:16px;right:24px;background:var(--ember);color:#fff;font-size:13px;padding:10px 18px;border-radius:var(--r);z-index:400;box-shadow:var(--shm);cursor:pointer';t.textContent=`⚠️ ${stale.length} lead${stale.length>1?'s':''} with no activity for 2+ days`;t.onclick=()=>{t.remove();nav('followup',document.querySelector('.ni[data-nav="followup"]'));};document.body.appendChild(t);setTimeout(()=>t?.remove(),8000);}}}
-  function waFollowUp(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msg=encodeURIComponent(`Hi ${l.name}, this is a follow-up from Step4Progress regarding your ${l.program||'study abroad'} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');}
+  function waFollowUp(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msgText=getContextualWhatsAppMessage(l);const msg=encodeURIComponent(msgText);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');logNoteText(curId,`WhatsApp message sent (${l.status}): "${msgText}"`);}
   function toast(m,type){
   // Backward compatible with every existing toast('message') call in the
   // file — type is optional and auto-detected from the message content
@@ -8240,6 +8425,66 @@ async function deleteWhatsAppCall(id){
   toast('WhatsApp call log deleted.');
 }
 // ── Productivity: sub-tabs, My Daily Update, Activity Monitor ──────
+// Real response-time calculation — uses the FIRST 'status_change' entry
+// in activity_log per lead as "when a counsellor first acted," compared
+// against the lead's created_at. This is genuine data, not a guess —
+// deliberately NOT used as an individual ranking tool (per its own
+// framing in the UI), only for spotting real process bottlenecks.
+async function loadResponseTimeStats(scopedLeadsForStats){
+  const{data,error}=await sb.from('activity_log').select('lead_id,created_at').eq('event_type','status_change').order('created_at',{ascending:true});
+  if(error||!data)return null;
+  const firstActionByLead={};
+  data.forEach(row=>{ if(!(row.lead_id in firstActionByLead)) firstActionByLead[row.lead_id]=row.created_at; });
+
+  const responseMins=[];
+  let uncontacted=0;
+  scopedLeadsForStats.forEach(l=>{
+    const firstAction=firstActionByLead[l.id];
+    if(!firstAction){ uncontacted++; return; }
+    const mins=(new Date(firstAction).getTime()-new Date(l.created_at).getTime())/60000;
+    if(mins>=0) responseMins.push(mins);
+  });
+
+  const total=scopedLeadsForStats.length;
+  if(!responseMins.length) return {avgMins:null,within15:0,within1hr:0,over4hr:0,uncontactedPct:total?Math.round(uncontacted/total*100):0};
+  const avgMins=responseMins.reduce((a,b)=>a+b,0)/responseMins.length;
+  const pct=(fn)=>Math.round(responseMins.filter(fn).length/responseMins.length*100);
+  return {
+    avgMins,
+    within15:pct(m=>m<=15),
+    within1hr:pct(m=>m<=60),
+    over4hr:pct(m=>m>240),
+    uncontactedPct:total?Math.round(uncontacted/total*100):0,
+  };
+}
+function formatResponseStatsHtml(stats){
+  if(!stats)return '<p style="font-size:13px;color:var(--ink3);font-style:italic">Could not load response time data.</p>';
+  const avgLabel=stats.avgMins==null?'—':(stats.avgMins<60?Math.round(stats.avgMins)+' min':(stats.avgMins/60).toFixed(1)+' hrs');
+  return `<div class="fg" style="gap:12px">
+    <div class="kpi"><div class="kpi-l">Average response</div><div class="kpi-v">${avgLabel}</div></div>
+    <div class="kpi"><div class="kpi-l">Within 15 min</div><div class="kpi-v kv-g">${stats.within15}%</div></div>
+    <div class="kpi"><div class="kpi-l">Within 1 hour</div><div class="kpi-v kv-g">${stats.within1hr}%</div></div>
+    <div class="kpi"><div class="kpi-l">Over 4 hours</div><div class="kpi-v kv-o">${stats.over4hr}%</div></div>
+    <div class="kpi"><div class="kpi-l">Never contacted</div><div class="kpi-v kv-r">${stats.uncontactedPct}%</div></div>
+  </div>`;
+}
+async function renderMyResponseStats(){
+  const el=document.getElementById('my-response-stats');
+  if(!el)return;
+  el.innerHTML='<p style="font-size:13px;color:var(--ink3);font-style:italic">Calculating…</p>';
+  const myLeads=leads.filter(l=>l.counsellor===myName);
+  const stats=await loadResponseTimeStats(myLeads);
+  el.innerHTML=formatResponseStatsHtml(stats);
+}
+async function renderTeamResponseStats(){
+  const el=document.getElementById('team-response-stats');
+  if(!el)return;
+  el.innerHTML='<p style="font-size:13px;color:var(--ink3);font-style:italic">Calculating…</p>';
+  const scoped=isSuperAdmin?leads:leads.filter(l=>l.country===myCountry);
+  const stats=await loadResponseTimeStats(scoped);
+  el.innerHTML=formatResponseStatsHtml(stats);
+}
+
 function initProductivity(){
   const dateEl=document.getElementById('du-date');
   if(dateEl&&!dateEl.value)dateEl.value=new Date().toISOString().substring(0,10);
@@ -8254,13 +8499,14 @@ function initProductivity(){
   if(whatsappTab)whatsappTab.style.display=isAdminTier?'':'none';
 
   if(isAdminTier){
-    loadCallLogs().then(renderCallLogs);
-    loadWhatsAppCalls().then(renderWhatsAppCalls);
     populateActivityMonitorCountryFilter();
     populateWhatsAppCallFilters();
+    renderTeamResponseStats();
+    setProdSubtab('calls');
   } else {
     setProdSubtab('myupdate');
   }
+  renderMyResponseStats();
   loadMyDailyUpdates();
 }
 function setProdSubtab(sub){
@@ -8270,8 +8516,13 @@ function setProdSubtab(sub){
     const btn=document.querySelector(`.prod-subtab[data-sub="${s}"]`);
     if(btn){btn.style.color=s===sub?'var(--pine)':'var(--ink3)';btn.style.borderBottomColor=s===sub?'var(--pine)':'transparent';}
   });
+  // Lazy-loaded on demand, only when the tab is actually clicked open —
+  // not fetched automatically just because the Productivity screen was
+  // opened, which was wasting a network call for tabs the person never
+  // looks at.
+  if(sub==='calls')loadCallLogs().then(renderCallLogs);
+  if(sub==='whatsapp')loadWhatsAppCalls().then(renderWhatsAppCalls);
   if(sub==='monitor')renderActivityMonitor();
-  if(sub==='whatsapp')renderWhatsAppCalls();
 }
 async function submitDailyUpdate(){
   const dateEl=document.getElementById('du-date');

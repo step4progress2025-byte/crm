@@ -4583,7 +4583,7 @@ async function updateStatusFS(){
   loadActivityLogFS(curId);
 }
 function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range);syncBudgetRangeOptions(l.budget_range||'');document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
-async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error}=await sb.from('leads').delete().eq('id',curId);if(error){setSyncErr();toast('Error deleting lead.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
+async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error,data}=await sb.from('leads').delete().eq('id',curId).select();if(error){setSyncErr();toast('Error deleting lead: '+error.message);return;}if(!data||!data.length){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 // Generates a message genuinely suited to WHERE this lead actually is
 // in their journey, instead of the same generic "just checking in"
@@ -5105,8 +5105,9 @@ async function deleteLead(){
   if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}
   if(!confirm('Delete this lead? This cannot be undone.'))return;
   setSyncing();
-  const{error}=await sb.from('leads').delete().eq('id',curId);
-  if(error){setSyncErr();toast('Error deleting lead.');return;}
+  const{error,data}=await sb.from('leads').delete().eq('id',curId).select();
+  if(error){setSyncErr();toast('Error deleting lead: '+error.message);return;}
+  if(!data||!data.length){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}
   leads=leads.filter(x=>x.id!==curId);
   setSynced();closeDover(null);renderLeads();renderDash();badges();setTimeout(checkNoActivity,2000);setTimeout(checkNoActivity,2000);applyRoleUI();toast('Lead deleted.');
 }
@@ -6197,14 +6198,19 @@ async function bulkDeleteLeads(){
   if(!confirm(warnMsg))return;
 
   setSyncing();
-  const{error}=await sb.from('leads').delete().in('id',deletable.map(l=>l.id));
+  const{error,data}=await sb.from('leads').delete().in('id',deletable.map(l=>l.id)).select();
   if(error){setSyncErr();toast('Error deleting leads: '+error.message);return;}
-  const deletedIds=new Set(deletable.map(l=>l.id));
-  leads=leads.filter(l=>!deletedIds.has(l.id));
+  const actuallyDeletedIds=new Set((data||[]).map(l=>l.id));
+  if(!actuallyDeletedIds.size){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}
+  leads=leads.filter(l=>!actuallyDeletedIds.has(l.id));
   setSynced();
   clearBulkSelection();
   renderLeads();renderDash();badges();
-  toast(`${deletable.length} lead(s) deleted.`);
+  if(actuallyDeletedIds.size<deletable.length){
+    toast(`${actuallyDeletedIds.size} of ${deletable.length} lead(s) deleted — the rest were blocked (permission issue).`);
+  }else{
+    toast(`${actuallyDeletedIds.size} lead(s) deleted.`);
+  }
 }
 
 // ── AI ────────────────────────────────────────────────────────────
@@ -7000,7 +7006,7 @@ async function checkUnreadDmCount(){
 const META_PULL_URL='https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/meta-data-pull';
 // Only India has real Meta/GA4 credentials connected so far - other
 // countries show a clean placeholder until their own credentials exist.
-const DM_CONNECTED_COUNTRIES=['India'];
+const DM_CONNECTED_COUNTRIES=['India','Pakistan','Bangladesh'];
 let dmActiveCountry='India';
 function initDigitalMarketing(){
   document.getElementById('dm-post-date').value=new Date().toISOString().substring(0,10);

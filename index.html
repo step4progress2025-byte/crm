@@ -3638,6 +3638,14 @@ function chooseOpsView(view){
   renderLeads();
   badges();
   renderFU();
+  // Activity Monitor has its own separate Category filter — keep it in
+  // sync too, in case the person is already sitting on that screen when
+  // they toggle Domestic/International, rather than only updating it the
+  // next time they navigate to Productivity fresh.
+  if(document.getElementById('am-country')){
+    populateActivityMonitorCountryFilter();
+    renderActivityMonitor();
+  }
 }
 function reopenOpsViewModal(){
   document.getElementById('ops-view-modal').style.display='flex';
@@ -9401,6 +9409,16 @@ function populateActivityMonitorCountryFilter(){
   } else {
     sel.innerHTML=`<option value="${esc(myOffice||'')}">${esc(myOffice||'—')}</option>`;
     sel.disabled=true;
+  }
+  // Default the Category filter to match the Super Admin's current
+  // Domestic/International ops-view toggle — same pattern already used
+  // for Reports' country dropdown. Still fully overridable by hand
+  // afterward; this just stops Activity Monitor showing the whole team
+  // (including the opposite pole) every time you open it while in
+  // Domestic or International mode.
+  const categorySel=document.getElementById('am-category');
+  if(categorySel&&isSuperAdmin&&superAdminOpsView){
+    categorySel.value=superAdminOpsView;
   }
 }
 async function renderActivityMonitor(){

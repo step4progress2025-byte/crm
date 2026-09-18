@@ -273,9 +273,27 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 /* Team */
 .team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
 .tcard{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:18px;box-shadow:var(--sh);display:flex;align-items:flex-start;gap:14px}
-.tcard-av{width:42px;height:42px;border-radius:50%;background:var(--pine3);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff;flex-shrink:0}
-.tcard-name{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tcard-role{font-size:12px;color:var(--ink3);font-style:italic;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tcard-av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--pine3),#0F6E56);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff;flex-shrink:0;box-shadow:0 3px 8px rgba(15,110,86,.25)}
+.tcard{transition:transform .18s ease,box-shadow .18s ease;border-left:4px solid var(--line)}
+.tcard:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(0,0,0,.09)}
+.tcard[data-role="Manager"]{border-left-color:#8b5cf6}
+.tcard[data-role="Admin"]{border-left-color:#f59e0b}
+.tcard[data-role="Director"]{border-left-color:#ef4444}
+.tcard[data-role="Counsellor"]{border-left-color:#10b981}
+.tcard[data-role="Application Team"]{border-left-color:#3b82f6}
+.tcard[data-role="Visa Team"]{border-left-color:#06b6d4}
+.tcard[data-role="SOP Team"]{border-left-color:#ec4899}
+.tcard[data-role="Agent"]{border-left-color:#f97316}
+.tcard-role{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;margin-top:3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#f1f5f9;color:var(--ink3)}
+.tcard[data-role="Manager"] .tcard-role{background:#f3e8ff;color:#8b5cf6}
+.tcard[data-role="Admin"] .tcard-role{background:#fef3c7;color:#b45309}
+.tcard[data-role="Director"] .tcard-role{background:#fee2e2;color:#dc2626}
+.tcard[data-role="Counsellor"] .tcard-role{background:#d1fae5;color:#047857}
+.tcard[data-role="Application Team"] .tcard-role{background:#dbeafe;color:#1d4ed8}
+.tcard[data-role="Visa Team"] .tcard-role{background:#cffafe;color:#0891b2}
+.tcard[data-role="SOP Team"] .tcard-role{background:#fce7f3;color:#db2777}
+.tcard[data-role="Agent"] .tcard-role{background:#ffedd5;color:#ea580c}
+.tcard-name{font-size:14px;font-weight:600;word-break:break-word;overflow-wrap:break-word;line-height:1.35}
 .tcard-email{font-size:11px;color:var(--ink3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* AI */
@@ -2155,7 +2173,9 @@ What would you like help with today?</div>
             <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:3px">University name</label>
             <input id="ld-uni-link-name" placeholder="e.g. University of Manchester" style="width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;margin-bottom:8px;font-family:var(--font-b)">
             <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:3px">Link — SOP requirements / university page</label>
-            <input id="ld-uni-link-url" placeholder="https://..." style="width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;margin-bottom:10px;font-family:var(--font-b)">
+            <input id="ld-uni-link-url" placeholder="https://..." style="width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;margin-bottom:8px;font-family:var(--font-b)">
+            <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:3px">Notes (optional)</label>
+            <textarea id="ld-uni-link-notes" placeholder="e.g. Requires 2 references, personal statement max 500 words…" style="width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;margin-bottom:10px;font-family:var(--font-b);min-height:50px;resize:vertical"></textarea>
             <button onclick="addUniversityLink(true)" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer"><i class="ti ti-plus"></i> Add link</button>
           </div>
           <div class="card" style="margin-top:0">
@@ -2251,6 +2271,8 @@ What would you like help with today?</div>
           <input id="d-uni-link-name" placeholder="e.g. University of Manchester" style="width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;margin-bottom:8px;font-family:var(--font-b)">
           <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:3px">Link — SOP requirements / university page</label>
           <input id="d-uni-link-url" placeholder="https://..." style="width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;margin-bottom:8px;font-family:var(--font-b)">
+          <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:3px">Notes (optional)</label>
+          <textarea id="d-uni-link-notes" placeholder="e.g. Requires 2 references, personal statement max 500 words…" style="width:100%;padding:7px 9px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;margin-bottom:8px;font-family:var(--font-b);min-height:50px;resize:vertical"></textarea>
           <button onclick="addUniversityLink(false)" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;margin-bottom:16px"><i class="ti ti-plus"></i> Add link</button>
       <div class="dsec">Reminders</div>
           <div id="d-reminder-list" style="margin-bottom:8px"></div>
@@ -3826,7 +3848,7 @@ function visibleEventsFor(){
     return parts.includes(myName)||parts.includes('TEAM:'+myRole);
   });
 }
-async function loadEvents(){   const{data}=await sb.from('events').select('*').order('event_date',{ascending:true});   if(data){events=data;renderEvents();renderEventsTicker();} } function renderEvents(){   const cal=document.getElementById('events-calendar');   const list=document.getElementById('events-list');   if(!cal)return;   const vEvents=visibleEventsFor();   const now=new Date();   const thisMonth=vEvents.filter(e=>new Date(e.event_date).getMonth()===now.getMonth()&&new Date(e.event_date).getFullYear()===now.getFullYear());   const upcoming=vEvents.filter(e=>new Date(e.event_date)>=now).slice(0,10);   const typeColors={'Seminar':"var(--sky-1)",'Webinar':"var(--sky-1)",'Application Deadline':"var(--rose-1)",'Follow-up':"var(--sage-1)",'Other':"var(--gold-1)"};   cal.innerHTML=vEvents.length?vEvents.map(e=>{     const d=new Date(e.event_date);     const isPast=d<now;     const bg=typeColors[e.event_type]||"var(--gold-1)";     return`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);opacity:${isPast?0.5:1}">     <div style="min-width:48px;text-align:center;background:${bg};border-radius:8px;padding:6px 4px">     <div style="font-size:18px;font-weight:600;color:var(--ink);line-height:1">${d.getDate()}</div>     <div style="font-size:10px;color:var(--ink2)">${d.toLocaleString('default',{month:'short'})}</div>     </div>     <div style="flex:1">     <div style="font-weight:500;font-size:14px;color:var(--ink)">${esc(e.title)}</div>     <div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(e.event_type||'')}${e.description?` · <a href="${e.description}" target="_blank" style="color:var(--pine2)">${esc(e.description)}</a>`:''}</div>     </div>     <button onclick="openAddEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px">✏️</button>${(!e.created_by||e.created_by===currentUser?.id||isSuperAdmin)?`<button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">&times;</button>`:''}     </div>`;}).join(''):emptyState('📅','No events yet. Click Add event to get started.');   list.innerHTML=thisMonth.length?thisMonth.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink2)"><b style="color:var(--ink)">${new Date(e.event_date).getDate()} ${new Date(e.event_date).toLocaleString('default',{month:'short'})}</b> · ${esc(e.title)}</div>`).join(''):emptyState('📅','No events this month.'); } function renderEventsTicker(){   const ticker=document.getElementById('events-ticker');   const badge=document.getElementById('events-badge');   if(!ticker)return;   const vEvents=visibleEventsFor();   const now=new Date();   const soon=vEvents.filter(e=>{const d=new Date(e.event_date);return d>=now&&(d-now)<=7*86400000;});   const upcoming=vEvents.filter(e=>new Date(e.event_date)>=now).slice(0,5);   if(badge){if(soon.length>0){badge.textContent=soon.length;badge.style.display='flex';}else{badge.style.display='none';}}   ticker.innerHTML=upcoming.length?upcoming.map(e=>`<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.1)"><span style="opacity:0.7;font-size:11px">${new Date(e.event_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span><br>${esc(e.title)}</div>`).join(''):'<div style="opacity:0.7">No upcoming events</div>'; } function toggleEventsWidget(){   const w=document.getElementById('events-widget');   w.style.display=w.style.display==='none'?'block':'none'; } function toggleOther(selectId,inputId){   const sel=document.getElementById(selectId);   const inp=document.getElementById(inputId);   if(inp)inp.style.display=sel.value==='Other'?'block':'none'; } let editingEventId=null;
+async function loadEvents(){   const{data}=await sb.from('events').select('*').order('event_date',{ascending:true});   if(data){events=data;renderEvents();renderEventsTicker();} } function renderEvents(){   const cal=document.getElementById('events-calendar');   const list=document.getElementById('events-list');   if(!cal)return;   const vEvents=visibleEventsFor();   const now=new Date();   const thisMonth=vEvents.filter(e=>new Date(e.event_date).getMonth()===now.getMonth()&&new Date(e.event_date).getFullYear()===now.getFullYear());   const upcoming=vEvents.filter(e=>new Date(e.event_date)>=now).slice(0,10);   const typeColors={'Seminar':"var(--sky-1)",'Webinar':"var(--sky-1)",'Application Deadline':"var(--rose-1)",'Follow-up':"var(--sage-1)",'Other':"var(--gold-1)"};   cal.innerHTML=vEvents.length?vEvents.map(e=>{     const d=new Date(e.event_date);     const isPast=d<now;     const bg=typeColors[e.event_type]||"var(--gold-1)";     return`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);opacity:${isPast?0.5:1}">     <div style="min-width:48px;text-align:center;background:${bg};border-radius:8px;padding:6px 4px">     <div style="font-size:18px;font-weight:600;color:var(--ink);line-height:1">${d.getDate()}</div>     <div style="font-size:10px;color:var(--ink2)">${d.toLocaleString('default',{month:'short'})}</div>     </div>     <div style="flex:1">     <div style="font-weight:500;font-size:14px;color:var(--ink)">${esc(e.title)}</div>     <div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(e.event_type||'')}${e.description?` · <a href="${e.description}" target="_blank" style="color:var(--pine2)">${esc(e.description)}</a>`:''}</div>     </div>     <button onclick="openAddEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px">✏️</button>${(!e.created_by||e.created_by===currentUser?.id||isSuperAdmin)?`<button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">&times;</button>`:''}     </div>`;}).join(''):emptyState('📅','No events yet. Click Add event to get started.');   list.innerHTML=thisMonth.length?thisMonth.map(e=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink2)"><span><b style="color:var(--ink)">${new Date(e.event_date).getDate()} ${new Date(e.event_date).toLocaleString('default',{month:'short'})}</b> · ${esc(e.title)}</span><span style="display:flex;gap:2px;flex-shrink:0"><button onclick="openAddEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:12px;padding:0 4px">✏️</button>${(!e.created_by||e.created_by===currentUser?.id||isSuperAdmin)?`<button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:15px;padding:0 4px">&times;</button>`:''}</span></div>`).join(''):emptyState('📅','No events this month.'); } function renderEventsTicker(){   const ticker=document.getElementById('events-ticker');   const badge=document.getElementById('events-badge');   if(!ticker)return;   const vEvents=visibleEventsFor();   const now=new Date();   const soon=vEvents.filter(e=>{const d=new Date(e.event_date);return d>=now&&(d-now)<=7*86400000;});   const upcoming=vEvents.filter(e=>new Date(e.event_date)>=now).slice(0,5);   if(badge){if(soon.length>0){badge.textContent=soon.length;badge.style.display='flex';}else{badge.style.display='none';}}   ticker.innerHTML=upcoming.length?upcoming.map(e=>`<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.1)"><span style="opacity:0.7;font-size:11px">${new Date(e.event_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span><br>${esc(e.title)}</div>`).join(''):'<div style="opacity:0.7">No upcoming events</div>'; } function toggleEventsWidget(){   const w=document.getElementById('events-widget');   w.style.display=w.style.display==='none'?'block':'none'; } function toggleOther(selectId,inputId){   const sel=document.getElementById(selectId);   const inp=document.getElementById(inputId);   if(inp)inp.style.display=sel.value==='Other'?'block':'none'; } let editingEventId=null;
 const EVENT_TEAM_OPTIONS=['Counsellor','Manager','Admin','Director','Application Team','Visa Team','SOP Team'];
 function renderEventParticipantsPicker(selectedParts){
   const el=document.getElementById('event-participants-picker');
@@ -5117,12 +5139,21 @@ async function loadDocsModal(leadId){
 }
 async function initDocsModal(){
   if(!curId)return;
-  const existing=await sb.from('documents').select('id').eq('lead_id',curId);
-  if(existing.data?.length){toast('Checklist already exists!');return;}
-  const rows=docsChecklistFor(curId).map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));
-  await sb.from('documents').insert(rows);
+  const existing=await sb.from('documents').select('doc_name').eq('lead_id',curId);
+  const wanted=docsChecklistFor(curId);
+  if(!existing.data?.length){
+    const rows=wanted.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));
+    await sb.from('documents').insert(rows);
+    loadDocsModal(curId);
+    toast('Checklist created!');
+    return;
+  }
+  const existingNames=new Set(existing.data.map(d=>d.doc_name));
+  const missing=wanted.filter(d=>!existingNames.has(d));
+  if(!missing.length){toast('Checklist already up to date!');return;}
+  await sb.from('documents').insert(missing.map(d=>({lead_id:curId,doc_name:d,status:'Pending'})));
   loadDocsModal(curId);
-  toast('Checklist created!');
+  toast(`Added ${missing.length} missing item${missing.length>1?'s':''} to the checklist.`);
 }
 async function toggleDocModal(id,checked){
   await sb.from('documents').update({status:checked?'Done':'Pending'}).eq('id',id);
@@ -5206,21 +5237,44 @@ async function loadUniversityLinks(leadId,isFS){
   const{data,error}=await sb.from('university_links').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});
   if(error){listEl.innerHTML='<div style="font-size:12px;color:var(--ink3);font-style:italic">Could not load — has university_links been created in Supabase yet?</div>';return;}
   if(!data||!data.length){listEl.innerHTML=emptyState('🔗','No universities linked yet.');return;}
-  listEl.innerHTML=data.map(u=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)">
-    <a href="${esc(u.url)}" target="_blank" style="flex:1;font-size:12px;color:var(--pine);text-decoration:underline;display:flex;align-items:center;gap:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><i class="ti ti-external-link" style="font-size:13px;flex-shrink:0"></i>${esc(u.university_name||'Open link')}</a>
-    <span onclick="deleteUniversityLink('${u.id}',${isFS})" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600;flex-shrink:0">×</span>
+  listEl.innerHTML=data.map(u=>`<div style="padding:6px 0;border-bottom:1px solid var(--line)">
+    <div style="display:flex;align-items:center;gap:8px">
+      <a href="${esc(u.url)}" target="_blank" style="flex:1;font-size:12px;color:var(--pine);text-decoration:underline;display:flex;align-items:center;gap:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><i class="ti ti-external-link" style="font-size:13px;flex-shrink:0"></i>${esc(u.university_name||'Open link')}</a>
+      <span onclick="deleteUniversityLink('${u.id}',${isFS})" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600;flex-shrink:0">×</span>
+    </div>
+    <div id="uni-link-note-view-${u.id}" onclick="editUniversityLinkNote('${u.id}')" style="font-size:11px;color:${u.notes?'var(--ink2)':'var(--ink3)'};margin-top:3px;cursor:pointer;white-space:pre-wrap;${u.notes?'':'font-style:italic'}">${esc(u.notes||'+ Add note')}</div>
   </div>`).join('');
+}
+async function editUniversityLinkNote(id){
+  const viewEl=document.getElementById('uni-link-note-view-'+id);
+  if(!viewEl||viewEl.dataset.editing)return;
+  viewEl.dataset.editing='1';
+  const currentText=viewEl.textContent==='+ Add note'?'':viewEl.textContent;
+  viewEl.outerHTML=`<textarea id="uni-link-note-edit-${id}" style="width:100%;font-size:11px;padding:5px 6px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b);margin-top:3px;min-height:44px;resize:vertical">${esc(currentText)}</textarea>`;
+  const textarea=document.getElementById('uni-link-note-edit-'+id);
+  textarea.focus();
+  const save=async()=>{
+    const notes=textarea.value.trim();
+    await sb.from('university_links').update({notes:notes||null}).eq('id',id);
+    // Refresh whichever view is actually open — both calls are harmless no-ops
+    // if that particular container isn't present/active.
+    loadUniversityLinks(curId,true);
+    loadUniversityLinks(curId,false);
+  };
+  textarea.addEventListener('blur',save);
 }
 async function addUniversityLink(isFS){
   if(!curId){toast('No lead selected.');return;}
   const nameEl=document.getElementById(isFS?'ld-uni-link-name':'d-uni-link-name');
   const urlEl=document.getElementById(isFS?'ld-uni-link-url':'d-uni-link-url');
+  const notesEl=document.getElementById(isFS?'ld-uni-link-notes':'d-uni-link-notes');
   const name=nameEl.value.trim();
   const url=urlEl.value.trim();
+  const notes=notesEl?notesEl.value.trim():'';
   if(!name||!url){toast('Please enter both a university name and a link.');return;}
-  const{error}=await sb.from('university_links').insert({lead_id:curId,university_name:name,url});
+  const{error}=await sb.from('university_links').insert({lead_id:curId,university_name:name,url,notes:notes||null});
   if(error){toast('Error: '+error.message);return;}
-  nameEl.value='';urlEl.value='';
+  nameEl.value='';urlEl.value='';if(notesEl)notesEl.value='';
   loadUniversityLinks(curId,isFS);
   toast('University link added!');
 }
@@ -6202,6 +6256,17 @@ async function saveUnavailability(){
   renderTeam(teamList);
   toast('Marked unavailable.');
 }
+async function clearUnavailability(teamId,name){
+  if(isRestrictedStaffRole()){toast('Only Manager/Admin/Director/Super Admin can do this.');return;}
+  const record=currentUnavailability(teamId);
+  if(!record){toast('No active unavailability record found.');return;}
+  if(!confirm(`Remove ${name}'s unavailable status? Round-robin will include them again immediately.`))return;
+  const{error}=await sb.from('staff_unavailability').delete().eq('id',record.id);
+  if(error){toast('Error: '+error.message);return;}
+  unavailabilityList=unavailabilityList.filter(u=>u.id!==record.id);
+  renderTeam(teamList);
+  toast(`${name} is available again.`);
+}
 
 // ── Management Team & Operations Team groupings ─────────────────────
 // Two additional groupings shown above the country/office breakdown:
@@ -6229,7 +6294,7 @@ function renderManagementAndOperationsTeams(team){
   const mgmt=(team||[]).filter(t=>mgmtRoles.includes(t.role)&&t.team_category!=='Domestic'&&!isOwnerRowHiddenFromMe(t));
   if(effectiveView!=='Domestic')mgmtEl.innerHTML=`<div class="card" style="margin-bottom:16px">
     <div class="card-h"><span class="card-t">🌍 International — Management Team</span><span style="font-size:11px;color:var(--ink3)">${mgmt.length} member${mgmt.length!==1?'s':''} — Manager, Admin & Director, across every country</span></div>
-    <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard">
+    <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
         <div class="tcard-av">${ini(t.full_name||t.email)}</div>
         <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
         ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
@@ -6244,7 +6309,7 @@ function renderManagementAndOperationsTeams(team){
         <span style="font-weight:600;font-size:13px;color:var(--pine)">${icon} ${roleName}</span>
         <span style="font-size:10px;color:var(--ink3);font-style:italic">${members.length} member${members.length!==1?'s':''} — manual hand-off</span>
       </div>
-      ${members.length?members.map(t=>`<div class="tcard" style="margin-bottom:8px">
+      ${members.length?members.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}" style="margin-bottom:8px">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
@@ -6263,7 +6328,7 @@ function renderManagementAndOperationsTeams(team){
     const domestic=(team||[]).filter(t=>t.team_category==='Domestic');
     domesticEl.innerHTML=`<div class="card" style="margin-bottom:16px">
       <div class="card-h"><span class="card-t">🇬🇧 Domestic Operations</span><span style="font-size:11px;color:var(--ink3)">${domestic.length} member${domestic.length!==1?'s':''} — UK-internal only, never receives leads automatically</span></div>
-      <div class="team-grid">${domestic.length?domestic.map(t=>`<div class="tcard">
+      <div class="team-grid">${domestic.length?domestic.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
@@ -6277,7 +6342,7 @@ function renderManagementAndOperationsTeams(team){
     const agents=(team||[]).filter(t=>t.role==='Agent');
     agentEl.innerHTML=`<div class="card" style="margin-bottom:16px">
       <div class="card-h"><span class="card-t">🤝 Agent Portal</span><span style="font-size:11px;color:var(--ink3)">${agents.length} agent${agents.length!==1?'s':''} — external partners, work only on leads Management assigns them</span></div>
-      <div class="team-grid">${agents.length?agents.map(t=>`<div class="tcard">
+      <div class="team-grid">${agents.length?agents.map(t=>`<div class="tcard" data-role="Agent">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent${t.university_name?' · 🎓 '+esc(t.university_name):''}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
@@ -6337,13 +6402,13 @@ function renderTeam(team){
       ? members.map(t=>{
           const unavail=currentUnavailability(t.id);
           const canManage=!isRestrictedStaffRole();
-          return `<div class="tcard" style="${unavail?'opacity:.7':''}">
+          return `<div class="tcard" data-role="${esc(t.role||'Counsellor')}" style="${unavail?'opacity:.7':''}">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0">
             <div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div>
             <div class="tcard-role">${esc(t.role||'Counsellor')}</div>
             <div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div>
-            ${unavail?`<div style="font-size:10px;color:var(--rose);font-weight:600;margin-top:3px">🚫 Unavailable until ${new Date(unavail.to_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${unavail.reason?' — '+esc(unavail.reason):''}</div>`:''}
+            ${unavail?`<div style="font-size:10px;color:var(--rose);font-weight:600;margin-top:3px">🚫 Unavailable until ${new Date(unavail.to_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${unavail.reason?' — '+esc(unavail.reason):''}${canManage?` · <span onclick="clearUnavailability('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" style="text-decoration:underline;cursor:pointer;color:var(--rose)">Unmark</span>`:''}</div>`:''}
           </div>
           ${canManage?`<button onclick="openUnavailabilityModal('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Mark unavailable" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-calendar-off"></i></button>`:''}
           <button onclick="resetTeamMemberPassword('${t.id}','${esc(t.email||'')}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Reset password" style="background:none;border:none;color:var(--pine2);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-key"></i></button>
@@ -8241,7 +8306,7 @@ function isAnnouncementRelevantToMe(a){
 async function openAnnouncements(){
   document.getElementById('modal-announcements').classList.add('open');
   const newBtn=document.getElementById('ann-new-btn');
-  if(newBtn)newBtn.style.display=isRestrictedStaffRole()?'none':'flex';
+  if(newBtn)newBtn.style.display=isSuperAdmin?'flex':'none';
   await loadAnnouncements();
   // Mark as seen now that the panel's open — badge clears on close, not
   // per-item, since this is a simple broadcast feed, not a full inbox.
@@ -8259,14 +8324,23 @@ function renderAnnouncementFeed(){
   if(!el)return;
   const mine=allAnnouncements.filter(isAnnouncementRelevantToMe);
   if(!mine.length){el.innerHTML=emptyState('📢','Nothing here yet.');return;}
+  const canManageAll=isSuperAdmin;
   el.innerHTML=mine.map(a=>{
     const attachHtml=a.attachment_url?`<div style="margin-top:6px"><a href="${esc(a.attachment_url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i>${esc(a.attachment_filename||'Attachment')}</a></div>`:'';
+    const canManageThis=canManageAll;
+    const manageButtons=canManageThis?`<div style="display:flex;gap:4px;flex-shrink:0">
+        <button onclick="editAnnouncement('${a.id}')" title="Edit" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 3px"><i class="ti ti-pencil"></i></button>
+        <button onclick="deleteAnnouncement('${a.id}')" title="Delete" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:15px;padding:0 3px">×</button>
+      </div>`:'';
     return `<div style="border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:10px;background:var(--paper)">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div style="font-size:13px;font-weight:700">${esc(a.author_name||'Someone')}</div>
-        <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:10px">${esc(a.target_label||'Everyone')}</span>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:10px">${esc(a.target_label||'Everyone')}</span>
+          ${manageButtons}
+        </div>
       </div>
-      <div style="font-size:11px;color:var(--ink3);margin-bottom:6px">${new Date(a.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:6px">${new Date(a.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}${a.edited_at?' · edited':''}</div>
       <div style="font-size:13px;line-height:1.6;white-space:pre-wrap">${esc(a.message)}</div>
       ${attachHtml}
       <div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px">
@@ -8296,18 +8370,41 @@ async function postAnnouncementReply(announcementId){
   if(error){toast('Error posting reply: '+error.message);return;}
   loadAnnouncementReplies(announcementId);
 }
-function openAnnouncementComposer(){
+let editingAnnouncementId=null;
+function openAnnouncementComposer(existingAnn){
+  editingAnnouncementId=existingAnn?.id||null;
   document.getElementById('ann-composer').style.display='block';
-  document.getElementById('ann-target-type').value='all';
-  document.getElementById('ann-message').value='';
-  stagedAnnAttachment=null;
-  document.getElementById('ann-attach-preview').textContent='';
+  document.getElementById('ann-target-type').value=existingAnn?.target_type||'all';
+  document.getElementById('ann-message').value=existingAnn?.message||'';
+  stagedAnnAttachment=existingAnn?.attachment_url?{url:existingAnn.attachment_url,filename:existingAnn.attachment_filename}:null;
+  document.getElementById('ann-attach-preview').innerHTML=stagedAnnAttachment?`<i class="ti ti-paperclip"></i> ${esc(stagedAnnAttachment.filename||'Attachment')}`:'';
   const personSel=document.getElementById('ann-person-value');
   personSel.innerHTML=(teamList||[]).filter(t=>t.id!==currentUser?.id).map(t=>`<option value="${t.id}">${esc(t.full_name||t.email||'—')}</option>`).join('');
+  if(existingAnn?.target_type==='team')document.getElementById('ann-team-value').value=existingAnn.target_value||'';
+  if(existingAnn?.target_type==='individual')personSel.value=existingAnn.target_value||'';
   syncAnnouncementTargetUI();
+}
+function editAnnouncement(id){
+  const ann=allAnnouncements.find(a=>a.id===id);
+  if(!ann){toast('Announcement not found.');return;}
+  if(!isSuperAdmin){toast('Only Super Admin can edit announcements.');return;}
+  openAnnouncementComposer(ann);
+}
+async function deleteAnnouncement(id){
+  const ann=allAnnouncements.find(a=>a.id===id);
+  if(!ann){toast('Announcement not found.');return;}
+  if(!isSuperAdmin){toast('Only Super Admin can delete announcements.');return;}
+  if(!confirm('Delete this announcement? Replies will be removed too.'))return;
+  await sb.from('announcement_replies').delete().eq('announcement_id',id);
+  const{error}=await sb.from('announcements').delete().eq('id',id);
+  if(error){toast('Error deleting: '+error.message);return;}
+  allAnnouncements=allAnnouncements.filter(a=>a.id!==id);
+  renderAnnouncementFeed();
+  toast('Announcement deleted.');
 }
 function closeAnnouncementComposer(){
   document.getElementById('ann-composer').style.display='none';
+  editingAnnouncementId=null;
 }
 function syncAnnouncementTargetUI(){
   const type=document.getElementById('ann-target-type').value;
@@ -8327,7 +8424,7 @@ async function handleAnnAttachSelected(file){
   preview.innerHTML=`<i class="ti ti-paperclip"></i> ${esc(file.name)}`;
 }
 async function postAnnouncement(){
-  if(isRestrictedStaffRole()){toast('Only Admin, Manager, Director, Super Admin, or Owner can post announcements.');return;}
+  if(!isSuperAdmin){toast('Only Super Admin can post announcements.');return;}
   const type=document.getElementById('ann-target-type').value;
   const message=(document.getElementById('ann-message').value||'').trim();
   if(!message){toast('Write a message first.');return;}
@@ -8342,16 +8439,28 @@ async function postAnnouncement(){
     if(!target_value){toast('Pick a person to send this to.');return;}
   }
 
-  const{error}=await sb.from('announcements').insert({
-    author_id:currentUser?.id,author_name:myName,
-    target_type:type,target_value,target_label,
-    message,
-    attachment_url:stagedAnnAttachment?.url||null,
-    attachment_filename:stagedAnnAttachment?.filename||null,
-  });
-  if(error){toast('Error posting announcement: '+error.message);return;}
+  if(editingAnnouncementId){
+    const{error}=await sb.from('announcements').update({
+      target_type:type,target_value,target_label,
+      message,
+      attachment_url:stagedAnnAttachment?.url||null,
+      attachment_filename:stagedAnnAttachment?.filename||null,
+      edited_at:new Date().toISOString(),
+    }).eq('id',editingAnnouncementId);
+    if(error){toast('Error updating announcement: '+error.message);return;}
+    toast('Announcement updated!');
+  } else {
+    const{error}=await sb.from('announcements').insert({
+      author_id:currentUser?.id,author_name:myName,
+      target_type:type,target_value,target_label,
+      message,
+      attachment_url:stagedAnnAttachment?.url||null,
+      attachment_filename:stagedAnnAttachment?.filename||null,
+    });
+    if(error){toast('Error posting announcement: '+error.message);return;}
+    toast('Announcement posted!');
+  }
   closeAnnouncementComposer();
-  toast('Announcement posted!');
   loadAnnouncements();
 }
 async function checkUnreadAnnouncementsCount(){

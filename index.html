@@ -293,7 +293,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .tcard[data-role="Visa Team"] .tcard-role{background:#cffafe;color:#0891b2}
 .tcard[data-role="SOP Team"] .tcard-role{background:#fce7f3;color:#db2777}
 .tcard[data-role="Agent"] .tcard-role{background:#ffedd5;color:#ea580c}
-.tcard-name{font-size:14px;font-weight:600;word-break:break-word;overflow-wrap:break-word;line-height:1.35}
+.tcard-name{font-size:14px;font-weight:600;overflow-wrap:break-word;line-height:1.35}
 .tcard-email{font-size:11px;color:var(--ink3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* AI */
@@ -1669,8 +1669,18 @@ What would you like help with today?</div>
       <div class="ff"><label>Visa deadline</label><input type="date" id="f-visa-deadline"></div>
       <div class="sdiv">Additional Details</div>       <div class="ff"><label>Intake Month</label>         <select id="f-intake"><option value="">Select intake</option><option>January 2026</option><option>May 2026</option><option>September 2026</option><option>January 2027</option><option>May 2027</option><option>September 2027</option></select>       </div>       <div class="ff"><label>English Test Type</label>         <select id="f-ielts-type"><option value="">Select test</option><option>IELTS</option><option>PTE</option><option>Duolingo</option><option>TOEFL</option><option>Other</option></select>       </div>       <div class="ff"><label>English Test Status</label>         <select id="f-ielts-status"><option value="">Select status</option><option>Not taken</option><option>Appearing soon</option><option>Score available</option><option>Exempt</option></select>       </div>       <div class="ff"><label>English Test Score</label><input id="f-ielts-score" placeholder="e.g. 6.5, or 115 for Duolingo"></div>       <div class="ff"><label>Student Finance Years Used</label><input id="f-finance-years" type="number" min="0" placeholder="e.g. 2"></div>       <div class="ff"><label>Class Timing Selected</label><input id="f-class-timing" placeholder="e.g. Weekday mornings"></div>       <div class="ff"><label>Student ID (University ID)</label><input id="f-student-id" placeholder="Assigned once enrolled"></div>       <div class="ff"><label>Budget</label>
         <div style="display:flex;gap:6px">
-          <select id="f-budget-currency" onchange="syncBudgetRangeOptions()" style="width:88px;flex-shrink:0;font-size:13px;padding:9px 8px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b)">
-            <option value="INR">₹ INR</option><option value="USD">$ USD</option><option value="GBP" selected>£ GBP</option><option value="EUR">€ EUR</option>
+          <select id="f-budget-currency" onchange="syncBudgetRangeOptions()" style="width:110px;flex-shrink:0;font-size:13px;padding:9px 8px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b)">
+            <option value="GBP" selected>£ GBP</option><option value="USD">$ USD</option><option value="EUR">€ EUR</option><option value="INR">₹ INR</option>
+            <option value="PKR">₨ PKR</option><option value="BDT">৳ BDT</option><option value="AED">AED</option><option value="SAR">SAR</option>
+            <option value="QAR">QAR</option><option value="OMR">OMR</option><option value="BHD">BHD</option><option value="KWD">KWD</option>
+            <option value="CAD">C$ CAD</option><option value="AUD">A$ AUD</option><option value="NZD">NZ$ NZD</option><option value="SGD">S$ SGD</option>
+            <option value="MYR">RM MYR</option><option value="CNY">¥ CNY</option><option value="HKD">HK$ HKD</option><option value="JPY">¥ JPY</option>
+            <option value="KRW">₩ KRW</option><option value="THB">฿ THB</option><option value="PHP">₱ PHP</option><option value="IDR">Rp IDR</option>
+            <option value="VND">₫ VND</option><option value="CHF">CHF</option><option value="SEK">kr SEK</option><option value="NOK">kr NOK</option>
+            <option value="DKK">kr DKK</option><option value="PLN">zł PLN</option><option value="CZK">Kč CZK</option><option value="HUF">Ft HUF</option>
+            <option value="ZAR">R ZAR</option><option value="EGP">E£ EGP</option><option value="NGN">₦ NGN</option><option value="KES">KSh KES</option>
+            <option value="GHS">GH₵ GHS</option><option value="LKR">Rs LKR</option><option value="NPR">Rs NPR</option><option value="TRY">₺ TRY</option>
+            <option value="MXN">MX$ MXN</option><option value="BRL">R$ BRL</option><option value="RUB">₽ RUB</option>
           </select>
           <select id="f-budget" style="flex:1"></select>
         </div>
@@ -1778,7 +1788,19 @@ What would you like help with today?</div>
       <div class="ff"><label>Destination</label><input id="cm-dest" placeholder="UK"></div>
       <div class="ff"><label>Commission amount</label><input id="cm-amt" type="number" placeholder="1500"></div>
       <div class="ff"><label>Currency</label>
-        <select id="cm-curr"><option>GBP</option><option>USD</option><option>AUD</option><option>EUR</option><option>INR</option></select>
+        <select id="cm-curr">
+          <option>GBP</option><option>USD</option><option>EUR</option><option>INR</option>
+          <option>PKR</option><option>BDT</option><option>AED</option><option>SAR</option>
+          <option>QAR</option><option>OMR</option><option>BHD</option><option>KWD</option>
+          <option>CAD</option><option>AUD</option><option>NZD</option><option>SGD</option>
+          <option>MYR</option><option>CNY</option><option>HKD</option><option>JPY</option>
+          <option>KRW</option><option>THB</option><option>PHP</option><option>IDR</option>
+          <option>VND</option><option>CHF</option><option>SEK</option><option>NOK</option>
+          <option>DKK</option><option>PLN</option><option>CZK</option><option>HUF</option>
+          <option>ZAR</option><option>EGP</option><option>NGN</option><option>KES</option>
+          <option>GHS</option><option>LKR</option><option>NPR</option><option>TRY</option>
+          <option>MXN</option><option>BRL</option><option>RUB</option>
+        </select>
       </div>
       <div class="ff"><label>Commission %</label><input id="cm-percent" type="number" step="0.01" placeholder="e.g. 15"></div>
       <div class="ff"><label>Deal type</label>
@@ -3214,12 +3236,67 @@ const BUDGET_RANGES_BY_CURRENCY={
   EUR:[['Under €12,000','Under €12,000'],['€12,000 - €17,000','€12,000 - €17,000'],['€17,000 - €23,000','€17,000 - €23,000'],['€23,000 - €32,000','€23,000 - €32,000'],['Above €32,000','Above €32,000']],
   INR:[['Under ₹10,00,000','Under ₹10,00,000'],['₹10,00,000 - ₹15,00,000','₹10,00,000 - ₹15,00,000'],['₹15,00,000 - ₹20,00,000','₹15,00,000 - ₹20,00,000'],['₹20,00,000 - ₹30,00,000','₹20,00,000 - ₹30,00,000'],['Above ₹30,00,000','Above ₹30,00,000']],
 };
+// Every other world currency: brackets are generated on the fly from an
+// approximate reference "unit" per currency below — NOT a live exchange
+// rate, deliberately, per your request. These are rough scale references
+// so the dropdown shows sensible round numbers in that currency, not a
+// real-time conversion. Safe to treat as approximate, same spirit as the
+// four hand-set ones above.
+const CURRENCY_UNIT_REFERENCE={
+  PKR:3500000,BDT:1600000,AED:55000,SAR:56000,QAR:54000,OMR:5700,BHD:5600,KWD:4600,
+  CAD:20000,AUD:22000,NZD:24000,SGD:20000,MYR:66000,CNY:106000,HKD:117000,
+  JPY:2200000,KRW:19500000,THB:520000,PHP:840000,IDR:230000000,VND:360000000,
+  CHF:13000,SEK:155000,NOK:155000,DKK:100000,PLN:60000,CZK:340000,HUF:5300000,
+  ZAR:275000,EGP:735000,NGN:22000000,KES:1900000,GHS:180000,LKR:4300000,NPR:1900000,
+  TRY:480000,MXN:270000,BRL:75000,RUB:1400000,
+};
+const CURRENCY_SYMBOL={
+  PKR:'₨',BDT:'৳',AED:'AED ',SAR:'SAR ',QAR:'QAR ',OMR:'OMR ',BHD:'BHD ',KWD:'KWD ',
+  CAD:'C$',AUD:'A$',NZD:'NZ$',SGD:'S$',MYR:'RM',CNY:'¥',HKD:'HK$',
+  JPY:'¥',KRW:'₩',THB:'฿',PHP:'₱',IDR:'Rp',VND:'₫',
+  CHF:'CHF ',SEK:'kr',NOK:'kr',DKK:'kr',PLN:'zł',CZK:'Kč',HUF:'Ft',
+  ZAR:'R',EGP:'E£',NGN:'₦',KES:'KSh',GHS:'GH₵',LKR:'Rs',NPR:'Rs',
+  TRY:'₺',MXN:'MX$',BRL:'R$',RUB:'₽',
+};
+function fmtCurrencyAmount(n){return n>=1000?n.toLocaleString('en-US'):String(n);}
+function budgetRangesForOtherCurrency(code){
+  const unit=CURRENCY_UNIT_REFERENCE[code]||10000; // generic fallback if a currency isn't in the reference table
+  const sym=CURRENCY_SYMBOL[code]||(code+' ');
+  const b1=Math.round(unit*0.35),b2=Math.round(unit*0.5),b3=Math.round(unit*0.7),b4=Math.round(unit);
+  const f=fmtCurrencyAmount;
+  return[
+    [`Under ${sym}${f(b1)}`,`Under ${sym}${f(b1)}`],
+    [`${sym}${f(b1)} - ${sym}${f(b2)}`,`${sym}${f(b1)} - ${sym}${f(b2)}`],
+    [`${sym}${f(b2)} - ${sym}${f(b3)}`,`${sym}${f(b2)} - ${sym}${f(b3)}`],
+    [`${sym}${f(b3)} - ${sym}${f(b4)}`,`${sym}${f(b3)} - ${sym}${f(b4)}`],
+    [`Above ${sym}${f(b4)}`,`Above ${sym}${f(b4)}`],
+  ];
+}
+// All world currencies offered in the dropdown — code + display name.
+// The four above get their own hand-set brackets; every other one here
+// gets brackets generated by budgetRangesForOtherCurrency().
+const WORLD_CURRENCIES=[
+  ['GBP','British Pound'],['USD','US Dollar'],['EUR','Euro'],['INR','Indian Rupee'],
+  ['PKR','Pakistani Rupee'],['BDT','Bangladeshi Taka'],['AED','UAE Dirham'],['SAR','Saudi Riyal'],
+  ['QAR','Qatari Riyal'],['OMR','Omani Rial'],['BHD','Bahraini Dinar'],['KWD','Kuwaiti Dinar'],
+  ['CAD','Canadian Dollar'],['AUD','Australian Dollar'],['NZD','New Zealand Dollar'],['SGD','Singapore Dollar'],
+  ['MYR','Malaysian Ringgit'],['CNY','Chinese Yuan'],['HKD','Hong Kong Dollar'],['JPY','Japanese Yen'],
+  ['KRW','South Korean Won'],['THB','Thai Baht'],['PHP','Philippine Peso'],['IDR','Indonesian Rupiah'],
+  ['VND','Vietnamese Dong'],['CHF','Swiss Franc'],['SEK','Swedish Krona'],['NOK','Norwegian Krone'],
+  ['DKK','Danish Krone'],['PLN','Polish Złoty'],['CZK','Czech Koruna'],['HUF','Hungarian Forint'],
+  ['ZAR','South African Rand'],['EGP','Egyptian Pound'],['NGN','Nigerian Naira'],['KES','Kenyan Shilling'],
+  ['GHS','Ghanaian Cedi'],['LKR','Sri Lankan Rupee'],['NPR','Nepalese Rupee'],['TRY','Turkish Lira'],
+  ['MXN','Mexican Peso'],['BRL','Brazilian Real'],['RUB','Russian Ruble'],
+];
+function getBudgetRangesForCurrency(code){
+  return BUDGET_RANGES_BY_CURRENCY[code]||budgetRangesForOtherCurrency(code);
+}
 function syncBudgetRangeOptions(preserveValue){
   const curSel=document.getElementById('f-budget-currency');
   const rangeSel=document.getElementById('f-budget');
   if(!curSel||!rangeSel)return;
   const prior=preserveValue!==undefined?preserveValue:rangeSel.value;
-  const ranges=BUDGET_RANGES_BY_CURRENCY[curSel.value]||BUDGET_RANGES_BY_CURRENCY.GBP;
+  const ranges=getBudgetRangesForCurrency(curSel.value);
   rangeSel.innerHTML='<option value="">Select budget</option>'+ranges.map(([label,val])=>`<option value="${val}">${label}</option>`).join('');
   if(prior&&ranges.some(([,val])=>val===prior)) rangeSel.value=prior;
 }
@@ -3227,7 +3304,13 @@ function syncBudgetRangeOptions(preserveValue){
 // from its leading symbol — used when opening an existing lead for editing,
 // so the currency dropdown lands on the right selection instead of always
 // defaulting back to GBP regardless of what was actually saved.
-function detectBudgetCurrency(budgetStr){
+function detectBudgetCurrency(budgetStr,storedCurrency){
+  // Prefer the actual stored currency code — the string-symbol guessing
+  // below is ambiguous now that there are 40+ currencies, several
+  // sharing the same symbol (e.g. '$' alone could be USD, CAD, AUD, SGD,
+  // HKD or MXN). Older leads saved before this field existed fall back
+  // to the guess, since that's all there is for them.
+  if(storedCurrency)return storedCurrency;
   if(!budgetStr)return'GBP';
   if(budgetStr.includes('₹'))return'INR';
   if(budgetStr.includes('$'))return'USD';
@@ -3696,7 +3779,7 @@ function updateOpsViewSwitcher(){
 // office, never nationality.
 function opsViewScopedLeads(sourceLeads){
   if(!isSuperAdmin||!superAdminOpsView)return sourceLeads;
-  const isDomesticLead=l=>l.country==='UK';
+  const isDomesticLead=l=>l.nationality==='UK'||l.country==='UK';
   return superAdminOpsView==='Domestic'
     ? sourceLeads.filter(isDomesticLead)
     : sourceLeads.filter(l=>!isDomesticLead(l));
@@ -4967,7 +5050,7 @@ async function updateStatusFS(){
   loadTasksFS(curId);
   loadActivityLogFS(curId);
 }
-function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';populateAgentDropdown();document.getElementById('f-agent').value=l.agent||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-type').value=l.ielts_type||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-finance-years').value=l.finance_years||'';document.getElementById('f-class-timing').value=l.class_timing||'';document.getElementById('f-student-id').value=l.student_id||'';document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range);syncBudgetRangeOptions(l.budget_range||'');document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
+function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';populateAgentDropdown();document.getElementById('f-agent').value=l.agent||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-type').value=l.ielts_type||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-finance-years').value=l.finance_years||'';document.getElementById('f-class-timing').value=l.class_timing||'';document.getElementById('f-student-id').value=l.student_id||'';document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range,l.budget_currency);syncBudgetRangeOptions(l.budget_range||'');document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
 async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error,data}=await sb.from('leads').delete().eq('id',curId).select();if(error){setSyncErr();toast('Error deleting lead: '+error.message);return;}if(!data||!data.length){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 // Generates a message genuinely suited to WHERE this lead actually is
@@ -5602,7 +5685,7 @@ function editLead(){
   }
   document.getElementById('f-fu').value=l.next_followup||'';
   document.getElementById('f-visa-deadline').value=l.visa_deadline||'';
-  document.getElementById('f-notes').value=l.notes||'';   document.getElementById('f-intake').value=l.intake_month||'';   document.getElementById('f-ielts-type').value=l.ielts_type||'';   document.getElementById('f-ielts-status').value=l.ielts_status||'';   document.getElementById('f-ielts-score').value=l.ielts_score||'';   document.getElementById('f-finance-years').value=l.finance_years||'';   document.getElementById('f-class-timing').value=l.class_timing||'';   document.getElementById('f-student-id').value=l.student_id||'';   document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range);syncBudgetRangeOptions(l.budget_range||'');   document.getElementById('f-english').value=l.english_status||'';   document.getElementById('f-walink').value=l.whatsapp_group_link||'';   document.getElementById('f-doclink').value=l.doc_folder_link||'';
+  document.getElementById('f-notes').value=l.notes||'';   document.getElementById('f-intake').value=l.intake_month||'';   document.getElementById('f-ielts-type').value=l.ielts_type||'';   document.getElementById('f-ielts-status').value=l.ielts_status||'';   document.getElementById('f-ielts-score').value=l.ielts_score||'';   document.getElementById('f-finance-years').value=l.finance_years||'';   document.getElementById('f-class-timing').value=l.class_timing||'';   document.getElementById('f-student-id').value=l.student_id||'';   document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range,l.budget_currency);syncBudgetRangeOptions(l.budget_range||'');   document.getElementById('f-english').value=l.english_status||'';   document.getElementById('f-walink').value=l.whatsapp_group_link||'';   document.getElementById('f-doclink').value=l.doc_folder_link||'';
   document.getElementById('modal-lead').classList.add('open');
  document.getElementById('dover').classList.remove('open');
   document.getElementById('editing-notice').classList.remove('show');
@@ -5749,7 +5832,7 @@ async function saveLead(){
     nationality:document.getElementById('f-nationality').value||null,
     next_followup:document.getElementById('f-fu').value||null,
     visa_deadline:document.getElementById('f-visa-deadline').value||null,
-    notes:document.getElementById('f-notes').value,     intake_month:document.getElementById('f-intake').value,     ielts_type:document.getElementById('f-ielts-type').value,     ielts_status:document.getElementById('f-ielts-status').value,     ielts_score:document.getElementById('f-ielts-score').value,     finance_years:document.getElementById('f-finance-years').value||null,     class_timing:document.getElementById('f-class-timing').value,     student_id:document.getElementById('f-student-id').value,     budget_range:document.getElementById('f-budget').value,     english_status:document.getElementById('f-english').value,     whatsapp_group_link:document.getElementById('f-walink').value,     doc_folder_link:document.getElementById('f-doclink').value,
+    notes:document.getElementById('f-notes').value,     intake_month:document.getElementById('f-intake').value,     ielts_type:document.getElementById('f-ielts-type').value,     ielts_status:document.getElementById('f-ielts-status').value,     ielts_score:document.getElementById('f-ielts-score').value,     finance_years:document.getElementById('f-finance-years').value||null,     class_timing:document.getElementById('f-class-timing').value,     student_id:document.getElementById('f-student-id').value,     budget_range:document.getElementById('f-budget').value,     budget_currency:document.getElementById('f-budget-currency').value,     english_status:document.getElementById('f-english').value,     whatsapp_group_link:document.getElementById('f-walink').value,     doc_folder_link:document.getElementById('f-doclink').value,
     added_by:currentUser?.id
   };
   // No auto round-robin for Application/Visa/SOP — manual hand-off only,
@@ -6145,13 +6228,13 @@ function clearStagedTcAttachment(){
 function isProtectedOwnerRow(t){
   return Object.prototype.hasOwnProperty.call(OWNERS,(t.email||'').toLowerCase());
 }
-// A Super Admin who ISN'T an Owner (i.e. Jisan) can't even SEE India's or
-// Pavitra's own account row — not just blocked from editing it, genuinely
-// hidden from the team list. Owners themselves (India, Pavitra) always see
-// everyone, each other included — this only restricts the non-Owner
-// Super Admin tier looking at the Owners.
+// India's and Pavitra's own account rows are hidden from EVERYONE except
+// themselves — not just Jisan, but any Manager/Admin/Director in any other
+// branch (UK, Pakistan, Bangladesh) too, since the Management Team card is
+// visible to branch staff generally, not just Super Admins. Owners
+// themselves (India, Pavitra) always see everyone, each other included.
 function isOwnerRowHiddenFromMe(t){
-  return isSuperAdmin&&!isOwner&&isProtectedOwnerRow(t);
+  return !isOwner&&isProtectedOwnerRow(t);
 }
 
 // ── India view-only guard for Super Admins ─────────────────────────
@@ -6788,7 +6871,7 @@ async function loadCommissions(){
       // Domestic/International is based purely on country (which office is
       // assisting the student), never nationality — see opsViewScopedLeads
       // for the full reasoning.
-      const isDomesticLead=l=>l&&l.country==='UK';
+      const isDomesticLead=l=>l&&(l.nationality==='UK'||l.country==='UK');
       commissions=data.filter(c=>superAdminOpsView==='Domestic'?isDomesticLead(c.leads):!isDomesticLead(c.leads));
     } else {
       commissions=data;
@@ -7180,7 +7263,7 @@ function renderSubTeamReportsBreakdown(scoped){
   });
   el.innerHTML=rows.length?rows.join(''):emptyState('📝','No sub-team assignments in this scope yet.');
 }
-  let uniApps=[];async function loadUniApps(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data)uniApps=data;const labelEl=document.getElementById('d-uni-section-label');const l=leads.find(x=>x.id===leadId);const isDomestic=l&&l.country==='UK';if(labelEl){labelEl.textContent=isDomestic?'🏠 Home Students Course Information':'University Applications';}const postAppEl=document.getElementById('d-postapp-section');if(postAppEl){const showPostApp=isDomestic&&l&&reachedStage(l.status,'Application Submitted');postAppEl.style.display=showPostApp?'block':'none';if(showPostApp){document.getElementById('d-enrolment-status').value=l.enrolment_status||'';document.getElementById('d-attendance-status').value=l.attendance_status||'';document.getElementById('d-sfe-status').value=l.sfe_approved_status||'';}}await renderUniApps();}async function renderUniApps(){const el=document.getElementById('d-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(!uniApps.length){el.innerHTML=emptyState('🎓','No universities added yet.');return;}await loadUniFilesFor(uniApps.map(u=>u.id));el.innerHTML=uniApps.map(u=>{const myFiles=uniFilesByApp[u.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteUniFile('${f.id}',false)" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}${u.course_year?' · '+esc(u.course_year):''}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${filesHtml}</div><button onclick="triggerUniFileUpload('${u.id}',false)" title="Add file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniApp('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`;}).join('');}
+  let uniApps=[];async function loadUniApps(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data)uniApps=data;const labelEl=document.getElementById('d-uni-section-label');const l=leads.find(x=>x.id===leadId);const isDomestic=l&&(l.nationality==='UK'||l.country==='UK');if(labelEl){labelEl.textContent=isDomestic?'🏠 Home Students Course Information':'University Applications';}const postAppEl=document.getElementById('d-postapp-section');if(postAppEl){const showPostApp=isDomestic&&l&&reachedStage(l.status,'Application Submitted');postAppEl.style.display=showPostApp?'block':'none';if(showPostApp){document.getElementById('d-enrolment-status').value=l.enrolment_status||'';document.getElementById('d-attendance-status').value=l.attendance_status||'';document.getElementById('d-sfe-status').value=l.sfe_approved_status||'';}}await renderUniApps();}async function renderUniApps(){const el=document.getElementById('d-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(!uniApps.length){el.innerHTML=emptyState('🎓','No universities added yet.');return;}await loadUniFilesFor(uniApps.map(u=>u.id));el.innerHTML=uniApps.map(u=>{const myFiles=uniFilesByApp[u.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteUniFile('${f.id}',false)" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}${u.course_year?' · '+esc(u.course_year):''}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${filesHtml}</div><button onclick="triggerUniFileUpload('${u.id}',false)" title="Add file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniApp('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`;}).join('');}
 async function savePostAppField(field,value){
   if(!curId)return;
   const{error}=await sb.from('leads').update({[field]:value||null}).eq('id',curId);
@@ -7350,7 +7433,10 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
   const DOMESTIC_EXTRA_DOCS=['Sharecode for Immigration','National Insurance','Any other ID proof','Student finance proof'];
   function docsChecklistFor(leadId){
     const l=leads.find(x=>x.id===leadId);
-    const isDomestic=l&&l.country==='UK';
+    // Check BOTH nationality and country — a real lead may have only one
+    // of these populated as 'UK' depending on how it was captured, and
+    // missing either one was silently hiding the Domestic-only documents.
+    const isDomestic=l&&(l.nationality==='UK'||l.country==='UK');
     return isDomestic?[...DEFAULT_DOCS,...DOMESTIC_EXTRA_DOCS]:DEFAULT_DOCS;
   }
   async function loadDocs(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data){await renderDocs(data);}else{await renderDocs([]);}}
@@ -8207,7 +8293,7 @@ async function loadMyTasks(){
     // Must respect the Domestic/International ops-view toggle the same
     // way the main Leads list does (by country — which office is
     // assisting the student — never by nationality).
-    const isDomesticLead=l=>l?.country==='UK';
+    const isDomesticLead=l=>l&&(l.nationality==='UK'||l.country==='UK');
     scoped=scoped.filter(t=>superAdminOpsView==='Domestic'?isDomesticLead(t.leads):!isDomesticLead(t.leads));
   } else if(!isSuperAdmin){
     scoped=scoped.filter(t=>t.leads?.country===myCountry);

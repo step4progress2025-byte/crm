@@ -3663,17 +3663,18 @@ function updateOpsViewSwitcher(){
 // UK country leads only. International = everything else (India,
 // Pakistan, Bangladesh, Other). Non-Super-Admins, or a Super Admin who
 // hasn't chosen yet, get the unscoped full list — unchanged behaviour.
-// Leads scoped to the Super Admin's current ops-view choice. Domestic
-// means genuinely UK-local — determined by `nationality` (where the
-// person is actually from/based), NOT `country` (which office they
-// asked for help from — someone in India choosing "UK" as their
-// Assistance Needed From is still International, not Domestic).
-// Falls back to the old country-based check only for leads created
-// before the nationality field existed, so nothing already correctly
-// categorised suddenly changes.
+//
+// This is based purely on `country` (which office/team the student is
+// actually asking for assistance from) — NOT nationality. Nationality is
+// just where someone is originally from and says nothing about who's
+// helping them: an Indian national living in the UK on a work/student
+// visa, applying for a Masters anywhere in the world through the UK
+// office, is a UK/Domestic lead for operational purposes, regardless of
+// their passport. Allocation always follows the assistance-needed-from
+// office, never nationality.
 function opsViewScopedLeads(sourceLeads){
   if(!isSuperAdmin||!superAdminOpsView)return sourceLeads;
-  const isDomesticLead=l=>l.nationality?l.nationality==='UK':l.country==='UK';
+  const isDomesticLead=l=>l.country==='UK';
   return superAdminOpsView==='Domestic'
     ? sourceLeads.filter(isDomesticLead)
     : sourceLeads.filter(l=>!isDomesticLead(l));
@@ -5077,7 +5078,24 @@ async function deleteDocFile(fileId,isFS){
   if(isFS==='modal'){loadDocsModal(curId);}else if(isFS){loadDocsFS(curId);}else{loadDocs(curId);}
   toast('File removed — upload a new one whenever you are ready.');
 }
-async function initDocsFS(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=docsChecklistFor(curId).map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocsFS(curId);toast('Checklist created!');}
+async function initDocsFS(){
+  if(!curId)return;
+  const existing=await sb.from('documents').select('doc_name').eq('lead_id',curId);
+  const wanted=docsChecklistFor(curId);
+  if(!existing.data?.length){
+    const rows=wanted.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));
+    await sb.from('documents').insert(rows);
+    loadDocsFS(curId);
+    toast('Checklist created!');
+    return;
+  }
+  const existingNames=new Set(existing.data.map(d=>d.doc_name));
+  const missing=wanted.filter(d=>!existingNames.has(d));
+  if(!missing.length){toast('Checklist already up to date!');return;}
+  await sb.from('documents').insert(missing.map(d=>({lead_id:curId,doc_name:d,status:'Pending'})));
+  loadDocsFS(curId);
+  toast(`Added ${missing.length} missing item${missing.length>1?'s':''} to the checklist.`);
+}
 
 // ── Documents embedded directly in the Add/Edit Lead modal — reuses the
 // exact same documents/document_files tables and upload pipeline as the
@@ -6702,7 +6720,11 @@ async function loadCommissions(){
     if(!isSuperAdmin){
       commissions=data.filter(c=>c.leads&&c.leads.office===myOffice);
     } else if(superAdminOpsView){
-      commissions=data.filter(c=>c.leads&&(superAdminOpsView==='Domestic'?c.leads.country==='UK':c.leads.country!=='UK'));
+      // Domestic/International is based purely on country (which office is
+      // assisting the student), never nationality — see opsViewScopedLeads
+      // for the full reasoning.
+      const isDomesticLead=l=>l&&l.country==='UK';
+      commissions=data.filter(c=>superAdminOpsView==='Domestic'?isDomesticLead(c.leads):!isDomesticLead(c.leads));
     } else {
       commissions=data;
     }
@@ -7093,7 +7115,7 @@ function renderSubTeamReportsBreakdown(scoped){
   });
   el.innerHTML=rows.length?rows.join(''):emptyState('📝','No sub-team assignments in this scope yet.');
 }
-  let uniApps=[];async function loadUniApps(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data)uniApps=data;const labelEl=document.getElementById('d-uni-section-label');const l=leads.find(x=>x.id===leadId);const isDomestic=l&&(l.nationality?l.nationality==='UK':l.country==='UK');if(labelEl){labelEl.textContent=isDomestic?'🏠 Home Students Course Information':'University Applications';}const postAppEl=document.getElementById('d-postapp-section');if(postAppEl){const showPostApp=isDomestic&&l&&reachedStage(l.status,'Application Submitted');postAppEl.style.display=showPostApp?'block':'none';if(showPostApp){document.getElementById('d-enrolment-status').value=l.enrolment_status||'';document.getElementById('d-attendance-status').value=l.attendance_status||'';document.getElementById('d-sfe-status').value=l.sfe_approved_status||'';}}await renderUniApps();}async function renderUniApps(){const el=document.getElementById('d-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(!uniApps.length){el.innerHTML=emptyState('🎓','No universities added yet.');return;}await loadUniFilesFor(uniApps.map(u=>u.id));el.innerHTML=uniApps.map(u=>{const myFiles=uniFilesByApp[u.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteUniFile('${f.id}',false)" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}${u.course_year?' · '+esc(u.course_year):''}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${filesHtml}</div><button onclick="triggerUniFileUpload('${u.id}',false)" title="Add file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniApp('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`;}).join('');}
+  let uniApps=[];async function loadUniApps(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data)uniApps=data;const labelEl=document.getElementById('d-uni-section-label');const l=leads.find(x=>x.id===leadId);const isDomestic=l&&l.country==='UK';if(labelEl){labelEl.textContent=isDomestic?'🏠 Home Students Course Information':'University Applications';}const postAppEl=document.getElementById('d-postapp-section');if(postAppEl){const showPostApp=isDomestic&&l&&reachedStage(l.status,'Application Submitted');postAppEl.style.display=showPostApp?'block':'none';if(showPostApp){document.getElementById('d-enrolment-status').value=l.enrolment_status||'';document.getElementById('d-attendance-status').value=l.attendance_status||'';document.getElementById('d-sfe-status').value=l.sfe_approved_status||'';}}await renderUniApps();}async function renderUniApps(){const el=document.getElementById('d-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(!uniApps.length){el.innerHTML=emptyState('🎓','No universities added yet.');return;}await loadUniFilesFor(uniApps.map(u=>u.id));el.innerHTML=uniApps.map(u=>{const myFiles=uniFilesByApp[u.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteUniFile('${f.id}',false)" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}${u.course_year?' · '+esc(u.course_year):''}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${filesHtml}</div><button onclick="triggerUniFileUpload('${u.id}',false)" title="Add file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniApp('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`;}).join('');}
 async function savePostAppField(field,value){
   if(!curId)return;
   const{error}=await sb.from('leads').update({[field]:value||null}).eq('id',curId);
@@ -7263,13 +7285,36 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
   const DOMESTIC_EXTRA_DOCS=['Sharecode for Immigration','National Insurance','Any other ID proof','Student finance proof'];
   function docsChecklistFor(leadId){
     const l=leads.find(x=>x.id===leadId);
-    const isDomestic=l&&(l.nationality?l.nationality==='UK':l.country==='UK');
+    const isDomestic=l&&l.country==='UK';
     return isDomestic?[...DEFAULT_DOCS,...DOMESTIC_EXTRA_DOCS]:DEFAULT_DOCS;
   }
   async function loadDocs(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data){await renderDocs(data);}else{await renderDocs([]);}}
 async function renderDocs(docs){const el=document.getElementById('d-doc-list');if(!el)return;if(!docs.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet. Click Init checklist to start.</div>';return;}await loadDocFilesFor(docs.map(d=>d.id));el.innerHTML=docs.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',false)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',false)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiry('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
 function setDocExpiry(id,current){openQuickInput('Set expiry date','Expiry date','date',current,(val)=>{sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocs(curId);toast('Expiry date updated.');});});}
-async function initDocs(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=docsChecklistFor(curId).map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocs(curId);toast('Checklist created!');}
+async function initDocs(){
+  if(!curId)return;
+  const existing=await sb.from('documents').select('doc_name').eq('lead_id',curId);
+  const wanted=docsChecklistFor(curId);
+  if(!existing.data?.length){
+    // No checklist at all yet — create the full list fresh.
+    const rows=wanted.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));
+    await sb.from('documents').insert(rows);
+    loadDocs(curId);
+    toast('Checklist created!');
+    return;
+  }
+  // A checklist already exists — top up any items that are supposed to be
+  // there now (e.g. the Domestic-only extras) but were never added,
+  // because this lead's checklist was created before those existed. Never
+  // touches items that are already there, so nothing already ticked off
+  // is affected.
+  const existingNames=new Set(existing.data.map(d=>d.doc_name));
+  const missing=wanted.filter(d=>!existingNames.has(d));
+  if(!missing.length){toast('Checklist already up to date!');return;}
+  await sb.from('documents').insert(missing.map(d=>({lead_id:curId,doc_name:d,status:'Pending'})));
+  loadDocs(curId);
+  toast(`Added ${missing.length} missing item${missing.length>1?'s':''} to the checklist.`);
+}
 async function toggleDoc(id,checked){await sb.from('documents').update({status:checked?'Done':'Pending'}).eq('id',id);const el=document.getElementById('d-doc-list');if(el){const spans=el.querySelectorAll('span');spans.forEach(s=>{if(s.style)s.style.textDecoration=checked?'line-through':''});}toast(checked?'✅ Marked done':'↩ Marked pending');}
 
 // ── REMINDERS ───────────────────────────────────────────────────
@@ -8088,17 +8133,16 @@ async function loadExpiryAlerts(){
 async function loadMyTasks(){
   const el=document.getElementById('my-tasks-list');
   if(!el)return;
-  const{data,error}=await sb.from('tasks').select('*,leads(name,country,nationality)').eq('status','Open').order('due_date',{ascending:true}).limit(200);
+  const{data,error}=await sb.from('tasks').select('*,leads(name,country)').eq('status','Open').order('due_date',{ascending:true}).limit(200);
   if(error){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load tasks — has the tasks table been created yet?</div>';return;}
   let scoped=data||[];
   if(myRole==='Counsellor'&&!isSuperAdmin){
     scoped=scoped.filter(t=>t.assigned_to===myName);
   } else if(isSuperAdmin&&superAdminOpsView){
     // Must respect the Domestic/International ops-view toggle the same
-    // way the main Leads list does (via nationality, with a fallback to
-    // country for leads created before nationality was tracked) — this
-    // was missing here, meaning the toggle had zero effect on tasks.
-    const isDomesticLead=l=>l?.nationality?l.nationality==='UK':l?.country==='UK';
+    // way the main Leads list does (by country — which office is
+    // assisting the student — never by nationality).
+    const isDomesticLead=l=>l?.country==='UK';
     scoped=scoped.filter(t=>superAdminOpsView==='Domestic'?isDomesticLead(t.leads):!isDomesticLead(t.leads));
   } else if(!isSuperAdmin){
     scoped=scoped.filter(t=>t.leads?.country===myCountry);

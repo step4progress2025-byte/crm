@@ -498,6 +498,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           </select>
         </div>
         <input type="hidden" id="signup-teamcategory" value="International">
+        <input type="hidden" id="signup-university" value="">
         <div class="auth-field"><label>Country</label>
           <select id="signup-country" onchange="syncSignupOffice()" style="width:100%;padding:12px 14px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);border-radius:var(--r);color:#fff;font-size:14px;font-family:var(--font-b)">
             <option value="India" style="background:#0D4A3C">India</option>
@@ -646,6 +647,12 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <button class="dash-kpi-tab" data-kpicat="conversion" onclick="setDashKpiTab('conversion')">Conversion</button>
           <button class="dash-kpi-tab" data-kpicat="financial" onclick="setDashKpiTab('financial')">Financial</button>
           <button class="dash-kpi-tab" data-kpicat="risk" onclick="setDashKpiTab('risk')">Risk & Health</button>
+          <button onclick="toggleDashCustomizePanel()" title="Customize dashboard" style="margin-left:auto;background:none;border:1px solid var(--line2);border-radius:8px;padding:6px 10px;color:var(--ink3);cursor:pointer;font-size:12px;white-space:nowrap;align-self:center"><i class="ti ti-adjustments"></i> Customize</button>
+        </div>
+        <div id="dash-customize-panel" class="card" style="display:none;margin-bottom:14px">
+          <div class="card-h"><span class="card-t">⚙️ Show/hide widgets</span></div>
+          <p style="font-size:12px;color:var(--ink3);margin-bottom:10px">Turn off the cards you don't use — this is saved to your account, so it stays this way next time you log in. (KPI tiles above and the AI Briefing aren't included — those stay put.)</p>
+          <div id="dash-customize-list" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px"></div>
         </div>
 
         <div class="kpi-row" data-kpicat-group="overview">
@@ -706,10 +713,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <!-- Application/Visa/SOP dashboards moved to their own "Team Dashboards" tab, no longer embedded here -->
         <div id="dash-content" style="display:none">
           <div class="two-col">
-            <div class="card"><div class="card-h"><span class="card-t">🔻 Conversion funnel</span></div><div id="conversion-funnel"></div></div>
-            <div class="card"><div class="card-h"><span class="card-t">📅 Intake forecast</span></div><div id="intake-forecast"></div></div>
-            <div class="card"><div class="card-h"><span class="card-t">Pipeline status</span></div><div id="pipe-list"></div></div>
-            <div class="card"><div class="card-h"><span class="card-t">Recent activity</span></div><div id="act-list"></div></div>
+            <div class="card" id="conversion-funnel-widget"><div class="card-h"><span class="card-t">🔻 Conversion funnel</span></div><div id="conversion-funnel"></div></div>
+            <div class="card" id="intake-forecast-widget"><div class="card-h"><span class="card-t">📅 Intake forecast</span></div><div id="intake-forecast"></div></div>
+            <div class="card" id="pipeline-status-widget"><div class="card-h"><span class="card-t">Pipeline status</span></div><div id="pipe-list"></div></div>
+            <div class="card" id="recent-activity-widget"><div class="card-h"><span class="card-t">Recent activity</span></div><div id="act-list"></div></div>
             <div class="card" style="margin-top:16px" id="country-breakdown-card"><div class="card-h"><span class="card-t">🌍 Leads by country</span></div><div id="country-breakdown"></div></div>
             <div class="card" style="margin-top:16px" id="counsel-rank-card"><div class="card-h"><span class="card-t">🏆 Counsellor ranking</span></div><div id="counsel-rank"></div></div>
           </div>
@@ -1095,6 +1102,13 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           </div>
           <input type="date" id="rpt-date" onchange="loadReport()">
           <select id="rpt-country" onchange="rptState.userPickedCountry=true;loadReport()"></select>
+          <select id="rpt-agent" onchange="loadReport()"><option value="All">All agents</option></select>
+          <select id="rpt-university" onchange="loadReport()"><option value="All">All universities</option></select>
+          <select id="rpt-intake" onchange="loadReport()">
+            <option value="All">All intakes</option>
+            <option>January 2026</option><option>May 2026</option><option>September 2026</option>
+            <option>January 2027</option><option>May 2027</option><option>September 2027</option>
+          </select>
           <span id="rpt-range-label" class="rpt-range-label"></span>
           <button class="btn" onclick="exportReport()" style="font-size:12px;padding:6px 14px"><i class="ti ti-download"></i>Export this report</button>
         </div>
@@ -1406,6 +1420,13 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <p style="font-size:12px;color:var(--ink3);margin-bottom:14px;line-height:1.6">Country-wise view of daily work updates across the team. Admins and Managers see only their own country; Directors, Super Admins, and Owners see everything.</p>
             <div class="fg">
               <div class="ff"><label>Country</label><select id="am-country" onchange="renderActivityMonitor()"></select></div>
+              <div class="ff"><label>Category</label>
+                <select id="am-category" onchange="renderActivityMonitor()">
+                  <option value="All">All</option>
+                  <option value="Domestic">Domestic (Home recruitment) only</option>
+                  <option value="International">International only</option>
+                </select>
+              </div>
               <div class="ff"><label>Team</label>
                 <select id="am-team" onchange="renderActivityMonitor()">
                   <option value="All">All</option>
@@ -1577,6 +1598,9 @@ What would you like help with today?</div>
           <option>YouTube</option><option>Event / Expo</option><option>Website Enquiry</option><option>Website Tools Enquiry</option><option>Meta Enquiry</option><option>Other</option>
         </select>
       </div>
+      <div class="ff"><label>Referring Agent</label>
+        <select id="f-agent"><option value="">No agent</option></select>
+      </div>
       <div class="ff"><label>Status</label>
         <select id="f-status">
           <option>New Enquiry</option><option>Contacted</option><option>Not Interested</option><option>Follow Up</option><option>Interested</option><option>University Shortlist</option><option>Documents Pending</option><option>Application Submitted</option><option>Received Conditional</option><option>Received Unconditional</option><option>Deposit Paid</option><option>Interview Passed</option><option>Interview Failed</option><option>CAS Applied</option><option>CAS Received</option><option>Visa Application Submitted</option><option>Visa Interview</option><option>Visa Received</option><option>Visa Rejected</option><option>Defer</option><option>Enrolled</option>
@@ -1625,7 +1649,7 @@ What would you like help with today?</div>
       <div class="ff"><label>SOP Team</label><select id="f-sop-team"><option value="">Unassigned</option></select></div>
       <div class="ff"><label>Next follow-up</label><input type="date" id="f-fu"></div>
       <div class="ff"><label>Visa deadline</label><input type="date" id="f-visa-deadline"></div>
-      <div class="sdiv">Additional Details</div>       <div class="ff"><label>Intake Month</label>         <select id="f-intake"><option value="">Select intake</option><option>January 2026</option><option>May 2026</option><option>September 2026</option><option>January 2027</option><option>May 2027</option><option>September 2027</option></select>       </div>       <div class="ff"><label>IELTS Status</label>         <select id="f-ielts-status"><option value="">Select status</option><option>Not taken</option><option>Appearing soon</option><option>Score available</option><option>Exempt</option></select>       </div>       <div class="ff"><label>IELTS / PTE Score</label><input id="f-ielts-score" placeholder="e.g. 6.5"></div>       <div class="ff"><label>Budget</label>
+      <div class="sdiv">Additional Details</div>       <div class="ff"><label>Intake Month</label>         <select id="f-intake"><option value="">Select intake</option><option>January 2026</option><option>May 2026</option><option>September 2026</option><option>January 2027</option><option>May 2027</option><option>September 2027</option></select>       </div>       <div class="ff"><label>English Test Type</label>         <select id="f-ielts-type"><option value="">Select test</option><option>IELTS</option><option>PTE</option><option>Duolingo</option><option>TOEFL</option><option>Other</option></select>       </div>       <div class="ff"><label>English Test Status</label>         <select id="f-ielts-status"><option value="">Select status</option><option>Not taken</option><option>Appearing soon</option><option>Score available</option><option>Exempt</option></select>       </div>       <div class="ff"><label>English Test Score</label><input id="f-ielts-score" placeholder="e.g. 6.5, or 115 for Duolingo"></div>       <div class="ff"><label>Student Finance Years Used</label><input id="f-finance-years" type="number" min="0" placeholder="e.g. 2"></div>       <div class="ff"><label>Class Timing Selected</label><input id="f-class-timing" placeholder="e.g. Weekday mornings"></div>       <div class="ff"><label>Student ID (University ID)</label><input id="f-student-id" placeholder="Assigned once enrolled"></div>       <div class="ff"><label>Budget</label>
         <div style="display:flex;gap:6px">
           <select id="f-budget-currency" onchange="syncBudgetRangeOptions()" style="width:88px;flex-shrink:0;font-size:13px;padding:9px 8px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b)">
             <option value="INR">₹ INR</option><option value="USD">$ USD</option><option value="GBP" selected>£ GBP</option><option value="EUR">€ EUR</option>
@@ -1806,8 +1830,12 @@ What would you like help with today?</div>
   <div class="modal" style="width:460px">
     <div class="mhead"><span class="mtitle">Add university</span><button class="mclose" onclick="closeModal('modal-university')">×</button></div>
     <div class="fg">
-      <div class="ff full"><label>University name *</label><input id="uni-name" placeholder="e.g. University of Law"></div>
+      <div class="ff full"><label>University name *</label>
+        <select id="uni-name" onchange="document.getElementById('uni-name-other').style.display=this.value==='__other__'?'block':'none'"><option value="">Select university…</option></select>
+        <input id="uni-name-other" placeholder="Type university name" style="display:none;margin-top:6px">
+      </div>
       <div class="ff"><label>Program</label><input id="uni-program" placeholder="e.g. MBA"></div>
+      <div class="ff"><label>Course Year / Intake</label><input id="uni-course-year" placeholder="e.g. 2026-27"></div>
       <div class="ff"><label>Status</label>
         <select id="uni-status"><option>Applied</option><option>Offer Received</option><option>Conditional</option><option>Rejected</option><option>Enrolled</option></select>
       </div>
@@ -1957,6 +1985,7 @@ What would you like help with today?</div>
   <div style="background:var(--pine);color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;flex-shrink:0" onclick="toggleChatFloatMinimize()">
     <span id="chat-float-title" style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">💬</span>
     <div style="display:flex;gap:12px;flex-shrink:0">
+      <button id="chat-sound-toggle" onclick="event.stopPropagation();toggleMySoundEnabled()" title="Chat sound on — click to mute" style="background:none;border:none;color:#fff;cursor:pointer;font-size:15px;line-height:1"><i class="ti ti-bell"></i></button>
       <button onclick="event.stopPropagation();toggleChatFloatMinimize()" title="Minimise" style="background:none;border:none;color:#fff;cursor:pointer;font-size:15px;line-height:1"><i class="ti ti-minus" id="chat-float-min-icon"></i></button>
       <button onclick="event.stopPropagation();closeChatFloat()" title="Close" style="background:none;border:none;color:#fff;cursor:pointer;font-size:15px;line-height:1"><i class="ti ti-x"></i></button>
     </div>
@@ -2000,6 +2029,9 @@ What would you like help with today?</div>
       <div class="ff" id="inv-teamcat-wrap"><label>Team category</label>
         <select id="inv-teamcat"><option value="International">International</option><option value="Domestic">Domestic (UK internal)</option></select>
         <div style="font-size:11px;color:var(--ink3);margin-top:3px">Domestic and Agent never receive leads automatically — Management hands leads to them directly.</div>
+      </div>
+      <div class="ff full" id="inv-university-wrap" style="display:none"><label>University Representative — university name</label>
+        <input id="inv-university" placeholder="e.g. University of Salford">
       </div>
       <div class="ff"><label>Country</label>
         <select id="inv-country" onchange="syncInviteOffice()"><option value="India">India</option><option value="UK">UK</option><option value="Pakistan">Pakistan</option><option value="Bangladesh">Bangladesh</option></select>
@@ -2223,9 +2255,27 @@ What would you like help with today?</div>
       <div class="dsec">Reminders</div>
           <div id="d-reminder-list" style="margin-bottom:8px"></div>
           <button onclick="openAddReminder()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px"><i class="ti ti-bell-plus" style="font-size:13px"></i>Add reminder</button>
-      <div class="dsec">University Applications</div>
+      <div class="dsec" id="d-uni-section-label">University Applications</div>
           <div id="d-uni-list" style="margin-bottom:8px"></div>
           <button onclick="openAddUniApp()" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px"><i class="ti ti-plus" style="font-size:13px"></i>Add university</button>
+      <div id="d-postapp-section" style="display:none">
+        <div class="dsec">📋 Post-Application (Domestic)</div>
+        <div class="ff"><label>Enrolment status</label>
+          <select id="d-enrolment-status" onchange="savePostAppField('enrolment_status',this.value)">
+            <option value="">Not set</option><option>Pending</option><option>Enrolled</option><option>Deferred</option><option>Withdrawn</option>
+          </select>
+        </div>
+        <div class="ff"><label>Class attendance</label>
+          <select id="d-attendance-status" onchange="savePostAppField('attendance_status',this.value)">
+            <option value="">Not set</option><option>Attending regularly</option><option>Irregular attendance</option><option>Not attending</option><option>Not yet started</option>
+          </select>
+        </div>
+        <div class="ff"><label>SFE approved status</label>
+          <select id="d-sfe-status" onchange="savePostAppField('sfe_approved_status',this.value)">
+            <option value="">Not set</option><option>Not applied</option><option>Applied — pending</option><option>Approved</option><option>Rejected</option>
+          </select>
+        </div>
+      </div>
       <div class="dsec">SOP Documents</div>
           <div id="d-sop-list" style="margin-bottom:8px"></div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
@@ -2410,6 +2460,119 @@ async function renderKnownDevices(){
     <td style="font-size:12px;color:var(--ink3)">${esc(r.user_email||'—')}</td>
     <td style="font-size:11px;color:var(--ink3)">${esc((r.user_agent||'—').substring(0,70))}</td>
   </tr>`).join('');
+}
+
+// ── Dashboard widget customization ───────────────────────────────────
+// Hide-only in this pass, not drag-reorder — the ten widgets live in
+// several different parent containers (some paired in .two-col divs),
+// so true cross-container reordering means restructuring the dashboard
+// layout itself. Hiding is safe to ship now; reordering is a separate,
+// bigger change worth doing deliberately rather than bolting on here.
+const DASH_WIDGETS=[
+  {id:'recently-viewed-widget',label:'🕓 Recently viewed'},
+  {id:'expiry-alerts-widget',label:'⚠️ Expiring soon'},
+  {id:'recent-leads-widget',label:'🆕 Recent leads'},
+  {id:'latest-payments-widget',label:'💰 Latest payments'},
+  {id:'conversion-funnel-widget',label:'🔻 Conversion funnel'},
+  {id:'intake-forecast-widget',label:'📅 Intake forecast'},
+  {id:'pipeline-status-widget',label:'Pipeline status'},
+  {id:'recent-activity-widget',label:'Recent activity'},
+  {id:'country-breakdown-card',label:'🌍 Leads by country'},
+  {id:'counsel-rank-card',label:'🏆 Counsellor ranking'},
+];
+let myDashboardPrefs={hidden:[]};
+function applyDashboardPrefs(){
+  DASH_WIDGETS.forEach(w=>{
+    const el=document.getElementById(w.id);
+    if(el)el.style.display=myDashboardPrefs.hidden.includes(w.id)?'none':'';
+  });
+}
+function toggleDashCustomizePanel(){
+  const panel=document.getElementById('dash-customize-panel');
+  const showing=panel.style.display!=='none';
+  panel.style.display=showing?'none':'block';
+  if(!showing)renderDashCustomizeList();
+}
+function renderDashCustomizeList(){
+  const el=document.getElementById('dash-customize-list');
+  el.innerHTML=DASH_WIDGETS.map(w=>{
+    const hidden=myDashboardPrefs.hidden.includes(w.id);
+    return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:6px 8px;border:1px solid var(--line2);border-radius:8px">
+      <input type="checkbox" ${hidden?'':'checked'} onchange="toggleWidgetHidden('${w.id}',!this.checked)">
+      ${w.label}
+    </label>`;
+  }).join('');
+}
+async function toggleWidgetHidden(widgetId,hide){
+  if(hide&&!myDashboardPrefs.hidden.includes(widgetId))myDashboardPrefs.hidden.push(widgetId);
+  if(!hide)myDashboardPrefs.hidden=myDashboardPrefs.hidden.filter(id=>id!==widgetId);
+  applyDashboardPrefs();
+  if(currentUser)await sb.from('team').update({dashboard_prefs:myDashboardPrefs}).eq('id',currentUser.id);
+}
+
+// ── First-login guided tour ──────────────────────────────────────────
+// Walks through whichever nav buttons are ALREADY visible to this user
+// — the nav itself is already role-filtered, so this naturally shows
+// only what that person is actually involved in without needing its
+// own separate role logic.
+async function maybeStartGuidedTour(user,tourCompleted){
+  if(tourCompleted)return;
+  setTimeout(()=>{
+    const steps=[...document.querySelectorAll('.ni[data-nav]')].filter(b=>b.offsetParent!==null).slice(0,6);
+    if(!steps.length)return;
+    runGuidedTourStep(steps,0,user.id);
+  },1200); // let the shell finish rendering first
+}
+function runGuidedTourStep(steps,i,userId){
+  document.querySelectorAll('.s4p-tour-highlight,.s4p-tour-box').forEach(el=>el.remove());
+  if(i>=steps.length){sb.from('team').update({tour_completed:true}).eq('id',userId);return;}
+  const btn=steps[i];
+  const r=btn.getBoundingClientRect();
+  const hi=document.createElement('div');
+  hi.className='s4p-tour-highlight';
+  hi.style.cssText=`position:fixed;top:${r.top-4}px;left:${r.left-4}px;width:${r.width+8}px;height:${r.height+8}px;border:2px solid var(--gold);border-radius:10px;z-index:9998;pointer-events:none;box-shadow:0 0 0 4000px rgba(0,0,0,.45)`;
+  document.body.appendChild(hi);
+  const box=document.createElement('div');
+  box.className='s4p-tour-box';
+  box.style.cssText=`position:fixed;top:${Math.min(r.top,window.innerHeight-140)}px;left:${Math.min(r.right+16,window.innerWidth-280)}px;background:#fff;border-radius:12px;padding:16px;width:240px;z-index:9999;box-shadow:0 12px 32px rgba(0,0,0,.3)`;
+  box.innerHTML=`<div style="font-weight:600;font-size:14px;margin-bottom:6px">${esc(btn.textContent.trim())}</div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:12px">${i+1} of ${steps.length}</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="runGuidedTourStep(window.s4pTourSteps,${i+1},'${userId}')" style="flex:1;background:var(--pine);color:#fff;border:none;border-radius:8px;padding:8px;cursor:pointer;font-size:13px">${i+1<steps.length?'Next':'Done'}</button>
+      <button onclick="document.querySelectorAll('.s4p-tour-highlight,.s4p-tour-box').forEach(e=>e.remove());sb.from('team').update({tour_completed:true}).eq('id','${userId}')" style="background:none;border:1px solid var(--line2);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:13px;color:var(--ink3)">Skip</button>
+    </div>`;
+  document.body.appendChild(box);
+  window.s4pTourSteps=steps;
+}
+
+// ── Public holiday awareness ─────────────────────────────────────────
+// Non-blocking — a follow-up can still be set on a holiday if that's
+// genuinely intended, this just warns so it's not accidental.
+let officeHolidays=[];
+async function loadOfficeHolidays(){
+  if(officeHolidays.length)return;
+  const{data}=await sb.from('office_holidays').select('*');
+  officeHolidays=data||[];
+}
+function holidayOn(dateStr,countryOrOffice){
+  if(!dateStr||!countryOrOffice)return null;
+  const country=countryOrOffice.replace(' HQ','');
+  return officeHolidays.find(h=>h.country===country&&h.holiday_date===dateStr)||null;
+}
+function warnIfHoliday(dateStr,office){
+  const h=holidayOn(dateStr,office);
+  if(h)toast(`Heads up: ${dateStr} is ${h.name} in the ${h.country} office — they may be closed that day.`);
+}
+
+// ── Structured handoff notes between countries/offices ───────────────
+async function promptHandoffNoteIfNeeded(leadId,oldOffice,newOffice){
+  if(!oldOffice||!newOffice||oldOffice===newOffice)return;
+  const note=prompt(`This lead is moving from ${oldOffice} to ${newOffice}.\n\nAdd a short handoff note for the receiving office (context, what's been done, what's pending):`);
+  if(note&&note.trim()){
+    logActivity(leadId,'office_handoff',`${oldOffice} → ${newOffice}: ${note.trim()}`);
+  }else{
+    logActivity(leadId,'office_handoff',`${oldOffice} → ${newOffice} (no handoff note provided)`);
+  }
 }
 
 // ── Push notifications ───────────────────────────────────────────────
@@ -2664,7 +2827,11 @@ function getOfficeAssignableStaff(office){
 // International, just scoped completely differently. Agent is its own
 // single flat role with no hierarchy.
 function isDomesticOrAgent(){return myTeamCategory==='Domestic'||myTeamCategory==='Agent';}
-function isDomesticAdmin(){return myTeamCategory==='Domestic'&&myRole==='Admin';}
+// Domestic Admin OR Manager — either can redistribute Domestic leads
+// among Domestic Counsellors. Broadened from Admin-only so a Domestic
+// Manager (e.g. Anusree) can also allot counsellors for Domestic leads,
+// without touching International in any way.
+function isDomesticAdmin(){return myTeamCategory==='Domestic'&&(myRole==='Admin'||myRole==='Manager');}
 // Restricted from Finance/Reports/Team/Digital Marketing/Team Dashboards —
 // same tier as Counsellor, no exception for Domestic Admin here. Domestic
 // Admin's wider visibility (their whole Domestic team's leads, not just
@@ -3192,6 +3359,7 @@ async function quickChangeFollowup(leadId,newDate){
   setSynced();
   logActivity(leadId,'field_edit',`Follow-up date: ${old||'—'} → ${newDate||'cleared'}`);
   toast('Follow-up date updated.');
+  if(newDate)warnIfHoliday(newDate,l.office||l.country);
   renderDash();
   renderLeads();
 }
@@ -3208,6 +3376,7 @@ async function quickChangePriority(leadId,newPriority){
   toast(`Priority → ${newPriority}`);
   renderDash();
   renderLeads();
+  renderFU();
 }
 function renderCounsellorCell(l){
   if(isDomesticAdmin()){
@@ -3302,6 +3471,15 @@ async function quickReassignSubTeam(leadId,field,newValue){
   renderDash();
   renderLeads();
 }
+function populateAgentDropdown(){
+  const sel=document.getElementById('f-agent');
+  if(!sel)return;
+  const current=sel.value;
+  const agents=(teamList||[]).filter(t=>t.role==='Agent');
+  sel.innerHTML='<option value="">No agent</option>'+
+    agents.map(a=>`<option value="${esc(a.full_name)}">${esc(a.full_name)}${a.university_name?' ('+esc(a.university_name)+')':''}</option>`).join('');
+  if(current)sel.value=current;
+}
 function populateCounsellorDropdown(){
   const office=document.getElementById('f-office').value;
   const sel=document.getElementById('f-counsel');
@@ -3352,8 +3530,10 @@ function generateInviteLink(){
   const office=document.getElementById('inv-office').value;
   const name=document.getElementById('inv-name').value.trim();
   const teamCategory=role==='Agent'?'Agent':(document.getElementById('inv-teamcat')?.value||'International');
+  const universityName=role==='Agent'?(document.getElementById('inv-university')?.value||'').trim():'';
   const params=new URLSearchParams({invite:'1',role,country,office,teamCategory});
   if(name)params.set('name',name);
+  if(universityName)params.set('university',universityName);
   const link=window.location.origin+window.location.pathname+'?'+params.toString();
   document.getElementById('inv-email-hint').value=link;
   document.getElementById('invite-link-box').style.display='block';
@@ -3364,6 +3544,8 @@ function syncInviteTeamCategory(){
   // Domestic only applies to Admin/Counsellor. Agent is always its own
   // category, no choice needed. Everyone else is always International.
   wrap.style.display=(role==='Admin'||role==='Counsellor')?'block':'none';
+  const uniWrap=document.getElementById('inv-university-wrap');
+  if(uniWrap)uniWrap.style.display=(role==='Agent')?'block':'none';
 }
 function copyInviteLink(){
   const inp=document.getElementById('inv-email-hint');
@@ -3378,6 +3560,8 @@ function applyInviteFromURL(){
   const office=params.get('office')||'India HQ';
   const name=params.get('name')||'';
   const teamCategory=params.get('teamCategory')||'International';
+  const university=params.get('university')||'';
+  document.getElementById('signup-university').value=university;
   document.getElementById('signup-teamcategory').value=teamCategory;
   toggleAuth(); // switch to signup view
   document.getElementById('signup-role').value=role;
@@ -3387,7 +3571,7 @@ function applyInviteFromURL(){
   if(name)document.getElementById('signup-name').value=name;
   // lock fields so invited user can't change their assigned access
   ['signup-role','signup-country','signup-office'].forEach(id=>{document.getElementById(id).disabled=true;document.getElementById(id).style.opacity='0.6';});
-  document.querySelector('#auth-signup-view .auth-sub').textContent=`You've been invited as ${role}${teamCategory!=='International'?' ('+teamCategory+')':''} · ${country} · ${office}. Set your email and password to continue.`;
+  document.querySelector('#auth-signup-view .auth-sub').textContent=`You've been invited as ${role}${teamCategory!=='International'?' ('+teamCategory+')':''}${university?' — '+university:''} · ${country} · ${office}. Set your email and password to continue.`;
 }
 applyInviteFromURL();
 
@@ -3397,6 +3581,7 @@ async function doSignup(){
   const country=document.getElementById('signup-country').value;
   const office=document.getElementById('signup-office').value;
   const teamCategory=document.getElementById('signup-teamcategory')?.value||'International';
+  const universityName=document.getElementById('signup-university')?.value||'';
   const email=document.getElementById('signup-email').value.trim();
   const pass=document.getElementById('signup-pass').value;
   const btn=document.getElementById('signup-btn');
@@ -3411,7 +3596,7 @@ async function doSignup(){
   if(error){err.textContent=readableAuthError(error,'signup');btn.disabled=false;btn.textContent='Create account →';return;}
   if(!data?.user){err.textContent='Account may already exist, or email confirmation is required before this can complete. Check your inbox, or check Supabase → Authentication → Users.';btn.disabled=false;btn.textContent='Create account →';return;}
   // save profile to team table
-  const{error:teamErr}=await sb.from('team').upsert({id:data.user.id,full_name:name,role,email,country,office,team_category:teamCategory});
+  const{error:teamErr}=await sb.from('team').upsert({id:data.user.id,full_name:name,role,email,country,office,team_category:teamCategory,university_name:universityName||null});
   if(teamErr){
     console.error('Team profile save failed:',teamErr);
     err.textContent='Account created, but saving your team profile failed: '+(teamErr.message||'unknown error')+'. Contact your Super Admin.';
@@ -3547,6 +3732,13 @@ async function onLogin(user){
   else if(isSuperAdmin)roleLabel='Super Admin';
   document.getElementById('sb-urole').textContent=roleLabel;
   checkKnownDevice(user);
+  myDashboardPrefs=profile?.dashboard_prefs&&typeof profile.dashboard_prefs==='object'?{hidden:profile.dashboard_prefs.hidden||[]}:{hidden:[]};
+  mySoundEnabled=profile?.sound_enabled!==false;
+  const soundBtn=document.getElementById('chat-sound-toggle');
+  if(soundBtn){soundBtn.innerHTML=`<i class="ti ${mySoundEnabled?'ti-bell':'ti-bell-off'}"></i>`;soundBtn.title=mySoundEnabled?'Chat sound on — click to mute':'Chat sound muted — click to unmute';}
+  applyDashboardPrefs();
+  loadOfficeHolidays();
+  maybeStartGuidedTour(user,!!profile?.tour_completed);
   await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents(),loadResumes(),loadRoundRobinState(),loadUnavailability(),loadSopUploadedLeadIds(),loadDocumentsUploadedLeadIds(),loadDocumentsCountByLead()]);
  initPresence(user, profile);
   // Super Admin ops-view: International vs Domestic (UK). Asked once
@@ -4072,6 +4264,7 @@ function badges(){
 
 // ── DASHBOARD ────────────────────────────────────────────────────
 function renderDash(){
+  applyDashboardPrefs();
   const dashLeads=opsViewScopedLeads(leads); // Super Admin ops-view scoping (International/Domestic) — unscoped pass-through for everyone else
   const greetEl=document.getElementById('dash-greeting');
   if(greetEl){
@@ -4743,7 +4936,7 @@ async function updateStatusFS(){
   loadTasksFS(curId);
   loadActivityLogFS(curId);
 }
-function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range);syncBudgetRangeOptions(l.budget_range||'');document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
+function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';populateAgentDropdown();document.getElementById('f-agent').value=l.agent||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-type').value=l.ielts_type||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-finance-years').value=l.finance_years||'';document.getElementById('f-class-timing').value=l.class_timing||'';document.getElementById('f-student-id').value=l.student_id||'';document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range);syncBudgetRangeOptions(l.budget_range||'');document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
 async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error,data}=await sb.from('leads').delete().eq('id',curId).select();if(error){setSyncErr();toast('Error deleting lead: '+error.message);return;}if(!data||!data.length){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 // Generates a message genuinely suited to WHERE this lead actually is
@@ -4876,7 +5069,7 @@ async function deleteDocFile(fileId,isFS){
   if(isFS==='modal'){loadDocsModal(curId);}else if(isFS){loadDocsFS(curId);}else{loadDocs(curId);}
   toast('File removed — upload a new one whenever you are ready.');
 }
-async function initDocsFS(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=DEFAULT_DOCS.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocsFS(curId);toast('Checklist created!');}
+async function initDocsFS(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=docsChecklistFor(curId).map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocsFS(curId);toast('Checklist created!');}
 
 // ── Documents embedded directly in the Add/Edit Lead modal — reuses the
 // exact same documents/document_files tables and upload pipeline as the
@@ -4900,7 +5093,7 @@ async function initDocsModal(){
   if(!curId)return;
   const existing=await sb.from('documents').select('id').eq('lead_id',curId);
   if(existing.data?.length){toast('Checklist already exists!');return;}
-  const rows=DEFAULT_DOCS.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));
+  const rows=docsChecklistFor(curId).map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));
   await sb.from('documents').insert(rows);
   loadDocsModal(curId);
   toast('Checklist created!');
@@ -5055,7 +5248,16 @@ function openAddUniAppFS(){openUniversityModal();}
 function openUniversityModal(){
   if(!curId){toast('Open a lead first.');return;}
   document.getElementById('uni-name').value='';
+  document.getElementById('uni-name-other').value='';
+  document.getElementById('uni-name-other').style.display='none';
+  loadUniversities().then(()=>{
+    const sel=document.getElementById('uni-name');
+    sel.innerHTML='<option value="">Select university…</option>'+
+      cfUniversities.map(u=>`<option value="${esc(u.name)}">${esc(u.name)}</option>`).join('')+
+      '<option value="__other__">Other — not listed</option>';
+  });
   document.getElementById('uni-program').value='';
+  document.getElementById('uni-course-year').value='';
   document.getElementById('uni-status').value='Applied';
   document.getElementById('uni-expiry').value='';
   document.getElementById('uni-file').value='';
@@ -5064,8 +5266,9 @@ function openUniversityModal(){
 }
 async function saveUniversityApp(){
   if(!curId){toast('No lead selected.');return;}
-  const university=document.getElementById('uni-name').value.trim();
-  if(!university){document.getElementById('uni-name').focus();toast('Please enter a university name.');return;}
+  const uniSelect=document.getElementById('uni-name').value;
+  const university=(uniSelect==='__other__'?document.getElementById('uni-name-other').value:uniSelect).trim();
+  if(!university){toast('Please select or enter a university name.');return;}
   const btn=document.getElementById('save-uni-btn');
   btn.disabled=true;btn.textContent='Saving…';
 
@@ -5073,6 +5276,7 @@ async function saveUniversityApp(){
     lead_id:curId,
     university,
     program:document.getElementById('uni-program').value.trim(),
+    course_year:document.getElementById('uni-course-year').value.trim()||null,
     status:document.getElementById('uni-status').value,
     offer_expiry_date:document.getElementById('uni-expiry').value||null,
   };
@@ -5305,6 +5509,8 @@ function editLead(){
     }
     cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);
     cf.value=l.counsellor||'';
+    populateAgentDropdown();
+    document.getElementById('f-agent').value=l.agent||'';
     setupAssignModeUI();
     // Editing an existing lead always starts in Manual mode with its current
     // counsellor shown — round robin should never silently re-roll an
@@ -5316,7 +5522,7 @@ function editLead(){
   }
   document.getElementById('f-fu').value=l.next_followup||'';
   document.getElementById('f-visa-deadline').value=l.visa_deadline||'';
-  document.getElementById('f-notes').value=l.notes||'';   document.getElementById('f-intake').value=l.intake_month||'';   document.getElementById('f-ielts-status').value=l.ielts_status||'';   document.getElementById('f-ielts-score').value=l.ielts_score||'';   document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range);syncBudgetRangeOptions(l.budget_range||'');   document.getElementById('f-english').value=l.english_status||'';   document.getElementById('f-walink').value=l.whatsapp_group_link||'';   document.getElementById('f-doclink').value=l.doc_folder_link||'';
+  document.getElementById('f-notes').value=l.notes||'';   document.getElementById('f-intake').value=l.intake_month||'';   document.getElementById('f-ielts-type').value=l.ielts_type||'';   document.getElementById('f-ielts-status').value=l.ielts_status||'';   document.getElementById('f-ielts-score').value=l.ielts_score||'';   document.getElementById('f-finance-years').value=l.finance_years||'';   document.getElementById('f-class-timing').value=l.class_timing||'';   document.getElementById('f-student-id').value=l.student_id||'';   document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range);syncBudgetRangeOptions(l.budget_range||'');   document.getElementById('f-english').value=l.english_status||'';   document.getElementById('f-walink').value=l.whatsapp_group_link||'';   document.getElementById('f-doclink').value=l.doc_folder_link||'';
   document.getElementById('modal-lead').classList.add('open');
  document.getElementById('dover').classList.remove('open');
   document.getElementById('editing-notice').classList.remove('show');
@@ -5326,8 +5532,8 @@ function editLead(){
 function openAddLead(){
   editMode=false;curId=null;
   document.getElementById('modal-title').textContent='Add new lead';
-  ['f-name','f-mobile','f-email','f-city','f-dob','f-qual','f-notes','f-fu','f-visa-deadline','f-ielts-score','f-walink','f-doclink'].forEach(id=>document.getElementById(id).value='');
-  ['f-intake','f-ielts-status','f-english'].forEach(id=>document.getElementById(id).value='');
+  ['f-name','f-mobile','f-email','f-city','f-dob','f-qual','f-notes','f-fu','f-visa-deadline','f-ielts-score','f-finance-years','f-class-timing','f-student-id','f-walink','f-doclink'].forEach(id=>document.getElementById(id).value='');
+  ['f-intake','f-ielts-type','f-ielts-status','f-english'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-budget-currency').value='GBP';
   syncBudgetRangeOptions('');
   // Native country is mandatory — left blank so the counsellor must actively
@@ -5339,7 +5545,9 @@ function openAddLead(){
   document.getElementById('f-mobile-code').value='';refreshCountryCombo('f-mobile-code');
   document.getElementById('f-status').value='New Enquiry';
   document.getElementById('f-prio').value='Medium';
+  document.getElementById('f-agent').value='';
   populateCounsellorDropdown();
+  populateAgentDropdown();
   populateSubTeamDropdowns();
   setupAssignModeUI();
   const counselField=document.getElementById('f-counsel');
@@ -5409,6 +5617,16 @@ async function saveLead(){
     const mobileFullCheck=!mobileNumValCheck?'':(mobileNumValCheck.startsWith('+')?mobileNumValCheck:`${mobileCodeValCheck} ${mobileNumValCheck}`);
     const dup=findDuplicateLead(name,mobileFullCheck,document.getElementById('f-email').value,null);
     if(dup){
+      const incomingAgent=document.getElementById('f-agent').value;
+      if(dup.agent&&dup.agent!==incomingAgent){
+        // Anushree's specific ask: a lead already brought in by one agent
+        // must not get separately processed through a different agent —
+        // this is a hard stop, not a confirm/override, since the whole
+        // point is to prevent exactly that from slipping through.
+        alert(`This student is already in the system, brought in by agent ${dup.agent}.\n\n${dup.name} (${dup.lead_id||dup.id.substring(0,8)}) — Status: ${dup.status}\n\nThis can't be added again through a different agent. Please open the existing record instead.`);
+        openLeadDetail(dup.id);
+        return;
+      }
       const proceed=confirm(`Possible duplicate found:\n\n${dup.name} (${dup.lead_id||dup.id.substring(0,8)})\nMobile: ${dup.mobile||'—'}\nStatus: ${dup.status}\n\nAdd this as a new lead anyway? Click Cancel to stop and look up the existing one instead.`);
       if(!proceed)return;
     }
@@ -5439,6 +5657,7 @@ async function saveLead(){
     status:document.getElementById('f-status').value,
     priority:document.getElementById('f-prio').value,
     counsellor:document.getElementById('f-counsel').value,
+    agent:document.getElementById('f-agent').value||null,
     application_team:document.getElementById('f-application-team').value||null,
     visa_team:document.getElementById('f-visa-team').value||null,
     sop_team:document.getElementById('f-sop-team').value||null,
@@ -5450,7 +5669,7 @@ async function saveLead(){
     nationality:document.getElementById('f-nationality').value||null,
     next_followup:document.getElementById('f-fu').value||null,
     visa_deadline:document.getElementById('f-visa-deadline').value||null,
-    notes:document.getElementById('f-notes').value,     intake_month:document.getElementById('f-intake').value,     ielts_status:document.getElementById('f-ielts-status').value,     ielts_score:document.getElementById('f-ielts-score').value,     budget_range:document.getElementById('f-budget').value,     english_status:document.getElementById('f-english').value,     whatsapp_group_link:document.getElementById('f-walink').value,     doc_folder_link:document.getElementById('f-doclink').value,
+    notes:document.getElementById('f-notes').value,     intake_month:document.getElementById('f-intake').value,     ielts_type:document.getElementById('f-ielts-type').value,     ielts_status:document.getElementById('f-ielts-status').value,     ielts_score:document.getElementById('f-ielts-score').value,     finance_years:document.getElementById('f-finance-years').value||null,     class_timing:document.getElementById('f-class-timing').value,     student_id:document.getElementById('f-student-id').value,     budget_range:document.getElementById('f-budget').value,     english_status:document.getElementById('f-english').value,     whatsapp_group_link:document.getElementById('f-walink').value,     doc_folder_link:document.getElementById('f-doclink').value,
     added_by:currentUser?.id
   };
   // No auto round-robin for Application/Visa/SOP — manual hand-off only,
@@ -5461,6 +5680,9 @@ async function saveLead(){
   let newlyCreatedLeadId=null; // captured here so it's usable after the if/else closes below
   if(editMode&&curId){       delete data.lead_id;
     const existing=leads.find(x=>x.id===curId);
+    if(existing&&existing.office&&data.office&&existing.office!==data.office){
+      await promptHandoffNoteIfNeeded(curId,existing.office,data.office);
+    }
     if(existing&&existing.counsellor!==data.counsellor){
       // Counsellor actually changed (reassigned or newly assigned) — stamp when.
       data.assigned_at=new Date().toISOString();
@@ -5476,8 +5698,8 @@ async function saveLead(){
       const trackedFields={name:'Name',mobile:'Mobile',email:'Email',city:'City',
         program:'Program',destination:'Destination',priority:'Priority',
         next_followup:'Next follow-up',visa_deadline:'Visa deadline',
-        budget_range:'Budget',ielts_status:'IELTS status',qualification:'Qualification',
-        intake_month:'Intake month',office:'Office',country:'Country',
+        budget_range:'Budget',ielts_type:'English test type',ielts_status:'IELTS status',qualification:'Qualification',
+        intake_month:'Intake month',country:'Country',
         application_team:'Application Team',visa_team:'Visa Team',sop_team:'SOP Team'};
       Object.entries(trackedFields).forEach(([key,label])=>{
         if((existing[key]||'')!==(data[key]||'')){
@@ -5488,6 +5710,7 @@ async function saveLead(){
     ({error}=await sb.from('leads').update(data).eq('id',curId));
     if(!error){const l=leads.find(x=>x.id===curId);if(l)Object.assign(l,data);}
     toast('Lead updated.');
+    if(!error&&data.next_followup)warnIfHoliday(data.next_followup,data.office);
   } else {
     // auto lead ID
     const maxId=leads.reduce((max,l)=>{const n=parseInt((l.lead_id||'S4P-0000').split('-')[1]);return n>max?n:max;},0);data.lead_id='S4P-'+String(maxId+1).padStart(4,'0');
@@ -5504,6 +5727,7 @@ async function saveLead(){
     let newLeadId=null;
     if(!error&&res.data){leads.unshift(res.data[0]);newLeadId=res.data[0].id;newlyCreatedLeadId=newLeadId;logEvents.push(['created',`Lead created, assigned to ${data.counsellor||'Unassigned'}`]);}
     toast('Lead added: '+name);
+    if(!error&&data.next_followup)warnIfHoliday(data.next_followup,data.office);
     if(!error&&newLeadId)logEvents.forEach(([type,detail])=>logActivity(newLeadId,type,detail));
     logEvents=[]; // already logged above for the new-lead case; prevent double-logging below
   }
@@ -5616,7 +5840,7 @@ function renderFU(){
       <div class="fright">
         <div class="fdate">${esc(l.next_followup||'No date')}</div>
         <div class="fcounsel">${esc(l.counsellor||'Unassigned')}</div>
-        <span class="pill" style="background:${ps.bg};color:${ps.tx};margin-top:6px;display:inline-block">${l.priority||'—'}</span>
+        <span onclick="event.stopPropagation()" style="margin-top:6px;display:inline-block">${renderPriorityCell(l)}</span>
       </div>
     </div>`;
   }).join('');
@@ -5841,6 +6065,14 @@ function clearStagedTcAttachment(){
 function isProtectedOwnerRow(t){
   return Object.prototype.hasOwnProperty.call(OWNERS,(t.email||'').toLowerCase());
 }
+// A Super Admin who ISN'T an Owner (i.e. Jisan) can't even SEE India's or
+// Pavitra's own account row — not just blocked from editing it, genuinely
+// hidden from the team list. Owners themselves (India, Pavitra) always see
+// everyone, each other included — this only restricts the non-Owner
+// Super Admin tier looking at the Owners.
+function isOwnerRowHiddenFromMe(t){
+  return isSuperAdmin&&!isOwner&&isProtectedOwnerRow(t);
+}
 
 // ── India view-only guard for Super Admins ─────────────────────────
 // A Super Admin (e.g. the UK account) can fully manage every OTHER
@@ -5955,9 +6187,21 @@ function renderManagementAndOperationsTeams(team){
   const opsEl=document.getElementById('operations-team-section');
   if(!mgmtEl||!opsEl)return;
 
+  // Which pole is actually being viewed right now: Super Admins use their
+  // manual Domestic/International switcher; everyone else automatically
+  // sees their own team_category — nobody needs a toggle to see the pole
+  // they already belong to.
+  const effectiveView=isSuperAdmin?(superAdminOpsView||'International'):myTeamCategory;
+  const domesticEl=document.getElementById('domestic-team-section');
+  const agentEl=document.getElementById('agent-team-section');
+  if(effectiveView==='Domestic'){
+    mgmtEl.innerHTML='';opsEl.innerHTML='';
+    if(agentEl)agentEl.innerHTML='';
+  }
+
   const mgmtRoles=['Manager','Admin','Director'];
-  const mgmt=(team||[]).filter(t=>mgmtRoles.includes(t.role)&&t.team_category!=='Domestic');
-  mgmtEl.innerHTML=`<div class="card" style="margin-bottom:16px">
+  const mgmt=(team||[]).filter(t=>mgmtRoles.includes(t.role)&&t.team_category!=='Domestic'&&!isOwnerRowHiddenFromMe(t));
+  if(effectiveView!=='Domestic')mgmtEl.innerHTML=`<div class="card" style="margin-bottom:16px">
     <div class="card-h"><span class="card-t">🌍 International — Management Team</span><span style="font-size:11px;color:var(--ink3)">${mgmt.length} member${mgmt.length!==1?'s':''} — Manager, Admin & Director, across every country</span></div>
     <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard">
         <div class="tcard-av">${ini(t.full_name||t.email)}</div>
@@ -5981,14 +6225,15 @@ function renderManagementAndOperationsTeams(team){
         </div>`).join(''):emptyState('👥','No one assigned to this team yet.')}
     </div>`;
   }).join('');
-  opsEl.innerHTML=`<div class="card" style="margin-bottom:16px">
+  if(effectiveView!=='Domestic')opsEl.innerHTML=`<div class="card" style="margin-bottom:16px">
     <div class="card-h"><span class="card-t">🌍 International — Operations Team</span><span style="font-size:11px;color:var(--ink3)">Application, Visa & SOP — pooled globally, not limited to any one country</span></div>
     <div style="display:flex;gap:20px;flex-wrap:wrap">${opsCols}</div>
   </div>`;
 
   // ── Domestic Operations (UK-internal, no round-robin, Management-assigned only) ──
-  const domesticEl=document.getElementById('domestic-team-section');
   if(domesticEl){
+    if(effectiveView!=='Domestic'){domesticEl.innerHTML='';}
+    else{
     const domestic=(team||[]).filter(t=>t.team_category==='Domestic');
     domesticEl.innerHTML=`<div class="card" style="margin-bottom:16px">
       <div class="card-h"><span class="card-t">🇬🇧 Domestic Operations</span><span style="font-size:11px;color:var(--ink3)">${domestic.length} member${domestic.length!==1?'s':''} — UK-internal only, never receives leads automatically</span></div>
@@ -5998,17 +6243,17 @@ function renderManagementAndOperationsTeams(team){
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('🇬🇧','No Domestic team members yet.')}</div>
     </div>`;
+    }
   }
 
   // ── Agent Portal (external partners, single flat role, no hierarchy) ──
-  const agentEl=document.getElementById('agent-team-section');
-  if(agentEl){
+  if(agentEl&&effectiveView!=='Domestic'){
     const agents=(team||[]).filter(t=>t.role==='Agent');
     agentEl.innerHTML=`<div class="card" style="margin-bottom:16px">
       <div class="card-h"><span class="card-t">🤝 Agent Portal</span><span style="font-size:11px;color:var(--ink3)">${agents.length} agent${agents.length!==1?'s':''} — external partners, work only on leads Management assigns them</span></div>
       <div class="team-grid">${agents.length?agents.map(t=>`<div class="tcard">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent${t.university_name?' · 🎓 '+esc(t.university_name):''}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('🤝','No agents yet.')}</div>
     </div>`;
@@ -6031,8 +6276,14 @@ function renderTeam(team){
   }
 
   // Build all offices from OFFICE_MAP, then group real team members into them
+  const effectiveView=isSuperAdmin?(superAdminOpsView||'International'):myTeamCategory;
   const allOffices=[];
   Object.entries(OFFICE_MAP).forEach(([country,offices])=>{
+    // Domestic pole = UK only. International pole shows every office,
+    // UK included — this grid already excludes Domestic-category staff
+    // (see the filter just below), so UK here only ever shows
+    // International-side UK counsellors, which do belong in both views.
+    if(effectiveView==='Domestic'&&country!=='UK')return;
     offices.forEach(office=>allOffices.push({office,country}));
   });
 
@@ -6570,6 +6821,17 @@ function initReports(){
     countrySel.innerHTML=`<option>${esc(myCountry||'India')}</option>`;
     rptState.country=myCountry||'India';
   }
+  const agentSel=document.getElementById('rpt-agent');
+  if(agentSel){
+    const agents=[...new Set((teamList||[]).filter(t=>t.role==='Agent').map(t=>t.full_name).filter(Boolean))].sort();
+    agentSel.innerHTML='<option value="All">All agents</option>'+agents.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
+  }
+  const uniSel=document.getElementById('rpt-university');
+  if(uniSel){
+    loadUniversities().then(()=>{
+      uniSel.innerHTML='<option value="All">All universities</option>'+cfUniversities.map(u=>`<option value="${esc(u.name)}">${esc(u.name)}</option>`).join('');
+    });
+  }
   loadReport();
 }
 function setReportPeriod(period){
@@ -6602,7 +6864,18 @@ async function loadReport(){
   const label=rptState.period==='daily'?`Showing ${start}`:`Showing ${start} → ${end} (7 days)`;
   document.getElementById('rpt-range-label').textContent=label;
 
-  const scoped=scopedLeadsFor(rptState.country);
+  const scoped0=scopedLeadsFor(rptState.country);
+  const agentFilter=document.getElementById('rpt-agent')?.value||'All';
+  const uniFilter=document.getElementById('rpt-university')?.value||'All';
+  const intakeFilter=document.getElementById('rpt-intake')?.value||'All';
+  let scoped=scoped0;
+  if(agentFilter!=='All')scoped=scoped.filter(l=>l.agent===agentFilter);
+  if(intakeFilter!=='All')scoped=scoped.filter(l=>l.intake_month===intakeFilter);
+  if(uniFilter!=='All'){
+    const{data:matchingApps}=await sb.from('university_applications').select('lead_id').eq('university',uniFilter);
+    const matchingLeadIds=new Set((matchingApps||[]).map(a=>a.lead_id));
+    scoped=scoped.filter(l=>matchingLeadIds.has(l.id));
+  }
   const emptyEl=document.getElementById('rpt-empty'), contentEl=document.getElementById('rpt-content');
   const isEmpty=scoped.length===0;
   emptyEl.style.display=isEmpty?'flex':'none';
@@ -6812,7 +7085,17 @@ function renderSubTeamReportsBreakdown(scoped){
   });
   el.innerHTML=rows.length?rows.join(''):emptyState('📝','No sub-team assignments in this scope yet.');
 }
-  let uniApps=[];async function loadUniApps(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data)uniApps=data;await renderUniApps();}async function renderUniApps(){const el=document.getElementById('d-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(!uniApps.length){el.innerHTML=emptyState('🎓','No universities added yet.');return;}await loadUniFilesFor(uniApps.map(u=>u.id));el.innerHTML=uniApps.map(u=>{const myFiles=uniFilesByApp[u.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteUniFile('${f.id}',false)" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${filesHtml}</div><button onclick="triggerUniFileUpload('${u.id}',false)" title="Add file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniApp('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`;}).join('');}
+  let uniApps=[];async function loadUniApps(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data)uniApps=data;const labelEl=document.getElementById('d-uni-section-label');const l=leads.find(x=>x.id===leadId);const isDomestic=l&&(l.nationality?l.nationality==='UK':l.country==='UK');if(labelEl){labelEl.textContent=isDomestic?'🏠 Home Students Course Information':'University Applications';}const postAppEl=document.getElementById('d-postapp-section');if(postAppEl){const showPostApp=isDomestic&&l&&reachedStage(l.status,'Application Submitted');postAppEl.style.display=showPostApp?'block':'none';if(showPostApp){document.getElementById('d-enrolment-status').value=l.enrolment_status||'';document.getElementById('d-attendance-status').value=l.attendance_status||'';document.getElementById('d-sfe-status').value=l.sfe_approved_status||'';}}await renderUniApps();}async function renderUniApps(){const el=document.getElementById('d-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(!uniApps.length){el.innerHTML=emptyState('🎓','No universities added yet.');return;}await loadUniFilesFor(uniApps.map(u=>u.id));el.innerHTML=uniApps.map(u=>{const myFiles=uniFilesByApp[u.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteUniFile('${f.id}',false)" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}${u.course_year?' · '+esc(u.course_year):''}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${filesHtml}</div><button onclick="triggerUniFileUpload('${u.id}',false)" title="Add file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniApp('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`;}).join('');}
+async function savePostAppField(field,value){
+  if(!curId)return;
+  const{error}=await sb.from('leads').update({[field]:value||null}).eq('id',curId);
+  if(error){toast('Error saving: '+error.message);return;}
+  const l=leads.find(x=>x.id===curId);
+  if(l)l[field]=value||null;
+  const labels={enrolment_status:'Enrolment status',attendance_status:'Class attendance',sfe_approved_status:'SFE approved status'};
+  logActivity(curId,'field_edit',`${labels[field]||field}: ${value||'cleared'}`);
+  toast('Saved.');
+}
 function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){if(!confirm('Remove this university?'))return;await sb.from('university_applications').delete().eq('id',id);loadUniApps(curId);toast('Removed.');}
   function applyRoleUI(){
     // Use the real role variable, not the displayed label — the sidebar
@@ -6965,10 +7248,20 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
       </tr>`;
     }).join('')}</tbody></table>`;
   }
-  const DEFAULT_DOCS=['Academic Certificate','Academic Transcript','English Test Certificate/ MOI','Passport','CV','LOR','Gap Justification','SOP','Photo','Bank Statement'];async function loadDocs(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data){await renderDocs(data);}else{await renderDocs([]);}}
+  const DEFAULT_DOCS=['Academic Certificate','Academic Transcript','English Test Certificate/ MOI','Passport','CV','LOR','Gap Justification','SOP','Photo','Bank Statement'];
+  // Domestic (UK) leads get these four in addition to the standard list
+  // above — genuinely UK-specific document types that don't apply to an
+  // International application, so they're additive, not a replacement.
+  const DOMESTIC_EXTRA_DOCS=['Sharecode for Immigration','National Insurance','Any other ID proof','Student finance proof'];
+  function docsChecklistFor(leadId){
+    const l=leads.find(x=>x.id===leadId);
+    const isDomestic=l&&(l.nationality?l.nationality==='UK':l.country==='UK');
+    return isDomestic?[...DEFAULT_DOCS,...DOMESTIC_EXTRA_DOCS]:DEFAULT_DOCS;
+  }
+  async function loadDocs(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data){await renderDocs(data);}else{await renderDocs([]);}}
 async function renderDocs(docs){const el=document.getElementById('d-doc-list');if(!el)return;if(!docs.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet. Click Init checklist to start.</div>';return;}await loadDocFilesFor(docs.map(d=>d.id));el.innerHTML=docs.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',false)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',false)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiry('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
 function setDocExpiry(id,current){openQuickInput('Set expiry date','Expiry date','date',current,(val)=>{sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocs(curId);toast('Expiry date updated.');});});}
-async function initDocs(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=DEFAULT_DOCS.map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocs(curId);toast('Checklist created!');}
+async function initDocs(){if(!curId)return;const existing=await sb.from('documents').select('id').eq('lead_id',curId);if(existing.data?.length){toast('Checklist already exists!');return;}const rows=docsChecklistFor(curId).map(d=>({lead_id:curId,doc_name:d,status:'Pending'}));await sb.from('documents').insert(rows);loadDocs(curId);toast('Checklist created!');}
 async function toggleDoc(id,checked){await sb.from('documents').update({status:checked?'Done':'Pending'}).eq('id',id);const el=document.getElementById('d-doc-list');if(el){const spans=el.querySelectorAll('span');spans.forEach(s=>{if(s.style)s.style.textDecoration=checked?'line-through':''});}toast(checked?'✅ Marked done':'↩ Marked pending');}
 
 // ── REMINDERS ───────────────────────────────────────────────────
@@ -7167,7 +7460,7 @@ async function checkUnreadDmCount(){
   if(!badge||error)return;
   unreadDmSenders=new Set((data||[]).map(m=>m.sender_id));
   const count=data?.length||0;
-  if(count>lastUnreadDmCount)playNotificationChime(); // only on genuinely new messages, not every poll
+  if(count>lastUnreadDmCount)playChatChime(); // only on genuinely new messages, not every poll — personal per-user toggle, not the org-wide one
   lastUnreadDmCount=count;
   if(count>0){badge.textContent=count>9?'9+':count;badge.style.display='flex';}
   else{badge.style.display='none';}
@@ -7183,7 +7476,7 @@ async function checkUnreadDmCount(){
 const META_PULL_URL='https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/meta-data-pull';
 // Only India has real Meta/GA4 credentials connected so far - other
 // countries show a clean placeholder until their own credentials exist.
-const DM_CONNECTED_COUNTRIES=['India'];
+const DM_CONNECTED_COUNTRIES=['India','Pakistan','Bangladesh'];
 let dmActiveCountry='India';
 function initDigitalMarketing(){
   document.getElementById('dm-post-date').value=new Date().toISOString().substring(0,10);
@@ -8119,6 +8412,24 @@ document.addEventListener('click',function unlockAudioOnce(){
 
 function playNotificationChime(){
   if(!notificationsEnabled)return;
+  playChimeTone();
+}
+// Per-user sound preference — separate from the org-wide switch above on
+// purpose. That one is Super-Admin-controlled and meant for lead-related
+// alerts; chat notifications are personal, so each person controls their
+// own, defaulting on, saved to their own team row.
+let mySoundEnabled=true;
+function playChatChime(){
+  if(!mySoundEnabled)return;
+  playChimeTone();
+}
+async function toggleMySoundEnabled(){
+  mySoundEnabled=!mySoundEnabled;
+  const btn=document.getElementById('chat-sound-toggle');
+  if(btn){btn.innerHTML=`<i class="ti ${mySoundEnabled?'ti-bell':'ti-bell-off'}"></i>`;btn.title=mySoundEnabled?'Chat sound on — click to mute':'Chat sound muted — click to unmute';}
+  if(currentUser)await sb.from('team').update({sound_enabled:mySoundEnabled}).eq('id',currentUser.id);
+}
+function playChimeTone(){
   try{
     if(!sharedAudioCtx){ sharedAudioCtx=new(window.AudioContext||window.webkitAudioContext)(); }
     if(sharedAudioCtx.state==='suspended'){ sharedAudioCtx.resume(); }
@@ -9102,6 +9413,9 @@ async function renderActivityMonitor(){
   const teamFilter=teamSel?.value||'All';
 
   let members=(teamList||[]).filter(t=>{
+    if(isOwnerRowHiddenFromMe(t))return false;
+    const categoryFilter=document.getElementById('am-category')?.value||'All';
+    if(categoryFilter!=='All'&&(t.team_category||'International')!==categoryFilter)return false;
     if(countryFilter&&countryFilter!=='All'){
       // Compare against the REAL office value(s) via OFFICE_MAP, not the
       // plain country name directly — India/UK are stored as "India HQ"/
@@ -9133,14 +9447,34 @@ async function renderActivityMonitor(){
     if(!byMember[u.team_id].latest)byMember[u.team_id].latest=u;
   });
 
-  listEl.innerHTML=`<div class="tw"><table class="tbl"><thead><tr><th>Name</th><th>Team</th><th>Country</th><th>Updates (7d)</th><th>Latest update</th></tr></thead><tbody>`+
+  // Real call stats, per counsellor — pulled from the same whatsapp_calls
+  // table the WhatsApp Calls tab uses (matched on counsellor name, same
+  // as everywhere else this field is used). This is genuinely new: this
+  // table never queried call data before.
+  await loadWhatsAppCalls();
+  const callStatsByName={};
+  whatsappCalls.forEach(c=>{
+    const name=c.counsellor;
+    if(!name)return;
+    if(!callStatsByName[name])callStatsByName[name]={total:0,connected:0,seconds:0};
+    callStatsByName[name].total++;
+    if(c.status==='answered'||c.status==='completed'){
+      callStatsByName[name].connected++;
+      callStatsByName[name].seconds+=c.duration_seconds||0;
+    }
+  });
+
+  listEl.innerHTML=`<div class="tw"><table class="tbl"><thead><tr><th>Name</th><th>Team</th><th>Country</th><th>Updates (7d)</th><th>Calls</th><th>Talk time</th><th>Latest update</th></tr></thead><tbody>`+
     members.map(m=>{
       const info=byMember[m.id];
       const count=info?.count||0;
       const badgeColor=count>=5?'var(--sage)':count>=1?'var(--gold)':'var(--rose)';
       const badgeBg=count>=5?'var(--sage-l)':count>=1?'var(--gold-l)':'var(--rose-l)';
       const latest=info?.latest?`${new Date(info.latest.work_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}: ${esc((info.latest.content||'').slice(0,80))}${(info.latest.content||'').length>80?'…':''}`:'<span style="color:var(--ink3);font-style:italic">No updates logged this week</span>';
-      return `<tr onclick="openMemberActivityDetail('${m.id}','${esc((m.full_name||m.email||'').replace(/'/g,"\'"))}','${esc((m.role||'').replace(/'/g,"\'"))}','${esc((m.office||'').replace(/'/g,"\'"))}')" style="cursor:pointer"><td style="font-weight:600">${esc(m.full_name||m.email||'—')}</td><td style="font-size:12px">${esc(m.role||'Counsellor')}</td><td style="font-size:12px">${esc(m.office||'—')}</td><td><span class="pill" style="background:${badgeBg};color:${badgeColor}">${count}</span></td><td style="font-size:12.5px;max-width:340px">${latest}</td></tr>`;
+      const cs=callStatsByName[m.full_name];
+      const callsCell=cs?`${cs.connected}/${cs.total} connected`:'<span style="color:var(--ink3);font-style:italic">No calls</span>';
+      const talkTimeCell=cs&&cs.seconds?Math.round(cs.seconds/60)+' min':'—';
+      return `<tr onclick="openMemberActivityDetail('${m.id}','${esc((m.full_name||m.email||'').replace(/'/g,"\'"))}','${esc((m.role||'').replace(/'/g,"\'"))}','${esc((m.office||'').replace(/'/g,"\'"))}')" style="cursor:pointer"><td style="font-weight:600">${esc(m.full_name||m.email||'—')}</td><td style="font-size:12px">${esc(m.role||'Counsellor')}</td><td style="font-size:12px">${esc(m.office||'—')}</td><td><span class="pill" style="background:${badgeBg};color:${badgeColor}">${count}</span></td><td style="font-size:12px">${callsCell}</td><td style="font-size:12px">${talkTimeCell}</td><td style="font-size:12.5px;max-width:340px">${latest}</td></tr>`;
     }).join('')+
     `</tbody></table></div>`;
 }

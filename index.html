@@ -497,6 +497,16 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div class="auth-field"><label>Password</label><input type="password" id="login-pass" placeholder="Your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
         <button class="auth-btn" id="login-btn" onclick="doLogin()">Sign in →</button>
         <div class="auth-err" id="login-err"></div>
+        <div style="text-align:center;margin-top:12px"><span onclick="showForgotPasswordView()" style="color:rgba(255,255,255,.6);font-size:12.5px;cursor:pointer;text-decoration:underline">Forgot password?</span></div>
+      </div>
+      <div id="auth-forgot-view" style="display:none">
+        <div class="auth-title">Reset your password</div>
+        <div class="auth-sub">Passwords aren't self-service here — enter your email and India or Pavitra will set a new one and pass it to you directly.</div>
+        <div class="auth-field"><label>Email address</label><input type="email" id="forgot-email" placeholder="you@step4progress.com" autocomplete="email"></div>
+        <button class="auth-btn" id="forgot-btn" onclick="submitPasswordResetRequest()">Send request →</button>
+        <div class="auth-err" id="forgot-err"></div>
+        <div class="auth-err" id="forgot-success" style="color:#4ADE80;display:none"></div>
+        <div style="text-align:center;margin-top:12px"><span onclick="showLoginView()" style="color:rgba(255,255,255,.6);font-size:12.5px;cursor:pointer;text-decoration:underline">← Back to sign in</span></div>
       </div>
       <div id="auth-signup-view" style="display:none">
         <div class="auth-title">Create account</div>
@@ -571,6 +581,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <div class="sng">Main</div>
       <button class="ni active" data-nav="home" onclick="nav('home',this)"><i class="ti ti-home" style="color:var(--pine3)"></i>Home</button>
       <button class="ni" data-nav="dashboard" onclick="nav('dashboard',this)"><i class="ti ti-layout-dashboard" style="color:var(--pine3)"></i>Dashboard</button>
+      <button class="ni" data-nav="taskdashboard" onclick="nav('taskdashboard',this)"><i class="ti ti-checklist" style="color:var(--gold)"></i>Task Dashboard</button>
       <button class="ni" data-nav="leads" onclick="nav('leads',this)"><i class="ti ti-users" style="color:var(--sky)"></i>Leads<span class="nbadge" id="nb-leads">0</span></button>
       <button class="ni" data-nav="toolleads" onclick="nav('toolleads',this)"><i class="ti ti-click" style="color:var(--sky)"></i>Tool Leads<span class="nbadge" id="nb-toolleads">0</span></button>
       <div class="sng">Programs</div>
@@ -741,6 +752,45 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         </div>
       </section>
 
+      <!-- Task Dashboard — full task management screen (assignment chain,
+           daily states, per-counsellor privacy). Reuses the exact same
+           `tasks` table and access-control scoping already used by the
+           Home page's "My Tasks" widget — this is the same data, in a
+           dedicated, uncapped, fuller view rather than a 6-item preview. -->
+      <section id="sc-taskdashboard" class="screen">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+          <div style="font-size:13px;color:var(--ink3)">Tasks respect the same access rules as leads — a Counsellor sees only their own, Admin/Manager only their country, Super Admin everything except India, Owner everything.</div>
+          <button class="btn btn-p" onclick="openTaskModalStandalone()"><i class="ti ti-plus"></i>Add task</button>
+        </div>
+        <div id="td-summary-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px"></div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-h"><span class="card-t">📋 Task Summary</span></div>
+            <div id="td-summary-numbers" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><span class="card-t">📅 By assignee</span></div>
+            <div id="td-by-assignee"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-h">
+            <span class="card-t">All tasks</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select id="td-filter-state" onchange="renderTaskDashboard()" style="font-size:12px;padding:5px 8px;border:1px solid var(--line2);border-radius:var(--r)">
+                <option value="">All states</option>
+                <option value="overdue">Overdue</option>
+                <option value="today">Due today</option>
+                <option value="week">This week</option>
+                <option value="later">Later</option>
+                <option value="done">Completed</option>
+              </select>
+            </div>
+          </div>
+          <div id="td-task-list"></div>
+        </div>
+      </section>
+
       <!-- Leads -->
       <section id="sc-leads" class="screen">
         <div id="leads-loading">
@@ -791,11 +841,14 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="btn" onclick="bulkChangePriority()" style="font-size:12px;padding:5px 10px">Apply priority</button>
             <select id="bulk-counsellor-select" style="font-size:12px;padding:5px 8px;border-radius:6px;border:none"></select>
             <button class="btn" onclick="bulkReassignCounsellor()" style="font-size:12px;padding:5px 10px">Reassign</button>
+            <select id="bulk-source-select" style="font-size:12px;padding:5px 8px;border-radius:6px;border:none"><option value="">Choose source…</option><option>Meta Ads</option><option>Google Ads</option><option>Instagram</option><option>WhatsApp</option><option>Walk-in</option><option>Referral</option><option>Website</option><option>LinkedIn</option><option>YouTube</option><option>Event / Expo</option><option>Website Enquiry</option><option>Website Tools Enquiry</option><option>Meta Enquiry</option><option>Other</option></select>
+            <button class="btn" onclick="bulkChangeSource()" style="font-size:12px;padding:5px 10px">Apply source</button>
             <button class="btn" onclick="bulkDeleteLeads()" style="font-size:12px;padding:5px 10px;background:var(--rose);color:#fff;border:none"><i class="ti ti-trash"></i>Delete selected</button>
             <button class="btn" onclick="exportSelectedLeads()" style="font-size:12px;padding:5px 10px;margin-left:auto"><i class="ti ti-download"></i>Export selected</button>
             <button class="btn" onclick="clearBulkSelection()" style="font-size:12px;padding:5px 10px;background:rgba(255,255,255,.15);color:#fff;border:none">Clear selection</button>
           </div>
-          <div style="display:flex;justify-content:flex-end;margin-bottom:10px;margin-top:-6px">
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;margin-top:-6px">
+            <button class="btn" onclick="navFilter('ls-st','Dropped')" style="font-size:12px;padding:5px 12px;background:var(--rose-l,#FEE2E2);color:var(--rose,#991B1B);border-color:transparent"><i class="ti ti-trash-x"></i>Drop List</button>
             <button class="btn" onclick="exportCurrentView()" style="font-size:12px;padding:5px 12px"><i class="ti ti-download"></i>Export this view</button>
           </div>
           <div id="leads-top-scroll" style="overflow-x:auto;overflow-y:hidden;height:16px;margin-bottom:2px" onscroll="document.getElementById('leads-table-wrap').scrollLeft=this.scrollLeft">
@@ -931,6 +984,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
       <!-- Team -->
       <section id="sc-team" class="screen">
+        <div id="password-reset-requests-card" class="card" style="display:none;margin-bottom:16px">
+          <div class="card-h"><span class="card-t">🔑 Pending password reset requests</span></div>
+          <div id="password-reset-requests-list"></div>
+        </div>
         <div id="management-team-section"></div>
         <div id="operations-team-section"></div>
         <div id="domestic-team-section"></div>
@@ -1778,6 +1835,35 @@ What would you like help with today?</div>
   </div>
 </div>
 
+<!-- Coaching Dashboard — per-student view, click any coaching card/row to open -->
+<div class="mover" id="modal-coaching-dashboard">
+  <div class="modal" style="width:480px">
+    <div class="mhead"><span class="mtitle" id="cd-student-name">Student</span><button class="mclose" onclick="closeModal('modal-coaching-dashboard')">×</button></div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:16px" id="cd-student-sub"></div>
+    <div style="background:var(--cream);border-radius:var(--r);padding:16px;margin-bottom:16px;text-align:center">
+      <div style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Progress</div>
+      <div style="font-size:32px;font-weight:700;color:var(--pine);margin-bottom:8px" id="cd-progress-pct">0%</div>
+      <div class="pt" style="margin:0 auto 10px;max-width:280px"><div class="pb" id="cd-progress-bar" style="width:0%;background:var(--pine)"></div></div>
+      <div style="display:flex;justify-content:center;gap:10px;align-items:center">
+        <span style="font-size:13px;color:var(--ink2)"><span id="cd-sessions-done">0</span> / <span id="cd-sessions-total">0</span> sessions</span>
+        <button class="btn btn-p" style="font-size:12px;padding:5px 12px" onclick="incrementCoachingSession()"><i class="ti ti-plus"></i>Log session</button>
+      </div>
+    </div>
+    <div class="fg">
+      <div class="ff"><label>Total sessions</label><input type="number" id="cd-total-input" min="1"></div>
+      <div class="ff"><label>Sessions done</label><input type="number" id="cd-done-input" min="0"></div>
+      <div class="ff"><label>Mock score</label><input id="cd-mock-input"></div>
+      <div class="ff"><label>Target score</label><input id="cd-target-input"></div>
+      <div class="ff"><label>Batch</label><input id="cd-batch-input"></div>
+      <div class="ff"><label>Program</label><input id="cd-program-input"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn" onclick="openLeadDetail(currentCoachingLeadId);closeModal('modal-coaching-dashboard')">View full lead →</button>
+      <button class="btn btn-p" onclick="saveCoachingDashboardEdits()"><i class="ti ti-check"></i>Save changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- Commission Modal -->
 <div class="mover" id="modal-commission">
   <div class="modal" style="width:460px">
@@ -1925,8 +2011,10 @@ What would you like help with today?</div>
   <div class="modal" style="width:460px">
     <div class="mhead"><span class="mtitle">Add task</span><button class="mclose" onclick="closeModal('modal-task')">×</button></div>
     <div class="fg">
+      <div class="ff full" id="task-lead-picker-wrap" style="display:none"><label>Lead *</label><select id="task-lead-picker"></select></div>
       <div class="ff full"><label>Task title *</label><input id="task-title" placeholder="e.g. Send university shortlist to student"></div>
       <div class="ff full"><label>Due date (optional)</label><input type="date" id="task-due"></div>
+      <div class="ff full" id="task-assignee-wrap" style="display:none"><label>Assign to (optional)</label><select id="task-assignee-picker"><option value="">Leave as lead's counsellor</option></select></div>
     </div>
     <div class="mfoot">
       <button class="btn" onclick="closeModal('modal-task')">Cancel</button>
@@ -3182,6 +3270,46 @@ function toggleAuth(){
   document.getElementById('auth-toggle-text').textContent=authMode==='login'?'Don\'t have an account?':'Already have an account?';
   document.getElementById('auth-toggle-btn').textContent=authMode==='login'?'Sign up':'Sign in';
 }
+function showForgotPasswordView(){
+  document.getElementById('auth-login-view').style.display='none';
+  document.getElementById('auth-signup-view').style.display='none';
+  document.getElementById('auth-forgot-view').style.display='block';
+  document.getElementById('forgot-err').textContent='';
+  document.getElementById('forgot-success').style.display='none';
+}
+function showLoginView(){
+  document.getElementById('auth-forgot-view').style.display='none';
+  document.getElementById('auth-signup-view').style.display='none';
+  document.getElementById('auth-login-view').style.display='block';
+  authMode='login';
+}
+// No self-service reset by design — this only ever files a request for
+// India or Pavitra (isOwner) to action manually via the Team screen's
+// "Pending password reset requests" card. The requester never sets their
+// own new password here.
+async function submitPasswordResetRequest(){
+  const email=document.getElementById('forgot-email').value.trim();
+  const btn=document.getElementById('forgot-btn');
+  const err=document.getElementById('forgot-err');
+  const success=document.getElementById('forgot-success');
+  err.textContent='';success.style.display='none';
+  if(!email){err.textContent='Please enter your email address.';return;}
+  btn.disabled=true;btn.textContent='Sending…';
+  try{
+    const res=await fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/submit-password-reset-request',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email}),
+    });
+    const data=await res.json();
+    if(!res.ok){err.textContent=data.error||'Something went wrong — please try again.';btn.disabled=false;btn.textContent='Send request →';return;}
+    success.textContent='Request sent. India or Pavitra has been notified and will get in touch with your new password directly.';
+    success.style.display='block';
+    document.getElementById('forgot-email').value='';
+    btn.disabled=false;btn.textContent='Send request →';
+  }catch(e){
+    err.textContent='Could not reach the server — please check your connection and try again.';
+    btn.disabled=false;btn.textContent='Send request →';
+  }
+}
 
 // Supabase errors don't always have a useful `.message` (e.g. a malformed
 // server response can leave it empty, which used to render literally as "{}").
@@ -3853,7 +3981,7 @@ async function onLogin(user){
   applyDashboardPrefs();
   loadOfficeHolidays();
   maybeStartGuidedTour(user,!!profile?.tour_completed);
-  await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents(),loadResumes(),loadRoundRobinState(),loadUnavailability(),loadSopUploadedLeadIds(),loadDocumentsUploadedLeadIds(),loadDocumentsCountByLead()]);
+  await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents(),loadResumes(),loadRoundRobinState(),loadUnavailability(),loadSopUploadedLeadIds(),loadDocumentsUploadedLeadIds(),loadDocumentsCountByLead(),loadPasswordResetRequests()]);
  initPresence(user, profile);
   // Super Admin ops-view: International vs Domestic (UK). Asked once
   // per session (sessionStorage — survives a page refresh, resets on a
@@ -3866,7 +3994,26 @@ async function onLogin(user){
       updateOpsViewSwitcher();
     }
   }
-  renderDash();renderLeads();renderFU();badges();checkNoActivity();applyRoleUI();setTimeout(()=>{applyRoleUI();renderDash();},2000);
+  // Removes "India" as a selectable option from every remaining CRM
+// office/country dropdown, for non-Owner Super Admins only — closes the
+// last cosmetic gap where India was already fully excluded from actual
+// data (leads, team) but could still appear as a pickable label in a
+// few filter/form dropdowns. Deliberately does NOT touch dropdowns that
+// list countries for an unrelated reason (e.g. a student's own
+// nationality, or Course Finder's nationality-matching list) — those
+// are about where a student is from, not which CRM office manages them.
+function pruneIndiaFromCrmDropdowns(){
+  if(!(isSuperAdmin&&!isOwner))return;
+  ['ls-country','exp-ct','dm-country-select','f-country','inv-country'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel)return;
+    Array.from(sel.options).forEach(opt=>{
+      if(opt.value==='India'||opt.textContent.trim()==='India')opt.remove();
+    });
+  });
+}
+renderDash();renderLeads();renderFU();badges();checkNoActivity();applyRoleUI();setTimeout(()=>{applyRoleUI();renderDash();},2000);
+pruneIndiaFromCrmDropdowns();
   loadDashReminders();
   loadExpiryAlerts();
   loadMyTasks();
@@ -3885,8 +4032,21 @@ async function onLogin(user){
     // sound-alert the entire team globally, which gets noisy fast.
     const relevantToMe=isSuperAdmin||!payload.new?.country||payload.new.country===myCountry;
     if(payload.eventType==='INSERT'&&payload.new&&relevantToMe){
-      playNotificationChime();
-      toast('📥 New lead: '+(payload.new.name||'Unnamed'));
+      // Duplicate check — same mobile number already exists on a
+      // different lead. Checked against the in-memory leads array from
+      // before this insert, so the newly-inserted row itself doesn't
+      // count as its own duplicate. Uses a distinct, lower "needs
+      // attention" chime instead of the cheerful new-lead one, so staff
+      // can tell the two apart by ear alone.
+      const newMobile=(payload.new.mobile||'').replace(/[\s\-()]/g,'');
+      const isDuplicate=newMobile&&leads.some(l=>l.id!==payload.new.id&&(l.mobile||'').replace(/[\s\-()]/g,'')===newMobile);
+      if(isDuplicate){
+        playDuplicateLeadChime();
+        toast('⚠️ Possible duplicate lead: '+(payload.new.name||'Unnamed')+' — same mobile number as an existing lead');
+      } else {
+        playNewLeadChime();
+        toast('📥 New lead: '+(payload.new.name||'Unnamed'));
+      }
       const newId=payload.new.id;
       loadLeads().then(()=>{
         renderDash();renderLeads();renderFU();badges();
@@ -3901,6 +4061,76 @@ async function onLogin(user){
     }
     loadLeads().then(()=>{renderDash();renderLeads();renderFU();badges();});
   }).subscribe();
+
+  // New password reset requests — alert India/Pavitra (isOwner)
+  // immediately when one comes in, same pattern as the leads
+  // subscription above.
+  if(canActionPasswordResets()){
+    sb.channel('password-reset-requests-changes').on('postgres_changes',{event:'INSERT',schema:'public',table:'password_reset_requests'},(payload)=>{
+      playNotificationChime();
+      toast('🔑 Password reset requested: '+(payload.new?.team_email||'unknown'));
+      loadPasswordResetRequests();
+    }).subscribe();
+  }
+}
+
+// Only India and Pavitra (isOwner) can see and action reset requests —
+// matches the exact same rule already enforced for resetTeamMemberPassword
+// and the admin-reset-password Edge Function. Deliberately NOT
+// Manager/Director/other-Super-Admins, even though a different draft of
+// this feature once allowed that broader group.
+function canActionPasswordResets(){
+  return isOwner;
+}
+async function loadPasswordResetRequests(){
+  const card=document.getElementById('password-reset-requests-card');
+  if(!card)return;
+  if(!canActionPasswordResets()){card.style.display='none';return;}
+  const{data,error}=await sb.from('password_reset_requests').select('*').eq('status','pending').order('requested_at',{ascending:false});
+  if(error){console.error('Failed to load password_reset_requests:',error);card.style.display='none';return;}
+  card.style.display=(data&&data.length)?'block':'none';
+  const list=document.getElementById('password-reset-requests-list');
+  if(!data||!data.length){list.innerHTML='';return;}
+  list.innerHTML=data.map(r=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)">
+      <div>
+        <div style="font-weight:600;font-size:13.5px">${esc(r.team_email)}</div>
+        <div style="font-size:11px;color:var(--ink3)">Requested ${new Date(r.requested_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+      <button class="btn btn-p" style="font-size:12px;padding:6px 14px" onclick="actionPasswordResetRequest('${r.id}','${esc(r.team_email)}')">Set new password</button>
+    </div>
+  `).join('');
+}
+// FIX vs the original draft of this feature: it sent {requestId, email,
+// newPassword} to admin-reset-password, but that Edge Function only ever
+// accepted {userId, newPassword} — so this would have failed outright.
+// This resolves the email to a real team member id from the already-loaded
+// teamList first, then calls the Edge Function with the shape it actually
+// expects. It also now marks the request as completed afterward, which
+// the original never did — without this, an actioned request would keep
+// reappearing in the pending list forever.
+async function actionPasswordResetRequest(requestId,email){
+  const member=(teamList||[]).find(t=>(t.email||'').toLowerCase()===email.toLowerCase());
+  if(!member){toast('Could not find a team member with that email — has their account been removed?');return;}
+  const newPassword=prompt(`Set a new password for ${email}\n\nMake a note of this — you'll need to relay it to them directly (WhatsApp/call), since there's no self-service email for this by design.\n\nNew password (min 8 characters):`);
+  if(!newPassword)return;
+  if(newPassword.length<8){toast('Password must be at least 8 characters.');return;}
+  try{
+    const{data:sessionData}=await sb.auth.getSession();
+    const token=sessionData?.session?.access_token;
+    const res=await fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/admin-reset-password',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({userId:member.id,newPassword}),
+    });
+    const data=await res.json();
+    if(!res.ok){toast('Could not reset password: '+(data.error||'Unknown error'));return;}
+    await sb.from('password_reset_requests').update({status:'completed',completed_at:new Date().toISOString(),completed_by:currentUser?.id}).eq('id',requestId);
+    toast(`Password reset for ${email} — make sure you relay it to them now.`);
+    loadPasswordResetRequests();
+  }catch(e){
+    toast('Error resetting password: '+String(e));
+  }
 }
 
 async function doLogout(){
@@ -4117,12 +4347,26 @@ sb.auth.onAuthStateChange((event,session)=>{
 });
 
 // ── DATA LOADING ─────────────────────────────────────────────────
+// ── Access model (final, applies everywhere leads are loaded from) ──
+// Counsellor: only leads personally, currently assigned to them.
+// Admin/Manager/Director: only their own country's leads.
+// Super Admin (e.g. Jisan) but not Owner: every country EXCEPT India —
+//   India is fully invisible to them, excluded at the query itself, not
+//   just a soft "view only" UI restriction.
+// Owner (India + Pavitra): unrestricted, every country, no exceptions.
+// Building it once here means every screen that reads from the shared
+// `leads` array (Dashboard, Reports, Finance, Activity Monitor, Tasks,
+// Team Dashboards) automatically inherits the same rule, rather than
+// needing separate access logic bolted onto each screen individually.
 async function loadLeads(){
   let q=sb.from('leads').select('*').order('lead_id',{ascending:false});
   const subTeamFieldMap={'Application Team':'application_team','Visa Team':'visa_team','SOP Team':'sop_team'};
 
-  if(isSuperAdmin){
-    // no restriction — sees everything
+  if(isOwner){
+    // no restriction — sees everything, every country, including India
+  } else if(isSuperAdmin){
+    // Super Admin minus Owner: India fully excluded, everywhere else open
+    q=q.neq('country','India');
   } else if(myRole==='Digital Marketing'){
     // Digital Marketing works with aggregate marketing data, never
     // individual lead records - deliberately scoped to nothing here
@@ -4154,16 +4398,13 @@ async function loadLeads(){
     // that would break the whole point of pooling globally.
     q=q.eq(subTeamFieldMap[myRole],myName);
   } else if(myRole==='Counsellor'){
-    // Counsellors: their own country, and only leads assigned to them or
-    // that they personally added.
-    if(myCountry) q=q.eq('country',myCountry);
-    else if(myOffice) q=q.eq('office',myOffice);
-    if(currentUser){
-      const nameFilter=myName?`counsellor.eq.${myName},`:'';
-      q=q.or(`${nameFilter}added_by.eq.${currentUser.id}`);
-    }
+    // Counsellor: ONLY leads personally, currently assigned to them —
+    // no country fallback, no "or I created it" exception. If a lead
+    // they created gets reassigned to someone else, it leaves their
+    // view; that is the intended behaviour under this rule.
+    q=q.eq('counsellor',myName||'__none__');
   } else {
-    // Manager/Admin/Director: everything within their own country/office.
+    // Admin/Manager/Director: exactly their own country.
     if(myCountry) q=q.eq('country',myCountry);
     else if(myOffice) q=q.eq('office',myOffice);
   }
@@ -4178,7 +4419,13 @@ async function loadCoaching(){
 let teamList=[];
 async function loadTeam(){
   const tl=document.querySelector('#sc-team .loading');
-  const{data}=await sb.from('team').select('*');
+  let q=sb.from('team').select('*');
+  // Same "India fully invisible" rule as leads — a non-Owner Super Admin
+  // never even loads India's team roster, not just a read-only view of it.
+  if(isSuperAdmin&&!isOwner){
+    q=q.neq('country','India');
+  }
+  const{data}=await q;
   teamList=data||[];
   if(tl) tl.style.display='none';
   renderTeam(data||[]);
@@ -4238,7 +4485,7 @@ function nav(id,btn){
     sbEl.classList.remove('mobile-open');
     document.getElementById('mobile-sidebar-overlay')?.classList.remove('open');
   }
-  const T={home:'Home',dashboard:'Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digitalmarketing:'Digital Marketing',reports:'Reports',coursefinder:'Course & University Finder',scholarships:'Scholarship Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail',studentportal:'Student Portal',teamchat:'Team Chat'};
+  const T={home:'Home',dashboard:'Dashboard',taskdashboard:'Task Dashboard',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digitalmarketing:'Digital Marketing',reports:'Reports',coursefinder:'Course & University Finder',scholarships:'Scholarship Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail',studentportal:'Student Portal',teamchat:'Team Chat'};
   document.getElementById('topbar-title').textContent=T[id]||id;
   // Persistent Home button — visible on every screen except the
   // dashboard itself, so there's always a way back to home that doesn't
@@ -4285,10 +4532,12 @@ function nav(id,btn){
   // through to the one screen their whole role exists for.
   if(id==='digitalmarketing'&&roleIsCounsellor&&myRole!=='Digital Marketing'){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
   if(id==='team'&&roleIsCounsellor){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
+  if(id==='team')loadPasswordResetRequests();
   // Productivity used to be Admin-tier only — now everyone needs in for
   // "My Daily Update", so the blanket block is gone. Call Recorder and
   // Activity Monitor stay restricted via initProductivity() below instead,
   // sub-tab by sub-tab, rather than blocking the whole screen.
+  if(id==='taskdashboard')renderTaskDashboard();
   if(id==='leads'){loadDocumentsCountByLead().then(renderLeads);renderLeads();setTimeout(applyRoleUI,500);}
   if(id==='toolleads'){renderToolLeads();}
   if(id==='events'){loadEvents();}
@@ -5542,28 +5791,157 @@ async function saveReminderModal(){
 }
 
 // ── Task modal — title + due date together, no sequential prompts ──
+let taskModalStandalone=false;
 function openTaskModal(){
   if(!curId){toast('Open a lead first.');return;}
+  taskModalStandalone=false;
+  document.getElementById('task-lead-picker-wrap').style.display='none';
+  document.getElementById('task-assignee-wrap').style.display='none';
+  document.getElementById('task-title').value='';
+  document.getElementById('task-due').value='';
+  document.getElementById('modal-task').classList.add('open');
+}
+// Standalone mode — opened from the Task Dashboard's "Add task" button,
+// not tied to a lead already being viewed. Lets you pick the lead and,
+// optionally, who it's assigned to right there.
+function openTaskModalStandalone(){
+  taskModalStandalone=true;
+  document.getElementById('task-lead-picker-wrap').style.display='block';
+  document.getElementById('task-assignee-wrap').style.display='block';
+  document.getElementById('task-lead-picker').innerHTML=leads.map(l=>`<option value="${l.id}">${esc(l.name)} — ${esc(l.lead_id||l.id.substring(0,8))}</option>`).join('')||'<option value="">No leads available</option>';
+  const assigneeSel=document.getElementById('task-assignee-picker');
+  const names=[...new Set((teamList||[]).map(t=>t.full_name).filter(Boolean))].sort();
+  assigneeSel.innerHTML='<option value="">Leave as lead\'s counsellor</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
   document.getElementById('task-title').value='';
   document.getElementById('task-due').value='';
   document.getElementById('modal-task').classList.add('open');
 }
 async function saveTaskModal(){
-  if(!curId){toast('No lead selected.');return;}
   const title=document.getElementById('task-title').value.trim();
   if(!title){document.getElementById('task-title').focus();toast('Please enter a task title.');return;}
   const dueDate=document.getElementById('task-due').value||null;
-  const l=leads.find(x=>x.id===curId);
   const btn=document.getElementById('save-task-btn');
+
+  let leadId,assignedTo;
+  if(taskModalStandalone){
+    leadId=document.getElementById('task-lead-picker').value;
+    if(!leadId){toast('Please pick a lead.');return;}
+    const overrideAssignee=document.getElementById('task-assignee-picker').value;
+    const l=leads.find(x=>x.id===leadId);
+    assignedTo=overrideAssignee||l?.counsellor||null;
+  } else {
+    if(!curId){toast('No lead selected.');return;}
+    leadId=curId;
+    const l=leads.find(x=>x.id===curId);
+    assignedTo=l?.counsellor||null;
+  }
+
   btn.disabled=true;btn.textContent='Saving…';
-  const{error}=await sb.from('tasks').insert({lead_id:curId,title,due_date:dueDate,assigned_to:l?.counsellor||null,status:'Open',source:'manual'});
+  const{error}=await sb.from('tasks').insert({lead_id:leadId,title,due_date:dueDate,assigned_to:assignedTo,status:'Open',source:'manual'});
   btn.disabled=false;btn.textContent='Save';
   if(error){toast('Error: '+error.message);return;}
   closeModal('modal-task');
-  loadTasks(curId);
-  loadTasksFS(curId);
+  if(curId){loadTasks(curId);loadTasksFS(curId);}
   loadMyTasks();
+  if(document.getElementById('sc-taskdashboard')?.classList.contains('active'))renderTaskDashboard();
   toast('Task added!');
+}
+
+// ── Task Dashboard — full screen version ─────────────────────────────
+// Reuses the exact same query + privacy scoping as loadMyTasks() (the
+// Home widget), just rendered as a complete, uncapped dashboard instead
+// of a 6-item preview, with summary cards and an assignee breakdown on
+// top — this is the "assignment chain" and "daily states" view.
+async function renderTaskDashboard(){
+  const{data,error}=await sb.from('tasks').select('*,leads(name,country,nationality,lead_id)').order('due_date',{ascending:true}).limit(500);
+  if(error){
+    document.getElementById('td-task-list').innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load tasks — has the tasks table been created yet?</div>';
+    return;
+  }
+  let scoped=data||[];
+  // Exact same access-model scoping used everywhere else in the app.
+  if(myRole==='Counsellor'&&!isSuperAdmin){
+    scoped=scoped.filter(t=>t.assigned_to===myName);
+  } else if(isOwner){
+    // no restriction
+  } else if(isSuperAdmin){
+    scoped=scoped.filter(t=>t.leads?.country!=='India');
+  } else if(!isSuperAdmin){
+    scoped=scoped.filter(t=>t.leads?.country===myCountry);
+  }
+
+  const today=new Date().toISOString().substring(0,10);
+  const weekAhead=new Date(Date.now()+7*86400000).toISOString().substring(0,10);
+  const open=scoped.filter(t=>t.status!=='Done');
+  const done=scoped.filter(t=>t.status==='Done');
+  const groups={overdue:[],today:[],week:[],later:[]};
+  open.forEach(t=>{
+    if(!t.due_date){groups.later.push(t);return;}
+    if(t.due_date<today)groups.overdue.push(t);
+    else if(t.due_date===today)groups.today.push(t);
+    else if(t.due_date<=weekAhead)groups.week.push(t);
+    else groups.later.push(t);
+  });
+
+  // Colourful summary cards (matches the daily-states grouping)
+  const cardDefs=[
+    ['🔴 Overdue',groups.overdue.length,'#EF4444','#FEE2E2'],
+    ['🟡 Due Today',groups.today.length,'#D97706','#FEF3C7'],
+    ['🔵 This Week',groups.week.length,'#2563EB','#DBEAFE'],
+    ['⚪ Later',groups.later.length,'#6B7280','#F3F4F6'],
+    ['✅ Completed',done.length,'#059669','#D1FAE5'],
+  ];
+  document.getElementById('td-summary-cards').innerHTML=cardDefs.map(([label,count,fg,bg])=>
+    `<div style="background:${bg};border-radius:12px;padding:16px;text-align:center">
+      <div style="font-size:28px;font-weight:700;color:${fg}">${count}</div>
+      <div style="font-size:12px;font-weight:600;color:${fg};margin-top:4px">${label}</div>
+    </div>`
+  ).join('');
+
+  document.getElementById('td-summary-numbers').innerHTML=[
+    ['Total open',open.length],
+    ['Total completed',done.length],
+    ['Auto-generated',scoped.filter(t=>t.source==='auto').length],
+    ['Manually added',scoped.filter(t=>t.source==='manual').length],
+  ].map(([label,val])=>`<div class="kpi"><div class="kpi-l">${label}</div><div class="kpi-v">${val}</div></div>`).join('');
+
+  // Assignment chain — who currently holds each open task, at a glance.
+  const byAssignee={};
+  open.forEach(t=>{
+    const who=t.assigned_to||'Unassigned';
+    byAssignee[who]=(byAssignee[who]||0)+1;
+  });
+  const assigneeEntries=Object.entries(byAssignee).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('td-by-assignee').innerHTML=assigneeEntries.length
+    ? assigneeEntries.map(([who,count])=>`<div class="prow"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:120px">${esc(who)}</span><div class="bar-t"><div class="bar-f" style="width:${Math.round(count/assigneeEntries[0][1]*100)}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${count}</span></div>`).join('')
+    : emptyState('🎉','Nothing outstanding.');
+
+  // Full task list, filterable by state.
+  const filterState=document.getElementById('td-filter-state')?.value||'';
+  let listItems=filterState==='done'?done:filterState?groups[filterState]:open;
+  const el=document.getElementById('td-task-list');
+  if(!listItems.length){el.innerHTML=emptyState('🎉','Nothing here.');return;}
+  el.innerHTML=listItems.map(t=>{
+    const leadName=t.leads?.name||'Unknown lead';
+    const dateLabel=t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'No date';
+    const isDone=t.status==='Done';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);${isDone?'opacity:.55':''}">
+      <input type="checkbox" ${isDone?'checked':''} onchange="toggleTaskDashboardItem('${t.id}',this.checked)" style="cursor:pointer">
+      <div style="flex:1;font-size:13px;cursor:pointer" onclick="openLeadDetail('${t.lead_id}')">
+        <b style="${isDone?'text-decoration:line-through':''}">${esc(leadName)}</b> — ${esc(t.title)}
+        ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
+      </div>
+      <span style="font-size:11px;color:var(--ink3);flex-shrink:0">${esc(t.assigned_to||'Unassigned')}</span>
+      <span style="font-size:11px;color:var(--ink3);flex-shrink:0;min-width:60px;text-align:right">${dateLabel}</span>
+    </div>`;
+  }).join('');
+}
+async function toggleTaskDashboardItem(taskId,checked){
+  const{error}=await sb.from('tasks').update({status:checked?'Done':'Open',completed_at:checked?new Date().toISOString():null}).eq('id',taskId);
+  if(error){toast('Error: '+error.message);return;}
+  renderTaskDashboard();
+  loadMyTasks();
+  toast(checked?'✅ Task done':'↩ Reopened');
 }
 
 async function updateStatus(){
@@ -5932,13 +6310,13 @@ function renderCoaching(){
   cg.innerHTML=scoped.map(c=>{
     const pct=c.total_sessions>0?Math.round(c.sessions_done/c.total_sessions*100):0;
     const col=pct>=100?'#065F46':pct>=50?'#1B998B':'#C05621';
-    return `<div class="cc"><div class="ccn">${esc(c.student_name)}</div><div class="ccp">${esc(c.program||'')} · ${esc(c.batch_name||'')}</div><div class="pt"><div class="pb" style="width:${pct}%;background:${col}"></div></div><div class="csr"><div class="cst"><div class="csl">Done</div><div class="csv">${c.sessions_done}/${c.total_sessions}</div></div><div class="cst"><div class="csl">Mock</div><div class="csv">${c.mock_score||'—'}</div></div><div class="cst"><div class="csl">Target</div><div class="csv">${c.target_score||'—'}</div></div><div class="cst"><div class="csl">%</div><div class="csv" style="color:${col}">${pct}%</div></div></div></div>`;
+    return `<div class="cc" onclick="openCoachingDashboard('${c.id}')" style="cursor:pointer"><div class="ccn">${esc(c.student_name)}</div><div class="ccp">${esc(c.program||'')} · ${esc(c.batch_name||'')}</div><div class="pt"><div class="pb" style="width:${pct}%;background:${col}"></div></div><div class="csr"><div class="cst"><div class="csl">Done</div><div class="csv">${c.sessions_done}/${c.total_sessions}</div></div><div class="cst"><div class="csl">Mock</div><div class="csv">${c.mock_score||'—'}</div></div><div class="cst"><div class="csl">Target</div><div class="csv">${c.target_score||'—'}</div></div><div class="cst"><div class="csl">%</div><div class="csv" style="color:${col}">${pct}%</div></div></div></div>`;
   }).join('');
   const tb=document.getElementById('ct');
   tb.innerHTML=scoped.map(c=>{
     const pct=c.total_sessions>0?Math.round(c.sessions_done/c.total_sessions*100):0;
     const done=pct>=100;const ss=done?{bg:'#A7F3D0',tx:'#065F46'}:{bg:'#DBEAFE',tx:'#1E40AF'};
-    return `<tr><td style="font-weight:600">${esc(c.student_name)}</td><td style="font-size:12px">${esc(c.program||'')}</td><td style="font-size:12px">${esc(c.batch_name||'')}</td><td>${c.sessions_done}/${c.total_sessions}</td><td>${c.mock_score||'—'}</td><td>${c.target_score||'—'}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="pt" style="width:80px;margin:0;border:1px solid var(--line)"><div class="pb" style="width:${pct}%;background:${done?'#065F46':'#1B998B'}"></div></div><span style="font-size:11px;color:var(--ink3)">${pct}%</span></div></td></tr>`;
+    return `<tr onclick="openCoachingDashboard('${c.id}')" style="cursor:pointer"><td style="font-weight:600">${esc(c.student_name)}</td><td style="font-size:12px">${esc(c.program||'')}</td><td style="font-size:12px">${esc(c.batch_name||'')}</td><td>${c.sessions_done}/${c.total_sessions}</td><td>${c.mock_score||'—'}</td><td>${c.target_score||'—'}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="pt" style="width:80px;margin:0;border:1px solid var(--line)"><div class="pb" style="width:${pct}%;background:${done?'#065F46':'#1B998B'}"></div></div><span style="font-size:11px;color:var(--ink3)">${pct}%</span></div></td></tr>`;
   }).join('');
 }
 
@@ -5969,6 +6347,67 @@ async function saveCoaching(){
   if(error){setSyncErr();toast('Error saving: '+error.message);return;}
   if(res)coaching.unshift(res[0]);
   setSynced();closeModal('modal-coaching');renderCoaching();toast('Coaching record added.');
+}
+
+// ── Coaching Dashboard — per-student view ────────────────────────────
+// Fixes the previous gap where a coaching record, once created, could
+// never actually be updated — every "save" created a brand new duplicate
+// row instead of progressing the existing one. This is the single place
+// a counsellor now goes to log a session or update scores over time.
+let currentCoachingId=null, currentCoachingLeadId=null;
+function openCoachingDashboard(coachingId){
+  const c=coaching.find(x=>x.id===coachingId);
+  if(!c){toast('Coaching record not found.');return;}
+  currentCoachingId=c.id;
+  currentCoachingLeadId=c.lead_id;
+  document.getElementById('cd-student-name').textContent=c.student_name||'Student';
+  document.getElementById('cd-student-sub').textContent=[c.program,c.batch_name].filter(Boolean).join(' · ')||'No program/batch set';
+  updateCoachingDashboardProgress(c);
+  document.getElementById('cd-total-input').value=c.total_sessions||1;
+  document.getElementById('cd-done-input').value=c.sessions_done||0;
+  document.getElementById('cd-mock-input').value=c.mock_score||'';
+  document.getElementById('cd-target-input').value=c.target_score||'';
+  document.getElementById('cd-batch-input').value=c.batch_name||'';
+  document.getElementById('cd-program-input').value=c.program||'';
+  document.getElementById('modal-coaching-dashboard').classList.add('open');
+}
+function updateCoachingDashboardProgress(c){
+  const pct=c.total_sessions>0?Math.round((c.sessions_done/c.total_sessions)*100):0;
+  document.getElementById('cd-progress-pct').textContent=pct+'%';
+  document.getElementById('cd-progress-bar').style.width=Math.min(pct,100)+'%';
+  document.getElementById('cd-sessions-done').textContent=c.sessions_done||0;
+  document.getElementById('cd-sessions-total').textContent=c.total_sessions||0;
+}
+async function incrementCoachingSession(){
+  if(!currentCoachingId)return;
+  const c=coaching.find(x=>x.id===currentCoachingId);
+  if(!c)return;
+  const newDone=(c.sessions_done||0)+1;
+  const{error}=await sb.from('coaching').update({sessions_done:newDone}).eq('id',currentCoachingId);
+  if(error){toast('Error: '+error.message);return;}
+  c.sessions_done=newDone;
+  document.getElementById('cd-done-input').value=newDone;
+  updateCoachingDashboardProgress(c);
+  renderCoaching();
+  toast('Session logged — '+newDone+'/'+(c.total_sessions||0));
+}
+async function saveCoachingDashboardEdits(){
+  if(!currentCoachingId)return;
+  const updates={
+    total_sessions:parseInt(document.getElementById('cd-total-input').value)||1,
+    sessions_done:parseInt(document.getElementById('cd-done-input').value)||0,
+    mock_score:document.getElementById('cd-mock-input').value,
+    target_score:document.getElementById('cd-target-input').value,
+    batch_name:document.getElementById('cd-batch-input').value,
+    program:document.getElementById('cd-program-input').value,
+  };
+  const{error}=await sb.from('coaching').update(updates).eq('id',currentCoachingId);
+  if(error){toast('Error saving: '+error.message);return;}
+  const c=coaching.find(x=>x.id===currentCoachingId);
+  if(c)Object.assign(c,updates);
+  closeModal('modal-coaching-dashboard');
+  renderCoaching();
+  toast('Coaching record updated.');
 }
 
 // ── FOLLOW-UPS ────────────────────────────────────────────────────
@@ -6773,6 +7212,26 @@ async function bulkReassignCounsellor(){
   toast(`Reassigned ${workIds.length} lead(s) to ${counsellor}.`);
   clearBulkSelection();renderLeads();renderDash();
 }
+async function bulkChangeSource(){
+  const ids=getSelectedLeadIds();
+  if(!ids.length)return;
+  const source=document.getElementById('bulk-source-select').value;
+  if(!source){toast('Pick a source first.');return;}
+  let workIds=ids;
+  if(isIndiaLocked()){
+    workIds=ids.filter(id=>{const l=leads.find(x=>x.id===id);return l&&l.country!=='India';});
+    const skipped=ids.length-workIds.length;
+    if(!workIds.length){toast("India's leads are view-only for your account — nothing to update.");return;}
+    if(skipped>0)toast(`${skipped} India lead(s) skipped — view-only for your account.`);
+  }
+  if(!confirm(`Set source to "${source}" for ${workIds.length} lead(s)?`))return;
+  const{error}=await sb.from('leads').update({source}).in('id',workIds);
+  if(error){toast('Error: '+error.message);return;}
+  workIds.forEach(id=>{const l=leads.find(x=>x.id===id);if(l)l.source=source;});
+  workIds.forEach(id=>logActivity(id,'field_edit',`Source (bulk): → ${source}`));
+  toast(`Source set to "${source}" for ${workIds.length} lead(s).`);
+  clearBulkSelection();renderLeads();renderDash();
+}
 function exportSelectedLeads(){
   const ids=new Set(getSelectedLeadIds());
   const selected=leads.filter(l=>ids.has(l.id));
@@ -6985,7 +7444,9 @@ function initReports(){
   if(!dateInput.value) dateInput.value=rptState.date;
   if(isSuperAdmin){
     countrySel.disabled=false;
-    countrySel.innerHTML='<option value="All">🌐 All Countries</option><option value="International">🌍 International (India, Pakistan, Bangladesh)</option><option>India</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option>';
+    countrySel.innerHTML=isOwner
+      ? '<option value="All">🌐 All Countries</option><option value="International">🌍 International (India, Pakistan, Bangladesh)</option><option>India</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option>'
+      : '<option value="All">🌐 All Countries</option><option value="International">🌍 International (Pakistan, Bangladesh)</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option>';
     // Default to whatever ops-view is currently active, so Reports agrees
     // with the Leads list and Dashboard by default — still fully
     // changeable by hand right after, including back to "All Countries"
@@ -8694,6 +9155,51 @@ function playChimeTone(){
     });
   }catch(e){/* Web Audio not available - fail silently, visual popup still shows */}
 }
+// A cheerful ascending three-note chime for a genuinely NEW lead arriving
+// — deliberately distinct from the general two-note chime above, so
+// staff can tell "new lead" apart from everything else by ear alone.
+function playNewLeadChime(){
+  if(!notificationsEnabled)return;
+  try{
+    if(!sharedAudioCtx){ sharedAudioCtx=new(window.AudioContext||window.webkitAudioContext)(); }
+    if(sharedAudioCtx.state==='suspended'){ sharedAudioCtx.resume(); }
+    const ctx=sharedAudioCtx;
+    const now=ctx.currentTime;
+    [[523,0],[659,.08],[784,.16]].forEach(([freq,delay])=>{
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.type='triangle';osc.frequency.value=freq;
+      gain.gain.setValueAtTime(0,now+delay);
+      gain.gain.linearRampToValueAtTime(.14,now+delay+.01);
+      gain.gain.exponentialRampToValueAtTime(.001,now+delay+.22);
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.start(now+delay);osc.stop(now+delay+.24);
+    });
+  }catch(e){/* Web Audio not available - fail silently, visual popup still shows */}
+}
+// A lower, two-beep "warning" pattern for duplicate leads — deliberately
+// distinct from both the general chime and the (higher, cheerful)
+// new-lead chime, since this one should read as "needs attention", not
+// "good news".
+function playDuplicateLeadChime(){
+  if(!notificationsEnabled)return;
+  try{
+    if(!sharedAudioCtx){ sharedAudioCtx=new(window.AudioContext||window.webkitAudioContext)(); }
+    if(sharedAudioCtx.state==='suspended'){ sharedAudioCtx.resume(); }
+    const ctx=sharedAudioCtx;
+    const now=ctx.currentTime;
+    [[440,0],[440,.15]].forEach(([freq,delay])=>{
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.type='square';osc.frequency.value=freq;
+      gain.gain.setValueAtTime(0,now+delay);
+      gain.gain.linearRampToValueAtTime(.09,now+delay+.01);
+      gain.gain.exponentialRampToValueAtTime(.001,now+delay+.12);
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.start(now+delay);osc.stop(now+delay+.14);
+    });
+  }catch(e){/* Web Audio not available - fail silently, visual popup still shows */}
+}
 function showNextUrgentPopup(){
   const overlay=document.getElementById('urgent-popup-overlay');
   if(!overlay||overlay.style.display==='flex')return; // one at a time
@@ -9643,7 +10149,8 @@ function populateActivityMonitorCountryFilter(){
   if(!sel)return;
   const seesAllCountries=isSuperAdmin||myRole==='Director';
   if(seesAllCountries){
-    sel.innerHTML=['All','India','UK','Pakistan','Bangladesh'].map(c=>`<option value="${c}">${c}</option>`).join('');
+    const countries=(isOwner||myRole==='Director')?['All','India','UK','Pakistan','Bangladesh']:['All','UK','Pakistan','Bangladesh'];
+    sel.innerHTML=countries.map(c=>`<option value="${c}">${c}</option>`).join('');
     sel.disabled=false;
   } else {
     sel.innerHTML=`<option value="${esc(myOffice||'')}">${esc(myOffice||'—')}</option>`;

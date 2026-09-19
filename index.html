@@ -4526,7 +4526,7 @@ function nav(id,btn){
   }
   const roleIsCounsellor=isRestrictedStaffRole();
   if(id==='finance'&&!canSeeFinance){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Finance is restricted to Owner and Super Admin only.');return;}
-  if(id==='studentportal'&&!isSuperAdmin){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Student Portal is restricted to Owner, Platform Administrator, and Super Admin.');return;}
+  if(id==='studentportal'&&isRestrictedStaffRole()&&myRole!=='Counsellor'){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
   // Digital Marketing role members are otherwise treated as restricted
   // staff (blocked from Finance/Team/etc, same as Counsellors) but need
   // through to the one screen their whole role exists for.
@@ -5804,14 +5804,34 @@ function openTaskModal(){
 // Standalone mode — opened from the Task Dashboard's "Add task" button,
 // not tied to a lead already being viewed. Lets you pick the lead and,
 // optionally, who it's assigned to right there.
+// Who a given role is actually allowed to assign a task to:
+// - Owner/Super Admin: everyone (teamList is already India-filtered for
+//   non-Owner Super Admins, so this naturally excludes India for them).
+// - Admin/Manager/Director (Country management): only Counsellors within
+//   their own country — matches "each country admin/manager can assign
+//   tasks to counsellors [in their own country]."
+// - Counsellor: nobody but themselves — they can log their own tasks,
+//   never hand work to someone else.
+function getAssignableTaskRecipients(){
+  if(isOwner||isSuperAdmin) return [...new Set((teamList||[]).map(t=>t.full_name).filter(Boolean))].sort();
+  if(myRole==='Counsellor') return myName?[myName]:[];
+  return [...new Set((teamList||[]).filter(t=>t.role==='Counsellor'&&t.country===myCountry).map(t=>t.full_name).filter(Boolean))].sort();
+}
 function openTaskModalStandalone(){
   taskModalStandalone=true;
   document.getElementById('task-lead-picker-wrap').style.display='block';
-  document.getElementById('task-assignee-wrap').style.display='block';
   document.getElementById('task-lead-picker').innerHTML=leads.map(l=>`<option value="${l.id}">${esc(l.name)} — ${esc(l.lead_id||l.id.substring(0,8))}</option>`).join('')||'<option value="">No leads available</option>';
   const assigneeSel=document.getElementById('task-assignee-picker');
-  const names=[...new Set((teamList||[]).map(t=>t.full_name).filter(Boolean))].sort();
-  assigneeSel.innerHTML='<option value="">Leave as lead\'s counsellor</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  const assigneeWrap=document.getElementById('task-assignee-wrap');
+  if(myRole==='Counsellor'&&!isSuperAdmin){
+    // Counsellors can only ever create a task for themselves — no picker
+    // needed, no ability to hand it to someone else.
+    assigneeWrap.style.display='none';
+  } else {
+    assigneeWrap.style.display='block';
+    const names=getAssignableTaskRecipients();
+    assigneeSel.innerHTML='<option value="">Leave as lead\'s counsellor</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  }
   document.getElementById('task-title').value='';
   document.getElementById('task-due').value='';
   document.getElementById('modal-task').classList.add('open');
@@ -5883,20 +5903,27 @@ async function renderTaskDashboard(){
     else groups.later.push(t);
   });
 
-  // Colourful summary cards (matches the daily-states grouping)
+  // Colourful gradient summary cards (matches the daily-states grouping) —
+  // vivid, distinct colours per state, each with its own share-of-total
+  // progress bar, closer to the reference dashboard style requested.
+  const totalForBars=Math.max(open.length+done.length,1);
   const cardDefs=[
-    ['🔴 Overdue',groups.overdue.length,'#EF4444','#FEE2E2'],
-    ['🟡 Due Today',groups.today.length,'#D97706','#FEF3C7'],
-    ['🔵 This Week',groups.week.length,'#2563EB','#DBEAFE'],
-    ['⚪ Later',groups.later.length,'#6B7280','#F3F4F6'],
-    ['✅ Completed',done.length,'#059669','#D1FAE5'],
+    ['🔴','Overdue',groups.overdue.length,'linear-gradient(135deg,#F87171,#DC2626)'],
+    ['🟡','Due Today',groups.today.length,'linear-gradient(135deg,#FBBF24,#D97706)'],
+    ['🔵','This Week',groups.week.length,'linear-gradient(135deg,#60A5FA,#2563EB)'],
+    ['⚪','Later',groups.later.length,'linear-gradient(135deg,#9CA3AF,#4B5563)'],
+    ['✅','Completed',done.length,'linear-gradient(135deg,#34D399,#059669)'],
   ];
-  document.getElementById('td-summary-cards').innerHTML=cardDefs.map(([label,count,fg,bg])=>
-    `<div style="background:${bg};border-radius:12px;padding:16px;text-align:center">
-      <div style="font-size:28px;font-weight:700;color:${fg}">${count}</div>
-      <div style="font-size:12px;font-weight:600;color:${fg};margin-top:4px">${label}</div>
-    </div>`
-  ).join('');
+  document.getElementById('td-summary-cards').innerHTML=cardDefs.map(([icon,label,count,gradient])=>{
+    const pct=Math.round(count/totalForBars*100);
+    return `<div style="background:${gradient};border-radius:14px;padding:18px;color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.12);position:relative;overflow:hidden">
+      <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.12)"></div>
+      <div style="font-size:22px;position:relative">${icon}</div>
+      <div style="font-size:30px;font-weight:800;margin-top:6px;position:relative">${count}</div>
+      <div style="font-size:12.5px;font-weight:600;opacity:.95;margin-top:2px;position:relative">${label}</div>
+      <div style="height:4px;background:rgba(255,255,255,.3);border-radius:99px;margin-top:10px;position:relative"><div style="height:100%;width:${pct}%;background:#fff;border-radius:99px"></div></div>
+    </div>`;
+  }).join('');
 
   document.getElementById('td-summary-numbers').innerHTML=[
     ['Total open',open.length],
@@ -5921,20 +5948,64 @@ async function renderTaskDashboard(){
   let listItems=filterState==='done'?done:filterState?groups[filterState]:open;
   const el=document.getElementById('td-task-list');
   if(!listItems.length){el.innerHTML=emptyState('🎉','Nothing here.');return;}
-  el.innerHTML=listItems.map(t=>{
+  // Management-tier can reassign a task inline, right from this list —
+  // Counsellors/sub-team roles just see who it's assigned to as text,
+  // matching the same "can view own, can't reassign" pattern used for
+  // leads elsewhere in the app.
+  const canReassign=!isRestrictedStaffRole();
+  const assigneeNames=getAssignableTaskRecipients();
+  el.innerHTML=listItems.map((t,i)=>{
     const leadName=t.leads?.name||'Unknown lead';
     const dateLabel=t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'No date';
     const isDone=t.status==='Done';
+    const[avBg,avTx]=AVC[i%AVC.length];
+    const avatar=`<div style="width:26px;height:26px;border-radius:50%;background:${avBg};color:${avTx};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0" title="${esc(t.assigned_to||'Unassigned')}">${t.assigned_to?ini(t.assigned_to):'—'}</div>`;
+    const assigneeCell=canReassign
+      ? `<select onchange="reassignTask('${t.id}',this.value)" style="font-size:11px;padding:3px 6px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);max-width:130px">
+          <option value=""${!t.assigned_to?' selected':''}>Unassigned</option>
+          ${assigneeNames.map(n=>`<option value="${esc(n)}"${n===t.assigned_to?' selected':''}>${esc(n)}</option>`).join('')}
+        </select>`
+      : `<span style="font-size:11px;color:var(--ink3);flex-shrink:0">${esc(t.assigned_to||'Unassigned')}</span>`;
     return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);${isDone?'opacity:.55':''}">
       <input type="checkbox" ${isDone?'checked':''} onchange="toggleTaskDashboardItem('${t.id}',this.checked)" style="cursor:pointer">
+      ${avatar}
       <div style="flex:1;font-size:13px;cursor:pointer" onclick="openLeadDetail('${t.lead_id}')">
         <b style="${isDone?'text-decoration:line-through':''}">${esc(leadName)}</b> — ${esc(t.title)}
         ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
       </div>
-      <span style="font-size:11px;color:var(--ink3);flex-shrink:0">${esc(t.assigned_to||'Unassigned')}</span>
+      ${assigneeCell}
       <span style="font-size:11px;color:var(--ink3);flex-shrink:0;min-width:60px;text-align:right">${dateLabel}</span>
+      ${canReassign?`<button onclick="editTaskDashboardItem('${t.id}')" title="Edit" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 3px"><i class="ti ti-pencil"></i></button><button onclick="deleteTaskDashboardItem('${t.id}')" title="Delete" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:15px;padding:0 3px">×</button>`:''}
     </div>`;
   }).join('');
+}
+async function editTaskDashboardItem(taskId){
+  const t=(await sb.from('tasks').select('*').eq('id',taskId).maybeSingle()).data;
+  if(!t){toast('Task not found.');return;}
+  const newTitle=prompt('Edit task title:',t.title);
+  if(newTitle===null)return;
+  const newDue=prompt('Due date (YYYY-MM-DD, or blank for none):',t.due_date||'');
+  if(newDue===null)return;
+  const{error}=await sb.from('tasks').update({title:newTitle.trim()||t.title,due_date:newDue.trim()||null}).eq('id',taskId);
+  if(error){toast('Error: '+error.message);return;}
+  toast('Task updated.');
+  renderTaskDashboard();
+  loadMyTasks();
+}
+async function deleteTaskDashboardItem(taskId){
+  if(!confirm('Delete this task? This cannot be undone.'))return;
+  const{error}=await sb.from('tasks').delete().eq('id',taskId);
+  if(error){toast('Error deleting: '+error.message);return;}
+  toast('Task deleted.');
+  renderTaskDashboard();
+  loadMyTasks();
+}
+async function reassignTask(taskId,newAssignee){
+  const{error}=await sb.from('tasks').update({assigned_to:newAssignee||null}).eq('id',taskId);
+  if(error){toast('Error reassigning: '+error.message);return;}
+  toast(newAssignee?`Task reassigned to ${newAssignee}`:'Task unassigned');
+  renderTaskDashboard();
+  loadMyTasks();
 }
 async function toggleTaskDashboardItem(taskId,checked){
   const{error}=await sb.from('tasks').update({status:checked?'Done':'Open',completed_at:checked?new Date().toISOString():null}).eq('id',taskId);
@@ -7753,7 +7824,7 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
     // only (isSuperAdmin already covers all three, since it's the same
     // email allowlist as OWNERS plus Jisan).
     const spNav=document.getElementById('ni-studentportal');
-    if(spNav) spNav.style.display=isSuperAdmin?'flex':'none';
+    if(spNav) spNav.style.display=(isSuperAdmin||myRole==='Counsellor')?'flex':'none';
 
     // Finance — Super Admin/Owner/Admin only, per boss's instruction.
     // isSuperAdmin already covers Owner+Platform Administrator+Jisan;

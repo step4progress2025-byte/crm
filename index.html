@@ -219,6 +219,9 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .atime{font-size:11px;color:var(--ink3);margin-top:2px}
 
 /* Table */
+.mtp-tab{background:none;border:none;padding:10px 18px;font-size:13.5px;font-weight:600;color:var(--ink3);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;font-family:var(--font-b)}
+.mtp-tab.active{color:var(--pine3);border-bottom-color:var(--pine3)}
+.mtp-tab:hover{color:var(--pine)}
 .tw{overflow-x:auto;border-radius:var(--rl);border:1px solid var(--line);background:var(--paper);box-shadow:var(--sh);scrollbar-width:auto;scrollbar-color:var(--pine3) var(--cream)}
 .tw::-webkit-scrollbar{height:14px}
 .tw::-webkit-scrollbar-track{background:var(--cream);border-radius:0 0 var(--rl) var(--rl)}
@@ -762,8 +765,21 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div style="font-size:13px;color:var(--ink3)">Tasks respect the same access rules as leads — a Counsellor sees only their own, Admin/Manager only their country, Super Admin everything except India, Owner everything.</div>
           <button class="btn btn-p" onclick="openTaskModalStandalone()"><i class="ti ti-plus"></i>Add task</button>
         </div>
+        <!-- Personal view — Counsellors only. Deliberately simple: no
+             KPI cards, no by-assignee breakdown (meaningless for a
+             single person only ever seeing their own tasks), no
+             reassign controls. Just four clean tabs and a checklist. -->
+        <div id="my-tasks-personal-view" style="display:none">
+          <div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:2px solid var(--line);padding-bottom:0">
+            <button class="mtp-tab active" data-tab="today" onclick="switchMyTasksTab('today')">Today</button>
+            <button class="mtp-tab" data-tab="tomorrow" onclick="switchMyTasksTab('tomorrow')">Tomorrow</button>
+            <button class="mtp-tab" data-tab="pending" onclick="switchMyTasksTab('pending')">Pending</button>
+            <button class="mtp-tab" data-tab="completed" onclick="switchMyTasksTab('completed')">Completed</button>
+          </div>
+          <div id="my-tasks-personal-list"></div>
+        </div>
         <div id="td-summary-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px"></div>
-        <div class="two-col">
+        <div class="two-col" id="td-two-col">
           <div class="card">
             <div class="card-h"><span class="card-t">📋 Task Summary</span></div>
             <div id="td-summary-numbers" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
@@ -773,7 +789,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <div id="td-by-assignee"></div>
           </div>
         </div>
-        <div class="card" style="margin-top:16px">
+        <div class="card" style="margin-top:16px" id="td-all-tasks-card">
           <div class="card-h">
             <span class="card-t">All tasks</span>
             <div style="display:flex;gap:8px;align-items:center">
@@ -1815,18 +1831,30 @@ What would you like help with today?</div>
 
 <!-- Coaching Modal -->
 <div class="mover" id="modal-coaching">
-  <div class="modal" style="width:460px">
+  <div class="modal" style="width:480px">
     <div class="mhead"><span class="mtitle">Add coaching record</span><button class="mclose" onclick="closeModal('modal-coaching')">×</button></div>
     <div class="fg">
-      <div class="ff full"><label>Student (enrolled leads)</label><select id="co-sid" style="width:100%;font-size:13px;padding:9px 13px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)"></select></div>
-      <div class="ff"><label>Program</label><input id="co-prog" placeholder="IELTS Coaching"></div>
+      <div class="ff full"><label>Student (pick from existing leads)</label><select id="co-sid" style="width:100%;font-size:13px;padding:9px 13px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b)"></select></div>
+      <div class="ff"><label>Course</label>
+        <select id="co-prog">
+          <option>IELTS</option><option>PTE</option><option>TOEFL</option><option>Duolingo English Test</option>
+          <option>Spoken English / Language</option><option>Other</option>
+        </select>
+      </div>
       <div class="ff"><label>Batch name</label><input id="co-batch" placeholder="Batch A Jan 2026"></div>
+      <div class="ff"><label>Session timing</label><input id="co-timing" placeholder="Mon/Wed/Fri 6-8 PM"></div>
+      <div class="ff"><label>Mode</label>
+        <select id="co-mode"><option>Online</option><option>Offline</option></select>
+      </div>
       <div class="ff"><label>Start date</label><input type="date" id="co-start"></div>
       <div class="ff"><label>End date</label><input type="date" id="co-end"></div>
       <div class="ff"><label>Total sessions</label><input type="number" id="co-total" placeholder="24" min="1"></div>
       <div class="ff"><label>Sessions done</label><input type="number" id="co-done" placeholder="0" min="0"></div>
-      <div class="ff"><label>Mock score</label><input id="co-mock" placeholder="6.5"></div>
+      <div class="ff"><label>Mock Test 1</label><input id="co-mock1" placeholder="6.5"></div>
+      <div class="ff"><label>Mock Test 2</label><input id="co-mock2" placeholder="7.0"></div>
+      <div class="ff"><label>Mock Test 3</label><input id="co-mock3" placeholder="7.0"></div>
       <div class="ff"><label>Target score</label><input id="co-target" placeholder="7.0"></div>
+      <div class="ff"><label>Tentative exam date</label><input type="date" id="co-examdate"></div>
     </div>
     <div class="mfoot">
       <button class="btn" onclick="closeModal('modal-coaching')">Cancel</button>
@@ -1837,7 +1865,7 @@ What would you like help with today?</div>
 
 <!-- Coaching Dashboard — per-student view, click any coaching card/row to open -->
 <div class="mover" id="modal-coaching-dashboard">
-  <div class="modal" style="width:480px">
+  <div class="modal" style="width:500px">
     <div class="mhead"><span class="mtitle" id="cd-student-name">Student</span><button class="mclose" onclick="closeModal('modal-coaching-dashboard')">×</button></div>
     <div style="font-size:12px;color:var(--ink3);margin-bottom:16px" id="cd-student-sub"></div>
     <div style="background:var(--cream);border-radius:var(--r);padding:16px;margin-bottom:16px;text-align:center">
@@ -1852,10 +1880,20 @@ What would you like help with today?</div>
     <div class="fg">
       <div class="ff"><label>Total sessions</label><input type="number" id="cd-total-input" min="1"></div>
       <div class="ff"><label>Sessions done</label><input type="number" id="cd-done-input" min="0"></div>
-      <div class="ff"><label>Mock score</label><input id="cd-mock-input"></div>
-      <div class="ff"><label>Target score</label><input id="cd-target-input"></div>
       <div class="ff"><label>Batch</label><input id="cd-batch-input"></div>
-      <div class="ff"><label>Program</label><input id="cd-program-input"></div>
+      <div class="ff"><label>Course</label>
+        <select id="cd-program-input">
+          <option>IELTS</option><option>PTE</option><option>TOEFL</option><option>Duolingo English Test</option>
+          <option>Spoken English / Language</option><option>Other</option>
+        </select>
+      </div>
+      <div class="ff"><label>Session timing</label><input id="cd-timing-input"></div>
+      <div class="ff"><label>Mode</label><select id="cd-mode-input"><option>Online</option><option>Offline</option></select></div>
+      <div class="ff"><label>Mock Test 1</label><input id="cd-mock1-input"></div>
+      <div class="ff"><label>Mock Test 2</label><input id="cd-mock2-input"></div>
+      <div class="ff"><label>Mock Test 3</label><input id="cd-mock3-input"></div>
+      <div class="ff"><label>Target score</label><input id="cd-target-input"></div>
+      <div class="ff"><label>Tentative exam date</label><input type="date" id="cd-examdate-input"></div>
     </div>
     <div class="mfoot">
       <button class="btn" onclick="openLeadDetail(currentCoachingLeadId);closeModal('modal-coaching-dashboard')">View full lead →</button>
@@ -3892,25 +3930,67 @@ function updateOpsViewSwitcher(){
     ? '🇬🇧 Domestic <i class="ti ti-switch-horizontal" style="font-size:12px"></i>'
     : '🌍 International <i class="ti ti-switch-horizontal" style="font-size:12px"></i>';
 }
-// Leads scoped to the Super Admin's current ops-view choice. Domestic =
-// UK country leads only. International = everything else (India,
-// Pakistan, Bangladesh, Other). Non-Super-Admins, or a Super Admin who
-// hasn't chosen yet, get the unscoped full list — unchanged behaviour.
+// ══ ACCESS CONTROL — single source of truth for lead visibility ═════
+// Every screen that reads `leads` (Leads list, Dashboard, badges, Tool
+// Leads, Follow-ups, Finance, Reports) already calls this function, so
+// the rules below apply everywhere automatically, consistently, in one
+// place — rather than being re-implemented (and inevitably drifting)
+// at each individual screen. Mirrors the same model already used in
+// renderTaskDashboard() for tasks.
 //
-// This is based purely on `country` (which office/team the student is
-// actually asking for assistance from) — NOT nationality. Nationality is
-// just where someone is originally from and says nothing about who's
-// helping them: an Indian national living in the UK on a work/student
-// visa, applying for a Masters anywhere in the world through the UK
-// office, is a UK/Domestic lead for operational purposes, regardless of
-// their passport. Allocation always follows the assistance-needed-from
-// office, never nationality.
+// The model, by role:
+//   Counsellor              -> only leads personally assigned to them
+//   Admin / Manager / Director (country-tier, not Super Admin) -> only
+//                               their own country's leads
+//   Super Admin (Jisan + any future Super Admin, NOT Owner-tier)
+//                            -> every country EXCEPT India, which is
+//                               fully hidden (not just uneditable)
+//   Owner (India + Platform Administrator)
+//                            -> everything, completely unrestricted
+//   Sub-teams (Application/Visa/SOP Team, Digital Marketing, Agent)
+//                            -> left unrestricted at this layer — not
+//                               named in the access rules, so nothing
+//                               here narrows their existing behaviour.
+//
+// The Domestic/International toggle (superAdminOpsView) is now a
+// SECOND, separate refinement — it only ever applies to the Super
+// Admin tier's own already-allowed scope (everywhere except India),
+// letting Jisan narrow further to just Domestic or just International.
+// It never applies to Owner (already unrestricted) or to Country
+// Admin/Manager/Counsellor tiers (already fixed to one country or one
+// person's leads, a toggle wouldn't make sense there).
 function opsViewScopedLeads(sourceLeads){
-  if(!isSuperAdmin||!superAdminOpsView)return sourceLeads;
+  let scoped;
+  if(isOwner){
+    scoped=sourceLeads;
+  } else if(isSuperAdmin){
+    scoped=sourceLeads.filter(l=>l.country!=='India');
+  } else if(myRole==='Admin'||myRole==='Manager'||myRole==='Director'){
+    scoped=sourceLeads.filter(l=>l.country===myCountry);
+  } else if(myRole==='Counsellor'){
+    scoped=sourceLeads.filter(l=>l.counsellor===myName);
+  } else {
+    scoped=sourceLeads;
+  }
+
+  if(!isSuperAdmin||isOwner||!superAdminOpsView)return scoped;
   const isDomesticLead=l=>l.nationality==='UK'||l.country==='UK';
   return superAdminOpsView==='Domestic'
-    ? sourceLeads.filter(isDomesticLead)
-    : sourceLeads.filter(l=>!isDomesticLead(l));
+    ? scoped.filter(isDomesticLead)
+    : scoped.filter(l=>!isDomesticLead(l));
+}
+// Single-lead version of the same check above — for entry points that
+// open ONE specific lead by id (openDetail, openLeadDetail). List views
+// are safe because they only ever render what opsViewScopedLeads
+// already filtered — but a direct id (from a URL, a stale notification,
+// a guessed id) bypasses that filtering entirely unless each entry
+// point checks the single lead itself too. Without this, a non-Owner
+// Super Admin who somehow obtained an India lead's id could still open
+// its full detail view even though it's filtered out of every list —
+// "fully hidden" has to mean this too, not just the list screens.
+function canViewLead(lead){
+  if(!lead)return false;
+  return opsViewScopedLeads([lead]).length>0;
 }
 async function onLoginGuarded(user){
   if(!isAllowedEmail(user.email)){
@@ -4062,25 +4142,37 @@ pruneIndiaFromCrmDropdowns();
     loadLeads().then(()=>{renderDash();renderLeads();renderFU();badges();});
   }).subscribe();
 
-  // New password reset requests — alert India/Pavitra (isOwner)
-  // immediately when one comes in, same pattern as the leads
-  // subscription above.
+  // New password reset requests — alert Admin/Manager (own country
+  // only), Super Admin (all except India), and Owner (everything),
+  // matching the same access model used for leads and tasks.
   if(canActionPasswordResets()){
     sb.channel('password-reset-requests-changes').on('postgres_changes',{event:'INSERT',schema:'public',table:'password_reset_requests'},(payload)=>{
+      if(!payload.new)return;
+      const relevantToMe=scopedPasswordResetRequests([payload.new]).length>0;
+      if(!relevantToMe)return;
       playNotificationChime();
-      toast('🔑 Password reset requested: '+(payload.new?.team_email||'unknown'));
+      toast('🔑 Password reset requested: '+(payload.new.team_email||'unknown'));
       loadPasswordResetRequests();
     }).subscribe();
   }
 }
 
-// Only India and Pavitra (isOwner) can see and action reset requests —
-// matches the exact same rule already enforced for resetTeamMemberPassword
-// and the admin-reset-password Edge Function. Deliberately NOT
-// Manager/Director/other-Super-Admins, even though a different draft of
-// this feature once allowed that broader group.
+// Updated per the boss's latest instruction: Admin and Manager now get
+// alerted too (not just Owner), but scoped to their OWN country only —
+// exactly the same access model already used for leads and tasks.
+// Super Admin sees every country's requests except India's; Owner sees
+// everything, unrestricted.
 function canActionPasswordResets(){
-  return isOwner;
+  return isOwner||isSuperAdmin||myRole==='Admin'||myRole==='Manager';
+}
+// Which requests a given viewer is actually allowed to see — same
+// country-scoping rule as opsViewScopedLeads, applied to requests
+// instead of leads.
+function scopedPasswordResetRequests(requests){
+  if(isOwner)return requests;
+  if(isSuperAdmin)return requests.filter(r=>r.country!=='India');
+  if(myRole==='Admin'||myRole==='Manager')return requests.filter(r=>r.country===myCountry);
+  return [];
 }
 async function loadPasswordResetRequests(){
   const card=document.getElementById('password-reset-requests-card');
@@ -4088,10 +4180,11 @@ async function loadPasswordResetRequests(){
   if(!canActionPasswordResets()){card.style.display='none';return;}
   const{data,error}=await sb.from('password_reset_requests').select('*').eq('status','pending').order('requested_at',{ascending:false});
   if(error){console.error('Failed to load password_reset_requests:',error);card.style.display='none';return;}
-  card.style.display=(data&&data.length)?'block':'none';
+  const scopedRequests=scopedPasswordResetRequests(data||[]);
+  card.style.display=scopedRequests.length?'block':'none';
   const list=document.getElementById('password-reset-requests-list');
-  if(!data||!data.length){list.innerHTML='';return;}
-  list.innerHTML=data.map(r=>`
+  if(!scopedRequests.length){list.innerHTML='';return;}
+  list.innerHTML=scopedRequests.map(r=>`
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)">
       <div>
         <div style="font-weight:600;font-size:13.5px">${esc(r.team_email)}</div>
@@ -4628,7 +4721,7 @@ function badges(){
 // ── DASHBOARD ────────────────────────────────────────────────────
 function renderDash(){
   applyDashboardPrefs();
-  const dashLeads=opsViewScopedLeads(leads); // Super Admin ops-view scoping (International/Domestic) — unscoped pass-through for everyone else
+  const dashLeads=opsViewScopedLeads(leads); // full role-based access scoping (Counsellor/country-tier/Super-Admin/Owner), plus Super Admin's own Domestic/International refinement on top
   const greetEl=document.getElementById('dash-greeting');
   if(greetEl){
     const hour=new Date().getHours();
@@ -5151,6 +5244,7 @@ function renderToolLeads(){
 // ── DETAIL PANEL ─────────────────────────────────────────────────
 function openDetail(id){
   const l=leads.find(x=>x.id===id);if(!l)return;
+  if(!canViewLead(l)){toast('This lead is outside what your account can access.');return;}
   curId=id;
   logViewIfNeeded(id);
   loadActivityTimeline(id,'d-response-stat-banner');
@@ -5209,6 +5303,7 @@ function closeDover(e){
 
 function openLeadDetail(id){
   const l=leads.find(x=>x.id===id);if(!l)return;
+  if(!canViewLead(l)){toast('This lead is outside what your account can access.');return;}
   curId=id;
   logViewIfNeeded(id);
   loadActivityTimeline(id,'ld-response-stat-banner');
@@ -5890,6 +5985,21 @@ async function renderTaskDashboard(){
     scoped=scoped.filter(t=>t.leads?.country===myCountry);
   }
 
+  // Counsellors get the simple personal view (Today/Tomorrow/Pending/
+  // Completed tabs) instead of the management dashboard — the KPI
+  // cards and by-assignee breakdown don't mean much when you only ever
+  // see your own tasks anyway.
+  const isPersonalView=myRole==='Counsellor'&&!isSuperAdmin;
+  document.getElementById('my-tasks-personal-view').style.display=isPersonalView?'block':'none';
+  document.getElementById('td-summary-cards').style.display=isPersonalView?'none':'grid';
+  document.getElementById('td-two-col').style.display=isPersonalView?'none':'grid';
+  document.getElementById('td-all-tasks-card').style.display=isPersonalView?'none':'block';
+  if(isPersonalView){
+    myTasksPersonalData=scoped;
+    renderMyTasksPersonalTab();
+    return;
+  }
+
   const today=new Date().toISOString().substring(0,10);
   const weekAhead=new Date(Date.now()+7*86400000).toISOString().substring(0,10);
   const open=scoped.filter(t=>t.status!=='Done');
@@ -5979,6 +6089,49 @@ async function renderTaskDashboard(){
     </div>`;
   }).join('');
 }
+// ── My Tasks — personal Counsellor view ──────────────────────────────
+let myTasksPersonalData=[];
+let myTasksPersonalActiveTab='today';
+function switchMyTasksTab(tab){
+  myTasksPersonalActiveTab=tab;
+  document.querySelectorAll('.mtp-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  renderMyTasksPersonalTab();
+}
+function renderMyTasksPersonalTab(){
+  const today=new Date().toISOString().substring(0,10);
+  const tomorrow=new Date(Date.now()+86400000).toISOString().substring(0,10);
+  const open=myTasksPersonalData.filter(t=>t.status!=='Done');
+  const done=myTasksPersonalData.filter(t=>t.status==='Done');
+  let list;
+  if(myTasksPersonalActiveTab==='today')list=open.filter(t=>t.due_date===today||(!t.due_date));
+  else if(myTasksPersonalActiveTab==='tomorrow')list=open.filter(t=>t.due_date===tomorrow);
+  else if(myTasksPersonalActiveTab==='pending')list=open.filter(t=>t.due_date&&t.due_date<today);
+  else list=done;
+
+  const el=document.getElementById('my-tasks-personal-list');
+  if(!list.length){el.innerHTML=emptyState('🎉',myTasksPersonalActiveTab==='completed'?'Nothing completed yet.':'Nothing here — you\'re all caught up.');return;}
+  el.innerHTML=list.map(t=>{
+    const leadName=t.leads?.name||'Unknown lead';
+    const isDone=t.status==='Done';
+    const dateLabel=t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'No date';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)">
+      <input type="checkbox" ${isDone?'checked':''} onchange="toggleMyTaskPersonal('${t.id}',this.checked)" style="cursor:pointer;width:18px;height:18px">
+      <div style="flex:1;font-size:13.5px;cursor:pointer" onclick="openLeadDetail('${t.lead_id}')">
+        <b style="${isDone?'text-decoration:line-through;color:var(--ink3)':''}">${esc(leadName)}</b> — ${esc(t.title)}
+        ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
+      </div>
+      <span style="font-size:11.5px;color:var(--ink3);flex-shrink:0">${dateLabel}</span>
+    </div>`;
+  }).join('');
+}
+async function toggleMyTaskPersonal(taskId,checked){
+  const{error}=await sb.from('tasks').update({status:checked?'Done':'Open'}).eq('id',taskId);
+  if(error){toast('Error: '+error.message);return;}
+  const t=myTasksPersonalData.find(x=>x.id===taskId);
+  if(t)t.status=checked?'Done':'Open';
+  renderMyTasksPersonalTab();
+}
+
 async function editTaskDashboardItem(taskId){
   const t=(await sb.from('tasks').select('*').eq('id',taskId).maybeSingle()).data;
   if(!t){toast('Task not found.');return;}
@@ -6381,21 +6534,29 @@ function renderCoaching(){
   cg.innerHTML=scoped.map(c=>{
     const pct=c.total_sessions>0?Math.round(c.sessions_done/c.total_sessions*100):0;
     const col=pct>=100?'#065F46':pct>=50?'#1B998B':'#C05621';
-    return `<div class="cc" onclick="openCoachingDashboard('${c.id}')" style="cursor:pointer"><div class="ccn">${esc(c.student_name)}</div><div class="ccp">${esc(c.program||'')} · ${esc(c.batch_name||'')}</div><div class="pt"><div class="pb" style="width:${pct}%;background:${col}"></div></div><div class="csr"><div class="cst"><div class="csl">Done</div><div class="csv">${c.sessions_done}/${c.total_sessions}</div></div><div class="cst"><div class="csl">Mock</div><div class="csv">${c.mock_score||'—'}</div></div><div class="cst"><div class="csl">Target</div><div class="csv">${c.target_score||'—'}</div></div><div class="cst"><div class="csl">%</div><div class="csv" style="color:${col}">${pct}%</div></div></div></div>`;
+    const latestMock=c.mock_3_score||c.mock_2_score||c.mock_1_score||'—';
+    return `<div class="cc" onclick="openCoachingDashboard('${c.id}')" style="cursor:pointer"><div class="ccn">${esc(c.student_name)}</div><div class="ccp">${esc(c.program||'')} · ${esc(c.mode||'')} · ${esc(c.batch_name||'')}</div><div class="pt"><div class="pb" style="width:${pct}%;background:${col}"></div></div><div class="csr"><div class="cst"><div class="csl">Done</div><div class="csv">${c.sessions_done}/${c.total_sessions}</div></div><div class="cst"><div class="csl">Latest Mock</div><div class="csv">${esc(latestMock)}</div></div><div class="cst"><div class="csl">Target</div><div class="csv">${c.target_score||'—'}</div></div><div class="cst"><div class="csl">%</div><div class="csv" style="color:${col}">${pct}%</div></div></div></div>`;
   }).join('');
   const tb=document.getElementById('ct');
   tb.innerHTML=scoped.map(c=>{
     const pct=c.total_sessions>0?Math.round(c.sessions_done/c.total_sessions*100):0;
     const done=pct>=100;const ss=done?{bg:'#A7F3D0',tx:'#065F46'}:{bg:'#DBEAFE',tx:'#1E40AF'};
-    return `<tr onclick="openCoachingDashboard('${c.id}')" style="cursor:pointer"><td style="font-weight:600">${esc(c.student_name)}</td><td style="font-size:12px">${esc(c.program||'')}</td><td style="font-size:12px">${esc(c.batch_name||'')}</td><td>${c.sessions_done}/${c.total_sessions}</td><td>${c.mock_score||'—'}</td><td>${c.target_score||'—'}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="pt" style="width:80px;margin:0;border:1px solid var(--line)"><div class="pb" style="width:${pct}%;background:${done?'#065F46':'#1B998B'}"></div></div><span style="font-size:11px;color:var(--ink3)">${pct}%</span></div></td></tr>`;
+    const latestMock=c.mock_3_score||c.mock_2_score||c.mock_1_score||'—';
+    return `<tr onclick="openCoachingDashboard('${c.id}')" style="cursor:pointer"><td style="font-weight:600">${esc(c.student_name)}</td><td style="font-size:12px">${esc(c.program||'')}</td><td style="font-size:12px">${esc(c.batch_name||'')}</td><td>${c.sessions_done}/${c.total_sessions}</td><td>${esc(latestMock)}</td><td>${c.target_score||'—'}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="pt" style="width:80px;margin:0;border:1px solid var(--line)"><div class="pb" style="width:${pct}%;background:${done?'#065F46':'#1B998B'}"></div></div><span style="font-size:11px;color:var(--ink3)">${pct}%</span></div></td></tr>`;
   }).join('');
 }
 
 function openCoachingModal(){
-  const enrolled=leads.filter(l=>['Enrolled','Fees Paid'].includes(l.status));
-  document.getElementById('co-sid').innerHTML=enrolled.length?enrolled.map(l=>`<option value="${l.id}">${esc(l.name)} — ${esc(l.program||'')}</option>`).join(''):'<option>No enrolled students yet</option>';
-  ['co-prog','co-batch','co-start','co-end','co-mock','co-target'].forEach(id=>document.getElementById(id).value='');
+  // Widened from Enrolled/Fees-Paid-only — coaching (IELTS/PTE/etc prep)
+  // very often starts well before a student reaches those late-stage
+  // statuses, so restricting the picker there was actively blocking the
+  // real use case. Now shows any lead not already Dropped, sorted with
+  // the most recently active leads first for easier finding.
+  const pickable=leads.filter(l=>l.status!=='Dropped').sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+  document.getElementById('co-sid').innerHTML=pickable.length?pickable.map(l=>`<option value="${l.id}">${esc(l.name)} — ${esc(l.status||'')}</option>`).join(''):'<option>No leads yet</option>';
+  ['co-batch','co-start','co-end','co-timing','co-mock1','co-mock2','co-mock3','co-target','co-examdate'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('co-total').value='';document.getElementById('co-done').value='0';
+  document.getElementById('co-prog').value='IELTS';document.getElementById('co-mode').value='Online';
   document.getElementById('modal-coaching').classList.add('open');
 }
 
@@ -6404,14 +6565,19 @@ async function saveCoaching(){
   const lead=leads.find(l=>l.id===sid);if(!lead)return;
   const data={
     lead_id:sid,student_name:lead.name,
-    program:document.getElementById('co-prog').value||lead.program,
+    program:document.getElementById('co-prog').value,
     batch_name:document.getElementById('co-batch').value,
+    session_timing:document.getElementById('co-timing').value,
+    mode:document.getElementById('co-mode').value,
     start_date:document.getElementById('co-start').value||null,
     end_date:document.getElementById('co-end').value||null,
     total_sessions:parseInt(document.getElementById('co-total').value)||1,
     sessions_done:parseInt(document.getElementById('co-done').value)||0,
-    mock_score:document.getElementById('co-mock').value,
+    mock_1_score:document.getElementById('co-mock1').value,
+    mock_2_score:document.getElementById('co-mock2').value,
+    mock_3_score:document.getElementById('co-mock3').value,
     target_score:document.getElementById('co-target').value,
+    tentative_exam_date:document.getElementById('co-examdate').value||null,
   };
   setSyncing();
   const{error,data:res}=await sb.from('coaching').insert([data]).select();
@@ -6436,10 +6602,15 @@ function openCoachingDashboard(coachingId){
   updateCoachingDashboardProgress(c);
   document.getElementById('cd-total-input').value=c.total_sessions||1;
   document.getElementById('cd-done-input').value=c.sessions_done||0;
-  document.getElementById('cd-mock-input').value=c.mock_score||'';
   document.getElementById('cd-target-input').value=c.target_score||'';
   document.getElementById('cd-batch-input').value=c.batch_name||'';
-  document.getElementById('cd-program-input').value=c.program||'';
+  document.getElementById('cd-program-input').value=c.program||'IELTS';
+  document.getElementById('cd-timing-input').value=c.session_timing||'';
+  document.getElementById('cd-mode-input').value=c.mode||'Online';
+  document.getElementById('cd-mock1-input').value=c.mock_1_score||'';
+  document.getElementById('cd-mock2-input').value=c.mock_2_score||'';
+  document.getElementById('cd-mock3-input').value=c.mock_3_score||'';
+  document.getElementById('cd-examdate-input').value=c.tentative_exam_date||'';
   document.getElementById('modal-coaching-dashboard').classList.add('open');
 }
 function updateCoachingDashboardProgress(c){
@@ -6467,10 +6638,15 @@ async function saveCoachingDashboardEdits(){
   const updates={
     total_sessions:parseInt(document.getElementById('cd-total-input').value)||1,
     sessions_done:parseInt(document.getElementById('cd-done-input').value)||0,
-    mock_score:document.getElementById('cd-mock-input').value,
     target_score:document.getElementById('cd-target-input').value,
     batch_name:document.getElementById('cd-batch-input').value,
     program:document.getElementById('cd-program-input').value,
+    session_timing:document.getElementById('cd-timing-input').value,
+    mode:document.getElementById('cd-mode-input').value,
+    mock_1_score:document.getElementById('cd-mock1-input').value,
+    mock_2_score:document.getElementById('cd-mock2-input').value,
+    mock_3_score:document.getElementById('cd-mock3-input').value,
+    tentative_exam_date:document.getElementById('cd-examdate-input').value||null,
   };
   const{error}=await sb.from('coaching').update(updates).eq('id',currentCoachingId);
   if(error){toast('Error saving: '+error.message);return;}
@@ -7228,7 +7404,12 @@ function onBulkCheckboxChange(){
   const statusSel=document.getElementById('bulk-status-select');
   if(!statusSel.options.length) statusSel.innerHTML=STATUSES.map(s=>`<option>${s}</option>`).join('');
   const counselSel=document.getElementById('bulk-counsellor-select');
-  const counsellorNames=[...new Set((teamList||[]).filter(t=>t.role==='Counsellor').map(t=>t.full_name))];
+  let counsellorPool=(teamList||[]).filter(t=>t.role==='Counsellor');
+  if(!isOwner){
+    if(isSuperAdmin)counsellorPool=counsellorPool.filter(t=>t.country!=='India');
+    else if(myRole==='Admin'||myRole==='Manager'||myRole==='Director')counsellorPool=counsellorPool.filter(t=>t.country===myCountry);
+  }
+  const counsellorNames=[...new Set(counsellorPool.map(t=>t.full_name))];
   counselSel.innerHTML='<option value="">Choose counsellor…</option>'+counsellorNames.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
 }
 function clearBulkSelection(){

@@ -222,6 +222,21 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .mtp-tab{background:none;border:none;padding:10px 18px;font-size:13.5px;font-weight:600;color:var(--ink3);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;font-family:var(--font-b)}
 .mtp-tab.active{color:var(--pine3);border-bottom-color:var(--pine3)}
 .mtp-tab:hover{color:var(--pine)}
+.ct-subtab{background:var(--paper);border:1px solid var(--line2);padding:7px 16px;font-size:12.5px;font-weight:600;color:var(--ink3);cursor:pointer;font-family:var(--font-b);border-radius:99px}
+.ct-subtab.active{background:var(--pine);color:#fff;border-color:var(--pine)}
+.tdw-tab{background:var(--paper);border:1px solid var(--line2);padding:8px 18px;font-size:13px;font-weight:600;color:var(--ink3);cursor:pointer;font-family:var(--font-b)}
+.tdw-tab:first-child{border-radius:var(--r) 0 0 var(--r)}
+.tdw-tab:last-child{border-radius:0 var(--r) var(--r) 0;border-left:none}
+.tdw-tab.active{background:var(--pine);color:#fff;border-color:var(--pine)}
+.baw-step{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ink3)}
+.baw-step-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--line);color:var(--ink3);font-size:11.5px}
+.baw-step.active{color:var(--pine)}
+.baw-step.active .baw-step-num{background:var(--pine);color:#fff}
+.baw-step.done .baw-step-num{background:var(--sage);color:#fff}
+.baw-step-line{flex:1;height:2px;background:var(--line)}
+.baw-method-card{border:2px solid var(--line2);border-radius:var(--r);padding:16px;cursor:pointer;text-align:center;transition:border-color .15s}
+.baw-method-card:hover{border-color:var(--pine4)}
+.baw-method-card.selected{border-color:var(--pine);background:var(--cream)}
 .tw{overflow-x:auto;border-radius:var(--rl);border:1px solid var(--line);background:var(--paper);box-shadow:var(--sh);scrollbar-width:auto;scrollbar-color:var(--pine3) var(--cream)}
 .tw::-webkit-scrollbar{height:14px}
 .tw::-webkit-scrollbar-track{background:var(--cream);border-radius:0 0 var(--rl) var(--rl)}
@@ -647,6 +662,11 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div id="world-clock-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px"></div>
         </div>
 
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-h"><span class="card-t">✈️ Destinations</span></div>
+          <div id="home-destination-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px"></div>
+        </div>
+
         <div class="card" id="reminders-widget">
           <div class="card-h"><span class="card-t">⏰ Today's & upcoming reminders</span></div>
           <div id="reminders-dash-list"></div>
@@ -654,6 +674,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div class="card" id="my-tasks-widget">
           <div class="card-h"><span class="card-t">📋 My tasks</span></div>
           <div id="my-tasks-list"></div>
+        </div>
+        <div class="card" id="home-followups-widget">
+          <div class="card-h"><span class="card-t">📞 Upcoming follow-ups</span><span onclick="nav('followups',document.querySelector('.ni[data-nav=&quot;followups&quot;]'))" style="font-size:12px;color:var(--pine);cursor:pointer;text-decoration:underline">View all →</span></div>
+          <div id="home-followups-list"></div>
         </div>
 
         <button class="btn btn-p" onclick="goToFullDashboard()" style="width:100%;padding:18px;font-size:16px;font-weight:700;margin-top:8px;border-radius:16px;box-shadow:0 8px 24px rgba(28,63,110,.25)"><i class="ti ti-layout-dashboard"></i>&nbsp; View Full Dashboard</button>
@@ -715,6 +739,40 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div class="kpi" onclick="kpiNav('leakage')" style="cursor:pointer"><div class="kpi-l">Lead leakage %</div><div class="kpi-v kv-r" id="k-leakage">—</div></div>
         </div>
 
+        <!-- Management analytics — Admin/Manager/Director/Super Admin/
+             Owner only. Genuinely new section, not shown to Counsellors
+             at all (they already have their own simpler Home screen). -->
+        <div id="dash-analytics-section" style="display:none">
+          <div class="card" id="dash-alerts-card" style="margin-bottom:16px;border-left:4px solid var(--gold)">
+            <div class="card-h"><span class="card-t">⚠️ Needs attention</span></div>
+            <div id="dash-alerts-list"></div>
+          </div>
+          <div class="two-col" style="margin-bottom:16px">
+            <div class="card">
+              <div class="card-h"><span class="card-t">🌍 Leads by country</span></div>
+              <div id="dash-country-breakdown"></div>
+            </div>
+            <div class="card">
+              <div class="card-h"><span class="card-t">🏆 Top counsellors</span></div>
+              <div id="dash-top-counsellors"></div>
+            </div>
+          </div>
+          <div class="two-col" style="margin-bottom:16px">
+            <div class="card">
+              <div class="card-h"><span class="card-t">📈 Monthly trend</span></div>
+              <div style="height:200px"><canvas id="dash-trend-chart"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-h"><span class="card-t">🔻 Lead funnel</span></div>
+              <div id="dash-funnel"></div>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-h"><span class="card-t">🆕 Recent leads</span></div>
+            <div id="dash-recent-leads"></div>
+          </div>
+        </div>
+
         <div id="dash-empty" class="empty-state" style="display:none">
           <div class="es-icon"><i class="ti ti-rocket"></i></div>
           <div class="es-title">Your CRM is ready</div>
@@ -770,6 +828,15 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
              single person only ever seeing their own tasks), no
              reassign controls. Just four clean tabs and a checklist. -->
         <div id="my-tasks-personal-view" style="display:none">
+          <div style="display:flex;align-items:center;gap:18px;background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:16px 20px;margin-bottom:16px">
+            <div style="position:relative;width:64px;height:64px;flex-shrink:0"><canvas id="mtp-today-donut"></canvas>
+              <div id="mtp-today-donut-label" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--pine)"></div>
+            </div>
+            <div>
+              <div style="font-weight:700;font-size:14px">Today's progress</div>
+              <div id="mtp-today-donut-sub" style="font-size:12px;color:var(--ink3)"></div>
+            </div>
+          </div>
           <div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:2px solid var(--line);padding-bottom:0">
             <button class="mtp-tab active" data-tab="today" onclick="switchMyTasksTab('today')">Today</button>
             <button class="mtp-tab" data-tab="tomorrow" onclick="switchMyTasksTab('tomorrow')">Tomorrow</button>
@@ -777,6 +844,31 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="mtp-tab" data-tab="completed" onclick="switchMyTasksTab('completed')">Completed</button>
           </div>
           <div id="my-tasks-personal-list"></div>
+        </div>
+        <div class="two-col" id="td-snapshot-row" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-h"><span class="card-t">🎯 Today's completion</span></div>
+            <div style="display:flex;align-items:center;gap:20px">
+              <div style="position:relative;width:110px;height:110px;flex-shrink:0"><canvas id="td-daily-donut"></canvas>
+                <div id="td-daily-donut-label" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:var(--pine)"></div>
+              </div>
+              <div id="td-daily-breakdown" style="font-size:13px;line-height:1.9"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-h"><span class="card-t">🕐 Today's timeline</span></div>
+            <div id="td-today-timeline" style="max-height:180px;overflow-y:auto"></div>
+          </div>
+        </div>
+        <div class="two-col" id="td-dna-momentum-row" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-h"><span class="card-t">🧬 Task DNA</span></div>
+            <div id="td-task-dna"></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><span class="card-t">📊 Momentum</span></div>
+            <div id="td-momentum" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center"></div>
+          </div>
         </div>
         <div id="td-summary-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px"></div>
         <div class="two-col" id="td-two-col">
@@ -788,6 +880,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <div class="card-h"><span class="card-t">📅 By assignee</span></div>
             <div id="td-by-assignee"></div>
           </div>
+        </div>
+        <div id="td-workstream-toggle" style="display:none;margin-bottom:14px">
+          <button class="tdw-tab active" data-mode="my" onclick="switchTaskWorkstream('my')">My Workstream</button>
+          <button class="tdw-tab" data-mode="team" onclick="switchTaskWorkstream('team')">Team View</button>
         </div>
         <div class="card" style="margin-top:16px" id="td-all-tasks-card">
           <div class="card-h">
@@ -857,6 +953,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="btn" onclick="bulkChangePriority()" style="font-size:12px;padding:5px 10px">Apply priority</button>
             <select id="bulk-counsellor-select" style="font-size:12px;padding:5px 8px;border-radius:6px;border:none"></select>
             <button class="btn" onclick="bulkReassignCounsellor()" style="font-size:12px;padding:5px 10px">Reassign</button>
+            <button class="btn" onclick="openBulkAssignWizard()" style="font-size:12px;padding:5px 10px;background:var(--gold);color:#fff;border:none"><i class="ti ti-users-group"></i>Assign Wizard →</button>
             <select id="bulk-source-select" style="font-size:12px;padding:5px 8px;border-radius:6px;border:none"><option value="">Choose source…</option><option>Meta Ads</option><option>Google Ads</option><option>Instagram</option><option>WhatsApp</option><option>Walk-in</option><option>Referral</option><option>Website</option><option>LinkedIn</option><option>YouTube</option><option>Event / Expo</option><option>Website Enquiry</option><option>Website Tools Enquiry</option><option>Meta Enquiry</option><option>Other</option></select>
             <button class="btn" onclick="bulkChangeSource()" style="font-size:12px;padding:5px 10px">Apply source</button>
             <button class="btn" onclick="bulkDeleteLeads()" style="font-size:12px;padding:5px 10px;background:var(--rose);color:#fff;border:none"><i class="ti ti-trash"></i>Delete selected</button>
@@ -865,6 +962,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           </div>
           <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;margin-top:-6px">
             <button class="btn" onclick="navFilter('ls-st','Dropped')" style="font-size:12px;padding:5px 12px;background:var(--rose-l,#FEE2E2);color:var(--rose,#991B1B);border-color:transparent"><i class="ti ti-trash-x"></i>Drop List</button>
+            <button class="btn" onclick="openBulkAddLeadsWizard()" style="font-size:12px;padding:5px 12px"><i class="ti ti-file-upload"></i>Bulk Add Leads</button>
             <button class="btn" onclick="exportCurrentView()" style="font-size:12px;padding:5px 12px"><i class="ti ti-download"></i>Export this view</button>
           </div>
           <div id="leads-top-scroll" style="overflow-x:auto;overflow-y:hidden;height:16px;margin-bottom:2px" onscroll="document.getElementById('leads-table-wrap').scrollLeft=this.scrollLeft">
@@ -930,14 +1028,23 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div class="es-sub">Enrol a student and add their coaching details here.</div>
         </div>
         <div id="coaching-content" style="display:none">
+          <div id="coaching-kpi-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px"></div>
+          <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">
+            <button class="ct-subtab active" data-sub="all" onclick="switchCoachingSubtab('all')">All Students</button>
+            <button class="ct-subtab" data-sub="active" onclick="switchCoachingSubtab('active')">Active</button>
+            <button class="ct-subtab" data-sub="completed" onclick="switchCoachingSubtab('completed')">Completed</button>
+            <button class="ct-subtab" data-sub="upcoming" onclick="switchCoachingSubtab('upcoming')">Upcoming Exams</button>
+            <button class="ct-subtab" data-sub="tests" onclick="switchCoachingSubtab('tests')">Tests</button>
+            <button class="ct-subtab" data-sub="fees" onclick="switchCoachingSubtab('fees')">Fees</button>
+          </div>
           <div class="cg" id="cg"></div>
           <div class="card">
             <div class="card-h">
-              <span class="card-t">All coaching students</span>
+              <span class="card-t" id="coaching-table-title">All coaching students</span>
               <button class="btn btn-p" style="font-size:12px;padding:5px 10px" onclick="openCoachingModal()"><i class="ti ti-plus"></i>Add record</button>
             </div>
             <div class="tw" style="border:none;border-radius:0;box-shadow:none">
-              <table class="tbl"><thead><tr>
+              <table class="tbl"><thead><tr id="ct-head">
                 <th>Student</th><th>Program</th><th>Batch</th><th>Sessions</th><th>Mock</th><th>Target</th><th>Progress</th>
               </tr></thead><tbody id="ct"></tbody></table>
             </div>
@@ -1855,6 +1962,8 @@ What would you like help with today?</div>
       <div class="ff"><label>Mock Test 3</label><input id="co-mock3" placeholder="7.0"></div>
       <div class="ff"><label>Target score</label><input id="co-target" placeholder="7.0"></div>
       <div class="ff"><label>Tentative exam date</label><input type="date" id="co-examdate"></div>
+      <div class="ff"><label>Fees (₹)</label><input type="number" id="co-fees" placeholder="12000" min="0"></div>
+      <div class="ff"><label>Fees status</label><select id="co-fees-status"><option>Pending</option><option>Paid</option><option>Partial</option></select></div>
     </div>
     <div class="mfoot">
       <button class="btn" onclick="closeModal('modal-coaching')">Cancel</button>
@@ -1894,10 +2003,152 @@ What would you like help with today?</div>
       <div class="ff"><label>Mock Test 3</label><input id="cd-mock3-input"></div>
       <div class="ff"><label>Target score</label><input id="cd-target-input"></div>
       <div class="ff"><label>Tentative exam date</label><input type="date" id="cd-examdate-input"></div>
+      <div class="ff"><label>Fees (₹)</label><input type="number" id="cd-fees-input" min="0"></div>
+      <div class="ff"><label>Fees status</label><select id="cd-fees-status-input"><option>Pending</option><option>Paid</option><option>Partial</option></select></div>
     </div>
     <div class="mfoot">
       <button class="btn" onclick="openLeadDetail(currentCoachingLeadId);closeModal('modal-coaching-dashboard')">View full lead →</button>
       <button class="btn btn-p" onclick="saveCoachingDashboardEdits()"><i class="ti ti-check"></i>Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Assign Leads wizard — 3 steps: pick a method, configure it,
+     review before committing. Replaces nothing — the quick single-
+     counsellor "Reassign" button in the bulk bar still works for fast
+     cases; this is for when Round Robin or per-lead Custom assignment
+     is actually needed. -->
+<div class="mover" id="modal-bulk-assign-wizard">
+  <div class="modal" style="width:640px;max-height:88vh;overflow-y:auto">
+    <div class="mhead"><span class="mtitle">🧑‍🤝‍🧑 Bulk Assign Leads</span><button class="mclose" onclick="closeModal('modal-bulk-assign-wizard')">×</button></div>
+    <div style="font-size:12.5px;color:var(--ink3);margin-bottom:18px">Assign multiple leads to counsellors at once — selected leads always respect your own country/office access, same as everywhere else.</div>
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px" id="baw-steps">
+      <div class="baw-step active" data-step="1"><span class="baw-step-num">1</span> Method</div>
+      <div class="baw-step-line"></div>
+      <div class="baw-step" data-step="2"><span class="baw-step-num">2</span> Configure</div>
+      <div class="baw-step-line"></div>
+      <div class="baw-step" data-step="3"><span class="baw-step-num">3</span> Review</div>
+    </div>
+
+    <!-- Step 1 — method -->
+    <div id="baw-step-1">
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px" id="baw-lead-count">0 leads selected</div>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:16px">Choose how you want to assign them.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="baw-method-card" data-method="single" onclick="selectBawMethod('single')">
+          <div style="font-size:22px;margin-bottom:8px">👤</div>
+          <div style="font-weight:700;font-size:13.5px;margin-bottom:4px">Single Counsellor</div>
+          <div style="font-size:11.5px;color:var(--ink3)">All selected leads go to one person.</div>
+        </div>
+        <div class="baw-method-card" data-method="roundrobin" onclick="selectBawMethod('roundrobin')">
+          <div style="font-size:22px;margin-bottom:8px">🔄</div>
+          <div style="font-weight:700;font-size:13.5px;margin-bottom:4px">Round Robin</div>
+          <div style="font-size:11.5px;color:var(--ink3)">Distributed evenly across chosen counsellors.</div>
+        </div>
+        <div class="baw-method-card" data-method="custom" onclick="selectBawMethod('custom')">
+          <div style="font-size:22px;margin-bottom:8px">⚙️</div>
+          <div style="font-weight:700;font-size:13.5px;margin-bottom:4px">Custom</div>
+          <div style="font-size:11.5px;color:var(--ink3)">Pick a counsellor for each lead individually.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 — configure (contents swapped by method) -->
+    <div id="baw-step-2" style="display:none">
+      <div id="baw-configure-single" style="display:none">
+        <div class="ff full"><label>Counsellor</label><select id="baw-single-counsellor" style="width:100%"></select></div>
+      </div>
+      <div id="baw-configure-roundrobin" style="display:none">
+        <label style="font-size:12px;font-weight:600;color:var(--ink2);display:block;margin-bottom:8px">Pick two or more counsellors to distribute leads across</label>
+        <div id="baw-rr-counsellor-list" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto"></div>
+      </div>
+      <div id="baw-configure-custom" style="display:none">
+        <label style="font-size:12px;font-weight:600;color:var(--ink2);display:block;margin-bottom:8px">Assign each lead individually</label>
+        <div id="baw-custom-list" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto"></div>
+      </div>
+      <div class="ff full" style="margin-top:16px"><label><input type="checkbox" id="baw-create-task" checked style="width:auto;margin-right:6px">Create a follow-up task for each assigned lead</label></div>
+    </div>
+
+    <!-- Step 3 — review -->
+    <div id="baw-step-3" style="display:none">
+      <div style="background:var(--cream);border-radius:var(--r);padding:14px;font-size:13px;line-height:1.7" id="baw-review-summary"></div>
+      <div style="font-size:11.5px;color:var(--ink3);margin-top:10px">Only leads within your own access are ever assignable — this was already true of what you selected, so nothing changes at this step.</div>
+    </div>
+
+    <div class="mfoot" style="margin-top:20px">
+      <button class="btn" id="baw-back-btn" onclick="bawGoBack()" style="display:none">← Back</button>
+      <button class="btn" onclick="closeModal('modal-bulk-assign-wizard')">Cancel</button>
+      <button class="btn btn-p" id="baw-next-btn" onclick="bawGoNext()">Next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Add Leads wizard — CSV only for now (no Excel/.xlsx parser
+     currently loaded in this app; adding one is a small, separate
+     follow-up if needed). Flexible column mapping, unlike the existing
+     Meta-specific bulk uploader which has a fixed format. -->
+<div class="mover" id="modal-bal-wizard">
+  <div class="modal" style="width:760px;max-height:90vh;overflow-y:auto">
+    <div class="mhead"><span class="mtitle">📥 Bulk Add Leads</span><button class="mclose" onclick="closeModal('modal-bal-wizard')">×</button></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px" id="bal-steps">
+      <div class="baw-step active" data-step="1"><span class="baw-step-num">1</span> Upload</div>
+      <div class="baw-step-line"></div>
+      <div class="baw-step" data-step="2"><span class="baw-step-num">2</span> Map Columns</div>
+      <div class="baw-step-line"></div>
+      <div class="baw-step" data-step="3"><span class="baw-step-num">3</span> Settings</div>
+      <div class="baw-step-line"></div>
+      <div class="baw-step" data-step="4"><span class="baw-step-num">4</span> Preview</div>
+    </div>
+
+    <!-- Step 1 — upload -->
+    <div id="bal-step-1">
+      <div style="border:2px dashed var(--line2);border-radius:var(--rl);padding:36px;text-align:center;cursor:pointer" onclick="document.getElementById('bal-file-input').click()">
+        <div style="font-size:28px;margin-bottom:8px">⬆️</div>
+        <div style="font-weight:600;margin-bottom:4px">Drag & drop your CSV here, or click to choose a file</div>
+        <div style="font-size:12px;color:var(--ink3)">Supported format: CSV (.csv). First row should be column headers.</div>
+      </div>
+      <input type="file" id="bal-file-input" accept=".csv" style="display:none" onchange="balHandleFile(this.files[0])">
+      <div id="bal-file-info" style="margin-top:12px;font-size:13px;display:none"></div>
+    </div>
+
+    <!-- Step 2 — map columns -->
+    <div id="bal-step-2" style="display:none">
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:12px">Match each column in your file to a CRM field. Leave as "Don't import" to skip a column.</div>
+      <div id="bal-mapping-list" style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto"></div>
+    </div>
+
+    <!-- Step 3 — import settings -->
+    <div id="bal-step-3" style="display:none">
+      <div class="fg">
+        <div class="ff"><label>If a duplicate mobile number exists</label>
+          <select id="bal-dup-mode"><option value="skip">Skip duplicate records</option><option value="import">Import anyway</option></select>
+        </div>
+        <div class="ff"><label>Country / office for all leads</label>
+          <select id="bal-country"><option value="">Detect from data (if mapped)</option><option>India</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option></select>
+        </div>
+        <div class="ff"><label>Assign leads to</label>
+          <select id="bal-assign-mode"><option value="unassigned">Leave unassigned</option><option value="roundrobin">Auto-assign (Round Robin)</option></select>
+        </div>
+        <div class="ff full"><label><input type="checkbox" id="bal-notify" style="width:auto;margin-right:6px">Notify assigned counsellors</label></div>
+      </div>
+    </div>
+
+    <!-- Step 4 — preview -->
+    <div id="bal-step-4" style="display:none">
+      <div style="display:flex;gap:16px;margin-bottom:14px" id="bal-preview-stats"></div>
+      <div class="tw" style="max-height:320px;overflow-y:auto">
+        <table style="width:100%;font-size:12.5px">
+          <thead><tr id="bal-preview-head"></tr></thead>
+          <tbody id="bal-preview-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="mfoot" style="margin-top:20px">
+      <button class="btn" id="bal-back-btn" onclick="balGoBack()" style="display:none">← Back</button>
+      <button class="btn" onclick="closeModal('modal-bal-wizard')">Cancel</button>
+      <button class="btn btn-p" id="bal-next-btn" onclick="balGoNext()" disabled>Next →</button>
     </div>
   </div>
 </div>
@@ -2838,6 +3089,98 @@ function trackRecentlyViewed(leadId,name){
   localStorage.setItem(key,JSON.stringify(list));
   renderRecentlyViewed();
 }
+// ── Management analytics section (Home dashboard) ────────────────────
+// A genuine "Leads by Country" breakdown, not a literal world map — no
+// mapping library is loaded in this app, and a fake decorative map
+// wasn't worth building over an honest, equally useful bar breakdown.
+function renderDashAnalytics(dashLeads){
+  // System Alerts — actionable, not just decorative.
+  const unassigned=dashLeads.filter(l=>!l.counsellor).length;
+  const droppedRecently=dashLeads.filter(l=>l.status==='Dropped').length;
+  const alerts=[];
+  if(unassigned>0)alerts.push({icon:'⚠️',text:`${unassigned} lead${unassigned!==1?'s':''} unassigned`,action:()=>navFilter('ls-assign','unassigned')});
+  if(droppedRecently>0)alerts.push({icon:'📉',text:`${droppedRecently} lead${droppedRecently!==1?'s':''} in the Drop List`,action:()=>navFilter('ls-st','Dropped')});
+  sb.from('tasks').select('id',{count:'exact',head:true}).eq('status','Open').lt('due_date',new Date().toISOString().substring(0,10)).then(({count})=>{
+    if(count>0){
+      alerts.push({icon:'⏰',text:`${count} task${count!==1?'s':''} overdue`,action:()=>nav('taskdashboard',document.querySelector('.ni[data-nav="taskdashboard"]'))});
+      renderDashAlertsList(alerts);
+    }
+  });
+  renderDashAlertsList(alerts);
+
+  // Leads by country
+  const byCountry={};
+  dashLeads.forEach(l=>{const c=l.country||'Unknown';byCountry[c]=(byCountry[c]||0)+1;});
+  const countryEntries=Object.entries(byCountry).sort((a,b)=>b[1]-a[1]);
+  const countryMax=countryEntries[0]?.[1]||1;
+  document.getElementById('dash-country-breakdown').innerHTML=countryEntries.length?countryEntries.map(([c,n])=>`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="width:90px;font-size:12.5px;flex-shrink:0">${esc(c)}</span>
+      <div style="flex:1;background:var(--line);border-radius:99px;height:8px;overflow:hidden"><div style="width:${Math.round(n/countryMax*100)}%;height:100%;background:var(--pine)"></div></div>
+      <span style="font-size:12px;color:var(--ink3);width:36px;text-align:right">${n}</span>
+    </div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic">No leads yet.</div>';
+
+  // Top counsellors — by lead count within current scope.
+  const byCounsellor={};
+  dashLeads.forEach(l=>{if(l.counsellor)byCounsellor[l.counsellor]=(byCounsellor[l.counsellor]||0)+1;});
+  const topCounsellors=Object.entries(byCounsellor).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const topMax=topCounsellors[0]?.[1]||1;
+  document.getElementById('dash-top-counsellors').innerHTML=topCounsellors.length?topCounsellors.map(([name,n],i)=>`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="width:18px;font-size:12px;color:var(--ink3);flex-shrink:0">#${i+1}</span>
+      <span style="width:110px;font-size:12.5px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</span>
+      <div style="flex:1;background:var(--line);border-radius:99px;height:8px;overflow:hidden"><div style="width:${Math.round(n/topMax*100)}%;height:100%;background:var(--gold)"></div></div>
+      <span style="font-size:12px;color:var(--ink3);width:24px;text-align:right">${n}</span>
+    </div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic">No leads assigned yet.</div>';
+
+  // Monthly trend — leads created per month, last 6 months.
+  const monthLabels=[],monthCounts=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date();d.setMonth(d.getMonth()-i);
+    const label=d.toLocaleDateString('en-GB',{month:'short'});
+    const ym=d.toISOString().substring(0,7);
+    monthLabels.push(label);
+    monthCounts.push(dashLeads.filter(l=>(l.created_at||'').substring(0,7)===ym).length);
+  }
+  destroyTdChart('dashTrend');
+  const trendCtx=document.getElementById('dash-trend-chart')?.getContext('2d');
+  if(trendCtx){
+    tdCharts.dashTrend=new Chart(trendCtx,{
+      type:'line',
+      data:{labels:monthLabels,datasets:[{data:monthCounts,borderColor:'#1C3F6E',backgroundColor:'rgba(28,63,110,.08)',fill:true,tension:.3,pointRadius:3}]},
+      options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}},
+    });
+  }
+
+  // Lead funnel — a few meaningful checkpoints from the real 21-stage
+  // pipeline, not all 21 (unreadable at a glance).
+  const funnelStages=['New Enquiry','Contacted','Application Submitted','Received - Unconditional Offer','Visa Application Accepted','Enrolled'];
+  const funnelCounts=funnelStages.map(s=>dashLeads.filter(l=>l.status===s).length);
+  const funnelMax=Math.max(...funnelCounts,1);
+  document.getElementById('dash-funnel').innerHTML=funnelStages.map((s,i)=>`
+    <div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink3);margin-bottom:2px"><span>${esc(s)}</span><span>${funnelCounts[i]}</span></div>
+      <div style="background:var(--line);border-radius:6px;height:16px;overflow:hidden;width:${100-i*8}%"><div style="width:${Math.round(funnelCounts[i]/funnelMax*100)}%;height:100%;background:linear-gradient(90deg,var(--pine),var(--pine3))"></div></div>
+    </div>`).join('');
+
+  // Recent leads — newest first, org-wide within scope (distinct from
+  // "Recently viewed", which is this user's own browsing history).
+  const recent=[...dashLeads].sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||'')).slice(0,8);
+  document.getElementById('dash-recent-leads').innerHTML=recent.length?recent.map(l=>`
+    <div onclick="openLeadDetail('${l.id}')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer">
+      <div><b style="font-size:13px">${esc(l.name)}</b> <span style="font-size:11.5px;color:var(--ink3)">· ${esc(l.country||'')}</span></div>
+      <span class="pill" style="background:var(--sky-l,#E0F2FE);color:var(--sky,#0369A1);font-size:10.5px">${esc(l.status||'')}</span>
+    </div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic">No leads yet.</div>';
+}
+function renderDashAlertsList(alerts){
+  const el=document.getElementById('dash-alerts-list');
+  if(!el)return;
+  el.innerHTML=alerts.length?alerts.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer"><span style="font-size:13px">${a.icon} ${esc(a.text)}</span></div>`).join(''):'<div style="font-size:13px;color:var(--sage)">✓ Nothing needs attention right now.</div>';
+  // Wire click handlers directly (closures can't survive the innerHTML
+  // string round-trip above) rather than serializing the function.
+  Array.from(el.children).forEach((row,i)=>{if(alerts[i])row.onclick=alerts[i].action;});
+}
+
 function renderRecentlyViewed(){
   const el=document.getElementById('recently-viewed-list');
   if(!el||!currentUser)return;
@@ -4097,6 +4440,8 @@ pruneIndiaFromCrmDropdowns();
   loadDashReminders();
   loadExpiryAlerts();
   loadMyTasks();
+  renderHomeDestinationCards();
+  loadHomeFollowups();
   await loadNotificationSettings();
   checkUnreadDmCount();
   startNotificationEngine();
@@ -4731,6 +5076,12 @@ function renderDash(){
   }
   loadDailyBriefing(false);
   renderRecentlyViewed();
+  const isManagementTier=myRole!=='Counsellor'||isSuperAdmin;
+  const analyticsEl=document.getElementById('dash-analytics-section');
+  if(analyticsEl){
+    analyticsEl.style.display=isManagementTier?'block':'none';
+    if(isManagementTier)renderDashAnalytics(dashLeads);
+  }
   const scopeNote=document.getElementById('dash-scope-note');
   if(scopeNote){
     if(isSuperAdmin) scopeNote.textContent=superAdminOpsView==='Domestic'?'🇬🇧 Domestic Operations — UK leads only':superAdminOpsView==='International'?'🌍 International Operations — India, Pakistan, Bangladesh':'Showing all countries and offices · Super Admin view';
@@ -5967,6 +6318,107 @@ async function saveTaskModal(){
 // Home widget), just rendered as a complete, uncapped dashboard instead
 // of a 6-item preview, with summary cards and an assignee breakdown on
 // top — this is the "assignment chain" and "daily states" view.
+let taskWorkstreamMode='team'; // 'my' | 'team' — Team View is the default so nothing changes for anyone until they deliberately narrow it
+function switchTaskWorkstream(mode){
+  taskWorkstreamMode=mode;
+  document.querySelectorAll('.tdw-tab').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  renderTaskDashboard();
+}
+let tdCharts={};
+function destroyTdChart(id){if(tdCharts[id]){tdCharts[id].destroy();delete tdCharts[id];}}
+function renderTaskDailySnapshot(scoped){
+  const today=new Date().toISOString().substring(0,10);
+  const todaysTasks=scoped.filter(t=>t.due_date===today);
+  const todaysDone=todaysTasks.filter(t=>t.status==='Done').length;
+  const todaysOpen=todaysTasks.length-todaysDone;
+  const pct=todaysTasks.length?Math.round((todaysDone/todaysTasks.length)*100):0;
+  const overdueCount=scoped.filter(t=>t.status==='Open'&&t.due_date&&t.due_date<today).length;
+
+  destroyTdChart('daily');
+  const ctx=document.getElementById('td-daily-donut')?.getContext('2d');
+  if(ctx){
+    tdCharts.daily=new Chart(ctx,{
+      type:'doughnut',
+      data:{datasets:[{data:todaysTasks.length?[todaysDone,todaysOpen]:[1],
+        backgroundColor:todaysTasks.length?['#12A56F','#E6DDCC']:['#E6DDCC'],
+        borderWidth:0}]},
+      options:{cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:todaysTasks.length>0}}},
+    });
+  }
+  const labelEl=document.getElementById('td-daily-donut-label');
+  if(labelEl)labelEl.textContent=todaysTasks.length?pct+'%':'—';
+
+  document.getElementById('td-daily-breakdown').innerHTML=`
+    <div><span style="color:var(--sage);font-weight:700">●</span> ${todaysDone} completed today</div>
+    <div><span style="color:var(--gold);font-weight:700">●</span> ${todaysOpen} still open today</div>
+    <div><span style="color:var(--rose,#C0392B);font-weight:700">●</span> ${overdueCount} overdue (any date)</div>`;
+
+  // Today's open tasks, ordered by priority — no fabricated clock
+  // times, since due_date is the only time data tasks actually store.
+  const priorityRank={High:0,Medium:1,Low:2};
+  const todaysOpenTasks=todaysTasks.filter(t=>t.status!=='Done')
+    .sort((a,b)=>(priorityRank[a.priority]??1)-(priorityRank[b.priority]??1));
+  const timelineEl=document.getElementById('td-today-timeline');
+  if(!todaysOpenTasks.length){
+    timelineEl.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:10px 0">Nothing left for today.</div>';
+  } else {
+    const prColor={High:'var(--rose,#C0392B)',Medium:'var(--gold)',Low:'var(--sage)'};
+    timelineEl.innerHTML=todaysOpenTasks.map(t=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">
+        <span style="width:8px;height:8px;border-radius:50%;background:${prColor[t.priority]||'var(--ink3)'};flex-shrink:0"></span>
+        <div style="flex:1;font-size:12.5px"><b>${esc(t.leads?.name||'—')}</b> — ${esc(t.title)}${t.assigned_to?' <span style="color:var(--ink3)">· '+esc(t.assigned_to)+'</span>':''}</div>
+      </div>`).join('');
+  }
+
+  // Task DNA — simple keyword-based categorisation of task titles into
+  // rough buckets. Approximate by nature (titles are free text), but
+  // genuinely computed from real task content, not invented.
+  const dnaCategories=[
+    {label:'Student follow-up',color:'var(--pine)',match:t=>/follow.?up|call|contact|respond/i.test(t.title)},
+    {label:'Documents',color:'var(--gold)',match:t=>/document|cas|visa docs|upload/i.test(t.title)},
+    {label:'Applications',color:'var(--sage)',match:t=>/application|offer|university|status/i.test(t.title)},
+  ];
+  const dnaCounts=dnaCategories.map(cat=>scoped.filter(t=>cat.match(t)).length);
+  const categorised=dnaCounts.reduce((a,b)=>a+b,0);
+  const othersCount=scoped.length-categorised;
+  const dnaTotal=scoped.length||1;
+  const dnaEl=document.getElementById('td-task-dna');
+  if(dnaEl){
+    const rows=[...dnaCategories.map((c,i)=>({label:c.label,color:c.color,count:dnaCounts[i]})),{label:'Others',color:'var(--ink3)',count:othersCount}];
+    dnaEl.innerHTML=scoped.length?rows.map(r=>`
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink3);margin-bottom:2px"><span>${r.label}</span><span>${Math.round(r.count/dnaTotal*100)}%</span></div>
+        <div style="background:var(--line);border-radius:6px;height:8px;overflow:hidden"><div style="width:${Math.round(r.count/dnaTotal*100)}%;height:100%;background:${r.color}"></div></div>
+      </div>`).join(''):'<div style="font-size:13px;color:var(--ink3);font-style:italic">No tasks yet.</div>';
+  }
+
+  // Momentum — all three numbers computed from real completed_at data,
+  // not invented. Streak = consecutive days (counting back from today)
+  // with at least one task actually completed that day.
+  const completedWithDates=scoped.filter(t=>t.status==='Done'&&t.completed_at);
+  let streak=0;
+  for(let i=0;i<365;i++){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const dStr=d.toISOString().substring(0,10);
+    const hasCompletion=completedWithDates.some(t=>t.completed_at.substring(0,10)===dStr);
+    if(hasCompletion)streak++;
+    else if(i>0)break; // allow today to be empty without breaking a streak that ran through yesterday
+    else if(!hasCompletion)break;
+  }
+  const sevenDaysAgo=new Date(Date.now()-7*86400000).toISOString().substring(0,10);
+  const weekCompleted=completedWithDates.filter(t=>t.completed_at.substring(0,10)>=sevenDaysAgo).length;
+  const onTimeEligible=completedWithDates.filter(t=>t.due_date);
+  const onTime=onTimeEligible.filter(t=>t.completed_at.substring(0,10)<=t.due_date).length;
+  const onTimePct=onTimeEligible.length?Math.round((onTime/onTimeEligible.length)*100):null;
+  const momentumEl=document.getElementById('td-momentum');
+  if(momentumEl){
+    momentumEl.innerHTML=`
+      <div><div style="font-size:22px;font-weight:700;color:var(--gold)">${streak}</div><div style="font-size:11px;color:var(--ink3)">day streak</div></div>
+      <div><div style="font-size:22px;font-weight:700;color:var(--pine)">${weekCompleted}</div><div style="font-size:11px;color:var(--ink3)">done this week</div></div>
+      <div><div style="font-size:22px;font-weight:700;color:var(--sage)">${onTimePct===null?'—':onTimePct+'%'}</div><div style="font-size:11px;color:var(--ink3)">on-time completion</div></div>`;
+  }
+}
+
 async function renderTaskDashboard(){
   const{data,error}=await sb.from('tasks').select('*,leads(name,country,nationality,lead_id)').order('due_date',{ascending:true}).limit(500);
   if(error){
@@ -5991,14 +6443,27 @@ async function renderTaskDashboard(){
   // see your own tasks anyway.
   const isPersonalView=myRole==='Counsellor'&&!isSuperAdmin;
   document.getElementById('my-tasks-personal-view').style.display=isPersonalView?'block':'none';
+  document.getElementById('td-snapshot-row').style.display=isPersonalView?'none':'grid';
   document.getElementById('td-summary-cards').style.display=isPersonalView?'none':'grid';
   document.getElementById('td-two-col').style.display=isPersonalView?'none':'grid';
   document.getElementById('td-all-tasks-card').style.display=isPersonalView?'none':'block';
+  document.getElementById('td-workstream-toggle').style.display=isPersonalView?'none':'block';
   if(isPersonalView){
     myTasksPersonalData=scoped;
     renderMyTasksPersonalTab();
     return;
   }
+
+  // My Workstream / Team View — a Manager/Admin/Super Admin/Owner
+  // usually has their own tasks mixed in with everyone else's on the
+  // team; "My Workstream" narrows down to just theirs, "Team View"
+  // (the default) shows everyone within whatever scope their role
+  // already allows. This narrows further, on top of the country/role
+  // scoping above — never widens it.
+  if(taskWorkstreamMode==='my'){
+    scoped=scoped.filter(t=>t.assigned_to===myName);
+  }
+  renderTaskDailySnapshot(scoped);
 
   const today=new Date().toISOString().substring(0,10);
   const weekAhead=new Date(Date.now()+7*86400000).toISOString().substring(0,10);
@@ -6102,6 +6567,27 @@ function renderMyTasksPersonalTab(){
   const tomorrow=new Date(Date.now()+86400000).toISOString().substring(0,10);
   const open=myTasksPersonalData.filter(t=>t.status!=='Done');
   const done=myTasksPersonalData.filter(t=>t.status==='Done');
+
+  // Today's progress donut — same visual pattern as the management
+  // dashboard's, scoped to just this counsellor's own tasks.
+  const todaysAll=myTasksPersonalData.filter(t=>t.due_date===today);
+  const todaysDone=todaysAll.filter(t=>t.status==='Done').length;
+  const todaysPct=todaysAll.length?Math.round((todaysDone/todaysAll.length)*100):0;
+  destroyTdChart('mtpToday');
+  const mtpCtx=document.getElementById('mtp-today-donut')?.getContext('2d');
+  if(mtpCtx){
+    tdCharts.mtpToday=new Chart(mtpCtx,{
+      type:'doughnut',
+      data:{datasets:[{data:todaysAll.length?[todaysDone,todaysAll.length-todaysDone]:[1],
+        backgroundColor:todaysAll.length?['#12A56F','#E6DDCC']:['#E6DDCC'],borderWidth:0}]},
+      options:{cutout:'70%',plugins:{legend:{display:false},tooltip:{enabled:todaysAll.length>0}}},
+    });
+  }
+  const mtpLabel=document.getElementById('mtp-today-donut-label');
+  if(mtpLabel)mtpLabel.textContent=todaysAll.length?todaysPct+'%':'—';
+  const mtpSub=document.getElementById('mtp-today-donut-sub');
+  if(mtpSub)mtpSub.textContent=todaysAll.length?`${todaysDone} of ${todaysAll.length} done today`:'Nothing due today';
+
   let list;
   if(myTasksPersonalActiveTab==='today')list=open.filter(t=>t.due_date===today||(!t.due_date));
   else if(myTasksPersonalActiveTab==='tomorrow')list=open.filter(t=>t.due_date===tomorrow);
@@ -6524,26 +7010,71 @@ function visibleCoaching(){
   const visibleLeadIds=new Set(leads.map(l=>l.id));
   return coaching.filter(c=>visibleLeadIds.has(c.lead_id));
 }
+let coachingSubtab='all';
+function switchCoachingSubtab(tab){
+  coachingSubtab=tab;
+  document.querySelectorAll('.ct-subtab').forEach(b=>b.classList.toggle('active',b.dataset.sub===tab));
+  renderCoaching();
+}
 function renderCoaching(){
   const scoped=visibleCoaching();
   const empty=scoped.length===0;
   document.getElementById('coaching-empty').style.display=empty?'flex':'none';
   document.getElementById('coaching-content').style.display=empty?'none':'block';
   if(empty)return;
+
+  // KPI row — computed from the full scoped set, not the sub-tab
+  // filter, so the numbers always reflect the whole picture regardless
+  // of which sub-tab is currently open.
+  const today=new Date().toISOString().substring(0,10);
+  const activeCount=scoped.filter(c=>(c.sessions_done||0)<(c.total_sessions||1)).length;
+  const completedCount=scoped.filter(c=>(c.sessions_done||0)>=(c.total_sessions||1)&&c.total_sessions>0).length;
+  const testsConducted=scoped.reduce((sum,c)=>sum+[c.mock_1_score,c.mock_2_score,c.mock_3_score].filter(Boolean).length,0);
+  const upcomingTodayCount=scoped.filter(c=>c.tentative_exam_date===today).length;
+  document.getElementById('coaching-kpi-row').innerHTML=`
+    <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em">Total Students</div><div style="font-size:24px;font-weight:700;color:var(--pine)">${scoped.length}</div></div>
+    <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em">Active Courses</div><div style="font-size:24px;font-weight:700;color:var(--gold)">${activeCount}</div></div>
+    <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em">Completed</div><div style="font-size:24px;font-weight:700;color:var(--sage)">${completedCount}</div></div>
+    <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em">Exams Today</div><div style="font-size:24px;font-weight:700;color:var(--pine3)">${upcomingTodayCount}</div></div>
+    <div class="card" style="padding:14px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em">Tests Conducted</div><div style="font-size:24px;font-weight:700;color:var(--pine)">${testsConducted}</div></div>`;
+
+  // Sub-tab filtering — narrows which rows show, on top of the KPI
+  // row above which always shows the whole picture.
+  let filtered=scoped;
+  const titles={all:'All coaching students',active:'Active courses',completed:'Completed courses',upcoming:'Upcoming exams',tests:'Test scores',fees:'Fees'};
+  if(coachingSubtab==='active')filtered=scoped.filter(c=>(c.sessions_done||0)<(c.total_sessions||1));
+  else if(coachingSubtab==='completed')filtered=scoped.filter(c=>(c.sessions_done||0)>=(c.total_sessions||1)&&c.total_sessions>0);
+  else if(coachingSubtab==='upcoming')filtered=scoped.filter(c=>c.tentative_exam_date).sort((a,b)=>(a.tentative_exam_date||'').localeCompare(b.tentative_exam_date||''));
+  else if(coachingSubtab==='tests')filtered=scoped.filter(c=>c.mock_1_score||c.mock_2_score||c.mock_3_score);
+  document.getElementById('coaching-table-title').textContent=titles[coachingSubtab]||'All coaching students';
+
   const cg=document.getElementById('cg');
-  cg.innerHTML=scoped.map(c=>{
+  cg.innerHTML=filtered.map(c=>{
     const pct=c.total_sessions>0?Math.round(c.sessions_done/c.total_sessions*100):0;
     const col=pct>=100?'#065F46':pct>=50?'#1B998B':'#C05621';
     const latestMock=c.mock_3_score||c.mock_2_score||c.mock_1_score||'—';
     return `<div class="cc" onclick="openCoachingDashboard('${c.id}')" style="cursor:pointer"><div class="ccn">${esc(c.student_name)}</div><div class="ccp">${esc(c.program||'')} · ${esc(c.mode||'')} · ${esc(c.batch_name||'')}</div><div class="pt"><div class="pb" style="width:${pct}%;background:${col}"></div></div><div class="csr"><div class="cst"><div class="csl">Done</div><div class="csv">${c.sessions_done}/${c.total_sessions}</div></div><div class="cst"><div class="csl">Latest Mock</div><div class="csv">${esc(latestMock)}</div></div><div class="cst"><div class="csl">Target</div><div class="csv">${c.target_score||'—'}</div></div><div class="cst"><div class="csl">%</div><div class="csv" style="color:${col}">${pct}%</div></div></div></div>`;
   }).join('');
-  const tb=document.getElementById('ct');
-  tb.innerHTML=scoped.map(c=>{
-    const pct=c.total_sessions>0?Math.round(c.sessions_done/c.total_sessions*100):0;
-    const done=pct>=100;const ss=done?{bg:'#A7F3D0',tx:'#065F46'}:{bg:'#DBEAFE',tx:'#1E40AF'};
-    const latestMock=c.mock_3_score||c.mock_2_score||c.mock_1_score||'—';
-    return `<tr onclick="openCoachingDashboard('${c.id}')" style="cursor:pointer"><td style="font-weight:600">${esc(c.student_name)}</td><td style="font-size:12px">${esc(c.program||'')}</td><td style="font-size:12px">${esc(c.batch_name||'')}</td><td>${c.sessions_done}/${c.total_sessions}</td><td>${esc(latestMock)}</td><td>${c.target_score||'—'}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="pt" style="width:80px;margin:0;border:1px solid var(--line)"><div class="pb" style="width:${pct}%;background:${done?'#065F46':'#1B998B'}"></div></div><span style="font-size:11px;color:var(--ink3)">${pct}%</span></div></td></tr>`;
-  }).join('');
+
+  // Tests and Fees sub-tabs swap the table's own columns to actually
+  // emphasise the relevant data, rather than just filtering rows while
+  // showing the same generic columns as every other tab.
+  const head=document.getElementById('ct-head');
+  if(coachingSubtab==='tests'){
+    head.innerHTML='<th>Student</th><th>Program</th><th>Mock 1</th><th>Mock 2</th><th>Mock 3</th><th>Target</th><th>Tentative Exam</th>';
+    document.getElementById('ct').innerHTML=filtered.map(c=>`<tr onclick="openCoachingDashboard('${c.id}')" style="cursor:pointer"><td style="font-weight:600">${esc(c.student_name)}</td><td style="font-size:12px">${esc(c.program||'')}</td><td>${c.mock_1_score||'—'}</td><td>${c.mock_2_score||'—'}</td><td>${c.mock_3_score||'—'}</td><td>${c.target_score||'—'}</td><td style="font-size:12px">${c.tentative_exam_date?new Date(c.tentative_exam_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—'}</td></tr>`).join('');
+  } else if(coachingSubtab==='fees'){
+    head.innerHTML='<th>Student</th><th>Program</th><th>Batch</th><th>Fees (₹)</th><th>Status</th>';
+    document.getElementById('ct').innerHTML=filtered.map(c=>`<tr onclick="openCoachingDashboard('${c.id}')" style="cursor:pointer"><td style="font-weight:600">${esc(c.student_name)}</td><td style="font-size:12px">${esc(c.program||'')}</td><td style="font-size:12px">${esc(c.batch_name||'')}</td><td>${c.fees?'₹'+Number(c.fees).toLocaleString('en-IN'):'—'}</td><td><span class="pill" style="background:${c.fees_status==='Paid'?'var(--sage-l)':'var(--gold-l)'};color:${c.fees_status==='Paid'?'var(--sage)':'var(--gold)'}">${esc(c.fees_status||'Pending')}</span></td></tr>`).join('');
+  } else {
+    head.innerHTML='<th>Student</th><th>Program</th><th>Batch</th><th>Sessions</th><th>Mock</th><th>Target</th><th>Progress</th>';
+    document.getElementById('ct').innerHTML=filtered.map(c=>{
+      const pct=c.total_sessions>0?Math.round(c.sessions_done/c.total_sessions*100):0;
+      const done=pct>=100;
+      const latestMock=c.mock_3_score||c.mock_2_score||c.mock_1_score||'—';
+      return `<tr onclick="openCoachingDashboard('${c.id}')" style="cursor:pointer"><td style="font-weight:600">${esc(c.student_name)}</td><td style="font-size:12px">${esc(c.program||'')}</td><td style="font-size:12px">${esc(c.batch_name||'')}</td><td>${c.sessions_done}/${c.total_sessions}</td><td>${esc(latestMock)}</td><td>${c.target_score||'—'}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="pt" style="width:80px;margin:0;border:1px solid var(--line)"><div class="pb" style="width:${pct}%;background:${done?'#065F46':'#1B998B'}"></div></div><span style="font-size:11px;color:var(--ink3)">${pct}%</span></div></td></tr>`;
+    }).join('');
+  }
 }
 
 function openCoachingModal(){
@@ -6554,9 +7085,9 @@ function openCoachingModal(){
   // the most recently active leads first for easier finding.
   const pickable=leads.filter(l=>l.status!=='Dropped').sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
   document.getElementById('co-sid').innerHTML=pickable.length?pickable.map(l=>`<option value="${l.id}">${esc(l.name)} — ${esc(l.status||'')}</option>`).join(''):'<option>No leads yet</option>';
-  ['co-batch','co-start','co-end','co-timing','co-mock1','co-mock2','co-mock3','co-target','co-examdate'].forEach(id=>document.getElementById(id).value='');
+  ['co-batch','co-start','co-end','co-timing','co-mock1','co-mock2','co-mock3','co-target','co-examdate','co-fees'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('co-total').value='';document.getElementById('co-done').value='0';
-  document.getElementById('co-prog').value='IELTS';document.getElementById('co-mode').value='Online';
+  document.getElementById('co-prog').value='IELTS';document.getElementById('co-mode').value='Online';document.getElementById('co-fees-status').value='Pending';
   document.getElementById('modal-coaching').classList.add('open');
 }
 
@@ -6578,6 +7109,8 @@ async function saveCoaching(){
     mock_3_score:document.getElementById('co-mock3').value,
     target_score:document.getElementById('co-target').value,
     tentative_exam_date:document.getElementById('co-examdate').value||null,
+    fees:parseFloat(document.getElementById('co-fees').value)||null,
+    fees_status:document.getElementById('co-fees-status').value,
   };
   setSyncing();
   const{error,data:res}=await sb.from('coaching').insert([data]).select();
@@ -6611,6 +7144,8 @@ function openCoachingDashboard(coachingId){
   document.getElementById('cd-mock2-input').value=c.mock_2_score||'';
   document.getElementById('cd-mock3-input').value=c.mock_3_score||'';
   document.getElementById('cd-examdate-input').value=c.tentative_exam_date||'';
+  document.getElementById('cd-fees-input').value=c.fees||'';
+  document.getElementById('cd-fees-status-input').value=c.fees_status||'Pending';
   document.getElementById('modal-coaching-dashboard').classList.add('open');
 }
 function updateCoachingDashboardProgress(c){
@@ -6647,6 +7182,8 @@ async function saveCoachingDashboardEdits(){
     mock_2_score:document.getElementById('cd-mock2-input').value,
     mock_3_score:document.getElementById('cd-mock3-input').value,
     tentative_exam_date:document.getElementById('cd-examdate-input').value||null,
+    fees:parseFloat(document.getElementById('cd-fees-input').value)||null,
+    fees_status:document.getElementById('cd-fees-status-input').value,
   };
   const{error}=await sb.from('coaching').update(updates).eq('id',currentCoachingId);
   if(error){toast('Error saving: '+error.message);return;}
@@ -7404,13 +7941,20 @@ function onBulkCheckboxChange(){
   const statusSel=document.getElementById('bulk-status-select');
   if(!statusSel.options.length) statusSel.innerHTML=STATUSES.map(s=>`<option>${s}</option>`).join('');
   const counselSel=document.getElementById('bulk-counsellor-select');
-  let counsellorPool=(teamList||[]).filter(t=>t.role==='Counsellor');
-  if(!isOwner){
-    if(isSuperAdmin)counsellorPool=counsellorPool.filter(t=>t.country!=='India');
-    else if(myRole==='Admin'||myRole==='Manager'||myRole==='Director')counsellorPool=counsellorPool.filter(t=>t.country===myCountry);
-  }
-  const counsellorNames=[...new Set(counsellorPool.map(t=>t.full_name))];
+  const counsellorNames=getScopedCounsellorNames();
   counselSel.innerHTML='<option value="">Choose counsellor…</option>'+counsellorNames.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+}
+// Shared by the bulk bar's quick Reassign AND the Bulk Assign Wizard —
+// same access-scoping used everywhere else: Owner sees every
+// counsellor, Super Admin sees everyone except India's, Admin/Manager/
+// Director see only their own country's.
+function getScopedCounsellorNames(){
+  let pool=(teamList||[]).filter(t=>t.role==='Counsellor');
+  if(!isOwner){
+    if(isSuperAdmin)pool=pool.filter(t=>t.country!=='India');
+    else if(myRole==='Admin'||myRole==='Manager'||myRole==='Director')pool=pool.filter(t=>t.country===myCountry);
+  }
+  return[...new Set(pool.map(t=>t.full_name))];
 }
 function clearBulkSelection(){
   document.querySelectorAll('.bulk-lead-checkbox').forEach(cb=>cb.checked=false);
@@ -7464,6 +8008,258 @@ async function bulkReassignCounsellor(){
   toast(`Reassigned ${workIds.length} lead(s) to ${counsellor}.`);
   clearBulkSelection();renderLeads();renderDash();
 }
+// ── Bulk Assign Wizard ───────────────────────────────────────────────
+let bawSelectedIds=[];
+let bawMethod=null;
+let bawStep=1;
+let bawCustomAssignments={};
+function openBulkAssignWizard(){
+  const ids=getSelectedLeadIds();
+  if(!ids.length){toast('Select at least one lead first.');return;}
+  // Same India-lock guard the quick Reassign already uses.
+  bawSelectedIds=isIndiaLocked()?ids.filter(id=>{const l=leads.find(x=>x.id===id);return l&&l.country!=='India';}):ids;
+  if(!bawSelectedIds.length){toast("India's leads are view-only for your account — nothing to assign.");return;}
+  bawMethod=null;bawStep=1;bawCustomAssignments={};
+  document.getElementById('baw-lead-count').textContent=`${bawSelectedIds.length} lead${bawSelectedIds.length!==1?'s':''} selected`;
+  document.querySelectorAll('.baw-method-card').forEach(c=>c.classList.remove('selected'));
+  bawShowStep(1);
+  document.getElementById('modal-bulk-assign-wizard').classList.add('open');
+}
+function selectBawMethod(method){
+  bawMethod=method;
+  document.querySelectorAll('.baw-method-card').forEach(c=>c.classList.toggle('selected',c.dataset.method===method));
+}
+function bawShowStep(n){
+  bawStep=n;
+  [1,2,3].forEach(i=>{
+    document.getElementById(`baw-step-${i}`).style.display=i===n?'block':'none';
+    const stepEl=document.querySelector(`.baw-step[data-step="${i}"]`);
+    stepEl.classList.toggle('active',i===n);
+    stepEl.classList.toggle('done',i<n);
+  });
+  document.getElementById('baw-back-btn').style.display=n>1?'inline-flex':'none';
+  document.getElementById('baw-next-btn').textContent=n===3?`Assign ${bawSelectedIds.length} Lead${bawSelectedIds.length!==1?'s':''}`:'Next →';
+}
+function bawGoBack(){bawShowStep(bawStep-1);}
+function bawGoNext(){
+  if(bawStep===1){
+    if(!bawMethod){toast('Choose an assignment method first.');return;}
+    bawPopulateStep2();
+    bawShowStep(2);
+  } else if(bawStep===2){
+    if(!bawValidateStep2())return;
+    bawPopulateStep3();
+    bawShowStep(3);
+  } else {
+    bawCommit();
+  }
+}
+function bawPopulateStep2(){
+  document.getElementById('baw-configure-single').style.display=bawMethod==='single'?'block':'none';
+  document.getElementById('baw-configure-roundrobin').style.display=bawMethod==='roundrobin'?'block':'none';
+  document.getElementById('baw-configure-custom').style.display=bawMethod==='custom'?'block':'none';
+  const names=getScopedCounsellorNames();
+  if(bawMethod==='single'){
+    document.getElementById('baw-single-counsellor').innerHTML='<option value="">Choose…</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  } else if(bawMethod==='roundrobin'){
+    document.getElementById('baw-rr-counsellor-list').innerHTML=names.map(n=>`<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r);cursor:pointer"><input type="checkbox" class="baw-rr-check" value="${esc(n)}" style="width:auto">${esc(n)}</label>`).join('');
+  } else {
+    document.getElementById('baw-custom-list').innerHTML=bawSelectedIds.map(id=>{
+      const l=leads.find(x=>x.id===id);
+      return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:13px;flex:1">${esc(l?.name||'Unknown')}</span><select style="width:160px;font-size:12.5px" onchange="bawCustomAssignments['${id}']=this.value"><option value="">Choose…</option>${names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}</select></div>`;
+    }).join('');
+  }
+}
+function bawValidateStep2(){
+  if(bawMethod==='single'){
+    if(!document.getElementById('baw-single-counsellor').value){toast('Choose a counsellor first.');return false;}
+  } else if(bawMethod==='roundrobin'){
+    const checked=document.querySelectorAll('.baw-rr-check:checked');
+    if(checked.length<2){toast('Pick at least two counsellors for Round Robin.');return false;}
+  } else {
+    const missing=bawSelectedIds.filter(id=>!bawCustomAssignments[id]);
+    if(missing.length){toast(`${missing.length} lead(s) still need a counsellor picked.`);return false;}
+  }
+  return true;
+}
+function bawPopulateStep3(){
+  let summary='';
+  if(bawMethod==='single'){
+    const name=document.getElementById('baw-single-counsellor').value;
+    summary=`<b>${bawSelectedIds.length}</b> lead(s) → all to <b>${esc(name)}</b>`;
+  } else if(bawMethod==='roundrobin'){
+    const names=Array.from(document.querySelectorAll('.baw-rr-check:checked')).map(c=>c.value);
+    summary=`<b>${bawSelectedIds.length}</b> lead(s) → distributed round-robin across <b>${names.length}</b> counsellors: ${names.map(esc).join(', ')}`;
+  } else {
+    const counts={};
+    Object.values(bawCustomAssignments).forEach(n=>{counts[n]=(counts[n]||0)+1;});
+    summary=Object.entries(counts).map(([n,c])=>`<b>${c}</b> lead(s) → <b>${esc(n)}</b>`).join('<br>');
+  }
+  if(document.getElementById('baw-create-task').checked)summary+='<br><br>✓ A follow-up task will be created for each assigned lead.';
+  document.getElementById('baw-review-summary').innerHTML=summary;
+}
+async function bawCommit(){
+  const btn=document.getElementById('baw-next-btn');
+  btn.disabled=true;btn.textContent='Assigning…';
+  const now=new Date().toISOString();
+  let assignments=[]; // [{id, counsellor}]
+  if(bawMethod==='single'){
+    const name=document.getElementById('baw-single-counsellor').value;
+    assignments=bawSelectedIds.map(id=>({id,counsellor:name}));
+  } else if(bawMethod==='roundrobin'){
+    const names=Array.from(document.querySelectorAll('.baw-rr-check:checked')).map(c=>c.value);
+    assignments=bawSelectedIds.map((id,i)=>({id,counsellor:names[i%names.length]}));
+  } else {
+    assignments=bawSelectedIds.map(id=>({id,counsellor:bawCustomAssignments[id]}));
+  }
+  for(const{id,counsellor}of assignments){
+    const{error}=await sb.from('leads').update({counsellor,assigned_at:now}).eq('id',id);
+    if(error){toast('Error assigning a lead: '+error.message);continue;}
+    const l=leads.find(x=>x.id===id);if(l){l.counsellor=counsellor;l.assigned_at=now;}
+    logActivity(id,'reassigned',`Reassigned (bulk wizard, ${bawMethod}) → ${counsellor}`);
+    if(document.getElementById('baw-create-task').checked){
+      await sb.from('tasks').insert({lead_id:id,title:'Follow up with newly assigned lead',due_date:new Date(Date.now()+86400000).toISOString().substring(0,10),assigned_to:counsellor,status:'Open',source:'manual'});
+    }
+  }
+  toast(`Assigned ${assignments.length} lead(s).`);
+  btn.disabled=false;
+  closeModal('modal-bulk-assign-wizard');
+  clearBulkSelection();renderLeads();renderDash();
+}
+
+// ── Bulk Add Leads wizard ───────────────────────────────────────────
+const BAL_CRM_FIELDS=[
+  {key:'',label:"Don't import"},
+  {key:'name',label:'Name'},{key:'mobile',label:'Mobile'},{key:'email',label:'Email'},
+  {key:'program',label:'Program'},{key:'destination',label:'Destination'},
+  {key:'country',label:'Nationality / Origin Country'},{key:'source',label:'Source'},{key:'notes',label:'Notes'},
+];
+let balHeaders=[];
+let balRows=[];
+let balMapping={};
+let balStep=1;
+let balPreviewData=[];
+function openBulkAddLeadsWizard(){
+  balHeaders=[];balRows=[];balMapping={};balStep=1;balPreviewData=[];
+  document.getElementById('bal-file-info').style.display='none';
+  document.getElementById('bal-next-btn').disabled=true;
+  balShowStep(1);
+  document.getElementById('modal-bal-wizard').classList.add('open');
+}
+function balHandleFile(file){
+  if(!file)return;
+  if(!file.name.toLowerCase().endsWith('.csv')){toast('Please upload a .csv file — Excel isn\'t supported yet, export as CSV first.');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const rows=parseCSV(e.target.result);
+    if(rows.length<2){toast('No data rows found in this file.');return;}
+    balHeaders=rows[0].map(h=>h.trim());
+    balRows=rows.slice(1);
+    document.getElementById('bal-file-info').style.display='block';
+    document.getElementById('bal-file-info').innerHTML=`<span style="color:var(--sage)">✓</span> <b>${esc(file.name)}</b> — ${balRows.length} row(s), ${balHeaders.length} column(s) detected`;
+    document.getElementById('bal-next-btn').disabled=false;
+  };
+  reader.readAsText(file);
+}
+function balShowStep(n){
+  balStep=n;
+  [1,2,3,4].forEach(i=>{
+    document.getElementById(`bal-step-${i}`).style.display=i===n?'block':'none';
+    const stepEl=document.querySelector(`#bal-steps .baw-step[data-step="${i}"]`);
+    stepEl.classList.toggle('active',i===n);
+    stepEl.classList.toggle('done',i<n);
+  });
+  document.getElementById('bal-back-btn').style.display=n>1?'inline-flex':'none';
+  document.getElementById('bal-next-btn').textContent=n===4?`Import ${balPreviewData.filter(r=>r._valid&&!r._duplicate).length} Leads`:'Next →';
+  document.getElementById('bal-next-btn').disabled=false;
+}
+function balGoBack(){balShowStep(balStep-1);}
+function balGoNext(){
+  if(balStep===1){
+    balPopulateStep2();
+    balShowStep(2);
+  } else if(balStep===2){
+    if(!Object.values(balMapping).includes('name')||!Object.values(balMapping).includes('mobile')){
+      toast('Map at least Name and Mobile before continuing.');return;
+    }
+    balShowStep(3);
+  } else if(balStep===3){
+    balPopulateStep4();
+    balShowStep(4);
+  } else {
+    balCommit();
+  }
+}
+function balPopulateStep2(){
+  // Best-effort auto-guess based on header text, so most files need
+  // little to no manual remapping — same spirit as findColumn() used
+  // by the existing Meta importer, generalised to any header wording.
+  const guesses={name:['name','full name','student name'],mobile:['mobile','phone','phone number','mobile number'],email:['email','email address'],program:['program','course','preferred course'],destination:['destination','country of interest','interested country'],country:['nationality','origin country'],source:['source','lead source']};
+  balMapping={};
+  document.getElementById('bal-mapping-list').innerHTML=balHeaders.map((h,i)=>{
+    let guessed='';
+    const hLower=h.toLowerCase();
+    for(const[field,words]of Object.entries(guesses)){
+      if(words.some(w=>hLower.includes(w))){guessed=field;break;}
+    }
+    balMapping[i]=guessed;
+    return `<div style="display:flex;align-items:center;gap:12px"><span style="flex:1;font-size:13px;font-weight:600">${esc(h)}</span><span style="color:var(--ink3)">→</span><select style="width:220px" onchange="balMapping[${i}]=this.value">${BAL_CRM_FIELDS.map(f=>`<option value="${f.key}" ${f.key===guessed?'selected':''}>${f.label}</option>`).join('')}</select></div>`;
+  }).join('');
+}
+function balPopulateStep4(){
+  const existingMobiles=new Set(leads.map(l=>(l.mobile||'').replace(/\D/g,'')));
+  balPreviewData=balRows.map(row=>{
+    const rec={};
+    Object.entries(balMapping).forEach(([idx,field])=>{if(field)rec[field]=(row[idx]||'').trim();});
+    rec._valid=!!(rec.name&&rec.mobile);
+    rec._duplicate=rec.mobile?existingMobiles.has(rec.mobile.replace(/\D/g,'')):false;
+    return rec;
+  });
+  const valid=balPreviewData.filter(r=>r._valid&&!r._duplicate).length;
+  const dup=balPreviewData.filter(r=>r._duplicate).length;
+  const invalid=balPreviewData.filter(r=>!r._valid).length;
+  document.getElementById('bal-preview-stats').innerHTML=`
+    <div style="background:var(--sage-l);padding:10px 16px;border-radius:var(--r)"><b>${valid}</b> ready to import</div>
+    <div style="background:var(--gold-l);padding:10px 16px;border-radius:var(--r)"><b>${dup}</b> duplicate mobile number</div>
+    <div style="background:var(--rose-l,#FEE2E2);padding:10px 16px;border-radius:var(--r)"><b>${invalid}</b> missing name/mobile</div>`;
+  const mappedFields=[...new Set(Object.values(balMapping).filter(Boolean))];
+  document.getElementById('bal-preview-head').innerHTML=mappedFields.map(f=>`<th style="text-align:left;padding:6px 10px">${BAL_CRM_FIELDS.find(x=>x.key===f)?.label}</th>`).join('')+'<th>Status</th>';
+  document.getElementById('bal-preview-body').innerHTML=balPreviewData.slice(0,50).map(r=>{
+    const status=!r._valid?'<span style="color:var(--rose)">Missing data</span>':r._duplicate?'<span style="color:var(--gold)">Duplicate</span>':'<span style="color:var(--sage)">Valid</span>';
+    return `<tr>${mappedFields.map(f=>`<td style="padding:6px 10px">${esc(r[f]||'—')}</td>`).join('')}<td style="padding:6px 10px">${status}</td></tr>`;
+  }).join('');
+}
+async function balCommit(){
+  const btn=document.getElementById('bal-next-btn');
+  btn.disabled=true;btn.textContent='Importing…';
+  const dupMode=document.getElementById('bal-dup-mode').value;
+  const forcedCountry=document.getElementById('bal-country').value;
+  const assignMode=document.getElementById('bal-assign-mode').value;
+  let toImport=balPreviewData.filter(r=>r._valid);
+  if(dupMode==='skip')toImport=toImport.filter(r=>!r._duplicate);
+  let imported=0;
+  for(const r of toImport){
+    const country=forcedCountry||r.country||'India';
+    const office=COUNTRY_DEFAULT_OFFICE[country]||'India HQ';
+    let counsellor=null;
+    if(assignMode==='roundrobin'){
+      const picked=await getNextCounsellorForOffice(office);
+      counsellor=picked?.name||null;
+    }
+    const{error}=await sb.from('leads').insert({
+      name:r.name,mobile:r.mobile,email:r.email||null,program:r.program||null,
+      destination:r.destination||null,country,office,source:r.source||'Bulk Import',
+      notes:r.notes||null,status:'New Enquiry',priority:'Medium',counsellor,
+      created_at:new Date().toISOString(),
+    });
+    if(!error)imported++;
+  }
+  toast(`Imported ${imported} lead(s).`);
+  btn.disabled=false;
+  closeModal('modal-bal-wizard');
+  loadLeads().then(()=>{renderLeads();renderDash();badges();});
+}
+
 async function bulkChangeSource(){
   const ids=getSelectedLeadIds();
   if(!ids.length)return;
@@ -8926,6 +9722,41 @@ async function renderLatestPayments(){
   }).join('');
 }
 
+// Quick-filter destination cards — clicking one jumps straight to the
+// Leads screen pre-filtered to that destination. Uses only the real
+// destination values this CRM actually supports (from the Add Lead
+// form's own dropdown), not invented ones.
+const HOME_DESTINATIONS=[
+  {label:'UK',flag:'🇬🇧'},{label:'Canada',flag:'🇨🇦'},{label:'Australia',flag:'🇦🇺'},
+  {label:'USA',flag:'🇺🇸'},{label:'Europe',flag:'🇪🇺'},{label:'New Zealand',flag:'🇳🇿'},
+];
+function renderHomeDestinationCards(){
+  const el=document.getElementById('home-destination-cards');
+  if(!el)return;
+  el.innerHTML=HOME_DESTINATIONS.map(d=>`
+    <div onclick="navFilter('ls-de','${esc(d.label)}')" style="cursor:pointer;text-align:center;padding:14px 8px;border:1px solid var(--line);border-radius:var(--r);background:var(--paper)" onmouseover="this.style.borderColor='var(--pine4)'" onmouseout="this.style.borderColor='var(--line)'">
+      <div style="font-size:22px;margin-bottom:4px">${d.flag}</div>
+      <div style="font-size:12px;font-weight:600">${esc(d.label)}</div>
+    </div>`).join('');
+}
+// Home-screen preview of the counsellor's own upcoming follow-ups —
+// same active-status list and scoping as the full Follow-ups screen
+// (renderFU), just the top few, with a link through to see everything.
+async function loadHomeFollowups(){
+  const el=document.getElementById('home-followups-list');
+  if(!el)return;
+  const act=['New Enquiry','Pending','Ongoing','Contacted','Follow Up','Callback Later','Interested','Counselling Done','Defer'];
+  const mine=opsViewScopedLeads(leads).filter(l=>act.includes(l.status)&&(!isRestrictedStaffRole()||l.counsellor===myName))
+    .sort((a,b)=>(a.priority==='High'?0:a.priority==='Medium'?1:2)-(b.priority==='High'?0:b.priority==='Medium'?1:2))
+    .slice(0,5);
+  if(!mine.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No active follow-ups right now.</div>';return;}
+  const prColor={High:'var(--rose,#C0392B)',Medium:'var(--gold)',Low:'var(--sage)'};
+  el.innerHTML=mine.map(l=>`
+    <div onclick="openLeadDetail('${l.id}')" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer">
+      <span style="width:8px;height:8px;border-radius:50%;background:${prColor[l.priority]||'var(--ink3)'};flex-shrink:0"></span>
+      <div style="flex:1;font-size:13px"><b>${esc(l.name)}</b> <span style="color:var(--ink3)">· ${esc(l.status)}</span></div>
+    </div>`).join('');
+}
 async function loadDashReminders(){
   const today=new Date().toISOString().split('T')[0];
   // Include OVERDUE reminders (before today, still not done) — previously

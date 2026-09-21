@@ -6482,7 +6482,6 @@ async function renderTaskDashboard(){
   // - Counsellor / Agent / Application / Visa / SOP: only records assigned to that person.
   // - Admin / Manager / Director: tasks assigned to people in their own country/team scope.
   // The assignee is the primary task-visibility boundary; the lead country is a secondary safety check.
-  const taskAssignee=(t.assigned_to||'').trim();
   const staffByName=new Map((teamList||[]).map(x=>[(x.full_name||'').trim(),x]));
   const isElevatedGlobal=isOwner || ((currentUser?.email||'').toLowerCase()==='pavitra@step4progress.com');
   const isJisan=(currentUser?.email||'').toLowerCase()==='jisan@step4progress.co.uk';
@@ -6496,16 +6495,17 @@ async function renderTaskDashboard(){
       scoped=nonIndia.filter(t=>superAdminOpsView==='Domestic'?isDomesticLead(t.leads):!isDomesticLead(t.leads));
     } else scoped=nonIndia;
   } else if(myRole==='Counsellor' || myTeamCategory==='Domestic' || ['Application Team','Visa Team','SOP Team'].includes(myRole) || myTeamCategory==='Agent'){
-    scoped=scoped.filter(t=>taskAssignee===myName);
+    scoped=scoped.filter(t=>(t.assigned_to||'').trim()===myName);
   } else if(['Admin','Manager','Director'].includes(myRole)){
     scoped=scoped.filter(t=>{
+      const taskAssignee=(t.assigned_to||'').trim();
       const a=staffByName.get(taskAssignee);
       if(a) return isOwnCountryStaff(a);
       // Legacy/orphaned task assignee: fall back to the lead country rather than exposing it broadly.
       return !!myCountry && t.leads?.country===myCountry;
     });
   } else {
-    scoped=scoped.filter(t=>taskAssignee===myName);
+    scoped=scoped.filter(t=>(t.assigned_to||'').trim()===myName);
   }
 
   // Counsellors get the simple personal view (Today/Tomorrow/Pending/

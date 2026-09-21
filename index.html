@@ -819,8 +819,11 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
            Home page's "My Tasks" widget — this is the same data, in a
            dedicated, uncapped, fuller view rather than a 6-item preview. -->
       <section id="sc-taskdashboard" class="screen">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">
-          <div style="font-size:13px;color:var(--ink3)"></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--ink)">Task Dashboard</div>
+            <div id="td-header-meta" style="font-size:12px;color:var(--ink3);margin-top:4px">Your task workspace</div>
+          </div>
           <button class="btn btn-p" onclick="openTaskModalStandalone()"><i class="ti ti-plus"></i>Add task</button>
         </div>
         <!-- Personal view — Counsellors only. Deliberately simple: no
@@ -6348,7 +6351,7 @@ async function openTaskDetail(taskId){
   document.getElementById('tdetail-sub').textContent=[t.status||'Open',t.source==='auto'?'Auto-created':'Manual'].join(' · ');
   document.getElementById('tdetail-body').innerHTML=`
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px">
-      <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Lead</div><div style="font-weight:700;margin-top:4px"><a href="#" onclick="event.preventDefault();closeModal('modal-task-detail');openLeadDetail('${t.lead_id||''}')" style="color:var(--pine);text-decoration:underline">${esc(t.leads?.name||'—')}</a></div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${esc(t.leads?.lead_id||'')}</div></div>
+      <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Lead</div><div style="font-weight:700;margin-top:4px">${t.lead_id?`<a href="#" onclick="event.preventDefault();closeModal('modal-task-detail');openLeadDetail('${t.lead_id}')" style="color:var(--pine);text-decoration:underline">${esc(t.leads?.name||'Open lead')}</a>`:esc(t.leads?.name||'No lead linked')}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${esc(t.leads?.lead_id||'')}</div></div>
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Assigned to</div><div style="font-weight:700;margin-top:4px">${esc(assignee||'Unassigned')}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${esc(staff?.role||'')}</div></div>
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Due</div><div style="font-weight:700;margin-top:4px;color:${overdue?'var(--rose)':'var(--ink)'}">${t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'No date'}</div>${overdue?'<div style="font-size:11px;color:var(--rose);margin-top:2px">Overdue</div>':''}</div>
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Priority</div><div style="font-weight:700;margin-top:4px">${esc(t.priority||'Medium')}</div></div>
@@ -6416,7 +6419,7 @@ function renderTaskDailySnapshot(scoped){
     timelineEl.innerHTML=todaysOpenTasks.map(t=>`
       <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">
         <span style="width:8px;height:8px;border-radius:50%;background:${prColor[t.priority]||'var(--ink3)'};flex-shrink:0"></span>
-        <div style="flex:1;font-size:12.5px"><b>${esc(t.leads?.name||'—')}</b> — ${esc(t.title)}${t.assigned_to?' <span style="color:var(--ink3)">· '+esc(t.assigned_to)+'</span>':''}</div>
+        <div style="flex:1;font-size:12.5px">${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-underline-offset:2px">${esc(t.leads?.name||'—')}</a>`:`<b>${esc(t.leads?.name||'—')}</b>`} — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:var(--ink);text-decoration:underline;text-underline-offset:2px">${esc(t.title)}</a>${t.assigned_to?' <span style="color:var(--ink3)">· '+esc(t.assigned_to)+'</span>':''}</div>
       </div>`).join('');
   }
 
@@ -6506,6 +6509,13 @@ async function renderTaskDashboard(){
     });
   } else {
     scoped=scoped.filter(t=>(t.assigned_to||'').trim()===myName);
+  }
+
+  const headerMeta=document.getElementById('td-header-meta');
+  if(headerMeta){
+    const openCount=scoped.filter(t=>t.status!=='Done').length;
+    const doneCount=scoped.filter(t=>t.status==='Done').length;
+    headerMeta.textContent=`${scoped.length} task${scoped.length===1?'':'s'} · ${openCount} open · ${doneCount} completed`;
   }
 
   // Counsellors get the simple personal view (Today/Tomorrow/Pending/
@@ -6616,8 +6626,9 @@ async function renderTaskDashboard(){
       <input type="checkbox" ${isDone?'checked':''} onchange="toggleTaskDashboardItem('${t.id}',this.checked)" style="cursor:pointer">
       ${avatar}
       <div style="flex:1;font-size:13px">
-        ${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open lead">${esc(leadName)}</a>`:`<b>${esc(leadName)}</b>`} — ${esc(t.title)}
+        ${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open lead">${esc(leadName)}</a>`:`<b>${esc(leadName)}</b>`} — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:var(--ink);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open task">${esc(t.title)}</a>
         ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
+        ${t.priority?` <span class="pill" style="background:${t.priority==='High'?'#FDE7E7':t.priority==='Low'?'var(--sage-l)':'var(--gold-l)'};color:${t.priority==='High'?'var(--rose)':t.priority==='Low'?'var(--sage)':'var(--gold)'};font-size:9px">${esc(t.priority)}</span>`:''}
       </div>
       ${assigneeCell}
       <span style="font-size:11px;color:var(--ink3);flex-shrink:0;min-width:60px;text-align:right">${dateLabel}</span>
@@ -6674,7 +6685,7 @@ function renderMyTasksPersonalTab(){
     return `<div style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)">
       <input type="checkbox" ${isDone?'checked':''} onchange="toggleMyTaskPersonal('${t.id}',this.checked)" style="cursor:pointer;width:18px;height:18px">
       <div style="flex:1;font-size:13.5px">
-        ${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open lead">${esc(leadName)}</a>`:`<b style="${isDone?'text-decoration:line-through;color:var(--ink3)':''}">${esc(leadName)}</b>`} — ${esc(t.title)}
+        ${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open lead">${esc(leadName)}</a>`:`<b style="${isDone?'text-decoration:line-through;color:var(--ink3)':''}">${esc(leadName)}</b>`} — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:${isDone?'var(--ink3)':'var(--ink)'};${isDone?'text-decoration:line-through;':''}text-underline-offset:2px;cursor:pointer" title="Open task">${esc(t.title)}</a>
         ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
       </div>
       <span style="font-size:11.5px;color:var(--ink3);flex-shrink:0">${dateLabel}</span>

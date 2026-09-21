@@ -893,6 +893,12 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div class="card-h">
             <span class="card-t">All tasks</span>
             <div style="display:flex;gap:8px;align-items:center">
+              <select id="td-filter-country" onchange="onTaskDashboardCountryFilter(this.value)" style="font-size:12px;padding:5px 8px;border:1px solid var(--line2);border-radius:var(--r)">
+                <option value="">All countries</option>
+              </select>
+              <select id="td-filter-counsellor" onchange="onTaskDashboardCounsellorFilter(this.value)" style="font-size:12px;padding:5px 8px;border:1px solid var(--line2);border-radius:var(--r)">
+                <option value="">All counsellors</option>
+              </select>
               <select id="td-filter-state" onchange="renderTaskDashboard()" style="font-size:12px;padding:5px 8px;border:1px solid var(--line2);border-radius:var(--r)">
                 <option value="">All states</option>
                 <option value="overdue">Overdue</option>
@@ -4430,7 +4436,7 @@ function opsViewScopedLeads(sourceLeads){
   }
 
   if(!isSuperAdmin||isOwner||!superAdminOpsView)return scoped;
-  const isDomesticLead=l=>l.nationality==='UK'||l.country==='UK';
+  const isDomesticLead=l=>String(l?.country||'').trim().toLowerCase()==='uk';
   return superAdminOpsView==='Domestic'
     ? scoped.filter(isDomesticLead)
     : scoped.filter(l=>!isDomesticLead(l));
@@ -6560,6 +6566,50 @@ async function openTaskDetail(taskId){
 // of a 6-item preview, with summary cards and an assignee breakdown on
 // top — this is the "assignment chain" and "daily states" view.
 let taskWorkstreamMode='team'; // 'my' | 'team' — Team View is the default so nothing changes for anyone until they deliberately narrow it
+let tdFilterCountry='';
+let tdFilterCounsellor='';
+
+function populateTaskDashboardFilters(scoped, staffByName){
+  const countryEl=document.getElementById('td-filter-country');
+  const counsellorEl=document.getElementById('td-filter-counsellor');
+  if(!countryEl||!counsellorEl)return;
+
+  const countries=[...new Set(scoped.map(t=>t.leads?.country).filter(Boolean))].sort();
+  if(tdFilterCountry && !countries.includes(tdFilterCountry)) tdFilterCountry='';
+  countryEl.innerHTML='<option value="">All countries</option>'+countries.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  countryEl.value=tdFilterCountry;
+
+  const countryForCounsellors=tdFilterCountry;
+  const counsellors=[...new Set((teamList||[])
+    .filter(x=>x.role==='Counsellor')
+    .filter(x=>!countryForCounsellors || x.country===countryForCounsellors)
+    .filter(x=>staffByName.has((x.full_name||'').trim()))
+    .map(x=>(x.full_name||'').trim())
+    .filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+
+  // Include any counsellor currently represented in the already-authorized
+  // task scope, even if their team row has an older/missing role value.
+  scoped.forEach(t=>{
+    const who=(t.assigned_to||'').trim();
+    const staff=staffByName.get(who);
+    if(who && (!countryForCounsellors || staff?.country===countryForCounsellors) && staff?.role==='Counsellor' && !counsellors.includes(who)) counsellors.push(who);
+  });
+  counsellors.sort((a,b)=>a.localeCompare(b));
+  if(tdFilterCounsellor && !counsellors.includes(tdFilterCounsellor)) tdFilterCounsellor='';
+  counsellorEl.innerHTML='<option value="">All counsellors</option>'+counsellors.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  counsellorEl.value=tdFilterCounsellor;
+}
+
+function onTaskDashboardCountryFilter(value){
+  tdFilterCountry=value||'';
+  // A country change can invalidate the selected counsellor; the next render
+  // repopulates the counsellor list within the selected country.
+  renderTaskDashboard();
+}
+function onTaskDashboardCounsellorFilter(value){
+  tdFilterCounsellor=value||'';
+  renderTaskDashboard();
+}
 function switchTaskWorkstream(mode){
   taskWorkstreamMode=mode;
   document.querySelectorAll('.tdw-tab').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
@@ -6725,6 +6775,16 @@ async function renderTaskDashboard(){
     myTasksPersonalData=scoped;
     renderMyTasksPersonalTab();
     return;
+  }
+
+  // Management/elevated views can narrow the already-authorized task set
+  // by lead country and counsellor. These filters NEVER widen DB/RLS scope.
+  populateTaskDashboardFilters(scoped, staffByName);
+  if(tdFilterCountry){
+    scoped=scoped.filter(t=>t.leads?.country===tdFilterCountry);
+  }
+  if(tdFilterCounsellor){
+    scoped=scoped.filter(t=>(t.assigned_to||'').trim()===tdFilterCounsellor);
   }
 
   // My Workstream / Team View — a Manager/Admin/Super Admin/Owner

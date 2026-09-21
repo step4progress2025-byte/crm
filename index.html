@@ -1597,7 +1597,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <div id="my-response-stats"></div>
           </div>
           <div class="card" style="margin-bottom:16px;max-width:640px">
-            <div class="card-h"><span class="card-t">📝 What did you work on today?</span></div>
+            <div class="card-h"><span class="card-t">📝 What did you work on today?</span><button class="btn btn-p" onclick="openLogWorkModal()" style="margin-left:auto;padding:7px 11px;font-size:11.5px"><i class="ti ti-sparkles"></i> Log Work</button></div>
             <div class="ff"><label>Date</label><input type="date" id="du-date"></div>
             <div class="ff"><label>Update</label><textarea id="du-content" rows="4" placeholder="e.g. Followed up with 8 leads, submitted 2 applications to Coventry, completed SOP review for..." style="width:100%;padding:10px;border:1px solid var(--line);border-radius:var(--r);font-family:var(--font-b);font-size:13px"></textarea></div>
             <button class="btn btn-p" style="margin-top:8px" onclick="submitDailyUpdate()"><i class="ti ti-device-floppy"></i>Save update</button>
@@ -2302,9 +2302,11 @@ What would you like help with today?</div>
     <div class="mhead"><span class="mtitle">Add task</span><button class="mclose" onclick="closeModal('modal-task')">×</button></div>
     <div class="fg">
       <div class="ff full" id="task-lead-picker-wrap" style="display:none"><label>Lead *</label><select id="task-lead-picker"></select></div>
-      <div class="ff full"><label>Task title *</label><input id="task-title" placeholder="e.g. Send university shortlist to student"></div>
-      <div class="ff full"><label>Due date (optional)</label><input type="date" id="task-due"></div>
+      <div class="ff full"><label>Task title *</label><input id="task-title" placeholder="e.g. Follow up on conditional offer"></div>
+      <div class="ff"><label>Due date (optional)</label><input type="date" id="task-due"></div>
+      <div class="ff"><label>Priority</label><select id="task-priority"><option value="Medium">Normal</option><option value="High">High</option><option value="Low">Low</option></select></div>
       <div class="ff full" id="task-assignee-wrap" style="display:none"><label>Assign to (optional)</label><select id="task-assignee-picker"><option value="">Leave as lead's counsellor</option></select></div>
+      <div class="ff full"><label>Notes <span style="font-weight:400;color:var(--ink3)">(optional)</span></label><textarea id="task-notes" rows="3" placeholder="Anything the assignee should know…" style="resize:vertical"></textarea></div>
     </div>
     <div class="mfoot">
       <button class="btn" onclick="closeModal('modal-task')">Cancel</button>
@@ -2313,7 +2315,7 @@ What would you like help with today?</div>
   </div>
 </div>
 
-<!-- Event Modal -->
+  <!-- Event Modal -->
 <div class="mover" id="modal-event">
   <div class="modal" style="width:480px">
     <div class="mhead"><span class="mtitle" id="event-modal-title">Add event</span><button class="mclose" onclick="closeModal('modal-event')">×</button></div>
@@ -3222,6 +3224,21 @@ function isAllowedEmail(email){
 }
 function ini(n){const p=(n||'?').trim().split(' ');return(p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+// SECURITY: only ever treat a user-supplied field as a clickable link if
+// it genuinely starts with http:// or https:// — rejects javascript:,
+// data:, and similar schemes that would otherwise execute arbitrary code
+// when clicked. Fixes a real stored-XSS gap where fields like
+// doc_folder_link were inserted directly into an <a href> via innerHTML
+// with no validation at all — anyone who'd typed a malicious value into
+// that field could run script in every other viewer's browser who opened
+// that lead. Always combine with esc() on the URL itself, since this
+// only blocks dangerous schemes, not attribute-breakout via quotes.
+function safeUrl(url){
+  if(!url)return null;
+  const trimmed=String(url).trim();
+  if(!/^https?:\/\//i.test(trimmed))return null;
+  return trimmed;
+}
 function emptyState(icon,text){return `<div class="empty-state"><div class="empty-state-icon">${icon}</div><div class="empty-state-text">${esc(text)}</div></div>`;}
 
 // ── Contact quick-buttons (#7) ─────────────────────────────────────
@@ -3243,7 +3260,7 @@ function contactIcons(mobile,email,opts){
   const wa=waDigits(num);
   const em=(email||'').trim();
   const btn=(href,bg,color,title,svg)=>href
-    ? `<a href="${href}" target="_blank" rel="noopener" title="${title}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:50%;background:${bg};color:${color};text-decoration:none;flex-shrink:0">${svg}</a>`
+    ? `<a href="${esc(href)}" target="_blank" rel="noopener" title="${esc(title)}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:50%;background:${bg};color:${color};text-decoration:none;flex-shrink:0">${svg}</a>`
     : '';
   const phoneSvg='<i class="ti ti-phone" style="font-size:'+Math.round(size*0.55)+'px"></i>';
   const waSvg='<i class="ti ti-brand-whatsapp" style="font-size:'+Math.round(size*0.58)+'px"></i>';
@@ -4379,11 +4396,9 @@ async function onLogin(user){
   myTeamCategory=profile?.team_category||'International';
   myCountry=profile?.country||Object.keys(OFFICE_MAP).find(c=>OFFICE_MAP[c].includes(myOffice))||null;
   isSuperAdmin=SUPER_ADMIN_EMAILS.includes((user.email||'').toLowerCase());
-  // Finance is deliberately MORE restrictive than isSuperAdmin — Pavitra
-  // (Platform Administrator) shares full Super-Admin-level access to
-  // everything else in the CRM, but is specifically excluded from
-  // Finance by explicit instruction. Only India and Jisan see it.
-  canSeeFinance=['india@step4progress.com','jisan@step4progress.co.uk'].includes((user.email||'').toLowerCase());
+  // Finance follows the elevated-access tier: Owner, Platform Administrator,
+  // and Super Admin. Country Admins/Managers and ordinary team members do not see it.
+  canSeeFinance=isSuperAdmin; // Finance is reserved for the three elevated CRM accounts: Owner, Platform Administrator, and Jisan's Super Admin account.
   myOwnerTitle=OWNERS[(user.email||'').toLowerCase()]||null;
   isOwner=myOwnerTitle!==null;
   document.getElementById('sb-av').textContent=ini(name);
@@ -5627,7 +5642,7 @@ function openDetail(id){
   document.getElementById('d-assigned-at').textContent=l.assigned_at?new Date(l.assigned_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'Not yet assigned';
   document.getElementById('d-fu').textContent=l.next_followup||'Not set';
   document.getElementById('d-visa-deadline').innerHTML=formatExpiryDisplay(l.visa_deadline,7);
-  document.getElementById('d-notes').textContent=l.notes||'No notes.';   document.getElementById('d-intake').textContent=l.intake_month||'—';   document.getElementById('d-ielts-status').textContent=l.ielts_status||'—';   document.getElementById('d-ielts-score').textContent=l.ielts_score||'—';   document.getElementById('d-budget').textContent=l.budget_range||'—';   document.getElementById('d-english').textContent=l.english_status||'—';   document.getElementById('d-walink').textContent=l.whatsapp_group_link||'—';   const doclink=document.getElementById('d-doclink');   if(l.doc_folder_link){doclink.innerHTML=`<a href="${l.doc_folder_link}" target="_blank" style="color:var(--pine);text-decoration:underline">Open folder →</a>`;}else{doclink.textContent='—';}
+  document.getElementById('d-notes').textContent=l.notes||'No notes.';   document.getElementById('d-intake').textContent=l.intake_month||'—';   document.getElementById('d-ielts-status').textContent=l.ielts_status||'—';   document.getElementById('d-ielts-score').textContent=l.ielts_score||'—';   document.getElementById('d-budget').textContent=l.budget_range||'—';   document.getElementById('d-english').textContent=l.english_status||'—';   document.getElementById('d-walink').textContent=l.whatsapp_group_link||'—';   const doclink=document.getElementById('d-doclink');   {const safeLink=safeUrl(l.doc_folder_link);if(safeLink){doclink.innerHTML=`<a href="${esc(safeLink)}" target="_blank" rel="noopener" style="color:var(--pine);text-decoration:underline">Open folder →</a>`;}else if(l.doc_folder_link){doclink.textContent=l.doc_folder_link;}else{doclink.textContent='—';}}
   const sel=document.getElementById('d-ssel');
   sel.innerHTML=STATUSES.map(s=>`<option${s===l.status?' selected':''}>${s}</option>`).join('');
   document.getElementById('dover').classList.add('open');
@@ -5692,7 +5707,7 @@ function openLeadDetail(id){
   const wa=document.getElementById('ld-walink');
   wa.textContent=l.whatsapp_group_link||'—';
   const dl=document.getElementById('ld-doclink');
-  if(l.doc_folder_link){dl.innerHTML=`<a href="${l.doc_folder_link}" target="_blank" style="color:var(--pine);text-decoration:underline">Open folder →</a>`;}else{dl.textContent='—';}
+  {const safeLink=safeUrl(l.doc_folder_link);if(safeLink){dl.innerHTML=`<a href="${esc(safeLink)}" target="_blank" rel="noopener" style="color:var(--pine);text-decoration:underline">Open folder →</a>`;}else if(l.doc_folder_link){dl.textContent=l.doc_folder_link;}else{dl.textContent='—';}}
   const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
   document.getElementById('ld-priority-badge').innerHTML=`<span class="pill" style="background:${ps.bg};color:${ps.tx}">${l.priority||'—'}</span>`;
   document.getElementById('ld-office-badge').innerHTML=`<span style="font-size:12px;color:var(--ink3)">${esc(l.country||'—')} · ${esc(l.office||'—')}</span>`;
@@ -6287,6 +6302,8 @@ async function saveTaskModal(){
   const title=document.getElementById('task-title').value.trim();
   if(!title){document.getElementById('task-title').focus();toast('Please enter a task title.');return;}
   const dueDate=document.getElementById('task-due').value||null;
+  const priority=document.getElementById('task-priority')?.value||'Medium';
+  const notes=document.getElementById('task-notes')?.value.trim()||null;
   const btn=document.getElementById('save-task-btn');
 
   let leadId,assignedTo;
@@ -6304,7 +6321,7 @@ async function saveTaskModal(){
   }
 
   btn.disabled=true;btn.textContent='Saving…';
-  const{error}=await sb.from('tasks').insert({lead_id:leadId,title,due_date:dueDate,assigned_to:assignedTo,status:'Open',source:'manual'});
+  const{error}=await sb.from('tasks').insert({lead_id:leadId,title,due_date:dueDate,assigned_to:assignedTo,status:'Open',source:'manual',priority,notes});
   btn.disabled=false;btn.textContent='Save';
   if(error){toast('Error: '+error.message);return;}
   closeModal('modal-task');
@@ -6312,6 +6329,38 @@ async function saveTaskModal(){
   loadMyTasks();
   if(document.getElementById('sc-taskdashboard')?.classList.contains('active'))renderTaskDashboard();
   toast('Task added!');
+}
+
+async function openTaskDetail(taskId){
+  const{data:t,error}=await sb.from('tasks').select('*,leads(id,name,country,nationality,lead_id,email,mobile)').eq('id',taskId).maybeSingle();
+  if(error||!t){toast('Task not found.');return;}
+  const assignee=(t.assigned_to||'').trim();
+  const staff=teamList.find(x=>(x.full_name||'').trim()===assignee);
+  const allowed=(()=>{
+    if(isOwner||isSuperAdmin)return isOwner || t.leads?.country!=='India' || (currentUser?.email||'').toLowerCase()==='pavitra@step4progress.com';
+    if(myRole==='Counsellor'||myTeamCategory==='Domestic'||['Application Team','Visa Team','SOP Team'].includes(myRole)||myTeamCategory==='Agent')return assignee===myName;
+    if(['Admin','Manager','Director'].includes(myRole))return !!staff&&staff.country===myCountry;
+    return assignee===myName;
+  })();
+  if(!allowed){toast('This task is outside what your account can access.');return;}
+  const overdue=t.status==='Open'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
+  document.getElementById('tdetail-title').textContent=t.title||'Task details';
+  document.getElementById('tdetail-sub').textContent=[t.status||'Open',t.source==='auto'?'Auto-created':'Manual'].join(' · ');
+  document.getElementById('tdetail-body').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px">
+      <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Lead</div><div style="font-weight:700;margin-top:4px"><a href="#" onclick="event.preventDefault();closeModal('modal-task-detail');openLeadDetail('${t.lead_id||''}')" style="color:var(--pine);text-decoration:underline">${esc(t.leads?.name||'—')}</a></div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${esc(t.leads?.lead_id||'')}</div></div>
+      <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Assigned to</div><div style="font-weight:700;margin-top:4px">${esc(assignee||'Unassigned')}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${esc(staff?.role||'')}</div></div>
+      <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Due</div><div style="font-weight:700;margin-top:4px;color:${overdue?'var(--rose)':'var(--ink)'}">${t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'No date'}</div>${overdue?'<div style="font-size:11px;color:var(--rose);margin-top:2px">Overdue</div>':''}</div>
+      <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Priority</div><div style="font-weight:700;margin-top:4px">${esc(t.priority||'Medium')}</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700;margin-bottom:6px">Notes</div>
+    <div style="padding:12px;border:1px solid var(--line);border-radius:10px;white-space:pre-wrap;min-height:60px;color:var(--ink2)">${esc(t.notes||'No additional notes.')}</div>
+  `;
+  const completeBtn=document.getElementById('tdetail-complete-btn');
+  completeBtn.textContent=t.status==='Done'?'↩ Reopen':'✓ Mark Complete';
+  completeBtn.onclick=async()=>{const next=t.status==='Done'?'Open':'Done';const{error:e}=await sb.from('tasks').update({status:next}).eq('id',t.id);if(e){toast('Could not update task: '+e.message);return;}closeModal('modal-task-detail');toast(next==='Done'?'Task completed.':'Task reopened.');renderTaskDashboard();loadMyTasks();};
+  document.getElementById('tdetail-lead-btn').onclick=()=>{closeModal('modal-task-detail');if(t.lead_id)openLeadDetail(t.lead_id);};
+  document.getElementById('modal-task-detail').classList.add('open');
 }
 
 // ── Task Dashboard — full screen version ─────────────────────────────
@@ -6427,15 +6476,36 @@ async function renderTaskDashboard(){
     return;
   }
   let scoped=data||[];
-  // Exact same access-model scoping used everywhere else in the app.
-  if(myRole==='Counsellor'&&!isSuperAdmin){
-    scoped=scoped.filter(t=>t.assigned_to===myName);
-  } else if(isOwner){
-    // no restriction
-  } else if(isSuperAdmin){
-    scoped=scoped.filter(t=>t.leads?.country!=='India');
-  } else if(!isSuperAdmin){
-    scoped=scoped.filter(t=>t.leads?.country===myCountry);
+  // FINAL TASK VISIBILITY MODEL:
+  // - Owner / Platform Administrator: global.
+  // - Jisan Super Admin: all non-India operational data; Domestic/International toggle still applies.
+  // - Counsellor / Agent / Application / Visa / SOP: only records assigned to that person.
+  // - Admin / Manager / Director: tasks assigned to people in their own country/team scope.
+  // The assignee is the primary task-visibility boundary; the lead country is a secondary safety check.
+  const taskAssignee=(t.assigned_to||'').trim();
+  const staffByName=new Map((teamList||[]).map(x=>[(x.full_name||'').trim(),x]));
+  const isElevatedGlobal=isOwner || ((currentUser?.email||'').toLowerCase()==='pavitra@step4progress.com');
+  const isJisan=(currentUser?.email||'').toLowerCase()==='jisan@step4progress.co.uk';
+  const isOwnCountryStaff=staff=>staff && myCountry && staff.country===myCountry;
+  if(isElevatedGlobal){
+    // global — no restriction
+  } else if(isJisan){
+    const nonIndia=scoped.filter(t=>t.leads?.country!=='India');
+    if(superAdminOpsView){
+      const isDomesticLead=l=>l?.country==='UK';
+      scoped=nonIndia.filter(t=>superAdminOpsView==='Domestic'?isDomesticLead(t.leads):!isDomesticLead(t.leads));
+    } else scoped=nonIndia;
+  } else if(myRole==='Counsellor' || myTeamCategory==='Domestic' || ['Application Team','Visa Team','SOP Team'].includes(myRole) || myTeamCategory==='Agent'){
+    scoped=scoped.filter(t=>taskAssignee===myName);
+  } else if(['Admin','Manager','Director'].includes(myRole)){
+    scoped=scoped.filter(t=>{
+      const a=staffByName.get(taskAssignee);
+      if(a) return isOwnCountryStaff(a);
+      // Legacy/orphaned task assignee: fall back to the lead country rather than exposing it broadly.
+      return !!myCountry && t.leads?.country===myCountry;
+    });
+  } else {
+    scoped=scoped.filter(t=>taskAssignee===myName);
   }
 
   // Counsellors get the simple personal view (Today/Tomorrow/Pending/
@@ -6484,15 +6554,15 @@ async function renderTaskDashboard(){
   // progress bar, closer to the reference dashboard style requested.
   const totalForBars=Math.max(open.length+done.length,1);
   const cardDefs=[
-    ['🔴','Overdue',groups.overdue.length,'linear-gradient(135deg,#F87171,#DC2626)'],
-    ['🟡','Due Today',groups.today.length,'linear-gradient(135deg,#FBBF24,#D97706)'],
-    ['🔵','This Week',groups.week.length,'linear-gradient(135deg,#60A5FA,#2563EB)'],
-    ['⚪','Later',groups.later.length,'linear-gradient(135deg,#9CA3AF,#4B5563)'],
-    ['✅','Completed',done.length,'linear-gradient(135deg,#34D399,#059669)'],
+    ['🔴','Overdue',groups.overdue.length,'linear-gradient(135deg,#F87171,#DC2626)','overdue'],
+    ['🟡','Due Today',groups.today.length,'linear-gradient(135deg,#FBBF24,#D97706)','today'],
+    ['🔵','This Week',groups.week.length,'linear-gradient(135deg,#60A5FA,#2563EB)','week'],
+    ['⚪','Later',groups.later.length,'linear-gradient(135deg,#9CA3AF,#4B5563)','later'],
+    ['✅','Completed',done.length,'linear-gradient(135deg,#34D399,#059669)','done'],
   ];
-  document.getElementById('td-summary-cards').innerHTML=cardDefs.map(([icon,label,count,gradient])=>{
+  document.getElementById('td-summary-cards').innerHTML=cardDefs.map(([icon,label,count,gradient,filterKey])=>{
     const pct=Math.round(count/totalForBars*100);
-    return `<div style="background:${gradient};border-radius:14px;padding:18px;color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.12);position:relative;overflow:hidden">
+    return `<div onclick="filterTaskDashboardByCard('${filterKey}')" style="cursor:pointer;background:${gradient};border-radius:14px;padding:18px;color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.12);position:relative;overflow:hidden">
       <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.12)"></div>
       <div style="font-size:22px;position:relative">${icon}</div>
       <div style="font-size:30px;font-weight:800;margin-top:6px;position:relative">${count}</div>
@@ -6545,13 +6615,13 @@ async function renderTaskDashboard(){
     return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);${isDone?'opacity:.55':''}">
       <input type="checkbox" ${isDone?'checked':''} onchange="toggleTaskDashboardItem('${t.id}',this.checked)" style="cursor:pointer">
       ${avatar}
-      <div style="flex:1;font-size:13px;cursor:pointer" onclick="openLeadDetail('${t.lead_id}')">
-        <b style="${isDone?'text-decoration:line-through':''}">${esc(leadName)}</b> — ${esc(t.title)}
+      <div style="flex:1;font-size:13px">
+        ${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open lead">${esc(leadName)}</a>`:`<b>${esc(leadName)}</b>`} — ${esc(t.title)}
         ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
       </div>
       ${assigneeCell}
       <span style="font-size:11px;color:var(--ink3);flex-shrink:0;min-width:60px;text-align:right">${dateLabel}</span>
-      ${canReassign?`<button onclick="editTaskDashboardItem('${t.id}')" title="Edit" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 3px"><i class="ti ti-pencil"></i></button><button onclick="deleteTaskDashboardItem('${t.id}')" title="Delete" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:15px;padding:0 3px">×</button>`:''}
+      ${canReassign?`<button onclick="openTaskDetail('${t.id}')" title="Edit" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 3px"><i class="ti ti-pencil"></i></button><button onclick="deleteTaskDashboardItem('${t.id}')" title="Delete" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:15px;padding:0 3px">×</button>`:''}
     </div>`;
   }).join('');
 }
@@ -6603,8 +6673,8 @@ function renderMyTasksPersonalTab(){
     const dateLabel=t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'No date';
     return `<div style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)">
       <input type="checkbox" ${isDone?'checked':''} onchange="toggleMyTaskPersonal('${t.id}',this.checked)" style="cursor:pointer;width:18px;height:18px">
-      <div style="flex:1;font-size:13.5px;cursor:pointer" onclick="openLeadDetail('${t.lead_id}')">
-        <b style="${isDone?'text-decoration:line-through;color:var(--ink3)':''}">${esc(leadName)}</b> — ${esc(t.title)}
+      <div style="flex:1;font-size:13.5px">
+        ${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open lead">${esc(leadName)}</a>`:`<b style="${isDone?'text-decoration:line-through;color:var(--ink3)':''}">${esc(leadName)}</b>`} — ${esc(t.title)}
         ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
       </div>
       <span style="font-size:11.5px;color:var(--ink3);flex-shrink:0">${dateLabel}</span>
@@ -6646,6 +6716,12 @@ async function reassignTask(taskId,newAssignee){
   toast(newAssignee?`Task reassigned to ${newAssignee}`:'Task unassigned');
   renderTaskDashboard();
   loadMyTasks();
+}
+function filterTaskDashboardByCard(filterKey){
+  const sel=document.getElementById('td-filter-state');
+  if(sel)sel.value=filterKey;
+  renderTaskDashboard();
+  document.getElementById('td-all-tasks-card')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function toggleTaskDashboardItem(taskId,checked){
   const{error}=await sb.from('tasks').update({status:checked?'Done':'Open',completed_at:checked?new Date().toISOString():null}).eq('id',taskId);
@@ -7603,7 +7679,7 @@ function renderManagementAndOperationsTeams(team){
     <div class="card-h"><span class="card-t">🌍 International — Management Team</span><span style="font-size:11px;color:var(--ink3)">${mgmt.length} member${mgmt.length!==1?'s':''} — Manager, Admin & Director, across every country</span></div>
     <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
         <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-        <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+        <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
         ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
       </div>`).join(''):emptyState('🏛️','No Management Team members yet.')}</div>
   </div>`;
@@ -7618,7 +7694,7 @@ function renderManagementAndOperationsTeams(team){
       </div>
       ${members.length?members.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}" style="margin-bottom:8px">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('👥','No one assigned to this team yet.')}
     </div>`;
@@ -7637,7 +7713,7 @@ function renderManagementAndOperationsTeams(team){
       <div class="card-h"><span class="card-t">🇬🇧 Domestic Operations</span><span style="font-size:11px;color:var(--ink3)">${domestic.length} member${domestic.length!==1?'s':''} — UK-internal only, never receives leads automatically</span></div>
       <div class="team-grid">${domestic.length?domestic.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('🇬🇧','No Domestic team members yet.')}</div>
     </div>`;
@@ -7651,7 +7727,7 @@ function renderManagementAndOperationsTeams(team){
       <div class="card-h"><span class="card-t">🤝 Agent Portal</span><span style="font-size:11px;color:var(--ink3)">${agents.length} agent${agents.length!==1?'s':''} — external partners, work only on leads Management assigns them</span></div>
       <div class="team-grid">${agents.length?agents.map(t=>`<div class="tcard" data-role="Agent">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent${t.university_name?' · 🎓 '+esc(t.university_name):''}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent${t.university_name?' · 🎓 '+esc(t.university_name):''}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('🤝','No agents yet.')}</div>
     </div>`;
@@ -7687,8 +7763,14 @@ function renderTeam(team){
 
   const byOffice={};
   allOffices.forEach(({office})=>{byOffice[office]=[];});
+  // Management/Operations roles (Manager/Admin/Director/sub-teams/Agent)
+  // normally only show in their own dedicated sections above, not here —
+  // EXCEPT for India, per explicit request: India-based staff should
+  // appear in both places (their functional team section above, AND the
+  // India office list below), since Management wants a single place to
+  // see everyone physically on the India team regardless of role.
   const officeExcludedRoles=['Manager','Admin','Director','Application Team','Visa Team','SOP Team','Agent'];
-  (team||[]).filter(t=>!officeExcludedRoles.includes(t.role)&&t.team_category!=='Domestic').forEach(t=>{
+  (team||[]).filter(t=>(!officeExcludedRoles.includes(t.role)||t.country==='India')&&t.team_category!=='Domestic').forEach(t=>{
     // If office is blank, or doesn't match a known office for their country
     // (e.g. a stale value from before offices were consolidated), derive the
     // correct office from country instead of showing a phantom "Unassigned"
@@ -7712,7 +7794,7 @@ function renderTeam(team){
           return `<div class="tcard" data-role="${esc(t.role||'Counsellor')}" style="${unavail?'opacity:.7':''}">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0">
-            <div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div>
+            <div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div>
             <div class="tcard-role">${esc(t.role||'Counsellor')}</div>
             <div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div>
             ${unavail?`<div style="font-size:10px;color:var(--rose);font-weight:600;margin-top:3px">🚫 Unavailable until ${new Date(unavail.to_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${unavail.reason?' — '+esc(unavail.reason):''}${canManage?` · <span onclick="clearUnavailability('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" style="text-decoration:underline;cursor:pointer;color:var(--rose)">Unmark</span>`:''}</div>`:''}
@@ -7740,6 +7822,40 @@ function renderTeam(team){
   const fp=document.getElementById('fp-co');
   const existing=Array.from(fp.options).map(o=>o.value);
   (team||[]).forEach(t=>{if(t.full_name&&!existing.includes(t.full_name)){const o=document.createElement('option');o.value=t.full_name;o.textContent=t.full_name;fp.appendChild(o);}});
+}
+
+async function openTeamMemberProfile(teamId,name){
+  const elevated=isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole);
+  if(!elevated){toast('Team activity is private.');return;}
+  const member=teamList.find(x=>x.id===teamId);
+  if(!member){toast('Team member not found.');return;}
+  // Country managers/admins may only inspect people in their own country.
+  if(!isSuperAdmin&&!isOwner&&['Admin','Manager','Director'].includes(myRole)&&member.country!==myCountry){toast('This team member is outside your country scope.');return;}
+  document.getElementById('tm-title').textContent=member.full_name||name||'Team member';
+  document.getElementById('tm-sub').textContent=[member.role||'Counsellor',member.country||member.office||''].filter(Boolean).join(' · ');
+  const body=document.getElementById('tm-body');body.innerHTML='<div style="text-align:center;padding:24px;color:var(--ink3);font-style:italic">Loading individual activity…</div>';
+  document.getElementById('modal-team-member-profile').classList.add('open');
+  const [leadRes,taskRes,updateRes,callRes]=await Promise.all([
+    sb.from('leads').select('id,name,lead_id,status,updated_at,country,counsellor').eq('counsellor',member.full_name).limit(500),
+    sb.from('tasks').select('id,title,status,due_date,lead_id').eq('assigned_to',member.full_name).order('due_date',{ascending:true}).limit(500),
+    sb.from('daily_updates').select('work_date,content,created_at').eq('team_id',member.id).order('work_date',{ascending:false}).limit(30),
+    sb.from('whatsapp_calls').select('status,duration_seconds').eq('counsellor',member.full_name).limit(500)
+  ]);
+  const leads=leadRes.data||[],tasks=taskRes.data||[],updates=updateRes.data||[],calls=callRes.data||[];
+  let workLogs=[];
+  try{const wr=await sb.from('work_logs').select('work_date,category,title,effort,result,note_type,note,output_url').eq('user_id',member.id).order('work_date',{ascending:false}).limit(30);workLogs=wr.data||[];}catch(e){}
+  const openTasks=tasks.filter(t=>t.status!=='Done').length,doneTasks=tasks.filter(t=>t.status==='Done').length;
+  const connected=calls.filter(c=>c.status==='answered'||c.status==='completed').length;
+  const talkMin=Math.round(calls.filter(c=>c.status==='answered'||c.status==='completed').reduce((n,c)=>n+(c.duration_seconds||0),0)/60);
+  body.innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px">
+    ${[['👥','Leads',leads.length],['📋','Open tasks',openTasks],['✅','Done tasks',doneTasks],['✨','Work logged',workLogs.length]].map(([i,l,v])=>`<div style="padding:13px;border:1px solid var(--line);border-radius:11px;background:var(--paper2)"><div style="font-size:18px">${i}</div><div style="font-size:20px;font-weight:700;color:var(--pine);margin-top:3px">${v}</div><div style="font-size:10px;color:var(--ink3)">${l}</div></div>`).join('')}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="card" style="margin:0"><div class="card-h"><span class="card-t">📋 Tasks</span></div><div style="font-size:12px;color:var(--ink3);margin-bottom:8px">${openTasks} open · ${doneTasks} completed</div>${tasks.slice(0,8).map(t=>`<div style="padding:7px 0;border-bottom:1px solid var(--line);font-size:12px"><a href="#" onclick="event.preventDefault();closeModal('modal-team-member-profile');openTaskDetail('${t.id}')" style="color:var(--pine);text-decoration:underline">${esc(t.title)}</a> <span style="color:var(--ink3)">· ${esc(t.status||'Open')}</span></div>`).join('')||'<div style="color:var(--ink3);font-size:12px">No tasks.</div>'}</div>
+    <div class="card" style="margin:0"><div class="card-h"><span class="card-t">👥 Leads</span></div>${leads.slice(0,8).map(l=>`<div style="padding:7px 0;border-bottom:1px solid var(--line);font-size:12px"><a href="#" onclick="event.preventDefault();closeModal('modal-team-member-profile');openLeadDetail('${l.id}')" style="color:var(--pine);text-decoration:underline">${esc(l.name||l.lead_id||'Lead')}</a> <span style="color:var(--ink3)">· ${esc(l.status||'—')}</span></div>`).join('')||'<div style="color:var(--ink3);font-size:12px">No leads assigned.</div>'}</div>
+    <div class="card" style="margin:0"><div class="card-h"><span class="card-t">📝 Work Done</span></div>${workLogs.slice(0,8).map(w=>`<div style="padding:7px 0;border-bottom:1px solid var(--line);font-size:12px"><b>${esc(w.title)}</b><div style="color:var(--ink3);font-size:10.5px">${esc(w.category||'')} · ${esc(w.effort||'')} · ${esc(w.result||'')}</div>${w.output_url?`<a href="${esc(safeUrl(w.output_url)||'#')}" target="_blank" rel="noopener" style="font-size:10.5px;color:var(--pine)">View output →</a>`:''}</div>`).join('')||'<div style="color:var(--ink3);font-size:12px">No work logs yet.</div>'}</div>
+    <div class="card" style="margin:0"><div class="card-h"><span class="card-t">📈 Individual activity</span></div><div style="font-size:12px;line-height:1.9"><div>Daily updates: <b>${updates.length}</b></div><div>Calls: <b>${calls.length}</b></div><div>Connected: <b>${connected}</b></div><div>Talk time: <b>${talkMin} min</b></div></div></div>
+  </div>`;
 }
 
 // ── IMPORT / EXPORT ───────────────────────────────────────────────
@@ -7952,7 +8068,15 @@ function onBulkCheckboxChange(){
 function getScopedCounsellorNames(){
   let pool=(teamList||[]).filter(t=>t.role==='Counsellor');
   if(!isOwner){
-    if(isSuperAdmin)pool=pool.filter(t=>t.country!=='India');
+    if(isSuperAdmin){
+      pool=pool.filter(t=>t.country!=='India');
+      // Same fix as renderTaskDashboard — apply the Domestic/International
+      // split on top of the India exclusion, so a bulk-reassign picker in
+      // Domestic mode only offers UK counsellors, not everyone non-India.
+      if(superAdminOpsView){
+        pool=pool.filter(t=>superAdminOpsView==='Domestic'?t.country==='UK':t.country!=='UK');
+      }
+    }
     else if(myRole==='Admin'||myRole==='Manager'||myRole==='Director')pool=pool.filter(t=>t.country===myCountry);
   }
   return[...new Set(pool.map(t=>t.full_name))];
@@ -9864,7 +9988,7 @@ async function loadMyTasks(){
     const leadName=t.leads?.name||'Unknown lead';
     const dateLabel=t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'No date';
     return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="openLeadDetail('${t.lead_id}')">
-      <div style="flex:1;font-size:13px"><b>${esc(leadName)}</b> — ${esc(t.title)}${t.source==='auto'?' <span style="color:var(--gold);font-size:10px">AUTO</span>':''}</div>
+      <div style="flex:1;font-size:13px"><a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-underline-offset:2px">${esc(leadName)}</a> — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:inherit;text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px">${esc(t.title)}</a>${t.source==='auto'?' <span style="color:var(--gold);font-size:10px">AUTO</span>':''}</div>
       <span style="font-size:11px;color:var(--ink3);flex-shrink:0">${dateLabel}</span>
     </div>`;
   };
@@ -10792,7 +10916,7 @@ function renderResourcesAdmin(){
           <div style="font-weight:600;font-size:14px;color:var(--ink)">${def.title}</div>
           <div style="font-size:12px;color:var(--ink3);margin-top:2px">
             ${hasFile
-              ? `<span style="color:var(--pine3);font-weight:600">✅ Live</span> · <a href="${row.file_url}" target="_blank" style="color:var(--pine2)">View current PDF</a>`
+              ? `<span style="color:var(--pine3);font-weight:600">✅ Live</span> · <a href="${esc(safeUrl(row.file_url)||'#')}" target="_blank" rel="noopener" style="color:var(--pine2)">View current PDF</a>`
               : '<span style="color:var(--ink3);font-style:italic">No file uploaded yet</span>'}
           </div>
         </div>
@@ -11194,6 +11318,38 @@ function setProdSubtab(sub){
   if(sub==='whatsapp')loadWhatsAppCalls().then(renderWhatsAppCalls);
   if(sub==='monitor'){renderActivityMonitor();renderExportLog();renderKnownDevices();}
 }
+const LOG_WORK_CATEGORIES=[['🎯','Leads'],['📱','Social'],['✍️','Content'],['🎬','Creative'],['🤝','Students / Clients'],['📚','Research'],['🎓','Applications'],['🧑‍💼','Operations'],['💻','CRM / Product'],['🤖','AI'],['📊','Reports'],['🧠','Strategy'],['✨','Other']];
+const LOG_WORK_EFFORT=[['🌱','Tiny'],['🌿','Solid'],['🌳','Deep Work']];
+const LOG_WORK_RESULTS=[['✅','Done'],['🔄','Still Cooking'],['⏳','Waiting on Someone']];
+const LOG_WORK_MOODS=['😌 Smooth sailing','🧠 Brain was braining','🔥 Absolute chaos','🛠️ Fixing things','🚀 Made serious progress','☕ Powered by caffeine','😂 Don’t ask'];
+const LOG_WORK_NOTES=[['🚧','Blocker'],['⏳','Waiting on'],['📌','Important note'],['✨','Small win'],['+','Just a note']];
+let logWorkState={category:'',effort:'',result:'Done',mood:'',noteType:''};
+function lwChip(label,value,key,icon=''){const active=logWorkState[key]===value;return `<button type="button" onclick="selectLogWork('${key}','${String(value).replace(/'/g,"\'")}')" style="border:1px solid ${active?'var(--pine)':'var(--line2)'};background:${active?'var(--pine-l)':'var(--paper)'};color:${active?'var(--pine)':'var(--ink)'};border-radius:999px;padding:7px 10px;font-size:11.5px;cursor:pointer;font-weight:${active?'700':'500'}">${icon?icon+' ':''}${esc(label)}</button>`;}
+function selectLogWork(key,value){logWorkState[key]=value;renderLogWorkChoices();}
+function renderLogWorkChoices(){
+  const cg=document.getElementById('lw-category-grid'); if(cg)cg.innerHTML=LOG_WORK_CATEGORIES.map(([i,l])=>lwChip(l,l,'category',i)).join('');
+  const eg=document.getElementById('lw-effort-grid'); if(eg)eg.innerHTML=LOG_WORK_EFFORT.map(([i,l])=>lwChip(l,l,'effort',i)).join('');
+  const rg=document.getElementById('lw-result-grid'); if(rg)rg.innerHTML=LOG_WORK_RESULTS.map(([i,l])=>lwChip(l,l,'result',i)).join('');
+  const mg=document.getElementById('lw-mood-grid'); if(mg)mg.innerHTML=LOG_WORK_MOODS.map(x=>lwChip(x,x,'mood')).join('');
+  const ng=document.getElementById('lw-note-type-grid'); if(ng)ng.innerHTML=LOG_WORK_NOTES.map(([i,l])=>lwChip(l,l,'noteType',i)).join('');
+}
+function openLogWorkModal(){
+  logWorkState={category:'',effort:'',result:'Done',mood:'',noteType:''};
+  ['lw-title','lw-description','lw-link','lw-note'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  renderLogWorkChoices(); document.getElementById('modal-log-work')?.classList.add('open');
+}
+async function saveLogWork(){
+  const title=(document.getElementById('lw-title')?.value||'').trim();
+  if(!title){toast('Give the work a short name first.');document.getElementById('lw-title')?.focus();return;}
+  if(!logWorkState.category){toast('Pick a work category.');return;}
+  const btn=document.getElementById('lw-save-btn');btn.disabled=true;btn.textContent='Saving…';
+  const payload={user_id:currentUser?.id||null,user_name:myName||'',country:myCountry||null,team_category:myTeamCategory||null,work_date:new Date().toISOString().substring(0,10),category:logWorkState.category,title,description:(document.getElementById('lw-description')?.value||'').trim()||null,effort:logWorkState.effort||null,result:logWorkState.result||'Done',output_url:safeUrl(document.getElementById('lw-link')?.value||'')||null,mood:logWorkState.mood||null,note_type:logWorkState.noteType||null,note:(document.getElementById('lw-note')?.value||'').trim()||null};
+  const{error}=await sb.from('work_logs').insert(payload);
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-sparkles"></i> Log this';
+  if(error){toast('Could not save work log: '+error.message);return;}
+  closeModal('modal-log-work');toast('✨ Work logged.');
+}
+
 async function submitDailyUpdate(){
   const dateEl=document.getElementById('du-date');
   const contentEl=document.getElementById('du-content');
@@ -11562,5 +11718,44 @@ function broadcastStopEditing(leadId) {
     });
   }
 </script>
+  <!-- TEAM MEMBER PROFILE / INDIVIDUAL REPORT -->
+  <div class="mover" id="modal-team-member-profile">
+    <div class="modal" style="width:760px;max-height:90vh;overflow:auto">
+      <div class="mhead"><div><span class="mtitle" id="tm-title">Team member</span><div id="tm-sub" style="font-size:11px;color:var(--ink3);margin-top:2px"></div></div><button class="mclose" onclick="closeModal('modal-team-member-profile')">×</button></div>
+      <div id="tm-body" style="padding:18px 20px"></div>
+      <div class="mfoot"><button class="btn" onclick="closeModal('modal-team-member-profile')">Close</button></div>
+    </div>
+  </div>
+
+
+<!-- TASK DETAIL DRAWER -->
+  <div class="mover" id="modal-task-detail">
+    <div class="modal" style="width:620px;max-height:90vh;overflow:auto">
+      <div class="mhead"><div><span class="mtitle" id="tdetail-title">Task details</span><div id="tdetail-sub" style="font-size:11px;color:var(--ink3);margin-top:2px"></div></div><button class="mclose" onclick="closeModal('modal-task-detail')">×</button></div>
+      <div id="tdetail-body" style="padding:18px 20px"></div>
+      <div class="mfoot"><button class="btn" onclick="closeModal('modal-task-detail')">Close</button><button class="btn" id="tdetail-complete-btn"></button><button class="btn btn-p" id="tdetail-lead-btn">Open Lead →</button></div>
+    </div>
+  </div>
+
+
+<!-- Log Work Drawer — lightweight work journal, not a timesheet -->
+  <div class="mover" id="modal-log-work">
+    <div class="modal" style="width:560px;max-height:90vh;overflow:auto">
+      <div class="mhead"><div><span class="mtitle">✨ Log Work</span><div style="font-size:11px;color:var(--ink3);margin-top:2px">What did you move forward today? Big thing, tiny thing, weird thing — it all counts.</div></div><button class="mclose" onclick="closeModal('modal-log-work')">×</button></div>
+      <div class="fg">
+        <div class="ff full"><label>What were you up to?</label><div id="lw-category-grid" style="display:flex;flex-wrap:wrap;gap:7px"></div></div>
+        <div class="ff full"><label>Give it a name *</label><input id="lw-title" placeholder="e.g. September intake reel"></div>
+        <div class="ff full"><label>Tell us a little more <span style="font-weight:400;color:var(--ink3)">(optional)</span></label><textarea id="lw-description" rows="3" placeholder="What did you actually do? Skip if the title says enough." style="resize:vertical"></textarea></div>
+        <div class="ff full"><label>How big was this?</label><div id="lw-effort-grid" style="display:flex;gap:8px;flex-wrap:wrap"></div></div>
+        <div class="ff full"><label>What came out of it?</label><div id="lw-result-grid" style="display:flex;gap:8px;flex-wrap:wrap"></div></div>
+        <div class="ff full"><label>🔗 Got something to show? <span style="font-weight:400;color:var(--ink3)">(optional)</span></label><input id="lw-link" placeholder="Paste a link to the output…"></div>
+        <div class="ff full"><label>😌 Mood of the mission? <span style="font-weight:400;color:var(--ink3)">(optional)</span></label><div id="lw-mood-grid" style="display:flex;gap:7px;flex-wrap:wrap"></div></div>
+        <div class="ff full"><label>💬 One more thing? <span style="font-weight:400;color:var(--ink3)">(optional)</span></label><div id="lw-note-type-grid" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:7px"></div><textarea id="lw-note" rows="2" placeholder="Blocker, dependency, important note, small win…" style="resize:vertical"></textarea></div>
+      </div>
+      <div class="mfoot"><button class="btn" onclick="closeModal('modal-log-work')">Cancel</button><button class="btn btn-p" id="lw-save-btn" onclick="saveLogWork()"><i class="ti ti-sparkles"></i> Log this</button></div>
+    </div>
+  </div>
+
+
 </body>
 </html>

@@ -873,8 +873,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <div id="td-momentum" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center"></div>
           </div>
         </div>
-        <div id="td-summary-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px"></div>
-        <div class="two-col" id="td-two-col">
+        <div id="td-summary-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px"></div>
+        <div class="two-col" id="td-two-col" style="gap:12px">
           <div class="card">
             <div class="card-h"><span class="card-t">📋 Task Summary</span></div>
             <div id="td-summary-numbers" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
@@ -2978,8 +2978,14 @@ function runGuidedTourStep(steps,i,userId){
 let officeHolidays=[];
 async function loadOfficeHolidays(){
   if(officeHolidays.length)return;
-  const{data}=await sb.from('office_holidays').select('*');
-  officeHolidays=data||[];
+  // Holiday awareness is optional. If the table is not provisioned yet,
+  // fail quietly so it never creates a noisy console error or interrupts
+  // the rest of the CRM.
+  try{
+    const{data,error}=await sb.from('office_holidays').select('*');
+    if(error){officeHolidays=[];return;}
+    officeHolidays=data||[];
+  }catch(e){officeHolidays=[];}
 }
 function holidayOn(dateStr,countryOrOffice){
   if(!dateStr||!countryOrOffice)return null;
@@ -4041,16 +4047,67 @@ function renderCounsellorCell(l){
   }
   return `<select onchange="quickReassignLead('${l.id}',this.value)" style="font-size:12px;padding:4px 6px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);max-width:150px">${options.join('')}</select>`;
 }
+async function ensureLeadAssignmentTask(lead,assignee,{reassignExisting=true,quiet=false}={}){
+  if(!lead||!assignee)return {ok:true,created:false,updated:false};
+  const title='Follow up with newly assigned lead';
+  const due=new Date(Date.now()+86400000).toISOString().substring(0,10);
+  // Keep one canonical assignment task per lead. If one already exists, move it
+  // to the current counsellor rather than creating duplicates.
+  const{data:existing,error:findError}=await sb.from('tasks').select('id,assigned_to,status').eq('lead_id',lead.id).eq('title',title).eq('status','Open').limit(1);
+  if(findError){console.error('Assignment task lookup failed:',findError);return {ok:false,created:false,updated:false,error:findError};}
+  if(existing&&existing[0]){
+    if(reassignExisting&&existing[0].assigned_to!==assignee){
+      const{error:updateError}=await sb.from('tasks').update({assigned_to:assignee}).eq('id',existing[0].id);
+      if(updateError){console.error('Assignment task reassignment failed:',updateError);return {ok:false,created:false,updated:false,error:updateError};}
+      if(!quiet)toast(`📋 Assignment task moved to ${assignee}`);
+      return {ok:true,created:false,updated:true};
+    }
+    return {ok:true,created:false,updated:false};
+  }
+  const{error:insertError}=await sb.from('tasks').insert({lead_id:lead.id,title,due_date:due,assigned_to:assignee,status:'Open',source:'auto'});
+  if(insertError){console.error('Assignment task creation failed:',insertError);return {ok:false,created:false,updated:false,error:insertError};}
+  if(!quiet)toast('📋 Follow-up task created for the new assignment.');
+  return {ok:true,created:true,updated:false};
+}
+async function syncAssignedLeadTasksForCurrentUser(){
+  if(myRole!=='Counsellor'||isSuperAdmin||!myName||!Array.isArray(leads)||!leads.length)return;
+  const assignedLeads=leads.filter(l=>(l.counsellor||'').trim()===myName);
+  if(!assignedLeads.length)return;
+  const leadIds=assignedLeads.map(l=>l.id);
+  const{data:existing,error}=await sb.from('tasks').select('id,lead_id,assigned_to,title,status').in('lead_id',leadIds).eq('status','Open');
+  if(error){console.error('Assigned-lead task sync lookup failed:',error);return;}
+  const openByLead=new Map();
+  (existing||[]).forEach(t=>{
+    if(!openByLead.has(t.lead_id))openByLead.set(t.lead_id,t);
+    if(t.assigned_to===myName)openByLead.set(t.lead_id,t);
+  });
+  let created=0;
+  for(const lead of assignedLeads){
+    const current=openByLead.get(lead.id);
+    // If the counsellor already has an open task for this lead, it is already
+    // actionable and nothing new is needed. Otherwise create the canonical
+    // assignment task for the counsellor.
+    if(current&&current.assigned_to===myName)continue;
+    const result=await ensureLeadAssignmentTask(lead,myName,{reassignExisting:false,quiet:true});
+    if(result.created)created++;
+  }
+  if(created)console.info(`Created ${created} missing assignment task(s) for ${myName}.`);
+}
+
 async function quickReassignLead(leadId,newCounsellor){
   const l=leads.find(x=>x.id===leadId);
   if(!l||l.counsellor===newCounsellor)return;
   if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");renderLeads();return;}
   const oldCounsellor=l.counsellor;
   setSyncing();
-  const{error}=await sb.from('leads').update({counsellor:newCounsellor||null,assigned_at:new Date().toISOString()}).eq('id',leadId);
+  const{error}=await sb.from('leads').update({counsellor:newCounsellor||null,assigned_at:newCounsellor?new Date().toISOString():null}).eq('id',leadId);
   if(error){setSyncErr();toast('Error reassigning: '+error.message);renderLeads();return;}
   l.counsellor=newCounsellor||null;
-  l.assigned_at=new Date().toISOString();
+  l.assigned_at=newCounsellor?new Date().toISOString():null;
+  if(newCounsellor){
+    const taskResult=await ensureLeadAssignmentTask(l,newCounsellor,{reassignExisting:true,quiet:true});
+    if(!taskResult.ok)toast('Lead reassigned, but the follow-up task could not be updated.');
+  }
   setSynced();
   logActivity(leadId,'reassigned',`Reassigned: ${oldCounsellor||'Unassigned'} → ${newCounsellor||'Unassigned'}`);
   if(newCounsellor&&newCounsellor!==oldCounsellor){
@@ -4058,7 +4115,7 @@ async function quickReassignLead(leadId,newCounsellor){
     if(assignee)sendPushToUser(assignee.id,'New lead assigned',`${l.name} has been assigned to you.`,'./index.html');
   }
   toast(newCounsellor?`Reassigned to ${newCounsellor}`:'Unassigned');
-  renderDash();
+  renderDash();renderLeads();
 }
 
 // ── Inline Application/Visa/SOP quick-assign, directly in the Leads table ──
@@ -6264,6 +6321,8 @@ function openTaskModal(){
   document.getElementById('task-assignee-wrap').style.display='none';
   document.getElementById('task-title').value='';
   document.getElementById('task-due').value='';
+  if(document.getElementById('task-priority'))document.getElementById('task-priority').value='Medium';
+  if(document.getElementById('task-notes'))document.getElementById('task-notes').value='';
   document.getElementById('modal-task').classList.add('open');
 }
 // Standalone mode — opened from the Task Dashboard's "Add task" button,
@@ -6315,7 +6374,8 @@ async function saveTaskModal(){
     if(!leadId){toast('Please pick a lead.');return;}
     const overrideAssignee=document.getElementById('task-assignee-picker').value;
     const l=leads.find(x=>x.id===leadId);
-    assignedTo=overrideAssignee||l?.counsellor||null;
+    const restrictedSelf=(myRole==='Counsellor'||myTeamCategory==='Domestic'||['Application Team','Visa Team','SOP Team'].includes(myRole)||myTeamCategory==='Agent')&&!isSuperAdmin;
+    assignedTo=restrictedSelf?myName:(overrideAssignee||l?.counsellor||null);
   } else {
     if(!curId){toast('No lead selected.');return;}
     leadId=curId;
@@ -6323,8 +6383,24 @@ async function saveTaskModal(){
     assignedTo=l?.counsellor||null;
   }
 
+  const selectedLead=leads.find(x=>x.id===leadId);
+  if(!selectedLead){toast('Lead not found. Please reopen the task window and try again.');return;}
+  const taskDraft={lead_id:leadId,title,due_date:dueDate,assigned_to:assignedTo,status:'Open',source:'manual',priority,notes,leads:{country:selectedLead.country||myCountry||''}};
+  if(!canManageTaskClient(taskDraft)){toast('You cannot create this task for the selected lead or assignee.');return;}
   btn.disabled=true;btn.textContent='Saving…';
-  const{error}=await sb.from('tasks').insert({lead_id:leadId,title,due_date:dueDate,assigned_to:assignedTo,status:'Open',source:'manual',priority,notes});
+  let{error}=await sb.from('tasks').insert({lead_id:leadId,title,due_date:dueDate,assigned_to:assignedTo,status:'Open',source:'manual',priority,notes});
+  // Keep Add Task usable against an older tasks schema while the optional
+  // priority/notes migration is still pending. Only retry when Supabase
+  // clearly reports a missing column/schema-cache problem; permission or
+  // validation failures must never be retried as a second insert.
+  if(error){
+    const em=String(error.message||'').toLowerCase();
+    const optionalSchemaIssue=em.includes('priority')||em.includes('notes')||em.includes('schema cache')||em.includes('column');
+    if(optionalSchemaIssue){
+      const retry=await sb.from('tasks').insert({lead_id:leadId,title,due_date:dueDate,assigned_to:assignedTo,status:'Open',source:'manual'});
+      error=retry.error;
+    }
+  }
   btn.disabled=false;btn.textContent='Save';
   if(error){toast('Error: '+error.message);return;}
   closeModal('modal-task');
@@ -6334,6 +6410,17 @@ async function saveTaskModal(){
   toast('Task added!');
 }
 
+function canManageTaskClient(t){
+  const assignee=(t?.assigned_to||'').trim();
+  const staff=teamList.find(x=>(x.full_name||'').trim()===assignee);
+  const leadCountry=(t?.leads?.country||'').trim();
+  const email=(currentUser?.email||'').toLowerCase();
+  if(isOwner||email==='pavitra@step4progress.com') return true;
+  if(email==='jisan@step4progress.co.uk') return leadCountry.toLowerCase()!=='india';
+  if(myRole==='Counsellor'||myTeamCategory==='Domestic'||['Application Team','Visa Team','SOP Team'].includes(myRole)||myTeamCategory==='Agent') return assignee===myName;
+  if(['Admin','Manager','Director'].includes(myRole)) return !!staff&&staff.country===myCountry;
+  return assignee===myName;
+}
 async function openTaskDetail(taskId){
   const{data:t,error}=await sb.from('tasks').select('*,leads(id,name,country,nationality,lead_id,email,mobile)').eq('id',taskId).maybeSingle();
   if(error||!t){toast('Task not found.');return;}
@@ -6348,20 +6435,33 @@ async function openTaskDetail(taskId){
   if(!allowed){toast('This task is outside what your account can access.');return;}
   const overdue=t.status==='Open'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
   document.getElementById('tdetail-title').textContent=t.title||'Task details';
-  document.getElementById('tdetail-sub').textContent=[t.status||'Open',t.source==='auto'?'Auto-created':'Manual'].join(' · ');
+  const statusLabel=t.status==='Done'?'Completed':'Open';
+  const priorityLabel=t.priority||'Medium';
+  const priorityTone=priorityLabel==='High'?'var(--rose)':priorityLabel==='Low'?'var(--sage)':'var(--gold)';
+  document.getElementById('tdetail-sub').innerHTML=`<span style="display:inline-flex;align-items:center;gap:6px"><span class="pill" style="background:${t.status==='Done'?'var(--sage-l)':'var(--sky-l)'};color:${t.status==='Done'?'var(--sage)':'var(--sky)'}">${statusLabel}</span><span>·</span><span>${t.source==='auto'?'Auto-created':'Manual'}</span></span>`;
   document.getElementById('tdetail-body').innerHTML=`
-    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px">
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Lead</div><div style="font-weight:700;margin-top:4px">${t.lead_id?`<a href="#" onclick="event.preventDefault();closeModal('modal-task-detail');openLeadDetail('${t.lead_id}')" style="color:var(--pine);text-decoration:underline">${esc(t.leads?.name||'Open lead')}</a>`:esc(t.leads?.name||'No lead linked')}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${esc(t.leads?.lead_id||'')}</div></div>
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Assigned to</div><div style="font-weight:700;margin-top:4px">${esc(assignee||'Unassigned')}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${esc(staff?.role||'')}</div></div>
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Due</div><div style="font-weight:700;margin-top:4px;color:${overdue?'var(--rose)':'var(--ink)'}">${t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'No date'}</div>${overdue?'<div style="font-size:11px;color:var(--rose);margin-top:2px">Overdue</div>':''}</div>
-      <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Priority</div><div style="font-weight:700;margin-top:4px">${esc(t.priority||'Medium')}</div></div>
+      <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Priority</div><div style="margin-top:5px"><span class="pill" style="background:${priorityLabel==='High'?'#FDE7E7':priorityLabel==='Low'?'var(--sage-l)':'var(--gold-l)'};color:${priorityTone}">${esc(priorityLabel)}</span></div></div>
     </div>
-    <div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700;margin-bottom:6px">Notes</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 6px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Notes</div><div style="font-size:10px;color:var(--ink3)">Task context</div></div>
     <div style="padding:12px;border:1px solid var(--line);border-radius:10px;white-space:pre-wrap;min-height:60px;color:var(--ink2)">${esc(t.notes||'No additional notes.')}</div>
   `;
   const completeBtn=document.getElementById('tdetail-complete-btn');
+  const canChange=canManageTaskClient(t);
+  completeBtn.style.display=canChange?'inline-flex':'none';
   completeBtn.textContent=t.status==='Done'?'↩ Reopen':'✓ Mark Complete';
-  completeBtn.onclick=async()=>{const next=t.status==='Done'?'Open':'Done';const{error:e}=await sb.from('tasks').update({status:next}).eq('id',t.id);if(e){toast('Could not update task: '+e.message);return;}closeModal('modal-task-detail');toast(next==='Done'?'Task completed.':'Task reopened.');renderTaskDashboard();loadMyTasks();};
+  completeBtn.onclick=async()=>{
+    if(!canManageTaskClient(t)){toast('You do not have permission to change this task.');return;}
+    completeBtn.disabled=true;
+    const next=t.status==='Done'?'Open':'Done';
+    const{error:e}=await sb.from('tasks').update({status:next,completed_at:next==='Done'?new Date().toISOString():null}).eq('id',t.id);
+    completeBtn.disabled=false;
+    if(e){toast('Could not update task: '+e.message);return;}
+    closeModal('modal-task-detail');toast(next==='Done'?'Task completed.':'Task reopened.');renderTaskDashboard();loadMyTasks();
+  };
   document.getElementById('tdetail-lead-btn').onclick=()=>{closeModal('modal-task-detail');if(t.lead_id)openLeadDetail(t.lead_id);};
   document.getElementById('modal-task-detail').classList.add('open');
 }
@@ -6473,6 +6573,10 @@ function renderTaskDailySnapshot(scoped){
 }
 
 async function renderTaskDashboard(){
+  // Existing counsellor assignments from before the task workflow was added
+  // are healed here once: every assigned lead gets an actionable task, and
+  // the task is immediately included in My Tasks.
+  await syncAssignedLeadTasksForCurrentUser();
   const{data,error}=await sb.from('tasks').select('*,leads(name,country,nationality,lead_id)').order('due_date',{ascending:true}).limit(500);
   if(error){
     document.getElementById('td-task-list').innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load tasks — has the tasks table been created yet?</div>';
@@ -6632,7 +6736,7 @@ async function renderTaskDashboard(){
       </div>
       ${assigneeCell}
       <span style="font-size:11px;color:var(--ink3);flex-shrink:0;min-width:60px;text-align:right">${dateLabel}</span>
-      ${canReassign?`<button onclick="openTaskDetail('${t.id}')" title="Edit" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 3px"><i class="ti ti-pencil"></i></button><button onclick="deleteTaskDashboardItem('${t.id}')" title="Delete" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:15px;padding:0 3px">×</button>`:''}
+      ${canReassign?`<button onclick="openTaskDetail('${t.id}')" title="Task details" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 3px"><i class="ti ti-eye"></i></button><button onclick="deleteTaskDashboardItem('${t.id}')" title="Delete" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:15px;padding:0 3px">×</button>`:''}
     </div>`;
   }).join('');
 }
@@ -6687,22 +6791,25 @@ function renderMyTasksPersonalTab(){
       <div style="flex:1;font-size:13.5px">
         ${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open lead">${esc(leadName)}</a>`:`<b style="${isDone?'text-decoration:line-through;color:var(--ink3)':''}">${esc(leadName)}</b>`} — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:${isDone?'var(--ink3)':'var(--ink)'};${isDone?'text-decoration:line-through;':''}text-underline-offset:2px;cursor:pointer" title="Open task">${esc(t.title)}</a>
         ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
+        ${t.priority?` <span class="pill" style="background:${t.priority==='High'?'#FDE7E7':t.priority==='Low'?'var(--sage-l)':'var(--gold-l)'};color:${t.priority==='High'?'var(--rose)':t.priority==='Low'?'var(--sage)':'var(--gold)'};font-size:9px">${esc(t.priority)}</span>`:''}
       </div>
       <span style="font-size:11.5px;color:var(--ink3);flex-shrink:0">${dateLabel}</span>
     </div>`;
   }).join('');
 }
 async function toggleMyTaskPersonal(taskId,checked){
-  const{error}=await sb.from('tasks').update({status:checked?'Done':'Open'}).eq('id',taskId);
-  if(error){toast('Error: '+error.message);return;}
   const t=myTasksPersonalData.find(x=>x.id===taskId);
+  if(!t||!canManageTaskClient(t)){toast('You do not have permission to change this task.');renderMyTasksPersonalTab();return;}
+  const{error}=await sb.from('tasks').update({status:checked?'Done':'Open',completed_at:checked?new Date().toISOString():null}).eq('id',taskId);
+  if(error){toast('Could not update task: '+error.message);return;}
   if(t)t.status=checked?'Done':'Open';
   renderMyTasksPersonalTab();
 }
 
 async function editTaskDashboardItem(taskId){
-  const t=(await sb.from('tasks').select('*').eq('id',taskId).maybeSingle()).data;
+  const t=(await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle()).data;
   if(!t){toast('Task not found.');return;}
+  if(!canManageTaskClient(t)){toast('You do not have permission to change this task.');return;}
   const newTitle=prompt('Edit task title:',t.title);
   if(newTitle===null)return;
   const newDue=prompt('Due date (YYYY-MM-DD, or blank for none):',t.due_date||'');
@@ -6714,6 +6821,9 @@ async function editTaskDashboardItem(taskId){
   loadMyTasks();
 }
 async function deleteTaskDashboardItem(taskId){
+  const{data:t}=await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle();
+  if(!t){toast('Task not found.');return;}
+  if(!canManageTaskClient(t)){toast('You do not have permission to delete this task.');renderTaskDashboard();return;}
   if(!confirm('Delete this task? This cannot be undone.'))return;
   const{error}=await sb.from('tasks').delete().eq('id',taskId);
   if(error){toast('Error deleting: '+error.message);return;}
@@ -6722,6 +6832,11 @@ async function deleteTaskDashboardItem(taskId){
   loadMyTasks();
 }
 async function reassignTask(taskId,newAssignee){
+  const{data:t}=await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle();
+  if(!t){toast('Task not found.');renderTaskDashboard();return;}
+  if(!canManageTaskClient(t)){toast('You do not have permission to reassign this task.');renderTaskDashboard();return;}
+  const allowedRecipients=getAssignableTaskRecipients();
+  if(newAssignee && !allowedRecipients.includes(newAssignee)){toast('That assignee is outside your task scope.');renderTaskDashboard();return;}
   const{error}=await sb.from('tasks').update({assigned_to:newAssignee||null}).eq('id',taskId);
   if(error){toast('Error reassigning: '+error.message);return;}
   toast(newAssignee?`Task reassigned to ${newAssignee}`:'Task unassigned');
@@ -6735,11 +6850,11 @@ function filterTaskDashboardByCard(filterKey){
   document.getElementById('td-all-tasks-card')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function toggleTaskDashboardItem(taskId,checked){
+  const{data:t}=await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle();
+  if(!t||!canManageTaskClient(t)){toast('You do not have permission to change this task.');renderTaskDashboard();return;}
   const{error}=await sb.from('tasks').update({status:checked?'Done':'Open',completed_at:checked?new Date().toISOString():null}).eq('id',taskId);
-  if(error){toast('Error: '+error.message);return;}
-  renderTaskDashboard();
-  loadMyTasks();
-  toast(checked?'✅ Task done':'↩ Reopened');
+  if(error){toast('Could not update task: '+error.message);return;}
+  renderTaskDashboard();loadMyTasks();toast(checked?'✅ Task done':'↩ Reopened');
 }
 
 async function updateStatus(){
@@ -7017,8 +7132,10 @@ async function saveLead(){
   let error;
   let logEvents=[];
   let newlyCreatedLeadId=null; // captured here so it's usable after the if/else closes below
+  let previousCounsellor;
   if(editMode&&curId){       delete data.lead_id;
     const existing=leads.find(x=>x.id===curId);
+    previousCounsellor=existing?.counsellor||'';
     if(existing&&existing.office&&data.office&&existing.office!==data.office){
       await promptHandoffNoteIfNeeded(curId,existing.office,data.office);
     }
@@ -7072,6 +7189,15 @@ async function saveLead(){
   }
   btn.disabled=false;
   if(error){setSyncErr();toast('Error saving lead: '+error.message);return;}
+  // Every assigned lead must have one actionable assignment task. For edits,
+  // only a newly assigned/reassigned counsellor needs the task check; for new
+  // leads, the auto-assigned/manual counsellor gets the task immediately.
+  const savedLead=curId?leads.find(x=>x.id===curId):(newlyCreatedLeadId?leads.find(x=>x.id===newlyCreatedLeadId):null);
+  const assignmentChanged=!!(editMode&&previousCounsellor!==undefined&&previousCounsellor!==data.counsellor);
+  if(savedLead&&data.counsellor&&(!editMode||assignmentChanged)){
+    const taskResult=await ensureLeadAssignmentTask({...savedLead,...data},data.counsellor,{reassignExisting:true,quiet:true});
+    if(!taskResult.ok)toast('Lead saved, but the follow-up task could not be created/updated.');
+  }
   if(curId)logEvents.forEach(([type,detail])=>logActivity(curId,type,detail));
   // Capture before closeModal resets editMode/curId, so we can reopen the
   // same detail view the edit was launched from — no need to manually
@@ -8140,6 +8266,10 @@ async function bulkReassignCounsellor(){
   const{error}=await sb.from('leads').update({counsellor,assigned_at:new Date().toISOString()}).in('id',workIds);
   if(error){toast('Error: '+error.message);return;}
   workIds.forEach(id=>{const l=leads.find(x=>x.id===id);if(l){l.counsellor=counsellor;l.assigned_at=new Date().toISOString();}});
+  for(const id of workIds){
+    const l=leads.find(x=>x.id===id);
+    if(l){const taskResult=await ensureLeadAssignmentTask(l,counsellor,{reassignExisting:true,quiet:true});if(!taskResult.ok)console.error('Bulk assignment task failed for',id,taskResult.error);}
+  }
   workIds.forEach(id=>logActivity(id,'reassigned',`Reassigned (bulk) → ${counsellor}`));
   toast(`Reassigned ${workIds.length} lead(s) to ${counsellor}.`);
   clearBulkSelection();renderLeads();renderDash();
@@ -8254,7 +8384,8 @@ async function bawCommit(){
     const l=leads.find(x=>x.id===id);if(l){l.counsellor=counsellor;l.assigned_at=now;}
     logActivity(id,'reassigned',`Reassigned (bulk wizard, ${bawMethod}) → ${counsellor}`);
     if(document.getElementById('baw-create-task').checked){
-      await sb.from('tasks').insert({lead_id:id,title:'Follow up with newly assigned lead',due_date:new Date(Date.now()+86400000).toISOString().substring(0,10),assigned_to:counsellor,status:'Open',source:'manual'});
+      const taskResult=await ensureLeadAssignmentTask(l,counsellor,{reassignExisting:true,quiet:true});
+      if(!taskResult.ok)console.error('Bulk wizard assignment task failed for',id,taskResult.error);
     }
   }
   toast(`Assigned ${assignments.length} lead(s).`);
@@ -9964,6 +10095,11 @@ async function loadExpiryAlerts(){
 async function loadMyTasks(){
   const el=document.getElementById('my-tasks-list');
   if(!el)return;
+  // Keep the Home-page My Tasks widget in sync with the counsellor's lead
+  // assignments too. This matters when a counsellor lands on Home first
+  // instead of opening Task Dashboard — assigned leads must still produce
+  // an actionable task and appear here.
+  await syncAssignedLeadTasksForCurrentUser();
   const{data,error}=await sb.from('tasks').select('*,leads(name,country)').eq('status','Open').order('due_date',{ascending:true}).limit(200);
   if(error){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load tasks — has the tasks table been created yet?</div>';return;}
   let scoped=data||[];
@@ -11357,7 +11493,11 @@ async function saveLogWork(){
   const payload={user_id:currentUser?.id||null,user_name:myName||'',country:myCountry||null,team_category:myTeamCategory||null,work_date:new Date().toISOString().substring(0,10),category:logWorkState.category,title,description:(document.getElementById('lw-description')?.value||'').trim()||null,effort:logWorkState.effort||null,result:logWorkState.result||'Done',output_url:safeUrl(document.getElementById('lw-link')?.value||'')||null,mood:logWorkState.mood||null,note_type:logWorkState.noteType||null,note:(document.getElementById('lw-note')?.value||'').trim()||null};
   const{error}=await sb.from('work_logs').insert(payload);
   btn.disabled=false;btn.innerHTML='<i class="ti ti-sparkles"></i> Log this';
-  if(error){toast('Could not save work log: '+error.message);return;}
+  if(error){
+    const msg=String(error.message||'');
+    toast(msg.toLowerCase().includes('work_logs')||msg.includes('relation')?'Work logging needs its database table enabled first.':'Could not save work log: '+msg);
+    return;
+  }
   closeModal('modal-log-work');toast('✨ Work logged.');
 }
 
@@ -11741,7 +11881,7 @@ function broadcastStopEditing(leadId) {
 
 <!-- TASK DETAIL DRAWER -->
   <div class="mover" id="modal-task-detail">
-    <div class="modal" style="width:620px;max-height:90vh;overflow:auto">
+    <div class="modal" style="width:min(680px,calc(100vw - 32px));max-height:90vh;overflow:auto">
       <div class="mhead"><div><span class="mtitle" id="tdetail-title">Task details</span><div id="tdetail-sub" style="font-size:11px;color:var(--ink3);margin-top:2px"></div></div><button class="mclose" onclick="closeModal('modal-task-detail')">×</button></div>
       <div id="tdetail-body" style="padding:18px 20px"></div>
       <div class="mfoot"><button class="btn" onclick="closeModal('modal-task-detail')">Close</button><button class="btn" id="tdetail-complete-btn"></button><button class="btn btn-p" id="tdetail-lead-btn">Open Lead →</button></div>

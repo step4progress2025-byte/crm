@@ -4435,7 +4435,7 @@ function opsViewScopedLeads(sourceLeads){
     scoped=sourceLeads;
   }
 
-  if(!isSuperAdmin||isOwner||!superAdminOpsView)return scoped;
+  if(!isSuperAdmin||!superAdminOpsView)return scoped;
   const isDomesticLead=l=>String(l?.country||'').trim().toLowerCase()==='uk';
   return superAdminOpsView==='Domestic'
     ? scoped.filter(isDomesticLead)
@@ -5201,7 +5201,7 @@ function renderDash(){
   }
   const scopeNote=document.getElementById('dash-scope-note');
   if(scopeNote){
-    if(isSuperAdmin) scopeNote.textContent=superAdminOpsView==='Domestic'?'🇬🇧 Domestic Operations — UK leads only':superAdminOpsView==='International'?'🌍 International Operations — India, Pakistan, Bangladesh':'Showing all countries and offices · Super Admin view';
+    if(isSuperAdmin) scopeNote.textContent=superAdminOpsView==='Domestic'?'🇬🇧 Domestic Operations — UK leads only':superAdminOpsView==='International'?'🌍 International Operations — non-UK leads':'Showing all countries and offices · Super Admin view';
     else if(myTeamCategory==='Agent') scopeNote.textContent='Agent Portal — showing only leads assigned to you by Management';
     else if(myTeamCategory==='Domestic'&&myRole==='Admin') scopeNote.textContent='Domestic Operations — showing your whole Domestic team assigned leads';
     else if(myTeamCategory==='Domestic') scopeNote.textContent='Domestic Operations — showing only leads assigned to you by Management';
@@ -6731,12 +6731,17 @@ async function renderTaskDashboard(){
   const isElevatedGlobal=isOwner || ((currentUser?.email||'').toLowerCase()==='pavitra@step4progress.com');
   const isJisan=(currentUser?.email||'').toLowerCase()==='jisan@step4progress.co.uk';
   const isOwnCountryStaff=staff=>staff && myCountry && staff.country===myCountry;
-  if(isElevatedGlobal){
-    // global — no restriction
+  if(isElevatedGlobal && !superAdminOpsView){
+    // Owner / Platform Administrator: global when no operational view is selected.
+  } else if(isElevatedGlobal && superAdminOpsView){
+    // Owner / Platform Administrator can also use the same UK Domestic vs
+    // International operational switcher. Domestic is strictly lead.country=UK.
+    const isDomesticLead=l=>String(l?.country||'').trim().toLowerCase()==='uk';
+    scoped=scoped.filter(t=>superAdminOpsView==='Domestic'?isDomesticLead(t.leads):!isDomesticLead(t.leads));
   } else if(isJisan){
     const nonIndia=scoped.filter(t=>t.leads?.country!=='India');
     if(superAdminOpsView){
-      const isDomesticLead=l=>l?.country==='UK';
+      const isDomesticLead=l=>String(l?.country||'').trim().toLowerCase()==='uk';
       scoped=nonIndia.filter(t=>superAdminOpsView==='Domestic'?isDomesticLead(t.leads):!isDomesticLead(t.leads));
     } else scoped=nonIndia;
   } else if(myRole==='Counsellor' || myTeamCategory==='Domestic' || ['Application Team','Visa Team','SOP Team'].includes(myRole) || myTeamCategory==='Agent'){

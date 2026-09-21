@@ -609,7 +609,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <button class="ni" data-nav="team" onclick="nav('team',this)"><i class="ti ti-id-badge" style="color:var(--violet)"></i>Team</button>
       <button class="ni" data-nav="teamchat" onclick="nav('teamchat',this)"><i class="ti ti-brand-slack" style="color:var(--sky)"></i>Team Chat<span class="nbadge" id="nb-teamchat" style="display:none">0</span></button>
       <button class="ni" data-nav="events" onclick="nav('events',this)"><i class="ti ti-calendar-event" style="color:var(--gold)"></i>Events</button><button class="ni" data-nav="studentportal" id="ni-studentportal" onclick="nav('studentportal',this)" style="display:none"><i class="ti ti-school" style="color:var(--gold)"></i>Student Portal</button><button class="ni" data-nav="import" onclick="nav('import',this)"><i class="ti ti-file-import" style="color:var(--teal)"></i>Import data</button>
-      <button class="ni" data-nav="finance" id="ni-finance" style="display:none" onclick="nav('finance',this)"><i class="ti ti-cash" style="color:var(--sage)"></i>Finance</button>       <button class="ni" data-nav="digitalmarketing" id="ni-digitalmarketing" onclick="nav('digitalmarketing',this)"><i class="ti ti-speakerphone" style="color:var(--rose)"></i>Digital Marketing</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic" style="color:var(--sky)"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard" style="color:var(--violet)"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset" style="color:var(--pine3)"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search" style="color:var(--teal)"></i>Course Finder</button>      <button class="ni" data-nav="scholarships" onclick="nav('scholarships',this)"><i class="ti ti-award" style="color:var(--gold)"></i>Scholarship Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books" style="color:var(--gold)"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv" style="color:var(--sky)"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot" style="color:var(--violet)"></i>AI Counsellor</button>
+      <button class="ni" data-nav="finance" id="ni-finance" style="display:none" onclick="nav('finance',this)"><i class="ti ti-cash" style="color:var(--sage)"></i>Finance</button>       <button class="ni" data-nav="digitalmarketing" id="ni-digitalmarketing" style="display:none" onclick="nav('digitalmarketing',this)"><i class="ti ti-speakerphone" style="color:var(--rose)"></i>Digital Marketing</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic" style="color:var(--sky)"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard" style="color:var(--violet)"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset" style="color:var(--pine3)"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search" style="color:var(--teal)"></i>Course Finder</button>      <button class="ni" data-nav="scholarships" onclick="nav('scholarships',this)"><i class="ti ti-award" style="color:var(--gold)"></i>Scholarship Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books" style="color:var(--gold)"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv" style="color:var(--sky)"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot" style="color:var(--violet)"></i>AI Counsellor</button>
     </div>
     <div class="sb-foot">
       <div class="sb-user">
@@ -819,8 +819,11 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
            Home page's "My Tasks" widget — this is the same data, in a
            dedicated, uncapped, fuller view rather than a 6-item preview. -->
       <section id="sc-taskdashboard" class="screen">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">
-          <div style="font-size:13px;color:var(--ink3)">Tasks respect the same access rules as leads — a Counsellor sees only their own, Admin/Manager only their country, Super Admin everything except India, Owner everything.</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--ink)">Task Dashboard</div>
+            <div id="td-header-meta" style="font-size:12px;color:var(--ink3);margin-top:4px">Your task workspace</div>
+          </div>
           <button class="btn btn-p" onclick="openTaskModalStandalone()"><i class="ti ti-plus"></i>Add task</button>
         </div>
         <!-- Personal view — Counsellors only. Deliberately simple: no
@@ -838,9 +841,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             </div>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:2px solid var(--line);padding-bottom:0">
-            <button class="mtp-tab active" data-tab="today" onclick="switchMyTasksTab('today')">Today</button>
+            <button class="mtp-tab active" data-tab="all" onclick="switchMyTasksTab('all')">My Tasks</button>
+            <button class="mtp-tab" data-tab="today" onclick="switchMyTasksTab('today')">Today</button>
             <button class="mtp-tab" data-tab="tomorrow" onclick="switchMyTasksTab('tomorrow')">Tomorrow</button>
-            <button class="mtp-tab" data-tab="pending" onclick="switchMyTasksTab('pending')">Pending</button>
+            <button class="mtp-tab" data-tab="pending" onclick="switchMyTasksTab('pending')">Upcoming</button>
             <button class="mtp-tab" data-tab="completed" onclick="switchMyTasksTab('completed')">Completed</button>
           </div>
           <div id="my-tasks-personal-list"></div>
@@ -870,8 +874,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <div id="td-momentum" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center"></div>
           </div>
         </div>
-        <div id="td-summary-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px"></div>
-        <div class="two-col" id="td-two-col">
+        <div id="td-summary-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px"></div>
+        <div class="two-col" id="td-two-col" style="gap:12px">
           <div class="card">
             <div class="card-h"><span class="card-t">📋 Task Summary</span></div>
             <div id="td-summary-numbers" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
@@ -1597,7 +1601,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <div id="my-response-stats"></div>
           </div>
           <div class="card" style="margin-bottom:16px;max-width:640px">
-            <div class="card-h"><span class="card-t">📝 What did you work on today?</span></div>
+            <div class="card-h"><span class="card-t">📝 What did you work on today?</span><button class="btn btn-p" onclick="openLogWorkModal()" style="margin-left:auto;padding:7px 11px;font-size:11.5px"><i class="ti ti-sparkles"></i> Log Work</button></div>
             <div class="ff"><label>Date</label><input type="date" id="du-date"></div>
             <div class="ff"><label>Update</label><textarea id="du-content" rows="4" placeholder="e.g. Followed up with 8 leads, submitted 2 applications to Coventry, completed SOP review for..." style="width:100%;padding:10px;border:1px solid var(--line);border-radius:var(--r);font-family:var(--font-b);font-size:13px"></textarea></div>
             <button class="btn btn-p" style="margin-top:8px" onclick="submitDailyUpdate()"><i class="ti ti-device-floppy"></i>Save update</button>
@@ -2302,9 +2306,11 @@ What would you like help with today?</div>
     <div class="mhead"><span class="mtitle">Add task</span><button class="mclose" onclick="closeModal('modal-task')">×</button></div>
     <div class="fg">
       <div class="ff full" id="task-lead-picker-wrap" style="display:none"><label>Lead *</label><select id="task-lead-picker"></select></div>
-      <div class="ff full"><label>Task title *</label><input id="task-title" placeholder="e.g. Send university shortlist to student"></div>
-      <div class="ff full"><label>Due date (optional)</label><input type="date" id="task-due"></div>
+      <div class="ff full"><label>Task title *</label><input id="task-title" placeholder="e.g. Follow up on conditional offer"></div>
+      <div class="ff"><label>Due date (optional)</label><input type="date" id="task-due"></div>
+      <div class="ff"><label>Priority</label><select id="task-priority"><option value="Medium">Normal</option><option value="High">High</option><option value="Low">Low</option></select></div>
       <div class="ff full" id="task-assignee-wrap" style="display:none"><label>Assign to (optional)</label><select id="task-assignee-picker"><option value="">Leave as lead's counsellor</option></select></div>
+      <div class="ff full"><label>Notes <span style="font-weight:400;color:var(--ink3)">(optional)</span></label><textarea id="task-notes" rows="3" placeholder="Anything the assignee should know…" style="resize:vertical"></textarea></div>
     </div>
     <div class="mfoot">
       <button class="btn" onclick="closeModal('modal-task')">Cancel</button>
@@ -2313,7 +2319,7 @@ What would you like help with today?</div>
   </div>
 </div>
 
-<!-- Event Modal -->
+  <!-- Event Modal -->
 <div class="mover" id="modal-event">
   <div class="modal" style="width:480px">
     <div class="mhead"><span class="mtitle" id="event-modal-title">Add event</span><button class="mclose" onclick="closeModal('modal-event')">×</button></div>
@@ -2974,8 +2980,14 @@ function runGuidedTourStep(steps,i,userId){
 let officeHolidays=[];
 async function loadOfficeHolidays(){
   if(officeHolidays.length)return;
-  const{data}=await sb.from('office_holidays').select('*');
-  officeHolidays=data||[];
+  // Holiday awareness is optional. If the table is not provisioned yet,
+  // fail quietly so it never creates a noisy console error or interrupts
+  // the rest of the CRM.
+  try{
+    const{data,error}=await sb.from('office_holidays').select('*');
+    if(error){officeHolidays=[];return;}
+    officeHolidays=data||[];
+  }catch(e){officeHolidays=[];}
 }
 function holidayOn(dateStr,countryOrOffice){
   if(!dateStr||!countryOrOffice)return null;
@@ -3223,6 +3235,21 @@ function isAllowedEmail(email){
 }
 function ini(n){const p=(n||'?').trim().split(' ');return(p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+// SECURITY: only ever treat a user-supplied field as a clickable link if
+// it genuinely starts with http:// or https:// — rejects javascript:,
+// data:, and similar schemes that would otherwise execute arbitrary code
+// when clicked. Fixes a real stored-XSS gap where fields like
+// doc_folder_link were inserted directly into an <a href> via innerHTML
+// with no validation at all — anyone who'd typed a malicious value into
+// that field could run script in every other viewer's browser who opened
+// that lead. Always combine with esc() on the URL itself, since this
+// only blocks dangerous schemes, not attribute-breakout via quotes.
+function safeUrl(url){
+  if(!url)return null;
+  const trimmed=String(url).trim();
+  if(!/^https?:\/\//i.test(trimmed))return null;
+  return trimmed;
+}
 function emptyState(icon,text){return `<div class="empty-state"><div class="empty-state-icon">${icon}</div><div class="empty-state-text">${esc(text)}</div></div>`;}
 
 // ── Contact quick-buttons (#7) ─────────────────────────────────────
@@ -3244,7 +3271,7 @@ function contactIcons(mobile,email,opts){
   const wa=waDigits(num);
   const em=(email||'').trim();
   const btn=(href,bg,color,title,svg)=>href
-    ? `<a href="${href}" target="_blank" rel="noopener" title="${title}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:50%;background:${bg};color:${color};text-decoration:none;flex-shrink:0">${svg}</a>`
+    ? `<a href="${esc(href)}" target="_blank" rel="noopener" title="${esc(title)}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:50%;background:${bg};color:${color};text-decoration:none;flex-shrink:0">${svg}</a>`
     : '';
   const phoneSvg='<i class="ti ti-phone" style="font-size:'+Math.round(size*0.55)+'px"></i>';
   const waSvg='<i class="ti ti-brand-whatsapp" style="font-size:'+Math.round(size*0.58)+'px"></i>';
@@ -3280,7 +3307,6 @@ function ago(ts){if(!ts)return'';const d=Date.now()-new Date(ts).getTime();if(d<
 let leads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[], editedFromView=null; function openCreateUser(){
   // Only the Super Admin can add team members / send invites.
   if(!isSuperAdmin){toast('Only the Super Admin can add team members.');return;}
-  document.getElementById('inv-recipient-email').value='';
   document.getElementById('inv-name').value='';
   document.getElementById('inv-email-hint').value='';
   document.getElementById('inv-role').value='Counsellor';
@@ -4023,16 +4049,67 @@ function renderCounsellorCell(l){
   }
   return `<select onchange="quickReassignLead('${l.id}',this.value)" style="font-size:12px;padding:4px 6px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);max-width:150px">${options.join('')}</select>`;
 }
+async function ensureLeadAssignmentTask(lead,assignee,{reassignExisting=true,quiet=false}={}){
+  if(!lead||!assignee)return {ok:true,created:false,updated:false};
+  const title='Follow up with newly assigned lead';
+  const due=new Date(Date.now()+86400000).toISOString().substring(0,10);
+  // Keep one canonical assignment task per lead. If one already exists, move it
+  // to the current counsellor rather than creating duplicates.
+  const{data:existing,error:findError}=await sb.from('tasks').select('id,assigned_to,status').eq('lead_id',lead.id).eq('title',title).eq('status','Open').limit(1);
+  if(findError){console.error('Assignment task lookup failed:',findError);return {ok:false,created:false,updated:false,error:findError};}
+  if(existing&&existing[0]){
+    if(reassignExisting&&existing[0].assigned_to!==assignee){
+      const{error:updateError}=await sb.from('tasks').update({assigned_to:assignee}).eq('id',existing[0].id);
+      if(updateError){console.error('Assignment task reassignment failed:',updateError);return {ok:false,created:false,updated:false,error:updateError};}
+      if(!quiet)toast(`📋 Assignment task moved to ${assignee}`);
+      return {ok:true,created:false,updated:true};
+    }
+    return {ok:true,created:false,updated:false};
+  }
+  const{error:insertError}=await sb.from('tasks').insert({lead_id:lead.id,title,due_date:due,assigned_to:assignee,status:'Open',source:'auto'});
+  if(insertError){console.error('Assignment task creation failed:',insertError);return {ok:false,created:false,updated:false,error:insertError};}
+  if(!quiet)toast('📋 Follow-up task created for the new assignment.');
+  return {ok:true,created:true,updated:false};
+}
+async function syncAssignedLeadTasksForCurrentUser(){
+  if(myRole!=='Counsellor'||isSuperAdmin||!myName||!Array.isArray(leads)||!leads.length)return;
+  const assignedLeads=leads.filter(l=>(l.counsellor||'').trim()===myName);
+  if(!assignedLeads.length)return;
+  const leadIds=assignedLeads.map(l=>l.id);
+  const{data:existing,error}=await sb.from('tasks').select('id,lead_id,assigned_to,title,status').in('lead_id',leadIds).eq('status','Open');
+  if(error){console.error('Assigned-lead task sync lookup failed:',error);return;}
+  const openByLead=new Map();
+  (existing||[]).forEach(t=>{
+    if(!openByLead.has(t.lead_id))openByLead.set(t.lead_id,t);
+    if(t.assigned_to===myName)openByLead.set(t.lead_id,t);
+  });
+  let created=0;
+  for(const lead of assignedLeads){
+    const current=openByLead.get(lead.id);
+    // If the counsellor already has an open task for this lead, it is already
+    // actionable and nothing new is needed. Otherwise create the canonical
+    // assignment task for the counsellor.
+    if(current&&current.assigned_to===myName)continue;
+    const result=await ensureLeadAssignmentTask(lead,myName,{reassignExisting:false,quiet:true});
+    if(result.created)created++;
+  }
+  if(created)console.info(`Created ${created} missing assignment task(s) for ${myName}.`);
+}
+
 async function quickReassignLead(leadId,newCounsellor){
   const l=leads.find(x=>x.id===leadId);
   if(!l||l.counsellor===newCounsellor)return;
   if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");renderLeads();return;}
   const oldCounsellor=l.counsellor;
   setSyncing();
-  const{error}=await sb.from('leads').update({counsellor:newCounsellor||null,assigned_at:new Date().toISOString()}).eq('id',leadId);
+  const{error}=await sb.from('leads').update({counsellor:newCounsellor||null,assigned_at:newCounsellor?new Date().toISOString():null}).eq('id',leadId);
   if(error){setSyncErr();toast('Error reassigning: '+error.message);renderLeads();return;}
   l.counsellor=newCounsellor||null;
-  l.assigned_at=new Date().toISOString();
+  l.assigned_at=newCounsellor?new Date().toISOString():null;
+  if(newCounsellor){
+    const taskResult=await ensureLeadAssignmentTask(l,newCounsellor,{reassignExisting:true,quiet:true});
+    if(!taskResult.ok)toast('Lead reassigned, but the follow-up task could not be updated.');
+  }
   setSynced();
   logActivity(leadId,'reassigned',`Reassigned: ${oldCounsellor||'Unassigned'} → ${newCounsellor||'Unassigned'}`);
   if(newCounsellor&&newCounsellor!==oldCounsellor){
@@ -4040,7 +4117,7 @@ async function quickReassignLead(leadId,newCounsellor){
     if(assignee)sendPushToUser(assignee.id,'New lead assigned',`${l.name} has been assigned to you.`,'./index.html');
   }
   toast(newCounsellor?`Reassigned to ${newCounsellor}`:'Unassigned');
-  renderDash();
+  renderDash();renderLeads();
 }
 
 // ── Inline Application/Visa/SOP quick-assign, directly in the Leads table ──
@@ -4387,10 +4464,6 @@ async function onLoginGuarded(user){
       return;
     }
   }
-  // A newly confirmed invited user may not have a team row yet. Consume the
-  // one-time invitation before loading the profile so team RLS can later be
-  // enabled without relying on a direct client-side INSERT.
-  await acceptPendingTeamInviteIfNeeded();
   await onLogin(user);
 }
 async function onLogin(user){
@@ -4418,11 +4491,9 @@ async function onLogin(user){
   myTeamCategory=profile?.team_category||'International';
   myCountry=profile?.country||Object.keys(OFFICE_MAP).find(c=>OFFICE_MAP[c].includes(myOffice))||null;
   isSuperAdmin=SUPER_ADMIN_EMAILS.includes((user.email||'').toLowerCase());
-  // Finance is deliberately MORE restrictive than isSuperAdmin — Pavitra
-  // (Platform Administrator) shares full Super-Admin-level access to
-  // everything else in the CRM, but is specifically excluded from
-  // Finance by explicit instruction. Only India and Jisan see it.
-  canSeeFinance=['india@step4progress.com','jisan@step4progress.co.uk'].includes((user.email||'').toLowerCase());
+  // Finance follows the elevated-access tier: Owner, Platform Administrator,
+  // and Super Admin. Country Admins/Managers and ordinary team members do not see it.
+  canSeeFinance=isSuperAdmin; // Finance is reserved for the three elevated CRM accounts: Owner, Platform Administrator, and Jisan's Super Admin account.
   myOwnerTitle=OWNERS[(user.email||'').toLowerCase()]||null;
   isOwner=myOwnerTitle!==null;
   document.getElementById('sb-av').textContent=ini(name);
@@ -5666,7 +5737,7 @@ function openDetail(id){
   document.getElementById('d-assigned-at').textContent=l.assigned_at?new Date(l.assigned_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'Not yet assigned';
   document.getElementById('d-fu').textContent=l.next_followup||'Not set';
   document.getElementById('d-visa-deadline').innerHTML=formatExpiryDisplay(l.visa_deadline,7);
-  document.getElementById('d-notes').textContent=l.notes||'No notes.';   document.getElementById('d-intake').textContent=l.intake_month||'—';   document.getElementById('d-ielts-status').textContent=l.ielts_status||'—';   document.getElementById('d-ielts-score').textContent=l.ielts_score||'—';   document.getElementById('d-budget').textContent=l.budget_range||'—';   document.getElementById('d-english').textContent=l.english_status||'—';   document.getElementById('d-walink').textContent=l.whatsapp_group_link||'—';   const doclink=document.getElementById('d-doclink');   if(l.doc_folder_link){doclink.innerHTML=`<a href="${l.doc_folder_link}" target="_blank" style="color:var(--pine);text-decoration:underline">Open folder →</a>`;}else{doclink.textContent='—';}
+  document.getElementById('d-notes').textContent=l.notes||'No notes.';   document.getElementById('d-intake').textContent=l.intake_month||'—';   document.getElementById('d-ielts-status').textContent=l.ielts_status||'—';   document.getElementById('d-ielts-score').textContent=l.ielts_score||'—';   document.getElementById('d-budget').textContent=l.budget_range||'—';   document.getElementById('d-english').textContent=l.english_status||'—';   document.getElementById('d-walink').textContent=l.whatsapp_group_link||'—';   const doclink=document.getElementById('d-doclink');   {const safeLink=safeUrl(l.doc_folder_link);if(safeLink){doclink.innerHTML=`<a href="${esc(safeLink)}" target="_blank" rel="noopener" style="color:var(--pine);text-decoration:underline">Open folder →</a>`;}else if(l.doc_folder_link){doclink.textContent=l.doc_folder_link;}else{doclink.textContent='—';}}
   const sel=document.getElementById('d-ssel');
   sel.innerHTML=STATUSES.map(s=>`<option${s===l.status?' selected':''}>${s}</option>`).join('');
   document.getElementById('dover').classList.add('open');
@@ -5731,7 +5802,7 @@ function openLeadDetail(id){
   const wa=document.getElementById('ld-walink');
   wa.textContent=l.whatsapp_group_link||'—';
   const dl=document.getElementById('ld-doclink');
-  if(l.doc_folder_link){dl.innerHTML=`<a href="${l.doc_folder_link}" target="_blank" style="color:var(--pine);text-decoration:underline">Open folder →</a>`;}else{dl.textContent='—';}
+  {const safeLink=safeUrl(l.doc_folder_link);if(safeLink){dl.innerHTML=`<a href="${esc(safeLink)}" target="_blank" rel="noopener" style="color:var(--pine);text-decoration:underline">Open folder →</a>`;}else if(l.doc_folder_link){dl.textContent=l.doc_folder_link;}else{dl.textContent='—';}}
   const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
   document.getElementById('ld-priority-badge').innerHTML=`<span class="pill" style="background:${ps.bg};color:${ps.tx}">${l.priority||'—'}</span>`;
   document.getElementById('ld-office-badge').innerHTML=`<span style="font-size:12px;color:var(--ink3)">${esc(l.country||'—')} · ${esc(l.office||'—')}</span>`;
@@ -6111,7 +6182,7 @@ async function loadTasksFS(leadId){
   if(!el)return;
   if(error||!data||!data.length){el.innerHTML=emptyState('✅','No tasks yet.');return;}
   el.innerHTML=data.map(t=>{
-    const overdue=t.status==='Open'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
+    const overdue=t.status!=='Done'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
     return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${t.status==='Done'?';opacity:.5':''}">
       <input type="checkbox" ${t.status==='Done'?'checked':''} onchange="toggleTaskFS('${t.id}',this.checked)" style="margin-top:3px;cursor:pointer">
       <div style="flex:1">
@@ -6285,6 +6356,8 @@ function openTaskModal(){
   document.getElementById('task-assignee-wrap').style.display='none';
   document.getElementById('task-title').value='';
   document.getElementById('task-due').value='';
+  if(document.getElementById('task-priority'))document.getElementById('task-priority').value='Medium';
+  if(document.getElementById('task-notes'))document.getElementById('task-notes').value='';
   document.getElementById('modal-task').classList.add('open');
 }
 // Standalone mode — opened from the Task Dashboard's "Add task" button,
@@ -6326,6 +6399,8 @@ async function saveTaskModal(){
   const title=document.getElementById('task-title').value.trim();
   if(!title){document.getElementById('task-title').focus();toast('Please enter a task title.');return;}
   const dueDate=document.getElementById('task-due').value||null;
+  const priority=document.getElementById('task-priority')?.value||'Medium';
+  const notes=document.getElementById('task-notes')?.value.trim()||null;
   const btn=document.getElementById('save-task-btn');
 
   let leadId,assignedTo;
@@ -6334,7 +6409,8 @@ async function saveTaskModal(){
     if(!leadId){toast('Please pick a lead.');return;}
     const overrideAssignee=document.getElementById('task-assignee-picker').value;
     const l=leads.find(x=>x.id===leadId);
-    assignedTo=overrideAssignee||l?.counsellor||null;
+    const restrictedSelf=(myRole==='Counsellor'||myTeamCategory==='Domestic'||['Application Team','Visa Team','SOP Team'].includes(myRole)||myTeamCategory==='Agent')&&!isSuperAdmin;
+    assignedTo=restrictedSelf?myName:(overrideAssignee||l?.counsellor||null);
   } else {
     if(!curId){toast('No lead selected.');return;}
     leadId=curId;
@@ -6342,8 +6418,24 @@ async function saveTaskModal(){
     assignedTo=l?.counsellor||null;
   }
 
+  const selectedLead=leads.find(x=>x.id===leadId);
+  if(!selectedLead){toast('Lead not found. Please reopen the task window and try again.');return;}
+  const taskDraft={lead_id:leadId,title,due_date:dueDate,assigned_to:assignedTo,status:'Open',source:'manual',priority,notes,leads:{country:selectedLead.country||myCountry||''}};
+  if(!canManageTaskClient(taskDraft)){toast('You cannot create this task for the selected lead or assignee.');return;}
   btn.disabled=true;btn.textContent='Saving…';
-  const{error}=await sb.from('tasks').insert({lead_id:leadId,title,due_date:dueDate,assigned_to:assignedTo,status:'Open',source:'manual'});
+  let{error}=await sb.from('tasks').insert({lead_id:leadId,title,due_date:dueDate,assigned_to:assignedTo,status:'Open',source:'manual',priority,notes});
+  // Keep Add Task usable against an older tasks schema while the optional
+  // priority/notes migration is still pending. Only retry when Supabase
+  // clearly reports a missing column/schema-cache problem; permission or
+  // validation failures must never be retried as a second insert.
+  if(error){
+    const em=String(error.message||'').toLowerCase();
+    const optionalSchemaIssue=em.includes('priority')||em.includes('notes')||em.includes('schema cache')||em.includes('column');
+    if(optionalSchemaIssue){
+      const retry=await sb.from('tasks').insert({lead_id:leadId,title,due_date:dueDate,assigned_to:assignedTo,status:'Open',source:'manual'});
+      error=retry.error;
+    }
+  }
   btn.disabled=false;btn.textContent='Save';
   if(error){toast('Error: '+error.message);return;}
   closeModal('modal-task');
@@ -6351,6 +6443,115 @@ async function saveTaskModal(){
   loadMyTasks();
   if(document.getElementById('sc-taskdashboard')?.classList.contains('active'))renderTaskDashboard();
   toast('Task added!');
+}
+
+function canManageTaskClient(t){
+  const assignee=(t?.assigned_to||'').trim();
+  const staff=teamList.find(x=>(x.full_name||'').trim()===assignee);
+  const leadCountry=(t?.leads?.country||'').trim();
+  const email=(currentUser?.email||'').toLowerCase();
+  if(isOwner||email==='pavitra@step4progress.com') return true;
+  if(email==='jisan@step4progress.co.uk') return leadCountry.toLowerCase()!=='india';
+  if(myRole==='Counsellor'||myTeamCategory==='Domestic'||['Application Team','Visa Team','SOP Team'].includes(myRole)||myTeamCategory==='Agent') return assignee===myName;
+  if(['Admin','Manager','Director'].includes(myRole)) return !!staff&&staff.country===myCountry;
+  return assignee===myName;
+}
+function taskStatusLabel(status){
+  if(status==='Done')return 'Completed';
+  if(status==='In Progress')return 'In Progress';
+  return 'Not Started';
+}
+function taskStatusTone(status){
+  if(status==='Done')return {bg:'var(--sage-l)',tx:'var(--sage)'};
+  if(status==='In Progress')return {bg:'var(--gold-l)',tx:'var(--gold)'};
+  return {bg:'var(--sky-l)',tx:'var(--sky)'};
+}
+async function saveTaskStatus(taskId,status){
+  const t=myTasksPersonalData.find(x=>x.id===taskId);
+  if(!t){
+    const q=await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle();
+    if(q.error||!q.data){toast('Task not found.');return false;}
+    if(!canManageTaskClient(q.data)){toast('You do not have permission to change this task.');return false;}
+  }else if(!canManageTaskClient(t)){toast('You do not have permission to change this task.');return false;}
+  const dbStatus=status==='Completed'?'Done':status==='In Progress'?'In Progress':'Open';
+  const{error}=await sb.from('tasks').update({status:dbStatus,completed_at:dbStatus==='Done'?new Date().toISOString():null}).eq('id',taskId);
+  if(error){toast('Could not update task: '+error.message);return false;}
+  toast('Task status → '+taskStatusLabel(dbStatus));
+  return true;
+}
+async function openTaskDetail(taskId){
+  const{data:t,error}=await sb.from('tasks').select('*,leads(id,name,country,nationality,lead_id,email,mobile)').eq('id',taskId).maybeSingle();
+  if(error||!t){toast('Task not found.');return;}
+  const assignee=(t.assigned_to||'').trim();
+  const staff=teamList.find(x=>(x.full_name||'').trim()===assignee);
+  const allowed=(()=>{
+    if(isOwner||isSuperAdmin)return isOwner || t.leads?.country!=='India' || (currentUser?.email||'').toLowerCase()==='pavitra@step4progress.com';
+    if(myRole==='Counsellor'||myTeamCategory==='Domestic'||['Application Team','Visa Team','SOP Team'].includes(myRole)||myTeamCategory==='Agent')return assignee===myName;
+    if(['Admin','Manager','Director'].includes(myRole))return !!staff&&staff.country===myCountry;
+    return assignee===myName;
+  })();
+  if(!allowed){toast('This task is outside what your account can access.');return;}
+  const overdue=t.status!=='Done'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
+  document.getElementById('tdetail-title').textContent=t.title||'Task details';
+  const statusLabel=taskStatusLabel(t.status);
+  const statusTone=taskStatusTone(t.status);
+  const priorityLabel=t.priority||'Medium';
+  const priorityTone=priorityLabel==='High'?'var(--rose)':priorityLabel==='Low'?'var(--sage)':'var(--gold)';
+  document.getElementById('tdetail-sub').innerHTML=`<span style="display:inline-flex;align-items:center;gap:6px"><span class="pill" style="background:${statusTone.bg};color:${statusTone.tx}">${statusLabel}</span><span>·</span><span>${t.source==='auto'?'Auto-created':'Manual'}</span></span>`;
+  document.getElementById('tdetail-body').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px">
+      <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Lead</div><div style="font-weight:700;margin-top:4px">${t.lead_id?`<a href="#" onclick="event.preventDefault();closeModal('modal-task-detail');openLeadDetail('${t.lead_id}')" style="color:var(--pine);text-decoration:underline">${esc(t.leads?.name||'Open lead')}</a>`:esc(t.leads?.name||'No lead linked')}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${esc(t.leads?.lead_id||'')}</div></div>
+      <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Assigned to</div><div style="font-weight:700;margin-top:4px">${esc(assignee||'Unassigned')}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${esc(staff?.role||'')}</div></div>
+      <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Due</div><div style="font-weight:700;margin-top:4px;color:${overdue?'var(--rose)':'var(--ink)'}">${t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'No date'}</div>${overdue?'<div style="font-size:11px;color:var(--rose);margin-top:2px">Overdue</div>':''}</div>
+      <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Priority</div><div style="margin-top:5px"><span class="pill" style="background:${priorityLabel==='High'?'#FDE7E7':priorityLabel==='Low'?'var(--sage-l)':'var(--gold-l)'};color:${priorityTone}">${esc(priorityLabel)}</span></div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 7px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Task status</div><div style="font-size:10px;color:var(--ink3)">How is this task progressing?</div></div>
+    <div id="tdetail-status-buttons" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px">
+      <button type="button" data-task-status="Open" ${canManageTaskClient(t)?'':'disabled'} style="border:1px solid ${t.status==='Open'?'var(--sky)':'var(--line2)'};background:${t.status==='Open'?'var(--sky-l)':'var(--paper)'};color:${t.status==='Open'?'var(--sky)':'var(--ink2)'};border-radius:9px;padding:10px 8px;font-weight:700;cursor:${canManageTaskClient(t)?'pointer':'default'}">○ Not Started</button>
+      <button type="button" data-task-status="In Progress" ${canManageTaskClient(t)?'':'disabled'} style="border:1px solid ${t.status==='In Progress'?'var(--gold)':'var(--line2)'};background:${t.status==='In Progress'?'var(--gold-l)':'var(--paper)'};color:${t.status==='In Progress'?'var(--gold)':'var(--ink2)'};border-radius:9px;padding:10px 8px;font-weight:700;cursor:${canManageTaskClient(t)?'pointer':'default'}">◉ In Progress</button>
+      <button type="button" data-task-status="Done" ${canManageTaskClient(t)?'':'disabled'} style="border:1px solid ${t.status==='Done'?'var(--sage)':'var(--line2)'};background:${t.status==='Done'?'var(--sage-l)':'var(--paper)'};color:${t.status==='Done'?'var(--sage)':'var(--ink2)'};border-radius:9px;padding:10px 8px;font-weight:700;cursor:${canManageTaskClient(t)?'pointer':'default'}">✓ Completed</button>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button id="tdetail-save-status" ${canManageTaskClient(t)?'':'disabled'} style="border:1px solid var(--line2);background:var(--pine);color:white;border-radius:9px;padding:8px 14px;font-weight:700;cursor:pointer">Save status</button></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 6px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Notes</div><div style="font-size:10px;color:var(--ink3)">Task context</div></div>
+    <div style="padding:12px;border:1px solid var(--line);border-radius:10px;white-space:pre-wrap;min-height:60px;color:var(--ink2)">${esc(t.notes||'No additional notes.')}</div>
+  `;
+  const completeBtn=document.getElementById('tdetail-complete-btn');
+  const canChange=canManageTaskClient(t);
+  completeBtn.style.display=canChange?'inline-flex':'none';
+  completeBtn.textContent=t.status==='Done'?'↩ Reopen':'✓ Mark Complete';
+  let selectedTaskStatus=t.status==='Done'?'Done':t.status==='In Progress'?'In Progress':'Open';
+  const statusButtons=[...document.querySelectorAll('#tdetail-status-buttons [data-task-status]')];
+  const paintTaskStatusButtons=()=>{
+    statusButtons.forEach(btn=>{
+      const active=btn.dataset.taskStatus===selectedTaskStatus;
+      const cfg=btn.dataset.taskStatus==='Done'?{border:'var(--sage)',bg:'var(--sage-l)',tx:'var(--sage)'}:btn.dataset.taskStatus==='In Progress'?{border:'var(--gold)',bg:'var(--gold-l)',tx:'var(--gold)'}:{border:'var(--sky)',bg:'var(--sky-l)',tx:'var(--sky)'};
+      btn.style.borderColor=active?cfg.border:'var(--line2)';
+      btn.style.background=active?cfg.bg:'var(--paper)';
+      btn.style.color=active?cfg.tx:'var(--ink2)';
+    });
+  };
+  statusButtons.forEach(btn=>btn.onclick=()=>{selectedTaskStatus=btn.dataset.taskStatus;paintTaskStatusButtons();});
+  paintTaskStatusButtons();
+  const statusSave=document.getElementById('tdetail-save-status');
+  if(statusSave)statusSave.onclick=async()=>{
+    if(!canManageTaskClient(t)){toast('You do not have permission to change this task.');return;}
+    statusSave.disabled=true;
+    const ok=await saveTaskStatus(t.id,selectedTaskStatus);
+    statusSave.disabled=false;
+    if(!ok)return;
+    closeModal('modal-task-detail');renderTaskDashboard();loadMyTasks();
+  };
+  completeBtn.onclick=async()=>{
+    if(!canManageTaskClient(t)){toast('You do not have permission to change this task.');return;}
+    completeBtn.disabled=true;
+    const next=t.status==='Done'?'Open':'Done';
+    const ok=await saveTaskStatus(t.id,next);
+    completeBtn.disabled=false;
+    if(!ok)return;
+    closeModal('modal-task-detail');renderTaskDashboard();loadMyTasks();
+  };
+  document.getElementById('tdetail-lead-btn').onclick=()=>{closeModal('modal-task-detail');if(t.lead_id)openLeadDetail(t.lead_id);};
+  document.getElementById('modal-task-detail').classList.add('open');
 }
 
 // ── Task Dashboard — full screen version ─────────────────────────────
@@ -6406,7 +6607,7 @@ function renderTaskDailySnapshot(scoped){
     timelineEl.innerHTML=todaysOpenTasks.map(t=>`
       <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">
         <span style="width:8px;height:8px;border-radius:50%;background:${prColor[t.priority]||'var(--ink3)'};flex-shrink:0"></span>
-        <div style="flex:1;font-size:12.5px"><b>${esc(t.leads?.name||'—')}</b> — ${esc(t.title)}${t.assigned_to?' <span style="color:var(--ink3)">· '+esc(t.assigned_to)+'</span>':''}</div>
+        <div style="flex:1;font-size:12.5px">${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-underline-offset:2px">${esc(t.leads?.name||'—')}</a>`:`<b>${esc(t.leads?.name||'—')}</b>`} — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:var(--ink);text-decoration:underline;text-underline-offset:2px">${esc(t.title)}</a>${t.assigned_to?' <span style="color:var(--ink3)">· '+esc(t.assigned_to)+'</span>':''}</div>
       </div>`).join('');
   }
 
@@ -6460,21 +6661,53 @@ function renderTaskDailySnapshot(scoped){
 }
 
 async function renderTaskDashboard(){
+  // Existing counsellor assignments from before the task workflow was added
+  // are healed here once: every assigned lead gets an actionable task, and
+  // the task is immediately included in My Tasks.
+  await syncAssignedLeadTasksForCurrentUser();
   const{data,error}=await sb.from('tasks').select('*,leads(name,country,nationality,lead_id)').order('due_date',{ascending:true}).limit(500);
   if(error){
     document.getElementById('td-task-list').innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load tasks — has the tasks table been created yet?</div>';
     return;
   }
   let scoped=data||[];
-  // Exact same access-model scoping used everywhere else in the app.
-  if(myRole==='Counsellor'&&!isSuperAdmin){
-    scoped=scoped.filter(t=>t.assigned_to===myName);
-  } else if(isOwner){
-    // no restriction
-  } else if(isSuperAdmin){
-    scoped=scoped.filter(t=>t.leads?.country!=='India');
-  } else if(!isSuperAdmin){
-    scoped=scoped.filter(t=>t.leads?.country===myCountry);
+  // FINAL TASK VISIBILITY MODEL:
+  // - Owner / Platform Administrator: global.
+  // - Jisan Super Admin: all non-India operational data; Domestic/International toggle still applies.
+  // - Counsellor / Agent / Application / Visa / SOP: only records assigned to that person.
+  // - Admin / Manager / Director: tasks assigned to people in their own country/team scope.
+  // The assignee is the primary task-visibility boundary; the lead country is a secondary safety check.
+  const staffByName=new Map((teamList||[]).map(x=>[(x.full_name||'').trim(),x]));
+  const isElevatedGlobal=isOwner || ((currentUser?.email||'').toLowerCase()==='pavitra@step4progress.com');
+  const isJisan=(currentUser?.email||'').toLowerCase()==='jisan@step4progress.co.uk';
+  const isOwnCountryStaff=staff=>staff && myCountry && staff.country===myCountry;
+  if(isElevatedGlobal){
+    // global — no restriction
+  } else if(isJisan){
+    const nonIndia=scoped.filter(t=>t.leads?.country!=='India');
+    if(superAdminOpsView){
+      const isDomesticLead=l=>l?.country==='UK';
+      scoped=nonIndia.filter(t=>superAdminOpsView==='Domestic'?isDomesticLead(t.leads):!isDomesticLead(t.leads));
+    } else scoped=nonIndia;
+  } else if(myRole==='Counsellor' || myTeamCategory==='Domestic' || ['Application Team','Visa Team','SOP Team'].includes(myRole) || myTeamCategory==='Agent'){
+    scoped=scoped.filter(t=>(t.assigned_to||'').trim()===myName);
+  } else if(['Admin','Manager','Director'].includes(myRole)){
+    scoped=scoped.filter(t=>{
+      const taskAssignee=(t.assigned_to||'').trim();
+      const a=staffByName.get(taskAssignee);
+      if(a) return isOwnCountryStaff(a);
+      // Legacy/orphaned task assignee: fall back to the lead country rather than exposing it broadly.
+      return !!myCountry && t.leads?.country===myCountry;
+    });
+  } else {
+    scoped=scoped.filter(t=>(t.assigned_to||'').trim()===myName);
+  }
+
+  const headerMeta=document.getElementById('td-header-meta');
+  if(headerMeta){
+    const openCount=scoped.filter(t=>t.status!=='Done').length;
+    const doneCount=scoped.filter(t=>t.status==='Done').length;
+    headerMeta.textContent=`${scoped.length} task${scoped.length===1?'':'s'} · ${openCount} open · ${doneCount} completed`;
   }
 
   // Counsellors get the simple personal view (Today/Tomorrow/Pending/
@@ -6523,15 +6756,15 @@ async function renderTaskDashboard(){
   // progress bar, closer to the reference dashboard style requested.
   const totalForBars=Math.max(open.length+done.length,1);
   const cardDefs=[
-    ['🔴','Overdue',groups.overdue.length,'linear-gradient(135deg,#F87171,#DC2626)'],
-    ['🟡','Due Today',groups.today.length,'linear-gradient(135deg,#FBBF24,#D97706)'],
-    ['🔵','This Week',groups.week.length,'linear-gradient(135deg,#60A5FA,#2563EB)'],
-    ['⚪','Later',groups.later.length,'linear-gradient(135deg,#9CA3AF,#4B5563)'],
-    ['✅','Completed',done.length,'linear-gradient(135deg,#34D399,#059669)'],
+    ['🔴','Overdue',groups.overdue.length,'linear-gradient(135deg,#F87171,#DC2626)','overdue'],
+    ['🟡','Due Today',groups.today.length,'linear-gradient(135deg,#FBBF24,#D97706)','today'],
+    ['🔵','This Week',groups.week.length,'linear-gradient(135deg,#60A5FA,#2563EB)','week'],
+    ['⚪','Later',groups.later.length,'linear-gradient(135deg,#9CA3AF,#4B5563)','later'],
+    ['✅','Completed',done.length,'linear-gradient(135deg,#34D399,#059669)','done'],
   ];
-  document.getElementById('td-summary-cards').innerHTML=cardDefs.map(([icon,label,count,gradient])=>{
+  document.getElementById('td-summary-cards').innerHTML=cardDefs.map(([icon,label,count,gradient,filterKey])=>{
     const pct=Math.round(count/totalForBars*100);
-    return `<div style="background:${gradient};border-radius:14px;padding:18px;color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.12);position:relative;overflow:hidden">
+    return `<div onclick="filterTaskDashboardByCard('${filterKey}')" style="cursor:pointer;background:${gradient};border-radius:14px;padding:18px;color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.12);position:relative;overflow:hidden">
       <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.12)"></div>
       <div style="font-size:22px;position:relative">${icon}</div>
       <div style="font-size:30px;font-weight:800;margin-top:6px;position:relative">${count}</div>
@@ -6584,19 +6817,21 @@ async function renderTaskDashboard(){
     return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);${isDone?'opacity:.55':''}">
       <input type="checkbox" ${isDone?'checked':''} onchange="toggleTaskDashboardItem('${t.id}',this.checked)" style="cursor:pointer">
       ${avatar}
-      <div style="flex:1;font-size:13px;cursor:pointer" onclick="openLeadDetail('${t.lead_id}')">
-        <b style="${isDone?'text-decoration:line-through':''}">${esc(leadName)}</b> — ${esc(t.title)}
+      <div style="flex:1;font-size:13px">
+        ${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open lead">${esc(leadName)}</a>`:`<b>${esc(leadName)}</b>`} — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:var(--ink);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open task">${esc(t.title)}</a>
         ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
+        <span class="pill" style="background:${taskStatusTone(t.status).bg};color:${taskStatusTone(t.status).tx};font-size:9px">${taskStatusLabel(t.status)}</span>
+        ${t.priority?` <span class="pill" style="background:${t.priority==='High'?'#FDE7E7':t.priority==='Low'?'var(--sage-l)':'var(--gold-l)'};color:${t.priority==='High'?'var(--rose)':t.priority==='Low'?'var(--sage)':'var(--gold)'};font-size:9px">${esc(t.priority)}</span>`:''}
       </div>
       ${assigneeCell}
       <span style="font-size:11px;color:var(--ink3);flex-shrink:0;min-width:60px;text-align:right">${dateLabel}</span>
-      ${canReassign?`<button onclick="editTaskDashboardItem('${t.id}')" title="Edit" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 3px"><i class="ti ti-pencil"></i></button><button onclick="deleteTaskDashboardItem('${t.id}')" title="Delete" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:15px;padding:0 3px">×</button>`:''}
+      ${canReassign?`<button onclick="openTaskDetail('${t.id}')" title="Task details" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 3px"><i class="ti ti-eye"></i></button><button onclick="deleteTaskDashboardItem('${t.id}')" title="Delete" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:15px;padding:0 3px">×</button>`:''}
     </div>`;
   }).join('');
 }
 // ── My Tasks — personal Counsellor view ──────────────────────────────
 let myTasksPersonalData=[];
-let myTasksPersonalActiveTab='today';
+let myTasksPersonalActiveTab='all';
 function switchMyTasksTab(tab){
   myTasksPersonalActiveTab=tab;
   document.querySelectorAll('.mtp-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
@@ -6629,9 +6864,12 @@ function renderMyTasksPersonalTab(){
   if(mtpSub)mtpSub.textContent=todaysAll.length?`${todaysDone} of ${todaysAll.length} done today`:'Nothing due today';
 
   let list;
-  if(myTasksPersonalActiveTab==='today')list=open.filter(t=>t.due_date===today||(!t.due_date));
+  // Today is the counsellor's actionable queue: overdue + due today.
+  // My Tasks is the full open queue; date tabs are focused views, with Upcoming for tasks after tomorrow.
+  if(myTasksPersonalActiveTab==='all')list=open;
+  else if(myTasksPersonalActiveTab==='today')list=open.filter(t=>!t.due_date||t.due_date<=today);
   else if(myTasksPersonalActiveTab==='tomorrow')list=open.filter(t=>t.due_date===tomorrow);
-  else if(myTasksPersonalActiveTab==='pending')list=open.filter(t=>t.due_date&&t.due_date<today);
+  else if(myTasksPersonalActiveTab==='pending')list=open.filter(t=>t.due_date&&t.due_date>tomorrow);
   else list=done;
 
   const el=document.getElementById('my-tasks-personal-list');
@@ -6642,25 +6880,28 @@ function renderMyTasksPersonalTab(){
     const dateLabel=t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'No date';
     return `<div style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)">
       <input type="checkbox" ${isDone?'checked':''} onchange="toggleMyTaskPersonal('${t.id}',this.checked)" style="cursor:pointer;width:18px;height:18px">
-      <div style="flex:1;font-size:13.5px;cursor:pointer" onclick="openLeadDetail('${t.lead_id}')">
-        <b style="${isDone?'text-decoration:line-through;color:var(--ink3)':''}">${esc(leadName)}</b> — ${esc(t.title)}
+      <div style="flex:1;font-size:13.5px">
+        ${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open lead">${esc(leadName)}</a>`:`<b style="${isDone?'text-decoration:line-through;color:var(--ink3)':''}">${esc(leadName)}</b>`} — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:${isDone?'var(--ink3)':'var(--ink)'};${isDone?'text-decoration:line-through;':''}text-underline-offset:2px;cursor:pointer" title="Open task">${esc(t.title)}</a>
         ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
+        ${t.priority?` <span class="pill" style="background:${t.priority==='High'?'#FDE7E7':t.priority==='Low'?'var(--sage-l)':'var(--gold-l)'};color:${t.priority==='High'?'var(--rose)':t.priority==='Low'?'var(--sage)':'var(--gold)'};font-size:9px">${esc(t.priority)}</span>`:''}
       </div>
       <span style="font-size:11.5px;color:var(--ink3);flex-shrink:0">${dateLabel}</span>
     </div>`;
   }).join('');
 }
 async function toggleMyTaskPersonal(taskId,checked){
-  const{error}=await sb.from('tasks').update({status:checked?'Done':'Open'}).eq('id',taskId);
-  if(error){toast('Error: '+error.message);return;}
   const t=myTasksPersonalData.find(x=>x.id===taskId);
+  if(!t||!canManageTaskClient(t)){toast('You do not have permission to change this task.');renderMyTasksPersonalTab();return;}
+  const{error}=await sb.from('tasks').update({status:checked?'Done':'Open',completed_at:checked?new Date().toISOString():null}).eq('id',taskId);
+  if(error){toast('Could not update task: '+error.message);return;}
   if(t)t.status=checked?'Done':'Open';
   renderMyTasksPersonalTab();
 }
 
 async function editTaskDashboardItem(taskId){
-  const t=(await sb.from('tasks').select('*').eq('id',taskId).maybeSingle()).data;
+  const t=(await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle()).data;
   if(!t){toast('Task not found.');return;}
+  if(!canManageTaskClient(t)){toast('You do not have permission to change this task.');return;}
   const newTitle=prompt('Edit task title:',t.title);
   if(newTitle===null)return;
   const newDue=prompt('Due date (YYYY-MM-DD, or blank for none):',t.due_date||'');
@@ -6672,6 +6913,9 @@ async function editTaskDashboardItem(taskId){
   loadMyTasks();
 }
 async function deleteTaskDashboardItem(taskId){
+  const{data:t}=await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle();
+  if(!t){toast('Task not found.');return;}
+  if(!canManageTaskClient(t)){toast('You do not have permission to delete this task.');renderTaskDashboard();return;}
   if(!confirm('Delete this task? This cannot be undone.'))return;
   const{error}=await sb.from('tasks').delete().eq('id',taskId);
   if(error){toast('Error deleting: '+error.message);return;}
@@ -6680,18 +6924,29 @@ async function deleteTaskDashboardItem(taskId){
   loadMyTasks();
 }
 async function reassignTask(taskId,newAssignee){
+  const{data:t}=await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle();
+  if(!t){toast('Task not found.');renderTaskDashboard();return;}
+  if(!canManageTaskClient(t)){toast('You do not have permission to reassign this task.');renderTaskDashboard();return;}
+  const allowedRecipients=getAssignableTaskRecipients();
+  if(newAssignee && !allowedRecipients.includes(newAssignee)){toast('That assignee is outside your task scope.');renderTaskDashboard();return;}
   const{error}=await sb.from('tasks').update({assigned_to:newAssignee||null}).eq('id',taskId);
   if(error){toast('Error reassigning: '+error.message);return;}
   toast(newAssignee?`Task reassigned to ${newAssignee}`:'Task unassigned');
   renderTaskDashboard();
   loadMyTasks();
 }
-async function toggleTaskDashboardItem(taskId,checked){
-  const{error}=await sb.from('tasks').update({status:checked?'Done':'Open',completed_at:checked?new Date().toISOString():null}).eq('id',taskId);
-  if(error){toast('Error: '+error.message);return;}
+function filterTaskDashboardByCard(filterKey){
+  const sel=document.getElementById('td-filter-state');
+  if(sel)sel.value=filterKey;
   renderTaskDashboard();
-  loadMyTasks();
-  toast(checked?'✅ Task done':'↩ Reopened');
+  document.getElementById('td-all-tasks-card')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function toggleTaskDashboardItem(taskId,checked){
+  const{data:t}=await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle();
+  if(!t||!canManageTaskClient(t)){toast('You do not have permission to change this task.');renderTaskDashboard();return;}
+  const{error}=await sb.from('tasks').update({status:checked?'Done':'Open',completed_at:checked?new Date().toISOString():null}).eq('id',taskId);
+  if(error){toast('Could not update task: '+error.message);return;}
+  renderTaskDashboard();loadMyTasks();toast(checked?'✅ Task done':'↩ Reopened');
 }
 
 async function updateStatus(){
@@ -6969,8 +7224,10 @@ async function saveLead(){
   let error;
   let logEvents=[];
   let newlyCreatedLeadId=null; // captured here so it's usable after the if/else closes below
+  let previousCounsellor;
   if(editMode&&curId){       delete data.lead_id;
     const existing=leads.find(x=>x.id===curId);
+    previousCounsellor=existing?.counsellor||'';
     if(existing&&existing.office&&data.office&&existing.office!==data.office){
       await promptHandoffNoteIfNeeded(curId,existing.office,data.office);
     }
@@ -7024,6 +7281,15 @@ async function saveLead(){
   }
   btn.disabled=false;
   if(error){setSyncErr();toast('Error saving lead: '+error.message);return;}
+  // Every assigned lead must have one actionable assignment task. For edits,
+  // only a newly assigned/reassigned counsellor needs the task check; for new
+  // leads, the auto-assigned/manual counsellor gets the task immediately.
+  const savedLead=curId?leads.find(x=>x.id===curId):(newlyCreatedLeadId?leads.find(x=>x.id===newlyCreatedLeadId):null);
+  const assignmentChanged=!!(editMode&&previousCounsellor!==undefined&&previousCounsellor!==data.counsellor);
+  if(savedLead&&data.counsellor&&(!editMode||assignmentChanged)){
+    const taskResult=await ensureLeadAssignmentTask({...savedLead,...data},data.counsellor,{reassignExisting:true,quiet:true});
+    if(!taskResult.ok)toast('Lead saved, but the follow-up task could not be created/updated.');
+  }
   if(curId)logEvents.forEach(([type,detail])=>logActivity(curId,type,detail));
   // Capture before closeModal resets editMode/curId, so we can reopen the
   // same detail view the edit was launched from — no need to manually
@@ -7642,7 +7908,7 @@ function renderManagementAndOperationsTeams(team){
     <div class="card-h"><span class="card-t">🌍 International — Management Team</span><span style="font-size:11px;color:var(--ink3)">${mgmt.length} member${mgmt.length!==1?'s':''} — Manager, Admin & Director, across every country</span></div>
     <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
         <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-        <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+        <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
         ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
       </div>`).join(''):emptyState('🏛️','No Management Team members yet.')}</div>
   </div>`;
@@ -7657,7 +7923,7 @@ function renderManagementAndOperationsTeams(team){
       </div>
       ${members.length?members.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}" style="margin-bottom:8px">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('👥','No one assigned to this team yet.')}
     </div>`;
@@ -7676,7 +7942,7 @@ function renderManagementAndOperationsTeams(team){
       <div class="card-h"><span class="card-t">🇬🇧 Domestic Operations</span><span style="font-size:11px;color:var(--ink3)">${domestic.length} member${domestic.length!==1?'s':''} — UK-internal only, never receives leads automatically</span></div>
       <div class="team-grid">${domestic.length?domestic.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('🇬🇧','No Domestic team members yet.')}</div>
     </div>`;
@@ -7690,7 +7956,7 @@ function renderManagementAndOperationsTeams(team){
       <div class="card-h"><span class="card-t">🤝 Agent Portal</span><span style="font-size:11px;color:var(--ink3)">${agents.length} agent${agents.length!==1?'s':''} — external partners, work only on leads Management assigns them</span></div>
       <div class="team-grid">${agents.length?agents.map(t=>`<div class="tcard" data-role="Agent">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent${t.university_name?' · 🎓 '+esc(t.university_name):''}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent${t.university_name?' · 🎓 '+esc(t.university_name):''}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('🤝','No agents yet.')}</div>
     </div>`;
@@ -7726,8 +7992,14 @@ function renderTeam(team){
 
   const byOffice={};
   allOffices.forEach(({office})=>{byOffice[office]=[];});
+  // Management/Operations roles (Manager/Admin/Director/sub-teams/Agent)
+  // normally only show in their own dedicated sections above, not here —
+  // EXCEPT for India, per explicit request: India-based staff should
+  // appear in both places (their functional team section above, AND the
+  // India office list below), since Management wants a single place to
+  // see everyone physically on the India team regardless of role.
   const officeExcludedRoles=['Manager','Admin','Director','Application Team','Visa Team','SOP Team','Agent'];
-  (team||[]).filter(t=>!officeExcludedRoles.includes(t.role)&&t.team_category!=='Domestic').forEach(t=>{
+  (team||[]).filter(t=>(!officeExcludedRoles.includes(t.role)||t.country==='India')&&t.team_category!=='Domestic').forEach(t=>{
     // If office is blank, or doesn't match a known office for their country
     // (e.g. a stale value from before offices were consolidated), derive the
     // correct office from country instead of showing a phantom "Unassigned"
@@ -7751,7 +8023,7 @@ function renderTeam(team){
           return `<div class="tcard" data-role="${esc(t.role||'Counsellor')}" style="${unavail?'opacity:.7':''}">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0">
-            <div class="tcard-name" title="${esc(t.full_name||'—')}">${esc(t.full_name||'—')}</div>
+            <div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div>
             <div class="tcard-role">${esc(t.role||'Counsellor')}</div>
             <div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div>
             ${unavail?`<div style="font-size:10px;color:var(--rose);font-weight:600;margin-top:3px">🚫 Unavailable until ${new Date(unavail.to_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${unavail.reason?' — '+esc(unavail.reason):''}${canManage?` · <span onclick="clearUnavailability('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" style="text-decoration:underline;cursor:pointer;color:var(--rose)">Unmark</span>`:''}</div>`:''}
@@ -7779,6 +8051,40 @@ function renderTeam(team){
   const fp=document.getElementById('fp-co');
   const existing=Array.from(fp.options).map(o=>o.value);
   (team||[]).forEach(t=>{if(t.full_name&&!existing.includes(t.full_name)){const o=document.createElement('option');o.value=t.full_name;o.textContent=t.full_name;fp.appendChild(o);}});
+}
+
+async function openTeamMemberProfile(teamId,name){
+  const elevated=isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole);
+  if(!elevated){toast('Team activity is private.');return;}
+  const member=teamList.find(x=>x.id===teamId);
+  if(!member){toast('Team member not found.');return;}
+  // Country managers/admins may only inspect people in their own country.
+  if(!isSuperAdmin&&!isOwner&&['Admin','Manager','Director'].includes(myRole)&&member.country!==myCountry){toast('This team member is outside your country scope.');return;}
+  document.getElementById('tm-title').textContent=member.full_name||name||'Team member';
+  document.getElementById('tm-sub').textContent=[member.role||'Counsellor',member.country||member.office||''].filter(Boolean).join(' · ');
+  const body=document.getElementById('tm-body');body.innerHTML='<div style="text-align:center;padding:24px;color:var(--ink3);font-style:italic">Loading individual activity…</div>';
+  document.getElementById('modal-team-member-profile').classList.add('open');
+  const [leadRes,taskRes,updateRes,callRes]=await Promise.all([
+    sb.from('leads').select('id,name,lead_id,status,updated_at,country,counsellor').eq('counsellor',member.full_name).limit(500),
+    sb.from('tasks').select('id,title,status,due_date,lead_id').eq('assigned_to',member.full_name).order('due_date',{ascending:true}).limit(500),
+    sb.from('daily_updates').select('work_date,content,created_at').eq('team_id',member.id).order('work_date',{ascending:false}).limit(30),
+    sb.from('whatsapp_calls').select('status,duration_seconds').eq('counsellor',member.full_name).limit(500)
+  ]);
+  const leads=leadRes.data||[],tasks=taskRes.data||[],updates=updateRes.data||[],calls=callRes.data||[];
+  let workLogs=[];
+  try{const wr=await sb.from('work_logs').select('work_date,category,title,effort,result,note_type,note,output_url').eq('user_id',member.id).order('work_date',{ascending:false}).limit(30);workLogs=wr.data||[];}catch(e){}
+  const openTasks=tasks.filter(t=>t.status!=='Done').length,doneTasks=tasks.filter(t=>t.status==='Done').length;
+  const connected=calls.filter(c=>c.status==='answered'||c.status==='completed').length;
+  const talkMin=Math.round(calls.filter(c=>c.status==='answered'||c.status==='completed').reduce((n,c)=>n+(c.duration_seconds||0),0)/60);
+  body.innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px">
+    ${[['👥','Leads',leads.length],['📋','Open tasks',openTasks],['✅','Done tasks',doneTasks],['✨','Work logged',workLogs.length]].map(([i,l,v])=>`<div style="padding:13px;border:1px solid var(--line);border-radius:11px;background:var(--paper2)"><div style="font-size:18px">${i}</div><div style="font-size:20px;font-weight:700;color:var(--pine);margin-top:3px">${v}</div><div style="font-size:10px;color:var(--ink3)">${l}</div></div>`).join('')}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="card" style="margin:0"><div class="card-h"><span class="card-t">📋 Tasks</span></div><div style="font-size:12px;color:var(--ink3);margin-bottom:8px">${openTasks} open · ${doneTasks} completed</div>${tasks.slice(0,8).map(t=>`<div style="padding:7px 0;border-bottom:1px solid var(--line);font-size:12px"><a href="#" onclick="event.preventDefault();closeModal('modal-team-member-profile');openTaskDetail('${t.id}')" style="color:var(--pine);text-decoration:underline">${esc(t.title)}</a> <span style="color:var(--ink3)">· ${esc(t.status||'Open')}</span></div>`).join('')||'<div style="color:var(--ink3);font-size:12px">No tasks.</div>'}</div>
+    <div class="card" style="margin:0"><div class="card-h"><span class="card-t">👥 Leads</span></div>${leads.slice(0,8).map(l=>`<div style="padding:7px 0;border-bottom:1px solid var(--line);font-size:12px"><a href="#" onclick="event.preventDefault();closeModal('modal-team-member-profile');openLeadDetail('${l.id}')" style="color:var(--pine);text-decoration:underline">${esc(l.name||l.lead_id||'Lead')}</a> <span style="color:var(--ink3)">· ${esc(l.status||'—')}</span></div>`).join('')||'<div style="color:var(--ink3);font-size:12px">No leads assigned.</div>'}</div>
+    <div class="card" style="margin:0"><div class="card-h"><span class="card-t">📝 Work Done</span></div>${workLogs.slice(0,8).map(w=>`<div style="padding:7px 0;border-bottom:1px solid var(--line);font-size:12px"><b>${esc(w.title)}</b><div style="color:var(--ink3);font-size:10.5px">${esc(w.category||'')} · ${esc(w.effort||'')} · ${esc(w.result||'')}</div>${w.output_url?`<a href="${esc(safeUrl(w.output_url)||'#')}" target="_blank" rel="noopener" style="font-size:10.5px;color:var(--pine)">View output →</a>`:''}</div>`).join('')||'<div style="color:var(--ink3);font-size:12px">No work logs yet.</div>'}</div>
+    <div class="card" style="margin:0"><div class="card-h"><span class="card-t">📈 Individual activity</span></div><div style="font-size:12px;line-height:1.9"><div>Daily updates: <b>${updates.length}</b></div><div>Calls: <b>${calls.length}</b></div><div>Connected: <b>${connected}</b></div><div>Talk time: <b>${talkMin} min</b></div></div></div>
+  </div>`;
 }
 
 // ── IMPORT / EXPORT ───────────────────────────────────────────────
@@ -7991,7 +8297,15 @@ function onBulkCheckboxChange(){
 function getScopedCounsellorNames(){
   let pool=(teamList||[]).filter(t=>t.role==='Counsellor');
   if(!isOwner){
-    if(isSuperAdmin)pool=pool.filter(t=>t.country!=='India');
+    if(isSuperAdmin){
+      pool=pool.filter(t=>t.country!=='India');
+      // Same fix as renderTaskDashboard — apply the Domestic/International
+      // split on top of the India exclusion, so a bulk-reassign picker in
+      // Domestic mode only offers UK counsellors, not everyone non-India.
+      if(superAdminOpsView){
+        pool=pool.filter(t=>superAdminOpsView==='Domestic'?t.country==='UK':t.country!=='UK');
+      }
+    }
     else if(myRole==='Admin'||myRole==='Manager'||myRole==='Director')pool=pool.filter(t=>t.country===myCountry);
   }
   return[...new Set(pool.map(t=>t.full_name))];
@@ -8044,6 +8358,10 @@ async function bulkReassignCounsellor(){
   const{error}=await sb.from('leads').update({counsellor,assigned_at:new Date().toISOString()}).in('id',workIds);
   if(error){toast('Error: '+error.message);return;}
   workIds.forEach(id=>{const l=leads.find(x=>x.id===id);if(l){l.counsellor=counsellor;l.assigned_at=new Date().toISOString();}});
+  for(const id of workIds){
+    const l=leads.find(x=>x.id===id);
+    if(l){const taskResult=await ensureLeadAssignmentTask(l,counsellor,{reassignExisting:true,quiet:true});if(!taskResult.ok)console.error('Bulk assignment task failed for',id,taskResult.error);}
+  }
   workIds.forEach(id=>logActivity(id,'reassigned',`Reassigned (bulk) → ${counsellor}`));
   toast(`Reassigned ${workIds.length} lead(s) to ${counsellor}.`);
   clearBulkSelection();renderLeads();renderDash();
@@ -8158,7 +8476,8 @@ async function bawCommit(){
     const l=leads.find(x=>x.id===id);if(l){l.counsellor=counsellor;l.assigned_at=now;}
     logActivity(id,'reassigned',`Reassigned (bulk wizard, ${bawMethod}) → ${counsellor}`);
     if(document.getElementById('baw-create-task').checked){
-      await sb.from('tasks').insert({lead_id:id,title:'Follow up with newly assigned lead',due_date:new Date(Date.now()+86400000).toISOString().substring(0,10),assigned_to:counsellor,status:'Open',source:'manual'});
+      const taskResult=await ensureLeadAssignmentTask(l,counsellor,{reassignExisting:true,quiet:true});
+      if(!taskResult.ok)console.error('Bulk wizard assignment task failed for',id,taskResult.error);
     }
   }
   toast(`Assigned ${assignments.length} lead(s).`);
@@ -8833,6 +9152,11 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
     const isAdminLike=role.startsWith('Admin')||role.startsWith('Director')||isSuperAdmin;
     const isCounsellor=isRestrictedStaffRole();
 
+    // Digital Marketing is hidden by default in the markup and explicitly
+    // revealed only for users whose role is allowed to use that dashboard.
+    const dmNav=document.getElementById('ni-digitalmarketing');
+    if(dmNav) dmNav.style.display=(isCounsellor && role!=='Digital Marketing')?'none':'flex';
+
     // "Add team member" — Super Admin only, god access.
     const cu=document.getElementById('create-user-btn');
     if(cu) cu.style.display=isSuperAdmin?'inline-flex':'none';
@@ -8853,12 +9177,13 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
       ['ls-src','ls-from','ls-to'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='block';el.style.minWidth='140px';}});
     }
 
-    // Counsellors: hide Finance & Team nav entirely. Productivity stays
+    // Counsellors: hide Finance, Team, Reports, Team Dashboards and Digital
+    // Marketing nav entirely. Productivity stays
     // visible to everyone — "My Daily Update" is for the whole team;
     // Call Recorder and Activity Monitor are still gated internally by
     // initProductivity(), sub-tab by sub-tab.
     if(isCounsellor){
-      const restricted=['finance','team','reports','subteam-detail'];
+      const restricted=['finance','team','reports','subteam-detail','digitalmarketing'];
       document.querySelectorAll('.ni').forEach(btn=>{
         const onclick=btn.getAttribute('onclick')||'';
         restricted.forEach(r=>{if(onclick.includes("nav('"+r+"'"))btn.style.display='none';});
@@ -9682,7 +10007,7 @@ function renderTasks(list){
   const el=document.getElementById('d-task-list');
   if(!el)return;
   el.innerHTML=list.length?list.map(t=>{
-    const overdue=t.status==='Open'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
+    const overdue=t.status!=='Done'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
     return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${t.status==='Done'?';opacity:.5':''}">
       <input type="checkbox" ${t.status==='Done'?'checked':''} onchange="toggleTask('${t.id}',this.checked)" style="margin-top:3px;cursor:pointer">
       <div style="flex:1">
@@ -9868,6 +10193,11 @@ async function loadExpiryAlerts(){
 async function loadMyTasks(){
   const el=document.getElementById('my-tasks-list');
   if(!el)return;
+  // Keep the Home-page My Tasks widget in sync with the counsellor's lead
+  // assignments too. This matters when a counsellor lands on Home first
+  // instead of opening Task Dashboard — assigned leads must still produce
+  // an actionable task and appear here.
+  await syncAssignedLeadTasksForCurrentUser();
   const{data,error}=await sb.from('tasks').select('*,leads(name,country)').eq('status','Open').order('due_date',{ascending:true}).limit(200);
   if(error){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load tasks — has the tasks table been created yet?</div>';return;}
   let scoped=data||[];
@@ -9903,7 +10233,7 @@ async function loadMyTasks(){
     const leadName=t.leads?.name||'Unknown lead';
     const dateLabel=t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'No date';
     return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="openLeadDetail('${t.lead_id}')">
-      <div style="flex:1;font-size:13px"><b>${esc(leadName)}</b> — ${esc(t.title)}${t.source==='auto'?' <span style="color:var(--gold);font-size:10px">AUTO</span>':''}</div>
+      <div style="flex:1;font-size:13px"><a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-underline-offset:2px">${esc(leadName)}</a> — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:inherit;text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px">${esc(t.title)}</a>${t.source==='auto'?' <span style="color:var(--gold);font-size:10px">AUTO</span>':''}</div>
       <span style="font-size:11px;color:var(--ink3);flex-shrink:0">${dateLabel}</span>
     </div>`;
   };
@@ -10831,7 +11161,7 @@ function renderResourcesAdmin(){
           <div style="font-weight:600;font-size:14px;color:var(--ink)">${def.title}</div>
           <div style="font-size:12px;color:var(--ink3);margin-top:2px">
             ${hasFile
-              ? `<span style="color:var(--pine3);font-weight:600">✅ Live</span> · <a href="${row.file_url}" target="_blank" style="color:var(--pine2)">View current PDF</a>`
+              ? `<span style="color:var(--pine3);font-weight:600">✅ Live</span> · <a href="${esc(safeUrl(row.file_url)||'#')}" target="_blank" rel="noopener" style="color:var(--pine2)">View current PDF</a>`
               : '<span style="color:var(--ink3);font-style:italic">No file uploaded yet</span>'}
           </div>
         </div>
@@ -11233,6 +11563,42 @@ function setProdSubtab(sub){
   if(sub==='whatsapp')loadWhatsAppCalls().then(renderWhatsAppCalls);
   if(sub==='monitor'){renderActivityMonitor();renderExportLog();renderKnownDevices();}
 }
+const LOG_WORK_CATEGORIES=[['🎯','Leads'],['📱','Social'],['✍️','Content'],['🎬','Creative'],['🤝','Students / Clients'],['📚','Research'],['🎓','Applications'],['🧑‍💼','Operations'],['💻','CRM / Product'],['🤖','AI'],['📊','Reports'],['🧠','Strategy'],['✨','Other']];
+const LOG_WORK_EFFORT=[['🌱','Tiny'],['🌿','Solid'],['🌳','Deep Work']];
+const LOG_WORK_RESULTS=[['✅','Done'],['🔄','Still Cooking'],['⏳','Waiting on Someone']];
+const LOG_WORK_MOODS=['😌 Smooth sailing','🧠 Brain was braining','🔥 Absolute chaos','🛠️ Fixing things','🚀 Made serious progress','☕ Powered by caffeine','😂 Don’t ask'];
+const LOG_WORK_NOTES=[['🚧','Blocker'],['⏳','Waiting on'],['📌','Important note'],['✨','Small win'],['+','Just a note']];
+let logWorkState={category:'',effort:'',result:'Done',mood:'',noteType:''};
+function lwChip(label,value,key,icon=''){const active=logWorkState[key]===value;return `<button type="button" onclick="selectLogWork('${key}','${String(value).replace(/'/g,"\'")}')" style="border:1px solid ${active?'var(--pine)':'var(--line2)'};background:${active?'var(--pine-l)':'var(--paper)'};color:${active?'var(--pine)':'var(--ink)'};border-radius:999px;padding:7px 10px;font-size:11.5px;cursor:pointer;font-weight:${active?'700':'500'}">${icon?icon+' ':''}${esc(label)}</button>`;}
+function selectLogWork(key,value){logWorkState[key]=value;renderLogWorkChoices();}
+function renderLogWorkChoices(){
+  const cg=document.getElementById('lw-category-grid'); if(cg)cg.innerHTML=LOG_WORK_CATEGORIES.map(([i,l])=>lwChip(l,l,'category',i)).join('');
+  const eg=document.getElementById('lw-effort-grid'); if(eg)eg.innerHTML=LOG_WORK_EFFORT.map(([i,l])=>lwChip(l,l,'effort',i)).join('');
+  const rg=document.getElementById('lw-result-grid'); if(rg)rg.innerHTML=LOG_WORK_RESULTS.map(([i,l])=>lwChip(l,l,'result',i)).join('');
+  const mg=document.getElementById('lw-mood-grid'); if(mg)mg.innerHTML=LOG_WORK_MOODS.map(x=>lwChip(x,x,'mood')).join('');
+  const ng=document.getElementById('lw-note-type-grid'); if(ng)ng.innerHTML=LOG_WORK_NOTES.map(([i,l])=>lwChip(l,l,'noteType',i)).join('');
+}
+function openLogWorkModal(){
+  logWorkState={category:'',effort:'',result:'Done',mood:'',noteType:''};
+  ['lw-title','lw-description','lw-link','lw-note'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  renderLogWorkChoices(); document.getElementById('modal-log-work')?.classList.add('open');
+}
+async function saveLogWork(){
+  const title=(document.getElementById('lw-title')?.value||'').trim();
+  if(!title){toast('Give the work a short name first.');document.getElementById('lw-title')?.focus();return;}
+  if(!logWorkState.category){toast('Pick a work category.');return;}
+  const btn=document.getElementById('lw-save-btn');btn.disabled=true;btn.textContent='Saving…';
+  const payload={user_id:currentUser?.id||null,user_name:myName||'',country:myCountry||null,team_category:myTeamCategory||null,work_date:new Date().toISOString().substring(0,10),category:logWorkState.category,title,description:(document.getElementById('lw-description')?.value||'').trim()||null,effort:logWorkState.effort||null,result:logWorkState.result||'Done',output_url:safeUrl(document.getElementById('lw-link')?.value||'')||null,mood:logWorkState.mood||null,note_type:logWorkState.noteType||null,note:(document.getElementById('lw-note')?.value||'').trim()||null};
+  const{error}=await sb.from('work_logs').insert(payload);
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-sparkles"></i> Log this';
+  if(error){
+    const msg=String(error.message||'');
+    toast(msg.toLowerCase().includes('work_logs')||msg.includes('relation')?'Work logging needs its database table enabled first.':'Could not save work log: '+msg);
+    return;
+  }
+  closeModal('modal-log-work');toast('✨ Work logged.');
+}
+
 async function submitDailyUpdate(){
   const dateEl=document.getElementById('du-date');
   const contentEl=document.getElementById('du-content');
@@ -11601,5 +11967,44 @@ function broadcastStopEditing(leadId) {
     });
   }
 </script>
+  <!-- TEAM MEMBER PROFILE / INDIVIDUAL REPORT -->
+  <div class="mover" id="modal-team-member-profile">
+    <div class="modal" style="width:760px;max-height:90vh;overflow:auto">
+      <div class="mhead"><div><span class="mtitle" id="tm-title">Team member</span><div id="tm-sub" style="font-size:11px;color:var(--ink3);margin-top:2px"></div></div><button class="mclose" onclick="closeModal('modal-team-member-profile')">×</button></div>
+      <div id="tm-body" style="padding:18px 20px"></div>
+      <div class="mfoot"><button class="btn" onclick="closeModal('modal-team-member-profile')">Close</button></div>
+    </div>
+  </div>
+
+
+<!-- TASK DETAIL DRAWER -->
+  <div class="mover" id="modal-task-detail">
+    <div class="modal" style="width:min(680px,calc(100vw - 32px));max-height:90vh;overflow:auto">
+      <div class="mhead"><div><span class="mtitle" id="tdetail-title">Task details</span><div id="tdetail-sub" style="font-size:11px;color:var(--ink3);margin-top:2px"></div></div><button class="mclose" onclick="closeModal('modal-task-detail')">×</button></div>
+      <div id="tdetail-body" style="padding:18px 20px"></div>
+      <div class="mfoot"><button class="btn" onclick="closeModal('modal-task-detail')">Close</button><button class="btn" id="tdetail-complete-btn"></button><button class="btn btn-p" id="tdetail-lead-btn">Open Lead →</button></div>
+    </div>
+  </div>
+
+
+<!-- Log Work Drawer — lightweight work journal, not a timesheet -->
+  <div class="mover" id="modal-log-work">
+    <div class="modal" style="width:560px;max-height:90vh;overflow:auto">
+      <div class="mhead"><div><span class="mtitle">✨ Log Work</span><div style="font-size:11px;color:var(--ink3);margin-top:2px">What did you move forward today? Big thing, tiny thing, weird thing — it all counts.</div></div><button class="mclose" onclick="closeModal('modal-log-work')">×</button></div>
+      <div class="fg">
+        <div class="ff full"><label>What were you up to?</label><div id="lw-category-grid" style="display:flex;flex-wrap:wrap;gap:7px"></div></div>
+        <div class="ff full"><label>Give it a name *</label><input id="lw-title" placeholder="e.g. September intake reel"></div>
+        <div class="ff full"><label>Tell us a little more <span style="font-weight:400;color:var(--ink3)">(optional)</span></label><textarea id="lw-description" rows="3" placeholder="What did you actually do? Skip if the title says enough." style="resize:vertical"></textarea></div>
+        <div class="ff full"><label>How big was this?</label><div id="lw-effort-grid" style="display:flex;gap:8px;flex-wrap:wrap"></div></div>
+        <div class="ff full"><label>What came out of it?</label><div id="lw-result-grid" style="display:flex;gap:8px;flex-wrap:wrap"></div></div>
+        <div class="ff full"><label>🔗 Got something to show? <span style="font-weight:400;color:var(--ink3)">(optional)</span></label><input id="lw-link" placeholder="Paste a link to the output…"></div>
+        <div class="ff full"><label>😌 Mood of the mission? <span style="font-weight:400;color:var(--ink3)">(optional)</span></label><div id="lw-mood-grid" style="display:flex;gap:7px;flex-wrap:wrap"></div></div>
+        <div class="ff full"><label>💬 One more thing? <span style="font-weight:400;color:var(--ink3)">(optional)</span></label><div id="lw-note-type-grid" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:7px"></div><textarea id="lw-note" rows="2" placeholder="Blocker, dependency, important note, small win…" style="resize:vertical"></textarea></div>
+      </div>
+      <div class="mfoot"><button class="btn" onclick="closeModal('modal-log-work')">Cancel</button><button class="btn btn-p" id="lw-save-btn" onclick="saveLogWork()"><i class="ti ti-sparkles"></i> Log this</button></div>
+    </div>
+  </div>
+
+
 </body>
 </html>

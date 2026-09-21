@@ -844,7 +844,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="mtp-tab active" data-tab="all" onclick="switchMyTasksTab('all')">My Tasks</button>
             <button class="mtp-tab" data-tab="today" onclick="switchMyTasksTab('today')">Today</button>
             <button class="mtp-tab" data-tab="tomorrow" onclick="switchMyTasksTab('tomorrow')">Tomorrow</button>
-            <button class="mtp-tab" data-tab="pending" onclick="switchMyTasksTab('pending')">Pending</button>
+            <button class="mtp-tab" data-tab="pending" onclick="switchMyTasksTab('pending')">Upcoming</button>
             <button class="mtp-tab" data-tab="completed" onclick="switchMyTasksTab('completed')">Completed</button>
           </div>
           <div id="my-tasks-personal-list"></div>
@@ -6148,7 +6148,7 @@ async function loadTasksFS(leadId){
   if(!el)return;
   if(error||!data||!data.length){el.innerHTML=emptyState('✅','No tasks yet.');return;}
   el.innerHTML=data.map(t=>{
-    const overdue=t.status==='Open'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
+    const overdue=t.status!=='Done'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
     return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${t.status==='Done'?';opacity:.5':''}">
       <input type="checkbox" ${t.status==='Done'?'checked':''} onchange="toggleTaskFS('${t.id}',this.checked)" style="margin-top:3px;cursor:pointer">
       <div style="flex:1">
@@ -6422,6 +6422,29 @@ function canManageTaskClient(t){
   if(['Admin','Manager','Director'].includes(myRole)) return !!staff&&staff.country===myCountry;
   return assignee===myName;
 }
+function taskStatusLabel(status){
+  if(status==='Done')return 'Completed';
+  if(status==='In Progress')return 'In Progress';
+  return 'Not Started';
+}
+function taskStatusTone(status){
+  if(status==='Done')return {bg:'var(--sage-l)',tx:'var(--sage)'};
+  if(status==='In Progress')return {bg:'var(--gold-l)',tx:'var(--gold)'};
+  return {bg:'var(--sky-l)',tx:'var(--sky)'};
+}
+async function saveTaskStatus(taskId,status){
+  const t=myTasksPersonalData.find(x=>x.id===taskId);
+  if(!t){
+    const q=await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle();
+    if(q.error||!q.data){toast('Task not found.');return false;}
+    if(!canManageTaskClient(q.data)){toast('You do not have permission to change this task.');return false;}
+  }else if(!canManageTaskClient(t)){toast('You do not have permission to change this task.');return false;}
+  const dbStatus=status==='Completed'?'Done':status==='In Progress'?'In Progress':'Open';
+  const{error}=await sb.from('tasks').update({status:dbStatus,completed_at:dbStatus==='Done'?new Date().toISOString():null}).eq('id',taskId);
+  if(error){toast('Could not update task: '+error.message);return false;}
+  toast('Task status → '+taskStatusLabel(dbStatus));
+  return true;
+}
 async function openTaskDetail(taskId){
   const{data:t,error}=await sb.from('tasks').select('*,leads(id,name,country,nationality,lead_id,email,mobile)').eq('id',taskId).maybeSingle();
   if(error||!t){toast('Task not found.');return;}
@@ -6434,18 +6457,28 @@ async function openTaskDetail(taskId){
     return assignee===myName;
   })();
   if(!allowed){toast('This task is outside what your account can access.');return;}
-  const overdue=t.status==='Open'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
+  const overdue=t.status!=='Done'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
   document.getElementById('tdetail-title').textContent=t.title||'Task details';
-  const statusLabel=t.status==='Done'?'Completed':'Open';
+  const statusLabel=taskStatusLabel(t.status);
+  const statusTone=taskStatusTone(t.status);
   const priorityLabel=t.priority||'Medium';
   const priorityTone=priorityLabel==='High'?'var(--rose)':priorityLabel==='Low'?'var(--sage)':'var(--gold)';
-  document.getElementById('tdetail-sub').innerHTML=`<span style="display:inline-flex;align-items:center;gap:6px"><span class="pill" style="background:${t.status==='Done'?'var(--sage-l)':'var(--sky-l)'};color:${t.status==='Done'?'var(--sage)':'var(--sky)'}">${statusLabel}</span><span>·</span><span>${t.source==='auto'?'Auto-created':'Manual'}</span></span>`;
+  document.getElementById('tdetail-sub').innerHTML=`<span style="display:inline-flex;align-items:center;gap:6px"><span class="pill" style="background:${statusTone.bg};color:${statusTone.tx}">${statusLabel}</span><span>·</span><span>${t.source==='auto'?'Auto-created':'Manual'}</span></span>`;
   document.getElementById('tdetail-body').innerHTML=`
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px">
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Lead</div><div style="font-weight:700;margin-top:4px">${t.lead_id?`<a href="#" onclick="event.preventDefault();closeModal('modal-task-detail');openLeadDetail('${t.lead_id}')" style="color:var(--pine);text-decoration:underline">${esc(t.leads?.name||'Open lead')}</a>`:esc(t.leads?.name||'No lead linked')}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${esc(t.leads?.lead_id||'')}</div></div>
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Assigned to</div><div style="font-weight:700;margin-top:4px">${esc(assignee||'Unassigned')}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${esc(staff?.role||'')}</div></div>
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Due</div><div style="font-weight:700;margin-top:4px;color:${overdue?'var(--rose)':'var(--ink)'}">${t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'No date'}</div>${overdue?'<div style="font-size:11px;color:var(--rose);margin-top:2px">Overdue</div>':''}</div>
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Priority</div><div style="margin-top:5px"><span class="pill" style="background:${priorityLabel==='High'?'#FDE7E7':priorityLabel==='Low'?'var(--sage-l)':'var(--gold-l)'};color:${priorityTone}">${esc(priorityLabel)}</span></div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 6px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Task status</div><div style="font-size:10px;color:var(--ink3)">Update your progress</div></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <select id="tdetail-status-select" ${canManageTaskClient(t)?'':'disabled'} style="flex:1;border:1px solid var(--line2);border-radius:9px;padding:9px 10px;background:var(--paper2);color:var(--ink);font-family:inherit">
+        <option value="Open" ${t.status==='Open'?'selected':''}>Not Started</option>
+        <option value="In Progress" ${t.status==='In Progress'?'selected':''}>In Progress</option>
+        <option value="Done" ${t.status==='Done'?'selected':''}>Completed</option>
+      </select>
+      <button id="tdetail-save-status" ${canManageTaskClient(t)?'':'disabled'} style="border:1px solid var(--line2);background:var(--paper);color:var(--pine);border-radius:9px;padding:9px 12px;font-weight:700;cursor:pointer">Save</button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 6px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Notes</div><div style="font-size:10px;color:var(--ink3)">Task context</div></div>
     <div style="padding:12px;border:1px solid var(--line);border-radius:10px;white-space:pre-wrap;min-height:60px;color:var(--ink2)">${esc(t.notes||'No additional notes.')}</div>
@@ -6454,14 +6487,24 @@ async function openTaskDetail(taskId){
   const canChange=canManageTaskClient(t);
   completeBtn.style.display=canChange?'inline-flex':'none';
   completeBtn.textContent=t.status==='Done'?'↩ Reopen':'✓ Mark Complete';
+  const statusSelect=document.getElementById('tdetail-status-select');
+  const statusSave=document.getElementById('tdetail-save-status');
+  if(statusSave)statusSave.onclick=async()=>{
+    if(!canManageTaskClient(t)){toast('You do not have permission to change this task.');return;}
+    statusSave.disabled=true;
+    const ok=await saveTaskStatus(t.id,statusSelect?.value||'Open');
+    statusSave.disabled=false;
+    if(!ok)return;
+    closeModal('modal-task-detail');renderTaskDashboard();loadMyTasks();
+  };
   completeBtn.onclick=async()=>{
     if(!canManageTaskClient(t)){toast('You do not have permission to change this task.');return;}
     completeBtn.disabled=true;
     const next=t.status==='Done'?'Open':'Done';
-    const{error:e}=await sb.from('tasks').update({status:next,completed_at:next==='Done'?new Date().toISOString():null}).eq('id',t.id);
+    const ok=await saveTaskStatus(t.id,next);
     completeBtn.disabled=false;
-    if(e){toast('Could not update task: '+e.message);return;}
-    closeModal('modal-task-detail');toast(next==='Done'?'Task completed.':'Task reopened.');renderTaskDashboard();loadMyTasks();
+    if(!ok)return;
+    closeModal('modal-task-detail');renderTaskDashboard();loadMyTasks();
   };
   document.getElementById('tdetail-lead-btn').onclick=()=>{closeModal('modal-task-detail');if(t.lead_id)openLeadDetail(t.lead_id);};
   document.getElementById('modal-task-detail').classList.add('open');
@@ -6733,6 +6776,7 @@ async function renderTaskDashboard(){
       <div style="flex:1;font-size:13px">
         ${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open lead">${esc(leadName)}</a>`:`<b>${esc(leadName)}</b>`} — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:var(--ink);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open task">${esc(t.title)}</a>
         ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
+        <span class="pill" style="background:${taskStatusTone(t.status).bg};color:${taskStatusTone(t.status).tx};font-size:9px">${taskStatusLabel(t.status)}</span>
         ${t.priority?` <span class="pill" style="background:${t.priority==='High'?'#FDE7E7':t.priority==='Low'?'var(--sage-l)':'var(--gold-l)'};color:${t.priority==='High'?'var(--rose)':t.priority==='Low'?'var(--sage)':'var(--gold)'};font-size:9px">${esc(t.priority)}</span>`:''}
       </div>
       ${assigneeCell}
@@ -6777,8 +6821,7 @@ function renderMyTasksPersonalTab(){
 
   let list;
   // Today is the counsellor's actionable queue: overdue + due today.
-  // This prevents an empty-looking board when the next tasks are due tomorrow
-  // while still keeping Tomorrow and Pending as explicit views.
+  // My Tasks is the full open queue; date tabs are focused views, with Upcoming for tasks after tomorrow.
   if(myTasksPersonalActiveTab==='all')list=open;
   else if(myTasksPersonalActiveTab==='today')list=open.filter(t=>!t.due_date||t.due_date<=today);
   else if(myTasksPersonalActiveTab==='tomorrow')list=open.filter(t=>t.due_date===tomorrow);
@@ -9920,7 +9963,7 @@ function renderTasks(list){
   const el=document.getElementById('d-task-list');
   if(!el)return;
   el.innerHTML=list.length?list.map(t=>{
-    const overdue=t.status==='Open'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
+    const overdue=t.status!=='Done'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
     return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${t.status==='Done'?';opacity:.5':''}">
       <input type="checkbox" ${t.status==='Done'?'checked':''} onchange="toggleTask('${t.id}',this.checked)" style="margin-top:3px;cursor:pointer">
       <div style="flex:1">

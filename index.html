@@ -609,7 +609,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <button class="ni" data-nav="team" onclick="nav('team',this)"><i class="ti ti-id-badge" style="color:var(--violet)"></i>Team</button>
       <button class="ni" data-nav="teamchat" onclick="nav('teamchat',this)"><i class="ti ti-brand-slack" style="color:var(--sky)"></i>Team Chat<span class="nbadge" id="nb-teamchat" style="display:none">0</span></button>
       <button class="ni" data-nav="events" onclick="nav('events',this)"><i class="ti ti-calendar-event" style="color:var(--gold)"></i>Events</button><button class="ni" data-nav="studentportal" id="ni-studentportal" onclick="nav('studentportal',this)" style="display:none"><i class="ti ti-school" style="color:var(--gold)"></i>Student Portal</button><button class="ni" data-nav="import" onclick="nav('import',this)"><i class="ti ti-file-import" style="color:var(--teal)"></i>Import data</button>
-      <button class="ni" data-nav="finance" id="ni-finance" style="display:none" onclick="nav('finance',this)"><i class="ti ti-cash" style="color:var(--sage)"></i>Finance</button>       <button class="ni" data-nav="digitalmarketing" id="ni-digitalmarketing" onclick="nav('digitalmarketing',this)"><i class="ti ti-speakerphone" style="color:var(--rose)"></i>Digital Marketing</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic" style="color:var(--sky)"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard" style="color:var(--violet)"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset" style="color:var(--pine3)"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search" style="color:var(--teal)"></i>Course Finder</button>      <button class="ni" data-nav="scholarships" onclick="nav('scholarships',this)"><i class="ti ti-award" style="color:var(--gold)"></i>Scholarship Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books" style="color:var(--gold)"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv" style="color:var(--sky)"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot" style="color:var(--violet)"></i>AI Counsellor</button>
+      <button class="ni" data-nav="finance" id="ni-finance" style="display:none" onclick="nav('finance',this)"><i class="ti ti-cash" style="color:var(--sage)"></i>Finance</button>       <button class="ni" data-nav="digitalmarketing" id="ni-digitalmarketing" style="display:none" onclick="nav('digitalmarketing',this)"><i class="ti ti-speakerphone" style="color:var(--rose)"></i>Digital Marketing</button>       <button class="ni" data-nav="reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic" style="color:var(--sky)"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard" style="color:var(--violet)"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset" style="color:var(--pine3)"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search" style="color:var(--teal)"></i>Course Finder</button>      <button class="ni" data-nav="scholarships" onclick="nav('scholarships',this)"><i class="ti ti-award" style="color:var(--gold)"></i>Scholarship Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books" style="color:var(--gold)"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv" style="color:var(--sky)"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot" style="color:var(--violet)"></i>AI Counsellor</button>
     </div>
     <div class="sb-foot">
       <div class="sb-user">
@@ -841,7 +841,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             </div>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:2px solid var(--line);padding-bottom:0">
-            <button class="mtp-tab active" data-tab="today" onclick="switchMyTasksTab('today')">Today</button>
+            <button class="mtp-tab active" data-tab="all" onclick="switchMyTasksTab('all')">My Tasks</button>
+            <button class="mtp-tab" data-tab="today" onclick="switchMyTasksTab('today')">Today</button>
             <button class="mtp-tab" data-tab="tomorrow" onclick="switchMyTasksTab('tomorrow')">Tomorrow</button>
             <button class="mtp-tab" data-tab="pending" onclick="switchMyTasksTab('pending')">Pending</button>
             <button class="mtp-tab" data-tab="completed" onclick="switchMyTasksTab('completed')">Completed</button>
@@ -6742,7 +6743,7 @@ async function renderTaskDashboard(){
 }
 // ── My Tasks — personal Counsellor view ──────────────────────────────
 let myTasksPersonalData=[];
-let myTasksPersonalActiveTab='today';
+let myTasksPersonalActiveTab='all';
 function switchMyTasksTab(tab){
   myTasksPersonalActiveTab=tab;
   document.querySelectorAll('.mtp-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
@@ -6775,9 +6776,13 @@ function renderMyTasksPersonalTab(){
   if(mtpSub)mtpSub.textContent=todaysAll.length?`${todaysDone} of ${todaysAll.length} done today`:'Nothing due today';
 
   let list;
-  if(myTasksPersonalActiveTab==='today')list=open.filter(t=>t.due_date===today||(!t.due_date));
+  // Today is the counsellor's actionable queue: overdue + due today.
+  // This prevents an empty-looking board when the next tasks are due tomorrow
+  // while still keeping Tomorrow and Pending as explicit views.
+  if(myTasksPersonalActiveTab==='all')list=open;
+  else if(myTasksPersonalActiveTab==='today')list=open.filter(t=>!t.due_date||t.due_date<=today);
   else if(myTasksPersonalActiveTab==='tomorrow')list=open.filter(t=>t.due_date===tomorrow);
-  else if(myTasksPersonalActiveTab==='pending')list=open.filter(t=>t.due_date&&t.due_date<today);
+  else if(myTasksPersonalActiveTab==='pending')list=open.filter(t=>t.due_date&&t.due_date>tomorrow);
   else list=done;
 
   const el=document.getElementById('my-tasks-personal-list');
@@ -9060,6 +9065,11 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
     const isAdminLike=role.startsWith('Admin')||role.startsWith('Director')||isSuperAdmin;
     const isCounsellor=isRestrictedStaffRole();
 
+    // Digital Marketing is hidden by default in the markup and explicitly
+    // revealed only for users whose role is allowed to use that dashboard.
+    const dmNav=document.getElementById('ni-digitalmarketing');
+    if(dmNav) dmNav.style.display=(isCounsellor && role!=='Digital Marketing')?'none':'flex';
+
     // "Add team member" — Super Admin only, god access.
     const cu=document.getElementById('create-user-btn');
     if(cu) cu.style.display=isSuperAdmin?'inline-flex':'none';
@@ -9080,12 +9090,13 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
       ['ls-src','ls-from','ls-to'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='block';el.style.minWidth='140px';}});
     }
 
-    // Counsellors: hide Finance & Team nav entirely. Productivity stays
+    // Counsellors: hide Finance, Team, Reports, Team Dashboards and Digital
+    // Marketing nav entirely. Productivity stays
     // visible to everyone — "My Daily Update" is for the whole team;
     // Call Recorder and Activity Monitor are still gated internally by
     // initProductivity(), sub-tab by sub-tab.
     if(isCounsellor){
-      const restricted=['finance','team','reports','subteam-detail'];
+      const restricted=['finance','team','reports','subteam-detail','digitalmarketing'];
       document.querySelectorAll('.ni').forEach(btn=>{
         const onclick=btn.getAttribute('onclick')||'';
         restricted.forEach(r=>{if(onclick.includes("nav('"+r+"'"))btn.style.display='none';});

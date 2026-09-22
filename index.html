@@ -824,7 +824,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <div style="font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--ink)">Task Dashboard</div>
             <div id="td-header-meta" style="font-size:12px;color:var(--ink3);margin-top:4px">Your task workspace</div>
           </div>
-          <button class="btn btn-p" onclick="openTaskModalStandalone()"><i class="ti ti-plus"></i>Add task</button>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button id="td-ops-view-switcher" onclick="reopenOpsViewModal()" style="display:none;align-items:center;gap:5px;border:1px solid var(--line2);background:var(--gold-l);color:var(--pine2);font-weight:700;border-radius:9px;padding:9px 12px;cursor:pointer;font-family:var(--font-b)"></button>
+            <button class="btn btn-p" onclick="openTaskModalStandalone()"><i class="ti ti-plus"></i>Add task</button>
+          </div>
         </div>
         <!-- Personal view — Counsellors only. Deliberately simple: no
              KPI cards, no by-assignee breakdown (meaningless for a
@@ -2861,6 +2864,16 @@ async function logActivity(leadId,eventType,detail){
   });
   if(error)console.error('Activity log failed (non-blocking):',error);
 }
+async function logTaskActivity(taskId,eventType,detail,leadIdOverride=null){
+  let leadId=leadIdOverride;
+  if(!leadId && taskId){
+    try{
+      const{data}=await sb.from('tasks').select('lead_id').eq('id',taskId).maybeSingle();
+      leadId=data?.lead_id||null;
+    }catch(e){console.error('Task activity lookup failed:',e);}
+  }
+  if(leadId) await logActivity(leadId,eventType,`Task ${taskId}: ${detail}`);
+}
 // ── New device login tracking ────────────────────────────────────────
 // A random token persisted in this browser's localStorage IS the
 // "device identity" — far more reliable than parsing navigator.userAgent,
@@ -3399,7 +3412,9 @@ function isDomesticAdmin(){return myTeamCategory==='Domestic'&&(myRole==='Admin'
 function isRestrictedStaffRole(){
   if(isSuperAdmin)return false;
   if(['Counsellor','Application Team','Visa Team','SOP Team','Digital Marketing'].includes(myRole))return true;
-  if(isDomesticOrAgent())return true;
+  // Domestic management (Admin/Manager/Director) remains a management tier.
+  // Only a genuine Agent category is restricted here.
+  if(myTeamCategory==='Agent')return true;
   return false;
 }
 // Application/Visa/SOP Team members cannot touch their own assignment —
@@ -4387,6 +4402,11 @@ function chooseOpsView(view){
   renderLeads();
   badges();
   renderFU();
+  // Task Dashboard has its own Domestic/International operational scope.
+  // Re-render immediately when the elevated user switches the ops view.
+  if(document.getElementById('sc-taskdashboard')?.classList.contains('active')){
+    renderTaskDashboard();
+  }
   // Activity Monitor has its own separate Category filter — keep it in
   // sync too, in case the person is already sitting on that screen when
   // they toggle Domestic/International, rather than only updating it the
@@ -4399,6 +4419,20 @@ function chooseOpsView(view){
 function reopenOpsViewModal(){
   document.getElementById('ops-view-modal').style.display='flex';
 }
+function syncTaskDashboardOpsSwitcher(){
+  const td=document.getElementById('td-ops-view-switcher');
+  if(!td)return;
+  if(!isSuperAdmin){
+    td.style.display='none';
+    return;
+  }
+  td.style.display='inline-flex';
+  td.innerHTML=superAdminOpsView==='Domestic'
+    ? '🇬🇧 Domestic <i class="ti ti-switch-horizontal" style="font-size:12px"></i>'
+    : superAdminOpsView==='International'
+      ? '🌍 International <i class="ti ti-switch-horizontal" style="font-size:12px"></i>'
+      : '🌍 / 🇬🇧 Choose team view';
+}
 function updateOpsViewSwitcher(){
   const el=document.getElementById('ops-view-switcher');
   if(!el)return;
@@ -4407,6 +4441,13 @@ function updateOpsViewSwitcher(){
   el.innerHTML=superAdminOpsView==='Domestic'
     ? '🇬🇧 Domestic <i class="ti ti-switch-horizontal" style="font-size:12px"></i>'
     : '🌍 International <i class="ti ti-switch-horizontal" style="font-size:12px"></i>';
+  const td=document.getElementById('td-ops-view-switcher');
+  if(td){
+    td.style.display='inline-flex';
+    td.innerHTML=superAdminOpsView==='Domestic'
+      ? '🇬🇧 Domestic <i class="ti ti-switch-horizontal" style="font-size:12px"></i>'
+      : '🌍 International <i class="ti ti-switch-horizontal" style="font-size:12px"></i>';
+  }
 }
 // ══ ACCESS CONTROL — single source of truth for lead visibility ═════
 // Every screen that reads `leads` (Leads list, Dashboard, badges, Tool
@@ -5879,7 +5920,7 @@ async function updateStatusFS(){
   loadActivityLogFS(curId);
 }
 function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';populateAgentDropdown();document.getElementById('f-agent').value=l.agent||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-type').value=l.ielts_type||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-finance-years').value=l.finance_years||'';document.getElementById('f-class-timing').value=l.class_timing||'';document.getElementById('f-student-id').value=l.student_id||'';document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range,l.budget_currency);syncBudgetRangeOptions(l.budget_range||'');document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
-async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error,data}=await sb.from('leads').delete().eq('id',curId).select();if(error){setSyncErr();toast('Error deleting lead: '+error.message);return;}if(!data||!data.length){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
+async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;await logActivity(curId,'deleted',`Lead deleted: ${_l?.name||_l?.lead_id||curId}`);setSyncing();const{error,data}=await sb.from('leads').delete().eq('id',curId).select();if(error){setSyncErr();toast('Error deleting lead: '+error.message);return;}if(!data||!data.length){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 // Generates a message genuinely suited to WHERE this lead actually is
 // in their journey, instead of the same generic "just checking in"
@@ -6220,18 +6261,40 @@ function openAddTaskFS(){
   openTaskModal();
 }
 async function toggleTaskFS(id,checked){
-  await sb.from('tasks').update({status:checked?'Done':'Open',completed_at:checked?new Date().toISOString():null}).eq('id',id);
+  const{data:t}=await sb.from('tasks').select('id,lead_id,status,title').eq('id',id).maybeSingle();
+  if(!t||!canManageTaskClient(t)){toast('You do not have permission to change this task.');return;}
+  const next=checked?'Done':'Open';
+  const{error}=await sb.from('tasks').update({status:next,completed_at:checked?new Date().toISOString():null}).eq('id',id);
+  if(error){toast('Could not update task: '+error.message);return;}
+  if(t.status!==next)await logTaskActivity(id,'task_status_change',`Status: ${taskStatusLabel(t.status)} → ${taskStatusLabel(next)}`,t.lead_id);
   loadTasksFS(curId);loadMyTasks();toast(checked?'✅ Task done':'↩ Reopened');
 }
 async function deleteTaskFS(id){
+  const{data:t}=await sb.from('tasks').select('id,lead_id,title,assigned_to').eq('id',id).maybeSingle();
+  if(!t||!canManageTaskClient(t)){toast('You do not have permission to delete this task.');return;}
   if(!confirm('Delete this task?'))return;
-  await sb.from('tasks').delete().eq('id',id);
+  await logTaskActivity(id,'task_deleted',`Deleted task: ${t.title}`,t.lead_id);
+  const{error}=await sb.from('tasks').delete().eq('id',id);
+  if(error){toast('Could not delete task: '+error.message);return;}
   loadTasksFS(curId);loadMyTasks();toast('Task deleted.');
 }
 
 async function loadRemindersFS(leadId){const{data,error}=await sb.from('reminders').select('*').eq('lead_id',leadId).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true});const el=document.getElementById('ld-reminder-list');if(!el)return;if(error||!data||!data.length){el.innerHTML=emptyState('⏰','No reminders set.');return;}el.innerHTML=data.map(r=>{const isComment=!r.reminder_date;const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';const tm=r.reminder_time?r.reminder_time.substring(0,5):'';return`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${r.done?';opacity:.5':''}"><input type="checkbox" ${r.done?'checked':''} onchange="toggleReminderFS('${r.id}',this.checked)" style="margin-top:3px;cursor:pointer"><div style="flex:1">${isComment?`<div style="font-size:11px;color:var(--ink3);font-style:italic;margin-bottom:2px"><i class="ti ti-message-circle" style="font-size:12px"></i> Comment only</div>`:`<div style="font-size:13px;font-weight:600${r.done?';text-decoration:line-through':''}">${dt}${tm?' \u00b7 '+tm:''}</div>`}${r.notes?`<div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(r.notes)}</div>`:''}</div><button onclick="deleteReminderFS('${r.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">\u00d7</button></div>`;}).join('');}
-async function toggleReminderFS(id,checked){await sb.from('reminders').update({done:checked}).eq('id',id);loadRemindersFS(curId);loadDashReminders();toast(checked?'✅ Done':'↩ Reopened');}
-async function deleteReminderFS(id){if(!confirm('Delete this reminder?'))return;await sb.from('reminders').delete().eq('id',id);loadRemindersFS(curId);loadDashReminders();toast('Reminder deleted.');}
+async function toggleReminderFS(id,checked){
+  const{data:r}=await sb.from('reminders').select('id,lead_id,notes,done').eq('id',id).maybeSingle();
+  const{error}=await sb.from('reminders').update({done:checked}).eq('id',id);
+  if(error){toast('Could not update reminder: '+error.message);return;}
+  if(r&&r.done!==checked)await logActivity(r.lead_id,'reminder_status_change',`${checked?'Completed':'Reopened'} reminder${r.notes?' — '+String(r.notes).replace(/^\[Task:[^\]]+\]\s*/,'').substring(0,100):''}`);
+  loadRemindersFS(curId);loadDashReminders();toast(checked?'✅ Done':'↩ Reopened');
+}
+async function deleteReminderFS(id){
+  if(!confirm('Delete this reminder?'))return;
+  const{data:r}=await sb.from('reminders').select('id,lead_id,notes,reminder_date,reminder_time').eq('id',id).maybeSingle();
+  const{error}=await sb.from('reminders').delete().eq('id',id);
+  if(error){toast('Could not delete reminder: '+error.message);return;}
+  if(r)await logActivity(r.lead_id,'reminder_deleted',`Reminder deleted${r.reminder_date?' — '+r.reminder_date:''}${r.notes?' — '+String(r.notes).replace(/^\[Task:[^\]]+\]\s*/,'').substring(0,100):''}`);
+  loadRemindersFS(curId);loadDashReminders();toast('Reminder deleted.');
+}
 function openAddReminderFS(){openReminderModal();}
 async function loadUniAppsFS(leadId){const{data,error}=await sb.from('university_applications').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-uni-list');if(!el)return;const statusColors={'Applied':{bg:'#DBEAFE',tx:'#1E40AF'},'Offer Received':{bg:'#A7F3D0',tx:'#065F46'},'Conditional':{bg:'#FEF9C3',tx:'#854D0E'},'Rejected':{bg:'#FFE4E6',tx:'#9F1239'},'Enrolled':{bg:'#6EE7B7',tx:'#064E3B'}};if(error||!data||!data.length){el.innerHTML=emptyState('🎓','No universities added yet.');return;}await loadUniFilesFor(data.map(u=>u.id));el.innerHTML=data.map(u=>{const myFiles=uniFilesByApp[u.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteUniFile('${f.id}',true)" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(u.university||'—')}</div><div style="font-size:11px;color:var(--ink3)">${esc(u.program||'—')}</div>${u.offer_expiry_date?`<div style="font-size:11px;margin-top:2px">Offer expiry: ${formatExpiryDisplay(u.offer_expiry_date,7)}</div>`:''}${filesHtml}</div><button onclick="triggerUniFileUpload('${u.id}',true)" title="Add file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><span class="pill" style="background:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).bg};color:${(statusColors[u.status]||{bg:'#eee',tx:'#555'}).tx}">${esc(u.status||'Applied')}</span><button onclick="deleteUniAppFS('${u.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button></div>`;}).join('');}
 function openAddUniAppFS(){openUniversityModal();}
@@ -6451,7 +6514,7 @@ async function saveTaskModal(){
     if(!leadId){toast('Please pick a lead.');return;}
     const overrideAssignee=document.getElementById('task-assignee-picker').value;
     const l=leads.find(x=>x.id===leadId);
-    const restrictedSelf=(myRole==='Counsellor'||myTeamCategory==='Domestic'||['Application Team','Visa Team','SOP Team'].includes(myRole)||myTeamCategory==='Agent')&&!isSuperAdmin;
+    const restrictedSelf=(myRole==='Counsellor'||['Application Team','Visa Team','SOP Team'].includes(myRole)||myTeamCategory==='Agent')&&!isSuperAdmin;
     assignedTo=restrictedSelf?myName:(overrideAssignee||l?.counsellor||null);
   } else {
     if(!curId){toast('No lead selected.');return;}
@@ -6469,7 +6532,7 @@ async function saveTaskModal(){
   // Do not include the UI-only priority value in the database insert: doing so
   // makes PostgREST reject the whole insert and the fallback used to discard
   // the notes as well.
-  let{error}=await sb.from('tasks').insert({
+  let{data:createdTask,error}=await sb.from('tasks').insert({
     lead_id:leadId,
     title,
     due_date:dueDate,
@@ -6477,9 +6540,10 @@ async function saveTaskModal(){
     status:'Open',
     source:'manual',
     notes
-  });
+  }).select('id').single();
   btn.disabled=false;btn.textContent='Save';
   if(error){toast('Error: '+error.message);return;}
+  if(createdTask?.id) await logTaskActivity(createdTask.id,'task_created',`Created: ${title}${dueDate?' — due '+dueDate:''}`,leadId);
 
   // Optional task reminder uses the existing lead-level reminders table.
   // We do this only after the task insert succeeds, so a failed task never
@@ -6503,6 +6567,12 @@ async function saveTaskModal(){
         console.error('Task reminder insert failed:', reminderError);
         toast('Task saved, but reminder could not be set: '+reminderError.message);
       } else {
+        // The reminder is linked to this task by its [Task:id] marker once the task id is known.
+        if(createdTask?.id){
+          const{data:rem}=await sb.from('reminders').select('id').eq('lead_id',leadId).eq('notes',reminderNotes).order('created_at',{ascending:false}).limit(1).maybeSingle();
+          if(rem?.id) await sb.from('reminders').update({notes:`[Task:${createdTask.id}] ${notes||''}`.trim()}).eq('id',rem.id);
+          await logTaskActivity(createdTask.id,'task_reminder_created',`Reminder set for ${reminderDate}${reminderTime?' at '+reminderTime:''}${notes?' — '+notes:''}`,leadId);
+        }
         toast('Task and reminder saved.');
       }
     }
@@ -6522,8 +6592,8 @@ function canManageTaskClient(t){
   const email=(currentUser?.email||'').toLowerCase();
   if(isOwner||email==='pavitra@step4progress.com') return true;
   if(email==='jisan@step4progress.co.uk') return leadCountry.toLowerCase()!=='india';
-  if(myRole==='Counsellor'||myTeamCategory==='Domestic'||['Application Team','Visa Team','SOP Team'].includes(myRole)||myTeamCategory==='Agent') return assignee===myName;
-  if(['Admin','Manager','Director'].includes(myRole)) return !!staff&&staff.country===myCountry;
+  if(myRole==='Counsellor'||['Application Team','Visa Team','SOP Team'].includes(myRole)||myTeamCategory==='Agent') return assignee===myName;
+  if(['Admin','Manager','Director'].includes(myRole)) return !!staff&&staff.country===myCountry&&effectiveTeamCategory(staff)===myTeamCategory;
   return assignee===myName;
 }
 function taskStatusLabel(status){
@@ -6544,8 +6614,10 @@ async function saveTaskStatus(taskId,status){
     if(!canManageTaskClient(q.data)){toast('You do not have permission to change this task.');return false;}
   }else if(!canManageTaskClient(t)){toast('You do not have permission to change this task.');return false;}
   const dbStatus=status==='Completed'?'Done':status==='In Progress'?'In Progress':'Open';
+  const oldStatus=t?.status||null;
   const{error}=await sb.from('tasks').update({status:dbStatus,completed_at:dbStatus==='Done'?new Date().toISOString():null}).eq('id',taskId);
   if(error){toast('Could not update task: '+error.message);return false;}
+  if(oldStatus!==dbStatus) await logTaskActivity(taskId,'task_status_change',`Status: ${taskStatusLabel(oldStatus||'Open')} → ${taskStatusLabel(dbStatus)}`,t?.lead_id);
   toast('Task status → '+taskStatusLabel(dbStatus));
   return true;
 }
@@ -6556,7 +6628,7 @@ async function openTaskDetail(taskId){
   const staff=teamList.find(x=>(x.full_name||'').trim()===assignee);
   const allowed=(()=>{
     if(isOwner||isSuperAdmin)return isOwner || t.leads?.country!=='India' || (currentUser?.email||'').toLowerCase()==='pavitra@step4progress.com';
-    if(myRole==='Counsellor'||myTeamCategory==='Domestic'||['Application Team','Visa Team','SOP Team'].includes(myRole)||myTeamCategory==='Agent')return assignee===myName;
+    if(myRole==='Counsellor'||['Application Team','Visa Team','SOP Team'].includes(myRole)||myTeamCategory==='Agent')return assignee===myName;
     if(['Admin','Manager','Director'].includes(myRole))return !!staff&&staff.country===myCountry&&effectiveTeamCategory(staff)===myTeamCategory;
     return assignee===myName;
   })();
@@ -6642,6 +6714,7 @@ async function openTaskDetail(taskId){
     if(!confirm('Delete this task reminder?'))return;
     const{error}=await sb.from('reminders').delete().eq('id',activeReminder.id);
     if(error){toast('Could not delete reminder: '+error.message);return;}
+    await logTaskActivity(t.id,'task_reminder_deleted',`Reminder deleted${activeReminder.reminder_date?' — '+activeReminder.reminder_date:''}`,t.lead_id);
     toast('Reminder deleted.');
     openTaskDetail(t.id);
   };
@@ -6662,8 +6735,12 @@ async function openTaskDetail(taskId){
     statusSave.disabled=true;completeBtn.disabled=true;
     const notes=(document.getElementById('tdetail-notes')?.value||'').trim();
     const dbStatus=selectedTaskStatus==='Done'?'Done':selectedTaskStatus==='In Progress'?'In Progress':'Open';
+    const oldStatus=t.status||'Open';
+    const oldNotes=String(t.notes||'').trim();
     const{error:taskError}=await sb.from('tasks').update({status:dbStatus,completed_at:dbStatus==='Done'?new Date().toISOString():null,notes}).eq('id',t.id);
     if(taskError){statusSave.disabled=false;completeBtn.disabled=false;toast('Could not save task: '+taskError.message);return;}
+    if(oldStatus!==dbStatus) await logTaskActivity(t.id,'task_status_change',`Status: ${taskStatusLabel(oldStatus)} → ${taskStatusLabel(dbStatus)}`,t.lead_id);
+    if(oldNotes!==notes) await logTaskActivity(t.id,'task_note_change',notes?`Notes updated: ${notes.substring(0,120)}`:'Notes cleared',t.lead_id);
 
     const enabled=!!document.getElementById('tdetail-reminder-enabled')?.checked;
     const reminderDate=document.getElementById('tdetail-reminder-date')?.value||'';
@@ -6675,9 +6752,11 @@ async function openTaskDetail(taskId){
       if(activeReminder){
         const{error:e}=await sb.from('reminders').update(reminderPayload).eq('id',activeReminder.id);
         if(e){statusSave.disabled=false;completeBtn.disabled=false;toast('Task saved, but reminder could not be updated: '+e.message);return;}
+        await logTaskActivity(t.id,'task_reminder_updated',`Reminder updated: ${reminderDate}${reminderTime?' at '+reminderTime:''}${reminderText?' — '+reminderText:''}`,t.lead_id);
       }else{
         const{error:e}=await sb.from('reminders').insert([reminderPayload]);
         if(e){statusSave.disabled=false;completeBtn.disabled=false;toast('Task saved, but reminder could not be created: '+e.message);return;}
+        await logTaskActivity(t.id,'task_reminder_created',`Reminder set for ${reminderDate}${reminderTime?' at '+reminderTime:''}${reminderText?' — '+reminderText:''}`,t.lead_id);
       }
     }
     statusSave.disabled=false;completeBtn.disabled=false;
@@ -6855,6 +6934,7 @@ function taskReminderText(r,t){
 }
 
 async function renderTaskDashboard(){
+  syncTaskDashboardOpsSwitcher();
   // Existing counsellor assignments from before the task workflow was added
   // are healed here once: every assigned lead gets an actionable task, and
   // the task is immediately included in My Tasks.
@@ -6872,7 +6952,28 @@ async function renderTaskDashboard(){
   // - Admin / Manager / Director: tasks assigned to people in their own country/team scope.
   // The assignee is the primary task-visibility boundary; the lead country is a secondary safety check.
   const staffByName=new Map((teamList||[]).map(x=>[(x.full_name||'').trim(),x]));
-  const taskCategory=(t)=>effectiveTeamCategory(staffByName.get((t.assigned_to||'').trim()));
+  const normalizePersonName=v=>String(v||'').trim().replace(/\s+/g,' ').toLowerCase();
+  const staffByNormalizedName=new Map((teamList||[]).map(x=>[normalizePersonName(x.full_name),x]));
+  const missingAssignees=[...new Set((data||[]).map(t=>String(t.assigned_to||'').trim()).filter(Boolean))]
+    .filter(n=>!staffByNormalizedName.has(normalizePersonName(n)));
+  if(missingAssignees.length){
+    const tq=await sb.from('team').select('full_name,email,role,country,team_category').in('full_name',missingAssignees);
+    if(!tq.error){
+      (tq.data||[]).forEach(x=>{
+        staffByName.set((x.full_name||'').trim(),x);
+        staffByNormalizedName.set(normalizePersonName(x.full_name),x);
+      });
+    }
+  }
+  const taskCategory=(t)=>{
+    const assignee=String(t.assigned_to||'').trim();
+    const staff=staffByNormalizedName.get(normalizePersonName(assignee));
+    if(staff)return effectiveTeamCategory(staff);
+    // Explicit Domestic management fallback protects the UK-local lane
+    // even if a team profile is temporarily missing from the client cache.
+    if(normalizePersonName(assignee)==='anushree jena')return 'Domestic';
+    return 'International';
+  };
   const isElevatedGlobal=isOwner || ((currentUser?.email||'').toLowerCase()==='pavitra@step4progress.com');
   const isJisan=(currentUser?.email||'').toLowerCase()==='jisan@step4progress.co.uk';
   const isOwnCountryStaff=staff=>staff && myCountry && staff.country===myCountry;
@@ -6885,7 +6986,7 @@ async function renderTaskDashboard(){
   } else if(isJisan){
     const nonIndia=scoped.filter(t=>t.leads?.country!=='India');
     scoped=superAdminOpsView?nonIndia.filter(t=>taskCategory(t)===superAdminOpsView):nonIndia;
-  } else if(myRole==='Counsellor' || myTeamCategory==='Domestic' || ['Application Team','Visa Team','SOP Team'].includes(myRole) || myTeamCategory==='Agent'){
+  } else if(myRole==='Counsellor' || ['Application Team','Visa Team','SOP Team'].includes(myRole) || myTeamCategory==='Agent'){
     scoped=scoped.filter(t=>(t.assigned_to||'').trim()===myName && (myTeamCategory!=='Domestic'||taskCategory(t)==='Domestic'));
   } else if(['Admin','Manager','Director'].includes(myRole)){
     scoped=scoped.filter(t=>{
@@ -7126,8 +7227,14 @@ async function editTaskDashboardItem(taskId){
   if(newTitle===null)return;
   const newDue=prompt('Due date (YYYY-MM-DD, or blank for none):',t.due_date||'');
   if(newDue===null)return;
-  const{error}=await sb.from('tasks').update({title:newTitle.trim()||t.title,due_date:newDue.trim()||null}).eq('id',taskId);
+  const nextTitle=newTitle.trim()||t.title;
+  const nextDue=newDue.trim()||null;
+  const{error}=await sb.from('tasks').update({title:nextTitle,due_date:nextDue}).eq('id',taskId);
   if(error){toast('Error: '+error.message);return;}
+  const changes=[];
+  if(nextTitle!==t.title)changes.push(`title: ${t.title} → ${nextTitle}`);
+  if(nextDue!==t.due_date)changes.push(`due date: ${t.due_date||'—'} → ${nextDue||'cleared'}`);
+  if(changes.length)await logTaskActivity(taskId,'task_updated',changes.join('; '),t.lead_id);
   toast('Task updated.');
   renderTaskDashboard();
   loadMyTasks();
@@ -7136,10 +7243,23 @@ async function deleteTaskDashboardItem(taskId){
   const{data:t}=await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle();
   if(!t){toast('Task not found.');return;}
   if(!canManageTaskClient(t)){toast('You do not have permission to delete this task.');renderTaskDashboard();return;}
-  if(!confirm('Delete this task? This cannot be undone.'))return;
+  if(!confirm('Delete this task? Its linked task reminder will also be removed. This cannot be undone.'))return;
+  // Remove only reminders belonging to this task. Other lead-level reminders
+  // remain untouched.
+  const{data:leadReminders}=await sb.from('reminders').select('id,notes').eq('lead_id',t.lead_id);
+  const taskPrefix=`[Task:${t.id}]`;
+  const legacyPrefix=`Task reminder: ${t.title}`;
+  const linkedReminderIds=(leadReminders||[])
+    .filter(r=>String(r.notes||'').startsWith(taskPrefix)||String(r.notes||'').startsWith(legacyPrefix))
+    .map(r=>r.id);
+  if(linkedReminderIds.length){
+    const{error:remErr}=await sb.from('reminders').delete().in('id',linkedReminderIds);
+    if(remErr){toast('Could not delete the linked reminder: '+remErr.message);return;}
+  }
+  await logTaskActivity(t.id,'task_deleted',`Deleted task: ${t.title}`,t.lead_id);
   const{error}=await sb.from('tasks').delete().eq('id',taskId);
   if(error){toast('Error deleting: '+error.message);return;}
-  toast('Task deleted.');
+  toast('Task and linked reminder deleted.');
   renderTaskDashboard();
   loadMyTasks();
 }
@@ -7149,8 +7269,11 @@ async function reassignTask(taskId,newAssignee){
   if(!canManageTaskClient(t)){toast('You do not have permission to reassign this task.');renderTaskDashboard();return;}
   const allowedRecipients=getAssignableTaskRecipients();
   if(newAssignee && !allowedRecipients.includes(newAssignee)){toast('That assignee is outside your task scope.');renderTaskDashboard();return;}
+  constoldAssignee=t.assigned_to||'Unassigned';
+  constnextAssignee=newAssignee||'Unassigned';
   const{error}=await sb.from('tasks').update({assigned_to:newAssignee||null}).eq('id',taskId);
   if(error){toast('Error reassigning: '+error.message);return;}
+  if(oldAssignee!==nextAssignee)await logTaskActivity(taskId,'task_reassigned',`Assignee: ${oldAssignee} → ${nextAssignee}`,t.lead_id);
   toast(newAssignee?`Task reassigned to ${newAssignee}`:'Task unassigned');
   renderTaskDashboard();
   loadMyTasks();
@@ -7229,6 +7352,7 @@ async function deleteLead(){
   if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}
   if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}
   if(!confirm('Delete this lead? This cannot be undone.'))return;
+  await logActivity(curId,'deleted',`Lead deleted: ${_l?.name||_l?.lead_id||curId}`);
   setSyncing();
   const{error,data}=await sb.from('leads').delete().eq('id',curId).select();
   if(error){setSyncErr();toast('Error deleting lead: '+error.message);return;}
@@ -8200,8 +8324,25 @@ function renderTeam(team){
     legend.textContent=parts.join(' · ');
   }
 
-  // Build all offices from OFFICE_MAP, then group real team members into them
+  // Build all offices from OFFICE_MAP, then group real team members into them.
+  // Domestic is intentionally a management-only view: for now Anushree is the
+  // only UK Domestic team member and must be the only person shown when the
+  // Super Admin switches to Domestic. Do not leak International office teams
+  // into the Domestic view.
   const effectiveView=isSuperAdmin?(superAdminOpsView||'International'):myTeamCategory;
+  if(effectiveView==='Domestic'){
+    tg.innerHTML='';
+    const fp=document.getElementById('fp-co');
+    if(fp){
+      const existing=Array.from(fp.options).map(o=>o.value);
+      (team||[]).filter(t=>effectiveTeamCategory(t)==='Domestic').forEach(t=>{
+        if(t.full_name&&!existing.includes(t.full_name)){
+          const o=document.createElement('option');o.value=t.full_name;o.textContent=t.full_name;fp.appendChild(o);
+        }
+      });
+    }
+    return;
+  }
   const allOffices=[];
   Object.entries(OFFICE_MAP).forEach(([country,offices])=>{
     // Domestic pole = UK only. International pole shows every office,
@@ -8827,13 +8968,13 @@ async function balCommit(){
       const picked=await getNextCounsellorForOffice(office);
       counsellor=picked?.name||null;
     }
-    const{error}=await sb.from('leads').insert({
+    const{data:inserted,error}=await sb.from('leads').insert({
       name:r.name,mobile:r.mobile,email:r.email||null,program:r.program||null,
       destination:r.destination||null,country,office,source:r.source||'Bulk Import',
       notes:r.notes||null,status:'New Enquiry',priority:'Medium',counsellor,
       created_at:new Date().toISOString(),
-    });
-    if(!error)imported++;
+    }).select('id');
+    if(!error){imported++;if(inserted?.[0]?.id)await logActivity(inserted[0].id,'created',`Bulk imported lead — assigned to ${counsellor||'Unassigned'}`);}
   }
   toast(`Imported ${imported} lead(s).`);
   btn.disabled=false;

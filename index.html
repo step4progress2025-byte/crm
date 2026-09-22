@@ -6711,12 +6711,12 @@ async function openTaskDetail(taskId){
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2);white-space:pre-wrap;min-height:44px;color:var(--ink2)">${esc(t.notes||'No notes added.')}</div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 7px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Task status</div><div style="font-size:10px;color:var(--ink3)">How is this task progressing?</div></div>
+    <div style="font-size:10px;color:var(--ink3);margin:-2px 0 7px">Choose a status, then use <b>Save status</b> at the bottom to apply it.</div>
     <div id="tdetail-status-buttons" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px">
       <button type="button" data-task-status="Open" ${canManageTaskClient(t)?'':'disabled'} style="border:1px solid ${t.status==='Open'?'var(--sky)':'var(--line2)'};background:${t.status==='Open'?'var(--sky-l)':'var(--paper)'};color:${t.status==='Open'?'var(--sky)':'var(--ink2)'};border-radius:9px;padding:10px 8px;font-weight:700;cursor:${canManageTaskClient(t)?'pointer':'default'}">○ Not Started</button>
       <button type="button" data-task-status="In Progress" ${canManageTaskClient(t)?'':'disabled'} style="border:1px solid ${t.status==='In Progress'?'var(--gold)':'var(--line2)'};background:${t.status==='In Progress'?'var(--gold-l)':'var(--paper)'};color:${t.status==='In Progress'?'var(--gold)':'var(--ink2)'};border-radius:9px;padding:10px 8px;font-weight:700;cursor:${canManageTaskClient(t)?'pointer':'default'}">◉ In Progress</button>
       <button type="button" data-task-status="Done" ${canManageTaskClient(t)?'':'disabled'} style="border:1px solid ${t.status==='Done'?'var(--sage)':'var(--line2)'};background:${t.status==='Done'?'var(--sage-l)':'var(--paper)'};color:${t.status==='Done'?'var(--sage)':'var(--ink2)'};border-radius:9px;padding:10px 8px;font-weight:700;cursor:${canManageTaskClient(t)?'pointer':'default'}">✓ Completed</button>
     </div>
-    <div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button id="tdetail-save-status" ${canManageTaskClient(t)?'':'disabled'} style="border:1px solid var(--line2);background:var(--pine);color:white;border-radius:9px;padding:8px 14px;font-weight:700;cursor:pointer">Save status</button></div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 6px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Notes</div><div style="font-size:10px;color:var(--ink3)">Task context</div></div>
     <div style="padding:12px;border:1px solid var(--line);border-radius:10px;white-space:pre-wrap;min-height:60px;color:var(--ink2)">${esc(t.notes||'No additional notes.')}</div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:14px 0 6px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Reminder</div><div style="font-size:10px;color:var(--ink3)">Task follow-up</div></div>
@@ -6746,7 +6746,9 @@ async function openTaskDetail(taskId){
     const ok=await saveTaskStatus(t.id,selectedTaskStatus);
     statusSave.disabled=false;
     if(!ok)return;
-    closeModal('modal-task-detail');renderTaskDashboard();loadMyTasks();
+    closeModal('modal-task-detail');
+    await renderTaskDashboard();
+    await loadMyTasks();
   };
   completeBtn.onclick=async()=>{
     if(!canManageTaskClient(t)){toast('You do not have permission to change this task.');return;}
@@ -12306,7 +12308,7 @@ function broadcastStopEditing(leadId) {
     <div class="modal" style="width:min(680px,calc(100vw - 32px));max-height:90vh;overflow:auto">
       <div class="mhead"><div><span class="mtitle" id="tdetail-title">Task details</span><div id="tdetail-sub" style="font-size:11px;color:var(--ink3);margin-top:2px"></div></div><button class="mclose" onclick="closeModal('modal-task-detail')">×</button></div>
       <div id="tdetail-body" style="padding:18px 20px"></div>
-      <div class="mfoot"><button class="btn" onclick="closeModal('modal-task-detail')">Close</button><button class="btn" id="tdetail-complete-btn"></button><button class="btn btn-p" id="tdetail-lead-btn">Open Lead →</button></div>
+      <div class="mfoot"><button class="btn" onclick="closeModal('modal-task-detail')">Close</button><button class="btn" id="tdetail-complete-btn"></button><button class="btn" id="tdetail-save-status">Save status</button><button class="btn btn-p" id="tdetail-lead-btn">Open Lead →</button></div>
     </div>
   </div>
 

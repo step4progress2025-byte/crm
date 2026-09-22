@@ -1606,7 +1606,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
         <div id="prod-sub-myupdate" style="display:none">
           <div class="card" style="margin-bottom:16px">
-            <div class="card-h"><span class="card-t">⏱️ Your Response Time</span></div>
+            <div class="card-h"><span class="card-t">📊 Your Lead Response &amp; Work</span></div>
             <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">How quickly you're acting on your own leads once they arrive — calculated from real timestamps, not self-reported. This is for your own visibility, not a ranking.</p>
             <div id="my-response-stats"></div>
           </div>
@@ -1624,8 +1624,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
         <div id="prod-sub-monitor" style="display:none">
           <div class="card" style="margin-bottom:16px">
-            <div class="card-h"><span class="card-t">⏱️ Team Response Time</span></div>
-            <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">Genuine operational visibility into how quickly new leads get a first response, company-wide — intended to spot process bottlenecks, not to rank individual staff.</p>
+            <div class="card-h"><span class="card-t">📊 Lead Response &amp; Work Monitor</span></div>
+            <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">A simple view of new leads, first response, unrecorded first actions and today’s work. It is an operational monitor, not a staff productivity score.</p>
             <div id="team-response-stats"></div>
           </div>
           <div class="card" style="margin-bottom:16px">
@@ -3399,7 +3399,7 @@ function memberTeamCategory(t){
   if(!t)return 'International';
   const nm=String(t.full_name||'').trim().toLowerCase().replace(/\s+/g,' ');
   const em=String(t.email||'').trim().toLowerCase();
-  if(nm==='anushree' || nm.startsWith('anushree ') || em.startsWith('anushree@')) return 'Domestic';
+  if(nm==='anushree' || nm.startsWith('anushree ') || em.startsWith('anushree@') || em==='a.jena@step4progress.co.uk') return 'Domestic';
   if(t.team_category==='Domestic') return 'Domestic';
   if(t.team_category==='Agent' || t.role==='Agent') return 'Agent';
   return 'International';
@@ -6585,7 +6585,7 @@ async function saveTaskModal(){
   // Do not include the UI-only priority value in the database insert: doing so
   // makes PostgREST reject the whole insert and the fallback used to discard
   // the notes as well.
-  let{error}=await sb.from('tasks').insert({
+  let{data:createdTask,error}=await sb.from('tasks').insert({
     lead_id:leadId,
     title,
     due_date:dueDate,
@@ -6593,9 +6593,9 @@ async function saveTaskModal(){
     status:'Open',
     source:'manual',
     notes
-  });
+  }).select('id').single();
   btn.disabled=false;btn.textContent='Save';
-  if(error){toast('Error: '+error.message);return;}
+  if(error||!createdTask){toast('Error: '+(error?.message||'Task was not created.'));return;}
 
   // Optional task reminder uses the existing lead-level reminders table.
   // We do this only after the task insert succeeds, so a failed task never
@@ -6607,7 +6607,7 @@ async function saveTaskModal(){
     if(!reminderDate){
       toast('Task saved, but no reminder was set because no reminder date was selected.');
     }else{
-      const reminderNotes=`Task reminder: ${title}${notes?` — ${notes}`:''}`;
+      const reminderNotes=`Task reminder [task:${createdTask.id}]: ${title}${notes?` — ${notes}`:''}`;
       const{error:reminderError}=await sb.from('reminders').insert([{
         lead_id:leadId,
         reminder_date:reminderDate,
@@ -6659,7 +6659,7 @@ async function saveTaskStatus(taskId,status){
     if(q.error||!q.data){toast('Task not found.');return false;}
     if(!canManageTaskClient(q.data)){toast('You do not have permission to change this task.');return false;}
   }else if(!canManageTaskClient(t)){toast('You do not have permission to change this task.');return false;}
-  const dbStatus=status==='Completed'?'Done':status==='In Progress'?'In Progress':'Open';
+  const dbStatus=(status==='Done'||status==='Completed')?'Done':status==='In Progress'?'In Progress':'Open';
   const{error}=await sb.from('tasks').update({status:dbStatus,completed_at:dbStatus==='Done'?new Date().toISOString():null}).eq('id',taskId);
   if(error){toast('Could not update task: '+error.message);return false;}
   toast('Task status → '+taskStatusLabel(dbStatus));
@@ -6685,13 +6685,13 @@ async function openTaskDetail(taskId){
   const priorityTone=priorityLabel==='High'?'var(--rose)':priorityLabel==='Low'?'var(--sage)':'var(--gold)';
   document.getElementById('tdetail-sub').innerHTML=`<span style="display:inline-flex;align-items:center;gap:6px"><span class="pill" style="background:${statusTone.bg};color:${statusTone.tx}">${statusLabel}</span><span>·</span><span>${t.source==='auto'?'Auto-created':'Manual'}</span></span>`;
   const{data:taskReminders}=await sb.from('reminders').select('id,reminder_date,reminder_time,notes,done').eq('lead_id',t.lead_id).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true}).limit(50);
-  const taskReminderRows=(taskReminders||[]).filter(r=>String(r.notes||'').startsWith(`Task reminder: ${t.title}`));
+  const taskReminderRows=(taskReminders||[]).filter(r=>String(r.notes||'').includes(`[task:${t.id}]`) || (String(r.notes||'').includes(`[task:${t.id}]`) || String(r.notes||'').startsWith(`Task reminder: ${t.title}`)));
   const reminderHtml=taskReminderRows.length
     ? taskReminderRows.map(r=>{
         const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'No date';
         const tm=r.reminder_time?String(r.reminder_time).substring(0,5):'';
         const rawNote=String(r.notes||'');
-        const reminderNote=rawNote.replace(`Task reminder: ${t.title}`,'').replace(/^\s*[—-]\s*/,'').trim();
+        const reminderNote=rawNote.replace(/^Task reminder(?: \[task:[^\]]+\])?: /,'').replace(/^\s*[—-]\s*/,'').trim();
         return `<div style="display:flex;align-items:flex-start;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--paper2);${r.done?'opacity:.55':''}">
           <span style="font-size:15px">⏰</span>
           <div style="flex:1"><div style="font-weight:700">${esc(dt)}${tm?' · '+esc(tm):''}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${r.done?'Completed reminder':'Active reminder'}</div>${reminderNote?`<div style="font-size:12px;color:var(--ink2);margin-top:6px;padding-top:6px;border-top:1px solid var(--line);white-space:pre-wrap"><b>Reminder note:</b> ${esc(reminderNote)}</div>`:''}</div>
@@ -6719,7 +6719,7 @@ async function openTaskDetail(taskId){
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 6px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Notes</div><div style="font-size:10px;color:var(--ink3)">Task context</div></div>
     <div style="padding:12px;border:1px solid var(--line);border-radius:10px;white-space:pre-wrap;min-height:60px;color:var(--ink2)">${esc(t.notes||'No additional notes.')}</div>
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:14px 0 6px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Reminder</div><div style="font-size:10px;color:var(--ink3)">Task follow-up</div></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:14px 0 6px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Reminder</div><div style="font-size:10px;color:var(--ink3)">Linked to this task</div></div>
     ${reminderHtml}
   `;
   const completeBtn=document.getElementById('tdetail-complete-btn');
@@ -7015,7 +7015,7 @@ async function renderTaskDashboard(){
     const{data:taskReminderData}=await sb.from('reminders').select('id,lead_id,reminder_date,reminder_time,notes,done').in('lead_id',taskLeadIds).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true}).limit(1000);
     (taskReminderData||[]).forEach(r=>{
       const leadTasks=scoped.filter(t=>t.lead_id===r.lead_id);
-      const matched=leadTasks.find(t=>String(r.notes||'').startsWith(`Task reminder: ${t.title}`));
+      const matched=leadTasks.find(t=>(String(r.notes||'').includes(`[task:${t.id}]`) || String(r.notes||'').startsWith(`Task reminder: ${t.title}`)));
       if(matched){
         if(!taskReminderMap.has(matched.id))taskReminderMap.set(matched.id,[]);
         taskReminderMap.get(matched.id).push(r);
@@ -7111,7 +7111,7 @@ async function renderTaskDashboard(){
         ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
         <span class="pill" style="background:${taskStatusTone(t.status).bg};color:${taskStatusTone(t.status).tx};font-size:9px">${taskStatusLabel(t.status)}</span>
         ${t.priority?` <span class="pill" style="background:${t.priority==='High'?'#FDE7E7':t.priority==='Low'?'var(--sage-l)':'var(--gold-l)'};color:${t.priority==='High'?'var(--rose)':t.priority==='Low'?'var(--sage)':'var(--gold)'};font-size:9px">${esc(t.priority)}</span>`:''}
-        ${(taskReminderMap.get(t.id)||[]).map(r=>{const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';const tm=r.reminder_time?String(r.reminder_time).substring(0,5):'';const note=String(r.notes||'').replace(`Task reminder: ${t.title}`,'').replace(/^\s*[—-]\s*/,'').trim();return `<div style="margin-top:5px;font-size:11px;color:${r.done?'var(--ink3)':'var(--gold)'}"><span style="font-weight:700">⏰ ${r.done?'Reminder done':'Reminder'}${dt?' · '+esc(dt):''}${tm?' · '+esc(tm):''}</span>${note?` <span style="color:var(--ink3)">— ${esc(note)}</span>`:''}</div>`;}).join('')}
+        ${(taskReminderMap.get(t.id)||[]).map(r=>{const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';const tm=r.reminder_time?String(r.reminder_time).substring(0,5):'';const note=String(r.notes||'').replace(/^Task reminder(?: \[task:[^\]]+\])?: /,'').replace(/^\s*[—-]\s*/,'').trim();return `<div style="margin-top:5px;font-size:11px;color:${r.done?'var(--ink3)':'var(--gold)'}"><span style="font-weight:700">⏰ ${r.done?'Reminder done':'Reminder'}${dt?' · '+esc(dt):''}${tm?' · '+esc(tm):''}</span>${note?` <span style="color:var(--ink3)">— ${esc(note)}</span>`:''}</div>`;}).join('')}
       </div>
       ${assigneeCell}
       <span style="font-size:11px;color:var(--ink3);flex-shrink:0;min-width:60px;text-align:right">${dateLabel}</span>
@@ -8257,7 +8257,6 @@ function renderManagementAndOperationsTeams(team){
     </div>
     <div style="padding:14px 16px">
       ${managementCard('🌍 International Management','International only',internationalMgmt,'🏛️')}
-      ${managementCard('👥 International Counsellors','international leads and workflows',internationalCounsellors,'🌍')}
       <div class="card" style="margin-bottom:0">
         <div class="card-h"><span class="card-t">🌍 International Operations</span><span style="font-size:11px;color:var(--ink3)">Application · Visa · SOP</span></div>
         <div style="display:flex;gap:20px;flex-wrap:wrap">${opsCols}</div>
@@ -10535,7 +10534,7 @@ async function loadMyTasks(){
   if(homeTaskLeadIds.length){
     const{data:homeReminderData}=await sb.from('reminders').select('id,lead_id,reminder_date,reminder_time,notes,done').in('lead_id',homeTaskLeadIds).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true}).limit(500);
     (homeReminderData||[]).forEach(r=>{
-      const matched=scoped.find(t=>t.lead_id===r.lead_id&&String(r.notes||'').startsWith(`Task reminder: ${t.title}`));
+      const matched=scoped.find(t=>t.lead_id===r.lead_id&&(String(r.notes||'').includes(`[task:${t.id}]`) || String(r.notes||'').startsWith(`Task reminder: ${t.title}`)));
       if(matched){if(!homeTaskReminderMap.has(matched.id))homeTaskReminderMap.set(matched.id,[]);homeTaskReminderMap.get(matched.id).push(r);}
     });
   }
@@ -10559,7 +10558,7 @@ async function loadMyTasks(){
     const leadName=t.leads?.name||'Unknown lead';
     const dateLabel=t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'No date';
     return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="openLeadDetail('${t.lead_id}')">
-      <div style="flex:1;font-size:13px"><a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-underline-offset:2px">${esc(leadName)}</a> — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:inherit;text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px">${esc(t.title)}</a>${t.source==='auto'?' <span style="color:var(--gold);font-size:10px">AUTO</span>':''}${(homeTaskReminderMap.get(t.id)||[]).map(r=>{const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';const tm=r.reminder_time?String(r.reminder_time).substring(0,5):'';const note=String(r.notes||'').replace(`Task reminder: ${t.title}`,'').replace(/^\s*[—-]\s*/,'').trim();return `<div style="font-size:10.5px;color:${r.done?'var(--ink3)':'var(--gold)'};margin-top:3px"><b>⏰ ${r.done?'Reminder done':'Reminder'}${dt?' · '+esc(dt):''}${tm?' · '+esc(tm):''}</b>${note?` <span style="color:var(--ink3)">— ${esc(note)}</span>`:''}</div>`;}).join('')}</div>
+      <div style="flex:1;font-size:13px"><a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-underline-offset:2px">${esc(leadName)}</a> — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:inherit;text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px">${esc(t.title)}</a>${t.source==='auto'?' <span style="color:var(--gold);font-size:10px">AUTO</span>':''}${(homeTaskReminderMap.get(t.id)||[]).map(r=>{const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';const tm=r.reminder_time?String(r.reminder_time).substring(0,5):'';const note=String(r.notes||'').replace(/^Task reminder(?: \[task:[^\]]+\])?: /,'').replace(/^\s*[—-]\s*/,'').trim();return `<div style="font-size:10.5px;color:${r.done?'var(--ink3)':'var(--gold)'};margin-top:3px"><b>⏰ ${r.done?'Reminder done':'Reminder'}${dt?' · '+esc(dt):''}${tm?' · '+esc(tm):''}</b>${note?` <span style="color:var(--ink3)">— ${esc(note)}</span>`:''}</div>`;}).join('')}</div>
       <span style="font-size:11px;color:var(--ink3);flex-shrink:0">${dateLabel}</span>
     </div>`;
   };
@@ -11790,26 +11789,36 @@ async function loadResponseTimeStats(scopedLeadsForStats){
   });
 
   const total=scopedLeadsForStats.length;
-  if(!responseMins.length) return {avgMins:null,within15:0,within1hr:0,over4hr:0,uncontactedPct:total?Math.round(uncontacted/total*100):0};
-  const avgMins=responseMins.reduce((a,b)=>a+b,0)/responseMins.length;
-  const pct=(fn)=>Math.round(responseMins.filter(fn).length/responseMins.length*100);
+  const avgMins=responseMins.length?responseMins.reduce((a,b)=>a+b,0)/responseMins.length:null;
+  const pctWithin15=responseMins.length?Math.round(responseMins.filter(m=>m<=15).length/responseMins.length*100):0;
+
+  // Keep the work monitor deliberately simple: today's new leads and task activity.
+  const today=new Date().toISOString().slice(0,10);
+  const newLeadsToday=scopedLeadsForStats.filter(l=>String(l.created_at||'').slice(0,10)===today).length;
+  const scopedIds=scopedLeadsForStats.map(l=>l.id).filter(Boolean);
+  let completedToday=0,pendingToday=0;
+  if(scopedIds.length){
+    const{data:taskRows}=await sb.from('tasks').select('status,due_date,completed_at,lead_id').in('lead_id',scopedIds).limit(1000);
+    (taskRows||[]).forEach(t=>{
+      if(t.status==='Done' && String(t.completed_at||'').slice(0,10)===today) completedToday++;
+      if(t.status!=='Done' && t.due_date===today) pendingToday++;
+    });
+  }
   return {
     avgMins,
-    within15:pct(m=>m<=15),
-    within1hr:pct(m=>m<=60),
-    over4hr:pct(m=>m>240),
+    within15:pctWithin15,
     uncontactedPct:total?Math.round(uncontacted/total*100):0,
+    newLeadsToday,completedToday,pendingToday
   };
 }
 function formatResponseStatsHtml(stats){
-  if(!stats)return '<p style="font-size:13px;color:var(--ink3);font-style:italic">Could not load response time data.</p>';
-  const avgLabel=stats.avgMins==null?'—':(stats.avgMins<60?Math.round(stats.avgMins)+' min':(stats.avgMins/60).toFixed(1)+' hrs');
+  if(!stats)return '<p style="font-size:13px;color:var(--ink3);font-style:italic">Could not load lead response and work data.</p>';
+  const avgLabel=stats.avgMins==null?'—':(stats.avgMins<60?Math.round(stats.avgMins)+' min':(stats.avgMins<1440?Math.round(stats.avgMins/60)+' hrs':(stats.avgMins/1440).toFixed(1)+' days'));
   return `<div class="fg" style="gap:12px">
-    <div class="kpi"><div class="kpi-l">Average response</div><div class="kpi-v">${avgLabel}</div></div>
-    <div class="kpi"><div class="kpi-l">Within 15 min</div><div class="kpi-v kv-g">${stats.within15}%</div></div>
-    <div class="kpi"><div class="kpi-l">Within 1 hour</div><div class="kpi-v kv-g">${stats.within1hr}%</div></div>
-    <div class="kpi"><div class="kpi-l">Over 4 hours</div><div class="kpi-v kv-o">${stats.over4hr}%</div></div>
-    <div class="kpi"><div class="kpi-l">Never contacted</div><div class="kpi-v kv-r">${stats.uncontactedPct}%</div></div>
+    <div class="kpi"><div class="kpi-l">New leads today</div><div class="kpi-v">${stats.newLeadsToday}</div></div>
+    <div class="kpi"><div class="kpi-l">Average first response</div><div class="kpi-v">${avgLabel}</div><div style="font-size:11px;color:var(--ink3);margin-top:4px">${stats.within15}% received a recorded response within 15 min</div></div>
+    <div class="kpi"><div class="kpi-l">No recorded first action</div><div class="kpi-v kv-r">${stats.uncontactedPct}%</div><div style="font-size:11px;color:var(--ink3);margin-top:4px">No first CRM action is recorded yet</div></div>
+    <div class="kpi"><div class="kpi-l">Today’s work</div><div class="kpi-v">${stats.completedToday} completed</div><div style="font-size:11px;color:var(--ink3);margin-top:4px">${stats.pendingToday} tasks due today still open</div></div>
   </div>`;
 }
 async function renderMyResponseStats(){
@@ -11824,9 +11833,7 @@ async function renderTeamResponseStats(){
   const el=document.getElementById('team-response-stats');
   if(!el)return;
   el.innerHTML='<p style="font-size:13px;color:var(--ink3);font-style:italic">Calculating…</p>';
-  // Must respect the Domestic/International ops-view toggle the same
-  // way Dashboard and Leads already do — this was missed when first
-  // built, meaning Super Admin's toggle had zero effect here.
+  // Respect the Domestic/International ops-view scope for elevated users.
   const scoped=isSuperAdmin?opsViewScopedLeads(leads):leads.filter(l=>l.country===myCountry);
   const stats=await loadResponseTimeStats(scoped);
   el.innerHTML=formatResponseStatsHtml(stats);

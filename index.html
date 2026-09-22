@@ -289,7 +289,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .fcounsel{font-size:11px;color:var(--pine3);margin-top:3px;font-style:italic}
 
 /* Team */
-.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.team-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
 .tcard{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:18px;box-shadow:var(--sh);display:flex;align-items:flex-start;gap:14px}
 .tcard-av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--pine3),#0F6E56);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff;flex-shrink:0;box-shadow:0 3px 8px rgba(15,110,86,.25)}
 .tcard{transition:transform .18s ease,box-shadow .18s ease;border-left:4px solid var(--line)}
@@ -311,7 +311,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .tcard[data-role="Visa Team"] .tcard-role{background:#cffafe;color:#0891b2}
 .tcard[data-role="SOP Team"] .tcard-role{background:#fce7f3;color:#db2777}
 .tcard[data-role="Agent"] .tcard-role{background:#ffedd5;color:#ea580c}
-.tcard-name{font-size:14px;font-weight:600;overflow-wrap:break-word;line-height:1.35}
+.tcard-name{font-size:14px;font-weight:600;line-height:1.35;white-space:normal;word-break:normal;overflow-wrap:normal;min-width:0}
 .tcard-email{font-size:11px;color:var(--ink3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* AI */
@@ -1604,11 +1604,6 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         </div>
 
         <div id="prod-sub-myupdate" style="display:none">
-          <div class="card" style="margin-bottom:16px">
-            <div class="card-h"><span class="card-t">⏱️ Your Response Time</span></div>
-            <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">How quickly you're acting on your own leads once they arrive — calculated from real timestamps, not self-reported. This is for your own visibility, not a ranking.</p>
-            <div id="my-response-stats"></div>
-          </div>
           <div class="card" style="margin-bottom:16px;max-width:640px">
             <div class="card-h"><span class="card-t">📝 What did you work on today?</span><button class="btn btn-p" onclick="openLogWorkModal()" style="margin-left:auto;padding:7px 11px;font-size:11.5px"><i class="ti ti-sparkles"></i> Log Work</button></div>
             <div class="ff"><label>Date</label><input type="date" id="du-date"></div>
@@ -1622,11 +1617,6 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         </div>
 
         <div id="prod-sub-monitor" style="display:none">
-          <div class="card" style="margin-bottom:16px">
-            <div class="card-h"><span class="card-t">⏱️ Team Response Time</span></div>
-            <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">Genuine operational visibility into how quickly new leads get a first response, company-wide — intended to spot process bottlenecks, not to rank individual staff.</p>
-            <div id="team-response-stats"></div>
-          </div>
           <div class="card" style="margin-bottom:16px">
             <div class="card-h"><span class="card-t">📊 Activity Monitor</span></div>
             <p style="font-size:12px;color:var(--ink3);margin-bottom:14px;line-height:1.6">Country-wise view of daily work updates across the team. Admins and Managers see only their own country; Directors, Super Admins, and Owners see everything.</p>
@@ -4374,13 +4364,15 @@ async function acceptPendingTeamInviteIfNeeded(){
 // even another Super Admin. Add more emails here to grant a new person
 // the exact same full access India has, without touching this protection.
 const SUPER_ADMIN_EMAILS=['india@step4progress.com','jisan@step4progress.co.uk','pavitra@step4progress.com'];
-const DOMESTIC_MANAGEMENT_EMAILS=['ajena@step4progress.co.uk'];
-const DOMESTIC_MANAGEMENT_NAMES=['anushree jena'];
+// Domestic/International is a real team-category field, not a hard-coded
+// person rule. This prevents one person's name/email from leaking into the
+// wrong workstream when the Owner/Platform Admin switches views.
 function effectiveTeamCategory(member){
-  const email=String(member?.email||'').trim().toLowerCase();
-  const name=String(member?.full_name||'').trim().replace(/\s+/g,' ').toLowerCase();
-  if(DOMESTIC_MANAGEMENT_EMAILS.includes(email)||DOMESTIC_MANAGEMENT_NAMES.includes(name)) return 'Domestic';
-  return member?.team_category||'International';
+  return String(member?.team_category||'International').trim() || 'International';
+}
+function canSwitchOpsViewUser(){
+  const email=String(currentUser?.email||'').trim().toLowerCase();
+  return !!(isSuperAdmin||isOwner||email==='india@step4progress.com'||email==='pavitra@step4progress.com'||email==='jisan@step4progress.co.uk');
 }
 const OWNER_EMAIL='india@step4progress.com';
 // OWNERS is a set of untouchable-root accounts — each with their own
@@ -4408,6 +4400,12 @@ function chooseOpsView(view){
   // Re-render immediately when the elevated user switches the ops view.
   if(document.getElementById('sc-taskdashboard')?.classList.contains('active')){
     renderTaskDashboard();
+  }
+  // Team has its own Domestic/International operational view too. Re-render
+  // immediately so switching the pill never leaves the previous team pole
+  // on screen until the user navigates away and back.
+  if(document.getElementById('sc-team')?.classList.contains('active')){
+    renderTeam(teamList);
   }
   // Activity Monitor has its own separate Category filter — keep it in
   // sync too, in case the person is already sitting on that screen when
@@ -4438,7 +4436,7 @@ function syncTaskDashboardOpsSwitcher(){
 function updateOpsViewSwitcher(){
   const el=document.getElementById('ops-view-switcher');
   if(!el)return;
-  if(!isSuperAdmin||!superAdminOpsView){ el.style.display='none'; return; }
+  if(!canSwitchOpsViewUser()||!superAdminOpsView){ el.style.display='none'; return; }
   el.style.display='inline-flex';
   el.innerHTML=superAdminOpsView==='Domestic'
     ? '🇬🇧 Domestic <i class="ti ti-switch-horizontal" style="font-size:12px"></i>'
@@ -4480,6 +4478,16 @@ function updateOpsViewSwitcher(){
 // It never applies to Owner (already unrestricted) or to Country
 // Admin/Manager/Counsellor tiers (already fixed to one country or one
 // person's leads, a toggle wouldn't make sense there).
+function leadIsDomesticWorkstream(l){
+  const assignee=String(l?.counsellor||'').trim().toLowerCase();
+  if(assignee){
+    const staff=(teamList||[]).find(t=>String(t?.full_name||'').trim().toLowerCase()===assignee);
+    if(staff)return effectiveTeamCategory(staff)==='Domestic';
+  }
+  const country=String(l?.country||'').trim().toLowerCase();
+  const source=String(l?.source||'').trim().toLowerCase();
+  return country==='uk' && (!source||source==='manual'||source==='walk-in'||source==='referral');
+}
 function opsViewScopedLeads(sourceLeads){
   let scoped;
   if(isOwner){
@@ -4494,11 +4502,10 @@ function opsViewScopedLeads(sourceLeads){
     scoped=sourceLeads;
   }
 
-  if(!isSuperAdmin||!superAdminOpsView)return scoped;
-  const isDomesticLead=l=>String(l?.country||'').trim().toLowerCase()==='uk';
+  if(!canSwitchOpsViewUser()||!superAdminOpsView)return scoped;
   return superAdminOpsView==='Domestic'
-    ? scoped.filter(isDomesticLead)
-    : scoped.filter(l=>!isDomesticLead(l));
+    ? scoped.filter(leadIsDomesticWorkstream)
+    : scoped.filter(l=>!leadIsDomesticWorkstream(l));
 }
 // Single-lead version of the same check above — for entry points that
 // open ONE specific lead by id (openDetail, openLeadDetail). List views
@@ -4553,7 +4560,7 @@ async function onLogin(user){
   myOffice=profile?.office||null;
   myName=name;
   myRole=role;
-  myTeamCategory=DOMESTIC_MANAGEMENT_EMAILS.includes((user.email||'').toLowerCase())?'Domestic':(profile?.team_category||'International');
+  myTeamCategory=String(profile?.team_category||'International').trim()||'International';
   myCountry=profile?.country||Object.keys(OFFICE_MAP).find(c=>OFFICE_MAP[c].includes(myOffice))||null;
   isSuperAdmin=SUPER_ADMIN_EMAILS.includes((user.email||'').toLowerCase());
   // Finance follows the elevated-access tier: Owner, Platform Administrator,
@@ -6255,7 +6262,7 @@ async function loadTasksFS(leadId){
         <div style="font-size:11px;color:${overdue?'var(--rose)':'var(--ink3)'};margin-top:2px">${t.due_date?'Due '+new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})+(overdue?' — overdue':''):'No due date'}${t.assigned_to?' · '+esc(t.assigned_to):''}</div>
       </div>
       <button onclick="openTaskDetail('${t.id}')" title="Open task" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:2px 4px"><i class="ti ti-eye"></i></button>
-      <button onclick="deleteTaskFS('${t.id}')" title="Delete task" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:0 4px">×</button>
+      ${canDeleteTaskClient(t)?`<button onclick="deleteTaskFS(\'${t.id}\')" title="Delete task" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:0 4px">×</button>`:''}
     </div>`;
   }).join('');
 }
@@ -6290,6 +6297,14 @@ async function toggleReminderFS(id,checked){
   loadRemindersFS(curId);loadDashReminders();toast(checked?'✅ Done':'↩ Reopened');
 }
 async function deleteReminderFS(id){
+  const{data:rr}=await sb.from('reminders').select('id,lead_id,notes').eq('id',id).maybeSingle();
+  if(rr && String(rr.notes||'').startsWith('[Task:')){
+    const taskId=String(rr.notes).match(/^\[Task:([^\]]+)\]/)?.[1];
+    if(taskId){
+      const{data:tt}=await sb.from('tasks').select('id,assigned_to,leads(country)').eq('id',taskId).maybeSingle();
+      if(tt&&!canManageTaskClient(tt)){toast('Only the assigned counsellor or management can edit this task reminder.');return;}
+    }
+  }
   if(!confirm('Delete this reminder?'))return;
   const{data:r}=await sb.from('reminders').select('id,lead_id,notes,reminder_date,reminder_time').eq('id',id).maybeSingle();
   const{error}=await sb.from('reminders').delete().eq('id',id);
@@ -6603,8 +6618,11 @@ function canManageTaskClient(t){
 // delete tasks within their existing visibility scope. Counsellors, Agents,
 // Application, Visa and SOP teams never receive the delete control.
 function canDeleteTaskClient(t){
-  const email=(currentUser?.email||'').trim().toLowerCase();
-  if(isOwner||email==='pavitra@step4progress.com'||email==='india@step4progress.com'||email==='jisan@step4progress.co.uk') return true;
+  // Delete is deliberately unavailable to Counsellors, Agents, Application,
+  // Visa and SOP users. Every elevated root account (Owner, Platform
+  // Administrator, Super Admin) can delete tasks in the data they can see;
+  // country Management can delete tasks inside its own visible workstream.
+  if(isSuperAdmin||isOwner) return true;
   if(['Manager','Admin','Director'].includes(myRole)) return canManageTaskClient(t);
   return false;
 }
@@ -6780,16 +6798,20 @@ async function openTaskDetail(taskId){
     const reminderText=(document.getElementById('tdetail-reminder-note')?.value||'').trim();
     if(enabled){
       if(!reminderDate){statusSave.disabled=false;completeBtn.disabled=false;toast('Task saved. Choose a reminder date to save the reminder.');return;}
-      const reminderPayload={lead_id:t.lead_id,reminder_date:reminderDate,reminder_time:reminderTime,notes:`${taskPrefix}${reminderText?' '+reminderText:''}`,done:false};
+      const reminderPayload={lead_id:t.lead_id,reminder_date:reminderDate,reminder_time:reminderTime,notes:`${taskPrefix}${reminderText?' '+reminderText:''}`,done:dbStatus==='Done'};
       if(activeReminder){
         const{error:e}=await sb.from('reminders').update(reminderPayload).eq('id',activeReminder.id);
         if(e){statusSave.disabled=false;completeBtn.disabled=false;toast('Task saved, but reminder could not be updated: '+e.message);return;}
-        await logTaskActivity(t.id,'task_reminder_updated',`Reminder updated: ${reminderDate}${reminderTime?' at '+reminderTime:''}${reminderText?' — '+reminderText:''}`,t.lead_id);
+        await logTaskActivity(t.id,'task_reminder_updated',`Reminder updated: ${reminderDate}${reminderTime?' at '+reminderTime:''}${reminderText?' — '+reminderText:''}${dbStatus==='Done'?' — completed with task':''}`,t.lead_id);
       }else{
         const{error:e}=await sb.from('reminders').insert([reminderPayload]);
         if(e){statusSave.disabled=false;completeBtn.disabled=false;toast('Task saved, but reminder could not be created: '+e.message);return;}
-        await logTaskActivity(t.id,'task_reminder_created',`Reminder set for ${reminderDate}${reminderTime?' at '+reminderTime:''}${reminderText?' — '+reminderText:''}`,t.lead_id);
+        await logTaskActivity(t.id,'task_reminder_created',`Reminder set for ${reminderDate}${reminderTime?' at '+reminderTime:''}${reminderText?' — '+reminderText:''}${dbStatus==='Done'?' — completed with task':''}`,t.lead_id);
       }
+    }else if(activeReminder){
+      const{error:e}=await sb.from('reminders').delete().eq('id',activeReminder.id);
+      if(e){statusSave.disabled=false;completeBtn.disabled=false;toast('Task saved, but reminder could not be removed: '+e.message);return;}
+      await logTaskActivity(t.id,'task_reminder_deleted','Task reminder removed',t.lead_id);
     }
     statusSave.disabled=false;completeBtn.disabled=false;
     toast(dbStatus==='Done'?'Task completed and saved.':'Task updated and saved.');
@@ -8264,7 +8286,7 @@ function renderManagementAndOperationsTeams(team){
   // manual Domestic/International switcher; everyone else automatically
   // sees their own team_category — nobody needs a toggle to see the pole
   // they already belong to.
-  const effectiveView=isSuperAdmin?(superAdminOpsView||'International'):myTeamCategory;
+  const effectiveView=canSwitchOpsViewUser()?(superAdminOpsView||'International'):myTeamCategory;
   const domesticEl=document.getElementById('domestic-team-section');
   const agentEl=document.getElementById('agent-team-section');
   if(effectiveView==='Domestic'){
@@ -8273,7 +8295,7 @@ function renderManagementAndOperationsTeams(team){
   }
 
   const mgmtRoles=['Manager','Admin','Director'];
-  const mgmt=(team||[]).filter(t=>mgmtRoles.includes(t.role)&&effectiveTeamCategory(t)!=='Domestic'&&!DOMESTIC_MANAGEMENT_NAMES.includes(String(t.full_name||'').trim().replace(/\s+/g,' ').toLowerCase())&&!isOwnerRowHiddenFromMe(t));
+  const mgmt=(team||[]).filter(t=>mgmtRoles.includes(t.role)&&effectiveTeamCategory(t)!=='Domestic'&&!isOwnerRowHiddenFromMe(t));
   if(effectiveView!=='Domestic')mgmtEl.innerHTML=`<div class="card" style="margin-bottom:16px">
     <div class="card-h"><span class="card-t">🌍 International — Management Team</span><span style="font-size:11px;color:var(--ink3)">${mgmt.length} member${mgmt.length!==1?'s':''} — Manager, Admin & Director, across every country</span></div>
     <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
@@ -8307,7 +8329,7 @@ function renderManagementAndOperationsTeams(team){
   if(domesticEl){
     if(effectiveView!=='Domestic'){domesticEl.innerHTML='';}
     else{
-      const domestic=(team||[]).filter(t=>effectiveTeamCategory(t)==='Domestic'||DOMESTIC_MANAGEMENT_NAMES.includes(String(t.full_name||'').trim().replace(/\s+/g,' ').toLowerCase()));
+      const domestic=(team||[]).filter(t=>effectiveTeamCategory(t)==='Domestic'&&!isOwnerRowHiddenFromMe(t));
       const domesticMgmt=domestic.filter(t=>mgmtRoles.includes(t.role));
       const domesticOps=domestic.filter(t=>!mgmtRoles.includes(t.role));
       const cardFor=(t)=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
@@ -8357,11 +8379,11 @@ function renderTeam(team){
   }
 
   // Build all offices from OFFICE_MAP, then group real team members into them.
-  // Domestic is intentionally a management-only view: for now Anushree is the
-  // only UK Domestic team member and must be the only person shown when the
-  // Super Admin switches to Domestic. Do not leak International office teams
-  // into the Domestic view.
-  const effectiveView=isSuperAdmin?(superAdminOpsView||'International'):myTeamCategory;
+  // Domestic/International is driven by each team member's team_category.
+  // Never hard-code a person's name into the Team view: a member belongs to
+  // exactly the workstream stored on their profile. This keeps UK Domestic
+  // and UK International management cleanly separated.
+  const effectiveView=canSwitchOpsViewUser()?(superAdminOpsView||'International'):myTeamCategory;
   if(effectiveView==='Domestic'){
     tg.innerHTML='';
     const fp=document.getElementById('fp-co');
@@ -8394,7 +8416,7 @@ function renderTeam(team){
   // India office list below), since Management wants a single place to
   // see everyone physically on the India team regardless of role.
   const officeExcludedRoles=['Manager','Admin','Director','Application Team','Visa Team','SOP Team','Agent'];
-  (team||[]).filter(t=>(!officeExcludedRoles.includes(t.role)||t.country==='India')&&effectiveTeamCategory(t)!=='Domestic'&&!DOMESTIC_MANAGEMENT_NAMES.includes(String(t.full_name||'').trim().replace(/\s+/g,' ').toLowerCase())).forEach(t=>{
+  (team||[]).filter(t=>(!officeExcludedRoles.includes(t.role)||t.country==='India')&&effectiveTeamCategory(t)!=='Domestic').forEach(t=>{
     // If office is blank, or doesn't match a known office for their country
     // (e.g. a stale value from before offices were consolidated), derive the
     // correct office from country instead of showing a phantom "Unassigned"
@@ -10410,7 +10432,7 @@ function renderTasks(list){
         <div style="font-size:11px;color:${overdue?'var(--rose)':'var(--ink3)'};margin-top:2px">${t.due_date?'Due '+new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})+(overdue?' — overdue':''):'No due date'}${t.assigned_to?' · '+esc(t.assigned_to):''}</div>
       </div>
       <button onclick="openTaskDetail('${t.id}')" title="Open task" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:2px 4px"><i class="ti ti-eye"></i></button>
-      <button onclick="deleteTask('${t.id}')" title="Delete task" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:0 4px">×</button>
+      ${canDeleteTaskClient(t)?`<button onclick="deleteTask(\'${t.id}\')" title="Delete task" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:0 4px">×</button>`:''}
     </div>`;
   }).join(''):emptyState('✅','No tasks yet.');
 }
@@ -10422,8 +10444,12 @@ async function toggleTask(id,checked){
   loadTasks(curId);loadMyTasks();toast(checked?'✅ Task done':'↩ Reopened');
 }
 async function deleteTask(id){
+  const{data:t}=await sb.from('tasks').select('id,lead_id,title,assigned_to').eq('id',id).maybeSingle();
+  if(!t||!canDeleteTaskClient(t)){toast('Only management can delete tasks.');return;}
   if(!confirm('Delete this task?'))return;
-  await sb.from('tasks').delete().eq('id',id);
+  await logTaskActivity(id,'task_deleted',`Deleted task: ${t.title}`,t.lead_id);
+  const{error}=await sb.from('tasks').delete().eq('id',id);
+  if(error){toast('Could not delete task: '+error.message);return;}
   loadTasks(curId);loadMyTasks();toast('Task deleted.');
 }
 function openAddReminder(){
@@ -11839,69 +11865,6 @@ async function deleteWhatsAppCall(id){
   toast('WhatsApp call log deleted.');
 }
 // ── Productivity: sub-tabs, My Daily Update, Activity Monitor ──────
-// Real response-time calculation — uses the FIRST 'status_change' entry
-// in activity_log per lead as "when a counsellor first acted," compared
-// against the lead's created_at. This is genuine data, not a guess —
-// deliberately NOT used as an individual ranking tool (per its own
-// framing in the UI), only for spotting real process bottlenecks.
-async function loadResponseTimeStats(scopedLeadsForStats){
-  const{data,error}=await sb.from('activity_log').select('lead_id,created_at').eq('event_type','status_change').order('created_at',{ascending:true});
-  if(error||!data)return null;
-  const firstActionByLead={};
-  data.forEach(row=>{ if(!(row.lead_id in firstActionByLead)) firstActionByLead[row.lead_id]=row.created_at; });
-
-  const responseMins=[];
-  let uncontacted=0;
-  scopedLeadsForStats.forEach(l=>{
-    const firstAction=firstActionByLead[l.id];
-    if(!firstAction){ uncontacted++; return; }
-    const mins=(new Date(firstAction).getTime()-new Date(l.created_at).getTime())/60000;
-    if(mins>=0) responseMins.push(mins);
-  });
-
-  const total=scopedLeadsForStats.length;
-  if(!responseMins.length) return {avgMins:null,within15:0,within1hr:0,over4hr:0,uncontactedPct:total?Math.round(uncontacted/total*100):0};
-  const avgMins=responseMins.reduce((a,b)=>a+b,0)/responseMins.length;
-  const pct=(fn)=>Math.round(responseMins.filter(fn).length/responseMins.length*100);
-  return {
-    avgMins,
-    within15:pct(m=>m<=15),
-    within1hr:pct(m=>m<=60),
-    over4hr:pct(m=>m>240),
-    uncontactedPct:total?Math.round(uncontacted/total*100):0,
-  };
-}
-function formatResponseStatsHtml(stats){
-  if(!stats)return '<p style="font-size:13px;color:var(--ink3);font-style:italic">Could not load response time data.</p>';
-  const avgLabel=stats.avgMins==null?'—':(stats.avgMins<60?Math.round(stats.avgMins)+' min':(stats.avgMins/60).toFixed(1)+' hrs');
-  return `<div class="fg" style="gap:12px">
-    <div class="kpi"><div class="kpi-l">Average response</div><div class="kpi-v">${avgLabel}</div></div>
-    <div class="kpi"><div class="kpi-l">Within 15 min</div><div class="kpi-v kv-g">${stats.within15}%</div></div>
-    <div class="kpi"><div class="kpi-l">Within 1 hour</div><div class="kpi-v kv-g">${stats.within1hr}%</div></div>
-    <div class="kpi"><div class="kpi-l">Over 4 hours</div><div class="kpi-v kv-o">${stats.over4hr}%</div></div>
-    <div class="kpi"><div class="kpi-l">Never contacted</div><div class="kpi-v kv-r">${stats.uncontactedPct}%</div></div>
-  </div>`;
-}
-async function renderMyResponseStats(){
-  const el=document.getElementById('my-response-stats');
-  if(!el)return;
-  el.innerHTML='<p style="font-size:13px;color:var(--ink3);font-style:italic">Calculating…</p>';
-  const myLeads=leads.filter(l=>l.counsellor===myName);
-  const stats=await loadResponseTimeStats(myLeads);
-  el.innerHTML=formatResponseStatsHtml(stats);
-}
-async function renderTeamResponseStats(){
-  const el=document.getElementById('team-response-stats');
-  if(!el)return;
-  el.innerHTML='<p style="font-size:13px;color:var(--ink3);font-style:italic">Calculating…</p>';
-  // Must respect the Domestic/International ops-view toggle the same
-  // way Dashboard and Leads already do — this was missed when first
-  // built, meaning Super Admin's toggle had zero effect here.
-  const scoped=isSuperAdmin?opsViewScopedLeads(leads):leads.filter(l=>l.country===myCountry);
-  const stats=await loadResponseTimeStats(scoped);
-  el.innerHTML=formatResponseStatsHtml(stats);
-}
-
 async function renderExportLog(){
   const tb=document.getElementById('export-log-tbody');
   if(!tb)return;
@@ -11936,12 +11899,10 @@ function initProductivity(){
   if(isAdminTier){
     populateActivityMonitorCountryFilter();
     populateWhatsAppCallFilters();
-    renderTeamResponseStats();
     setProdSubtab('calls');
   } else {
     setProdSubtab('myupdate');
   }
-  renderMyResponseStats();
   loadMyDailyUpdates();
 }
 function setProdSubtab(sub){

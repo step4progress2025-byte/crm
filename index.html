@@ -4375,9 +4375,11 @@ async function acceptPendingTeamInviteIfNeeded(){
 // the exact same full access India has, without touching this protection.
 const SUPER_ADMIN_EMAILS=['india@step4progress.com','jisan@step4progress.co.uk','pavitra@step4progress.com'];
 const DOMESTIC_MANAGEMENT_EMAILS=['ajena@step4progress.co.uk'];
+const DOMESTIC_MANAGEMENT_NAMES=['anushree jena'];
 function effectiveTeamCategory(member){
   const email=String(member?.email||'').trim().toLowerCase();
-  if(DOMESTIC_MANAGEMENT_EMAILS.includes(email)) return 'Domestic';
+  const name=String(member?.full_name||'').trim().replace(/\s+/g,' ').toLowerCase();
+  if(DOMESTIC_MANAGEMENT_EMAILS.includes(email)||DOMESTIC_MANAGEMENT_NAMES.includes(name)) return 'Domestic';
   return member?.team_category||'International';
 }
 const OWNER_EMAIL='india@step4progress.com';
@@ -6271,7 +6273,7 @@ async function toggleTaskFS(id,checked){
 }
 async function deleteTaskFS(id){
   const{data:t}=await sb.from('tasks').select('id,lead_id,title,assigned_to').eq('id',id).maybeSingle();
-  if(!t||!canManageTaskClient(t)){toast('You do not have permission to delete this task.');return;}
+  if(!t||!canDeleteTaskClient(t)){toast('Only management can delete tasks.');return;}
   if(!confirm('Delete this task?'))return;
   await logTaskActivity(id,'task_deleted',`Deleted task: ${t.title}`,t.lead_id);
   const{error}=await sb.from('tasks').delete().eq('id',id);
@@ -6596,6 +6598,16 @@ function canManageTaskClient(t){
   if(['Admin','Manager','Director'].includes(myRole)) return !!staff&&staff.country===myCountry&&effectiveTeamCategory(staff)===myTeamCategory;
   return assignee===myName;
 }
+// Task deletion is a management action, not a counsellor/sub-team action.
+// Owners, Platform Administrator, Super Admins and management-tier users can
+// delete tasks within their existing visibility scope. Counsellors, Agents,
+// Application, Visa and SOP teams never receive the delete control.
+function canDeleteTaskClient(t){
+  const email=(currentUser?.email||'').trim().toLowerCase();
+  if(isOwner||email==='pavitra@step4progress.com'||email==='india@step4progress.com'||email==='jisan@step4progress.co.uk') return true;
+  if(['Manager','Admin','Director'].includes(myRole)) return canManageTaskClient(t);
+  return false;
+}
 function taskStatusLabel(status){
   if(status==='Done')return 'Completed';
   if(status==='In Progress')return 'In Progress';
@@ -6721,8 +6733,28 @@ async function openTaskDetail(taskId){
 
   const completeBtn=document.getElementById('tdetail-complete-btn');
   const statusSave=document.getElementById('tdetail-save-status');
+  const deleteTaskBtn=document.getElementById('tdetail-delete-task');
+  const canDelete=canDeleteTaskClient(t);
   completeBtn.style.display=canChange?'inline-flex':'none';
   statusSave.style.display=canChange?'inline-flex':'none';
+  if(deleteTaskBtn){
+    deleteTaskBtn.style.display=canDelete?'inline-flex':'none';
+    deleteTaskBtn.onclick=async()=>{
+      if(!canDelete)return;
+      if(!confirm('Delete this task? Its linked task reminder will also be removed. This cannot be undone.'))return;
+      const{data:leadReminders}=await sb.from('reminders').select('id,notes').eq('lead_id',t.lead_id);
+      const taskPrefix=`[Task:${t.id}]`;
+      const legacyPrefix=`Task reminder: ${t.title}`;
+      const ids=(leadReminders||[]).filter(r=>String(r.notes||'').startsWith(taskPrefix)||String(r.notes||'').startsWith(legacyPrefix)).map(r=>r.id);
+      if(ids.length){const{error:e}=await sb.from('reminders').delete().in('id',ids);if(e){toast('Could not delete the linked reminder: '+e.message);return;}}
+      await logTaskActivity(t.id,'task_deleted',`Deleted task: ${t.title}`,t.lead_id);
+      const{error:e}=await sb.from('tasks').delete().eq('id',t.id);
+      if(e){toast('Could not delete task: '+e.message);return;}
+      toast('Task deleted.');
+      closeModal('modal-task-detail');
+      renderTaskDashboard();loadMyTasks();loadDashReminders();
+    };
+  }
   completeBtn.textContent=t.status==='Done'?'↩ Reopen':'✓ Mark Complete';
   completeBtn.onclick=()=>{
     if(!canChange)return;
@@ -7142,7 +7174,7 @@ async function renderTaskDashboard(){
     const reminderNote=taskReminderText(reminder,t);
     const reminderLabel=reminder?(reminder.reminder_date?new Date(reminder.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'No date')+(reminder.reminder_time?' · '+String(reminder.reminder_time).substring(0,5):''):'';
     const notePreview=String(t.notes||'').trim();
-    const canDelete=canManageTaskClient(t);
+    const canDelete=canDeleteTaskClient(t);
     return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);${isDone?'opacity:.55':''}">
       ${avatar}
       <div style="flex:1;min-width:0;font-size:13px">
@@ -7242,7 +7274,7 @@ async function editTaskDashboardItem(taskId){
 async function deleteTaskDashboardItem(taskId){
   const{data:t}=await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle();
   if(!t){toast('Task not found.');return;}
-  if(!canManageTaskClient(t)){toast('You do not have permission to delete this task.');renderTaskDashboard();return;}
+  if(!canDeleteTaskClient(t)){toast('Only management can delete tasks.');renderTaskDashboard();return;}
   if(!confirm('Delete this task? Its linked task reminder will also be removed. This cannot be undone.'))return;
   // Remove only reminders belonging to this task. Other lead-level reminders
   // remain untouched.
@@ -8241,7 +8273,7 @@ function renderManagementAndOperationsTeams(team){
   }
 
   const mgmtRoles=['Manager','Admin','Director'];
-  const mgmt=(team||[]).filter(t=>mgmtRoles.includes(t.role)&&effectiveTeamCategory(t)!=='Domestic'&&!isOwnerRowHiddenFromMe(t));
+  const mgmt=(team||[]).filter(t=>mgmtRoles.includes(t.role)&&effectiveTeamCategory(t)!=='Domestic'&&!DOMESTIC_MANAGEMENT_NAMES.includes(String(t.full_name||'').trim().replace(/\s+/g,' ').toLowerCase())&&!isOwnerRowHiddenFromMe(t));
   if(effectiveView!=='Domestic')mgmtEl.innerHTML=`<div class="card" style="margin-bottom:16px">
     <div class="card-h"><span class="card-t">🌍 International — Management Team</span><span style="font-size:11px;color:var(--ink3)">${mgmt.length} member${mgmt.length!==1?'s':''} — Manager, Admin & Director, across every country</span></div>
     <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
@@ -8275,7 +8307,7 @@ function renderManagementAndOperationsTeams(team){
   if(domesticEl){
     if(effectiveView!=='Domestic'){domesticEl.innerHTML='';}
     else{
-      const domestic=(team||[]).filter(t=>effectiveTeamCategory(t)==='Domestic');
+      const domestic=(team||[]).filter(t=>effectiveTeamCategory(t)==='Domestic'||DOMESTIC_MANAGEMENT_NAMES.includes(String(t.full_name||'').trim().replace(/\s+/g,' ').toLowerCase()));
       const domesticMgmt=domestic.filter(t=>mgmtRoles.includes(t.role));
       const domesticOps=domestic.filter(t=>!mgmtRoles.includes(t.role));
       const cardFor=(t)=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
@@ -8362,7 +8394,7 @@ function renderTeam(team){
   // India office list below), since Management wants a single place to
   // see everyone physically on the India team regardless of role.
   const officeExcludedRoles=['Manager','Admin','Director','Application Team','Visa Team','SOP Team','Agent'];
-  (team||[]).filter(t=>(!officeExcludedRoles.includes(t.role)||t.country==='India')&&effectiveTeamCategory(t)!=='Domestic').forEach(t=>{
+  (team||[]).filter(t=>(!officeExcludedRoles.includes(t.role)||t.country==='India')&&effectiveTeamCategory(t)!=='Domestic'&&!DOMESTIC_MANAGEMENT_NAMES.includes(String(t.full_name||'').trim().replace(/\s+/g,' ').toLowerCase())).forEach(t=>{
     // If office is blank, or doesn't match a known office for their country
     // (e.g. a stale value from before offices were consolidated), derive the
     // correct office from country instead of showing a phantom "Unassigned"
@@ -12346,7 +12378,7 @@ function broadcastStopEditing(leadId) {
     <div class="modal" style="width:min(680px,calc(100vw - 32px));max-height:90vh;overflow:auto">
       <div class="mhead"><div><span class="mtitle" id="tdetail-title">Task details</span><div id="tdetail-sub" style="font-size:11px;color:var(--ink3);margin-top:2px"></div></div><button class="mclose" onclick="closeModal('modal-task-detail')">×</button></div>
       <div id="tdetail-body" style="padding:18px 20px"></div>
-      <div class="mfoot"><button class="btn" onclick="closeModal('modal-task-detail')">Close</button><button class="btn" id="tdetail-complete-btn"></button><button class="btn btn-p" id="tdetail-save-status">Save status</button><button class="btn btn-p" id="tdetail-lead-btn">Open Lead →</button></div>
+      <div class="mfoot"><button class="btn" onclick="closeModal('modal-task-detail')">Close</button><button class="btn" id="tdetail-complete-btn"></button><button class="btn btn-p" id="tdetail-save-status">Save status</button><button class="btn" id="tdetail-delete-task" style="color:var(--rose);border-color:var(--rose);display:none">Delete task</button><button class="btn btn-p" id="tdetail-lead-btn">Open Lead →</button></div>
     </div>
   </div>
 

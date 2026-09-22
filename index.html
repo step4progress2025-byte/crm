@@ -1118,6 +1118,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
       <!-- Team -->
       <section id="sc-team" class="screen">
+        <div class="card" style="margin-bottom:16px;border-left:4px solid var(--pine2);background:var(--cream)">
+          <div style="font-weight:700;font-size:13px;color:var(--pine);margin-bottom:5px">👥 TEAM STRUCTURE</div>
+          <div style="font-size:12px;color:var(--ink3);line-height:1.6">🇬🇧 <b>UK Domestic Team</b> and 🌍 <b>International Team</b> are separate teams. Domestic staff cannot see International operations. Owners and Super Admins can see both teams, but they remain visually separate. UK Domestic leads never use round-robin.</div>
+        </div>
         <div id="password-reset-requests-card" class="card" style="display:none;margin-bottom:16px">
           <div class="card-h"><span class="card-t">🔑 Pending password reset requests</span></div>
           <div id="password-reset-requests-list"></div>
@@ -2475,7 +2479,7 @@ What would you like help with today?</div>
         <input id="inv-university" placeholder="e.g. University of Salford">
       </div>
       <div class="ff"><label>Country</label>
-        <select id="inv-country" onchange="syncInviteOffice()"><option value="India">India</option><option value="UK">UK</option><option value="Pakistan">Pakistan</option><option value="Bangladesh">Bangladesh</option></select>
+        <select id="inv-country" onchange="syncInviteOffice();syncInviteTeamCategory()"><option value="India">India</option><option value="UK">UK</option><option value="Pakistan">Pakistan</option><option value="Bangladesh">Bangladesh</option></select>
       </div>
       <div class="ff full"><label>Office</label>
         <select id="inv-office" style="width:100%"></select>
@@ -3366,7 +3370,7 @@ function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===
 // — Domestic leads are hand-assigned by Management only. This is a
 // separate, narrower pool from getOfficeCounsellors(), which Management
 // still needs to include Domestic staff in for manual picking.
-function getRoundRobinCounsellorPool(office){return getOfficeCounsellors(office).filter(t=>t.team_category!=='Domestic');}
+function getRoundRobinCounsellorPool(office){return getOfficeCounsellors(office).filter(t=>memberTeamCategory(t)!=='Domestic');}
 // Broader than getOfficeCounsellors() on purpose — some Admins/Managers/
 // Directors personally handle counselling work too, on top of their main
 // role, but the single-role data model only stores one role per person.
@@ -3384,6 +3388,22 @@ function getOfficeAssignableStaff(office){
 // member can be role='Admin' or role='Counsellor', same role names as
 // International, just scoped completely differently. Agent is its own
 // single flat role with no hierarchy.
+// Effective team classification used by the UI and client-side access checks.
+// Domestic/International is a real team boundary — it must not change just
+// because a dashboard filter or Super Admin view changes. Anushree is an
+// existing UK-management member whose stored legacy category may still say
+// International; keep her on the Domestic side until her team row is formally
+// updated in the database. This is a compatibility bridge, not a new routing
+// rule for other people.
+function memberTeamCategory(t){
+  if(!t)return 'International';
+  const nm=String(t.full_name||'').trim().toLowerCase().replace(/\s+/g,' ');
+  const em=String(t.email||'').trim().toLowerCase();
+  if(nm==='anushree' || nm.startsWith('anushree ') || em.startsWith('anushree@')) return 'Domestic';
+  if(t.team_category==='Domestic') return 'Domestic';
+  if(t.team_category==='Agent' || t.role==='Agent') return 'Agent';
+  return 'International';
+}
 function isDomesticOrAgent(){return myTeamCategory==='Domestic'||myTeamCategory==='Agent';}
 // Domestic Admin OR Manager — either can redistribute Domestic leads
 // among Domestic Counsellors. Broadened from Admin-only so a Domestic
@@ -3402,7 +3422,7 @@ function isDomesticLeadRecord(lead){
   const assigneeName=String(lead.counsellor||'').trim().toLowerCase();
   if(assigneeName){
     const assignee=(teamList||[]).find(t=>String(t.full_name||'').trim().toLowerCase()===assigneeName);
-    if(assignee?.team_category)return assignee.team_category==='Domestic';
+    if(assignee)return memberTeamCategory(assignee)==='Domestic';
   }
   return false;
 }
@@ -4107,7 +4127,7 @@ function renderCounsellorCell(l){
     // a Domestic-team lead (loadLeads() already filtered to that), so it's
     // safe to let them redistribute it — but only among their own
     // Domestic Counsellors, never touching the International pool.
-    const domesticPool=(teamList||[]).filter(t=>t.team_category==='Domestic'&&t.role==='Counsellor');
+    const domesticPool=(teamList||[]).filter(t=>memberTeamCategory(t)==='Domestic'&&t.role==='Counsellor');
     const options=[`<option value=""${l.counsellor?'':' selected'}>${l.counsellor?'— Unassign —':'Unassigned'}</option>`];
     options.push(...domesticPool.map(c=>`<option value="${esc(c.full_name)}"${c.full_name===l.counsellor?' selected':''}>${esc(c.full_name)}</option>`));
     if(l.counsellor&&!domesticPool.some(c=>c.full_name===l.counsellor)){
@@ -4314,7 +4334,8 @@ async function generateInviteLink(){
   const country=document.getElementById('inv-country').value;
   const office=document.getElementById('inv-office').value;
   const name=document.getElementById('inv-name').value.trim();
-  const teamCategory=role==='Agent'?'Agent':(document.getElementById('inv-teamcat')?.value||'International');
+  const selectedTeamCategory=document.getElementById('inv-teamcat')?.value||'';
+  const teamCategory=role==='Agent'?'Agent':(selectedTeamCategory||((country==='UK'&&['Admin','Manager','Director'].includes(role))?'Domestic':'International'));
   if(!recipientEmail){toast('Enter the recipient email first.');document.getElementById('inv-recipient-email').focus();return;}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)){toast('Enter a valid recipient email.');document.getElementById('inv-recipient-email').focus();return;}
   const btn=document.querySelector('#modal-invite .mfoot .btn');
@@ -4348,9 +4369,16 @@ async function generateInviteLink(){
 function syncInviteTeamCategory(){
   const role=document.getElementById('inv-role').value;
   const wrap=document.getElementById('inv-teamcat-wrap');
-  // Domestic only applies to Admin/Counsellor. Agent is always its own
-  // category, no choice needed. Everyone else is always International.
-  wrap.style.display=(role==='Admin'||role==='Counsellor')?'block':'none';
+  // Domestic/International is a real team dimension for management as
+  // well as counsellors. UK management defaults to Domestic so they stay
+  // in the separate UK-local management group.
+  wrap.style.display=(role==='Admin'||role==='Manager'||role==='Director'||role==='Counsellor')?'block':'none';
+  const country=document.getElementById('inv-country')?.value||'';
+  const cat=document.getElementById('inv-teamcat');
+  if(cat){
+    if(country==='UK' && ['Admin','Manager','Director'].includes(role)) cat.value='Domestic';
+    else if(country!=='UK' && ['Admin','Manager','Director'].includes(role)) cat.value='International';
+  }
   const uniWrap=document.getElementById('inv-university-wrap');
   if(uniWrap)uniWrap.style.display=(role==='Agent')?'block':'none';
 }
@@ -4577,7 +4605,7 @@ async function onLogin(user){
   myOffice=profile?.office||null;
   myName=name;
   myRole=role;
-  myTeamCategory=profile?.team_category||'International';
+  myTeamCategory=memberTeamCategory(profile);
   myCountry=profile?.country||Object.keys(OFFICE_MAP).find(c=>OFFICE_MAP[c].includes(myOffice))||null;
   isSuperAdmin=SUPER_ADMIN_EMAILS.includes((user.email||'').toLowerCase());
   // Finance follows the elevated-access tier: Owner, Platform Administrator,
@@ -5020,8 +5048,15 @@ async function loadLeads(){
       // not just their own — but never the International side. Queried
       // fresh here rather than relying on teamList, since that may not
       // have finished loading yet (loadLeads runs in parallel with it).
-      const{data:domesticStaff}=await sb.from('team').select('full_name').eq('team_category','Domestic');
-      const domesticNames=(domesticStaff||[]).map(t=>t.full_name).filter(Boolean);
+      const domesticStaff=(teamList||[]).filter(t=>memberTeamCategory(t)==='Domestic');
+      const domesticNames=domesticStaff.map(t=>t.full_name).filter(Boolean);
+      // loadTeam may finish after loadLeads; if it has not, fall back to a
+      // narrow UK-team lookup and classify the returned rows client-side.
+      if(!domesticNames.length){
+        const{data:ukStaff}=await sb.from('team').select('full_name,email,role,team_category,country,office').eq('country','UK');
+        const fallbackNames=(ukStaff||[]).filter(t=>memberTeamCategory(t)==='Domestic').map(t=>t.full_name).filter(Boolean);
+        domesticNames.push(...fallbackNames);
+      }
       q=q.in('counsellor',domesticNames.length?domesticNames:['__none__']);
     } else {
       q=q.eq('counsellor',myName);
@@ -5058,13 +5093,28 @@ let teamList=[];
 async function loadTeam(){
   const tl=document.querySelector('#sc-team .loading');
   let q=sb.from('team').select('*');
-  // Same "India fully invisible" rule as leads — a non-Owner Super Admin
-  // never even loads India's team roster, not just a read-only view of it.
+  // Owners/Super Admins can see BOTH poles, but the UI keeps them strictly
+  // separated. Everyone else only loads their own business-team scope.
   if(isSuperAdmin&&!isOwner){
     q=q.neq('country','India');
+  } else if(!isSuperAdmin&&!isOwner){
+    if(myTeamCategory==='Domestic'){
+      // Domestic staff may see Domestic teammates (including legacy UK rows
+      // such as Anushree that are classified Domestic by the compatibility
+      // bridge), but never the International team.
+      q=q.eq('country','UK');
+    } else if(myTeamCategory==='International'){
+      // International staff remain on the International side only.
+      q=q.neq('team_category','Domestic');
+    }
   }
   const{data}=await q;
   teamList=data||[];
+  // Never let the Team screen leak the opposite pole through stale/legacy
+  // records. Final filtering is done by the effective team classifier.
+  if(!isSuperAdmin&&!isOwner){
+    teamList=teamList.filter(t=>memberTeamCategory(t)===myTeamCategory || t.id===currentUser?.id);
+  }
   if(tl) tl.style.display='none';
   renderTeam(data||[]);
 }
@@ -6640,9 +6690,11 @@ async function openTaskDetail(taskId){
     ? taskReminderRows.map(r=>{
         const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'No date';
         const tm=r.reminder_time?String(r.reminder_time).substring(0,5):'';
+        const rawNote=String(r.notes||'');
+        const reminderNote=rawNote.replace(`Task reminder: ${t.title}`,'').replace(/^\s*[—-]\s*/,'').trim();
         return `<div style="display:flex;align-items:flex-start;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--paper2);${r.done?'opacity:.55':''}">
           <span style="font-size:15px">⏰</span>
-          <div style="flex:1"><div style="font-weight:700">${esc(dt)}${tm?' · '+esc(tm):''}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${r.done?'Completed reminder':'Active reminder'}</div></div>
+          <div style="flex:1"><div style="font-weight:700">${esc(dt)}${tm?' · '+esc(tm):''}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${r.done?'Completed reminder':'Active reminder'}</div>${reminderNote?`<div style="font-size:12px;color:var(--ink2);margin-top:6px;padding-top:6px;border-top:1px solid var(--line);white-space:pre-wrap"><b>Reminder note:</b> ${esc(reminderNote)}</div>`:''}</div>
         </div>`;
       }).join('')
     : `<div style="font-size:12px;color:var(--ink3);padding:10px 0">No task reminder set.</div>`;
@@ -6951,6 +7003,23 @@ async function renderTaskDashboard(){
   if(taskWorkstreamMode==='my'){
     scoped=scoped.filter(t=>t.assigned_to===myName);
   }
+
+  // Task-linked reminders live in the existing lead-level reminders table.
+  // Load them once for the visible task set so a reminder embedded in a task
+  // is also visible directly in the task list, not only in the Home reminder widget.
+  const taskLeadIds=[...new Set(scoped.map(t=>t.lead_id).filter(Boolean))];
+  let taskReminderMap=new Map();
+  if(taskLeadIds.length){
+    const{data:taskReminderData}=await sb.from('reminders').select('id,lead_id,reminder_date,reminder_time,notes,done').in('lead_id',taskLeadIds).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true}).limit(1000);
+    (taskReminderData||[]).forEach(r=>{
+      const leadTasks=scoped.filter(t=>t.lead_id===r.lead_id);
+      const matched=leadTasks.find(t=>String(r.notes||'').startsWith(`Task reminder: ${t.title}`));
+      if(matched){
+        if(!taskReminderMap.has(matched.id))taskReminderMap.set(matched.id,[]);
+        taskReminderMap.get(matched.id).push(r);
+      }
+    });
+  }
   renderTaskDailySnapshot(scoped);
 
   const today=new Date().toISOString().substring(0,10);
@@ -7040,6 +7109,7 @@ async function renderTaskDashboard(){
         ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
         <span class="pill" style="background:${taskStatusTone(t.status).bg};color:${taskStatusTone(t.status).tx};font-size:9px">${taskStatusLabel(t.status)}</span>
         ${t.priority?` <span class="pill" style="background:${t.priority==='High'?'#FDE7E7':t.priority==='Low'?'var(--sage-l)':'var(--gold-l)'};color:${t.priority==='High'?'var(--rose)':t.priority==='Low'?'var(--sage)':'var(--gold)'};font-size:9px">${esc(t.priority)}</span>`:''}
+        ${(taskReminderMap.get(t.id)||[]).map(r=>{const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';const tm=r.reminder_time?String(r.reminder_time).substring(0,5):'';const note=String(r.notes||'').replace(`Task reminder: ${t.title}`,'').replace(/^\s*[—-]\s*/,'').trim();return `<div style="margin-top:5px;font-size:11px;color:${r.done?'var(--ink3)':'var(--gold)'}"><span style="font-weight:700">⏰ ${r.done?'Reminder done':'Reminder'}${dt?' · '+esc(dt):''}${tm?' · '+esc(tm):''}</span>${note?` <span style="color:var(--ink3)">— ${esc(note)}</span>`:''}</div>`;}).join('')}
       </div>
       ${assigneeCell}
       <span style="font-size:11px;color:var(--ink3);flex-shrink:0;min-width:60px;text-align:right">${dateLabel}</span>
@@ -8118,84 +8188,89 @@ async function clearUnavailability(teamId,name){
 // Management (Manager/Admin/Director, across every country) and
 // Operations (Application/Visa/SOP Team members, each shown as their own
 // column with the shared global round-robin's "next up" indicator).
+function isDomesticManagementMember(t){
+  const managementRoles=['Manager','Admin','Director'];
+  return !!t && managementRoles.includes(t.role) && memberTeamCategory(t)==='Domestic';
+}
+function isInternationalManagementMember(t){
+  const managementRoles=['Manager','Admin','Director'];
+  return !!t && managementRoles.includes(t.role) && memberTeamCategory(t)==='International';
+}
 function renderManagementAndOperationsTeams(team){
   const mgmtEl=document.getElementById('management-team-section');
   const opsEl=document.getElementById('operations-team-section');
-  if(!mgmtEl||!opsEl)return;
-
-  // Which pole is actually being viewed right now: Super Admins use their
-  // manual Domestic/International switcher; everyone else automatically
-  // sees their own team_category — nobody needs a toggle to see the pole
-  // they already belong to.
-  const effectiveView=isSuperAdmin?(superAdminOpsView||'International'):myTeamCategory;
   const domesticEl=document.getElementById('domestic-team-section');
   const agentEl=document.getElementById('agent-team-section');
-  if(effectiveView==='Domestic'){
-    mgmtEl.innerHTML='';opsEl.innerHTML='';
-    if(agentEl)agentEl.innerHTML='';
-  }
+  if(!mgmtEl)return;
 
-  const mgmtRoles=['Manager','Admin','Director'];
-  const mgmt=(team||[]).filter(t=>mgmtRoles.includes(t.role)&&t.team_category!=='Domestic'&&!isOwnerRowHiddenFromMe(t));
-  if(effectiveView!=='Domestic')mgmtEl.innerHTML=`<div class="card" style="margin-bottom:16px">
-    <div class="card-h"><span class="card-t">🌍 International — Management Team</span><span style="font-size:11px;color:var(--ink3)">${mgmt.length} member${mgmt.length!==1?'s':''} — Manager, Admin & Director, across every country</span></div>
-    <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
-        <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-        <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
-        ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
-      </div>`).join(''):emptyState('🏛️','No Management Team members yet.')}</div>
+  const managementRoles=['Manager','Admin','Director'];
+  const canSeeBothTeams=isSuperAdmin||isOwner;
+  const showDomestic=canSeeBothTeams || myTeamCategory==='Domestic';
+  const showInternational=canSeeBothTeams || myTeamCategory==='International';
+
+  const memberCard=(t,roleLabel)=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}" style="margin-bottom:8px">
+    <div class="tcard-av">${ini(t.full_name||t.email)}</div>
+    <div style="flex:1;min-width:0">
+      <div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||managementRoles.includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')">${esc(t.full_name||'—')}</div>
+      <div class="tcard-role">${esc(roleLabel||t.role||'Counsellor')} · ${esc(t.country||t.office||'—')}</div>
+      <div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div>
+    </div>
+    ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
   </div>`;
+
+  const managementCard=(title,subtitle,members,emptyIcon)=>`<div class="card" style="margin-bottom:12px">
+    <div class="card-h"><span class="card-t">${title}</span><span style="font-size:11px;color:var(--ink3)">${members.length} member${members.length!==1?'s':''} · ${subtitle}</span></div>
+    <div>${members.length?members.map(t=>memberCard(t,t.role)).join(''):emptyState(emptyIcon,'No members in this team yet.')}</div>
+  </div>`;
+
+  const domesticMembers=(team||[]).filter(t=>memberTeamCategory(t)==='Domestic'&&!isOwnerRowHiddenFromMe(t));
+  const domesticMgmt=domesticMembers.filter(t=>managementRoles.includes(t.role));
+  const domesticCounsellors=domesticMembers.filter(t=>(t.role||'Counsellor')==='Counsellor');
+
+  const internationalMembers=(team||[]).filter(t=>memberTeamCategory(t)==='International'&&!isOwnerRowHiddenFromMe(t));
+  const internationalMgmt=internationalMembers.filter(t=>managementRoles.includes(t.role));
+  const internationalCounsellors=internationalMembers.filter(t=>(t.role||'Counsellor')==='Counsellor');
 
   const opsRoles=[['Application Team','📝'],['Visa Team','🛂'],['SOP Team','✍️']];
   const opsCols=opsRoles.map(([roleName,icon])=>{
-    const members=(team||[]).filter(t=>t.role===roleName);
-    return `<div style="flex:1;min-width:220px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line)">
-        <span style="font-weight:600;font-size:13px;color:var(--pine)">${icon} ${roleName}</span>
-        <span style="font-size:10px;color:var(--ink3);font-style:italic">${members.length} member${members.length!==1?'s':''} — manual hand-off</span>
-      </div>
-      ${members.length?members.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}" style="margin-bottom:8px">
-          <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
-        </div>`).join(''):emptyState('👥','No one assigned to this team yet.')}
-    </div>`;
+    const members=internationalMembers.filter(t=>t.role===roleName);
+    return `<div style="flex:1;min-width:220px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line)"><span style="font-weight:600;font-size:13px;color:var(--pine)">${icon} ${roleName}</span><span style="font-size:10px;color:var(--ink3);font-style:italic">${members.length} member${members.length!==1?'s':''}</span></div>${members.length?members.map(t=>memberCard(t,t.role)).join(''):emptyState('👥','No one assigned to this team yet.')}</div>`;
   }).join('');
-  if(effectiveView!=='Domestic')opsEl.innerHTML=`<div class="card" style="margin-bottom:16px">
-    <div class="card-h"><span class="card-t">🌍 International — Operations Team</span><span style="font-size:11px;color:var(--ink3)">Application, Visa & SOP — pooled globally, not limited to any one country</span></div>
-    <div style="display:flex;gap:20px;flex-wrap:wrap">${opsCols}</div>
-  </div>`;
 
-  // ── Domestic Operations (UK-internal, no round-robin, Management-assigned only) ──
-  if(domesticEl){
-    if(effectiveView!=='Domestic'){domesticEl.innerHTML='';}
-    else{
-    const domestic=(team||[]).filter(t=>t.team_category==='Domestic');
-    domesticEl.innerHTML=`<div class="card" style="margin-bottom:16px">
-      <div class="card-h"><span class="card-t">🇬🇧 Domestic Operations</span><span style="font-size:11px;color:var(--ink3)">${domestic.length} member${domestic.length!==1?'s':''} — UK-internal only, never receives leads automatically</span></div>
-      <div class="team-grid">${domestic.length?domestic.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
-          <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
-        </div>`).join(''):emptyState('🇬🇧','No Domestic team members yet.')}</div>
-    </div>`;
-    }
-  }
+  const domesticPanel=showDomestic?`<div class="card" style="margin-bottom:18px;border:2px solid var(--gold);border-radius:var(--rl);overflow:hidden">
+    <div style="padding:16px 18px;background:linear-gradient(90deg,rgba(180,132,45,.10),transparent);border-bottom:1px solid var(--line)">
+      <div style="font-size:17px;font-weight:700;color:var(--pine)">🇬🇧 UK DOMESTIC TEAM</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:3px">UK-local recruitment · management controlled · <b>no round-robin</b></div>
+    </div>
+    <div style="padding:14px 16px">
+      ${managementCard('🇬🇧 Domestic Management','UK Domestic only',domesticMgmt,'🏛️')}
+      ${managementCard('👥 Domestic Counsellors','assigned manually by Domestic Management · no round-robin',domesticCounsellors,'🇬🇧')}
+    </div>
+  </div>`:'';
 
-  // ── Agent Portal (external partners, single flat role, no hierarchy) ──
-  if(agentEl&&effectiveView!=='Domestic'){
-    const agents=(team||[]).filter(t=>t.role==='Agent');
-    agentEl.innerHTML=`<div class="card" style="margin-bottom:16px">
-      <div class="card-h"><span class="card-t">🤝 Agent Portal</span><span style="font-size:11px;color:var(--ink3)">${agents.length} agent${agents.length!==1?'s':''} — external partners, work only on leads Management assigns them</span></div>
-      <div class="team-grid">${agents.length?agents.map(t=>`<div class="tcard" data-role="Agent">
-          <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent${t.university_name?' · 🎓 '+esc(t.university_name):''}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
-        </div>`).join(''):emptyState('🤝','No agents yet.')}</div>
-    </div>`;
-  }
+  const internationalPanel=showInternational?`<div class="card" style="margin-bottom:18px;border:2px solid var(--pine2);border-radius:var(--rl);overflow:hidden">
+    <div style="padding:16px 18px;background:linear-gradient(90deg,rgba(28,92,72,.08),transparent);border-bottom:1px solid var(--line)">
+      <div style="font-size:17px;font-weight:700;color:var(--pine)">🌍 INTERNATIONAL TEAM</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:3px">International student operations · separate from UK Domestic</div>
+    </div>
+    <div style="padding:14px 16px">
+      ${managementCard('🌍 International Management','International only',internationalMgmt,'🏛️')}
+      ${managementCard('👥 International Counsellors','international leads and workflows',internationalCounsellors,'🌍')}
+      <div class="card" style="margin-bottom:0">
+        <div class="card-h"><span class="card-t">🌍 International Operations</span><span style="font-size:11px;color:var(--ink3)">Application · Visa · SOP</span></div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap">${opsCols}</div>
+      </div>
+    </div>
+  </div>`:'';
+
+  const agents=(team||[]).filter(t=>t.role==='Agent'&&!isOwnerRowHiddenFromMe(t));
+  const agentPanel=(showInternational&&agents.length)?`<div class="card" style="margin-bottom:18px"><div class="card-h"><span class="card-t">🤝 Agent Portal</span><span style="font-size:11px;color:var(--ink3)">${agents.length} partner${agents.length!==1?'s':''}</span></div><div class="team-grid">${agents.map(t=>memberCard(t,'Agent')).join('')}</div></div>`:'';
+
+  mgmtEl.innerHTML=domesticPanel+internationalPanel+agentPanel;
+  if(opsEl)opsEl.innerHTML='';
+  if(domesticEl)domesticEl.innerHTML='';
+  if(agentEl)agentEl.innerHTML='';
 }
-
 function renderTeam(team){
   renderManagementAndOperationsTeams(team);
   const tg=document.getElementById('team-grid');
@@ -8232,7 +8307,7 @@ function renderTeam(team){
   // India office list below), since Management wants a single place to
   // see everyone physically on the India team regardless of role.
   const officeExcludedRoles=['Manager','Admin','Director','Application Team','Visa Team','SOP Team','Agent'];
-  (team||[]).filter(t=>(!officeExcludedRoles.includes(t.role)||t.country==='India')&&t.team_category!=='Domestic').forEach(t=>{
+  (team||[]).filter(t=>(!officeExcludedRoles.includes(t.role)||t.country==='India')&&memberTeamCategory(t)==='International').forEach(t=>{
     // If office is blank, or doesn't match a known office for their country
     // (e.g. a stale value from before offices were consolidated), derive the
     // correct office from country instead of showing a phantom "Unassigned"
@@ -10453,6 +10528,16 @@ async function loadMyTasks(){
   }
   if(!scoped.length){el.innerHTML=emptyState('🎉','No open tasks right now.');return;}
 
+  const homeTaskLeadIds=[...new Set(scoped.map(t=>t.lead_id).filter(Boolean))];
+  let homeTaskReminderMap=new Map();
+  if(homeTaskLeadIds.length){
+    const{data:homeReminderData}=await sb.from('reminders').select('id,lead_id,reminder_date,reminder_time,notes,done').in('lead_id',homeTaskLeadIds).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true}).limit(500);
+    (homeReminderData||[]).forEach(r=>{
+      const matched=scoped.find(t=>t.lead_id===r.lead_id&&String(r.notes||'').startsWith(`Task reminder: ${t.title}`));
+      if(matched){if(!homeTaskReminderMap.has(matched.id))homeTaskReminderMap.set(matched.id,[]);homeTaskReminderMap.get(matched.id).push(r);}
+    });
+  }
+
   // Action Centre grouping — overdue is never capped or hidden, since
   // these are the items most likely to genuinely need attention. Today
   // and This Week are capped reasonably so the widget stays a quick
@@ -10472,7 +10557,7 @@ async function loadMyTasks(){
     const leadName=t.leads?.name||'Unknown lead';
     const dateLabel=t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'No date';
     return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="openLeadDetail('${t.lead_id}')">
-      <div style="flex:1;font-size:13px"><a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-underline-offset:2px">${esc(leadName)}</a> — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:inherit;text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px">${esc(t.title)}</a>${t.source==='auto'?' <span style="color:var(--gold);font-size:10px">AUTO</span>':''}</div>
+      <div style="flex:1;font-size:13px"><a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-underline-offset:2px">${esc(leadName)}</a> — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:inherit;text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px">${esc(t.title)}</a>${t.source==='auto'?' <span style="color:var(--gold);font-size:10px">AUTO</span>':''}${(homeTaskReminderMap.get(t.id)||[]).map(r=>{const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';const tm=r.reminder_time?String(r.reminder_time).substring(0,5):'';const note=String(r.notes||'').replace(`Task reminder: ${t.title}`,'').replace(/^\s*[—-]\s*/,'').trim();return `<div style="font-size:10.5px;color:${r.done?'var(--ink3)':'var(--gold)'};margin-top:3px"><b>⏰ ${r.done?'Reminder done':'Reminder'}${dt?' · '+esc(dt):''}${tm?' · '+esc(tm):''}</b>${note?` <span style="color:var(--ink3)">— ${esc(note)}</span>`:''}</div>`;}).join('')}</div>
       <span style="font-size:11px;color:var(--ink3);flex-shrink:0">${dateLabel}</span>
     </div>`;
   };
@@ -11907,7 +11992,7 @@ async function renderActivityMonitor(){
   let members=(teamList||[]).filter(t=>{
     if(isOwnerRowHiddenFromMe(t))return false;
     const categoryFilter=document.getElementById('am-category')?.value||'All';
-    if(categoryFilter!=='All'&&(t.team_category||'International')!==categoryFilter)return false;
+    if(categoryFilter!=='All'&&memberTeamCategory(t)!==categoryFilter)return false;
     if(countryFilter&&countryFilter!=='All'){
       // Compare against the REAL office value(s) via OFFICE_MAP, not the
       // plain country name directly — India/UK are stored as "India HQ"/

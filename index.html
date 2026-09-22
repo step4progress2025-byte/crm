@@ -289,7 +289,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .fcounsel{font-size:11px;color:var(--pine3);margin-top:3px;font-style:italic}
 
 /* Team */
-.team-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
 .tcard{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:18px;box-shadow:var(--sh);display:flex;align-items:flex-start;gap:14px}
 .tcard-av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--pine3),#0F6E56);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff;flex-shrink:0;box-shadow:0 3px 8px rgba(15,110,86,.25)}
 .tcard{transition:transform .18s ease,box-shadow .18s ease;border-left:4px solid var(--line)}
@@ -311,7 +311,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .tcard[data-role="Visa Team"] .tcard-role{background:#cffafe;color:#0891b2}
 .tcard[data-role="SOP Team"] .tcard-role{background:#fce7f3;color:#db2777}
 .tcard[data-role="Agent"] .tcard-role{background:#ffedd5;color:#ea580c}
-.tcard-name{font-size:14px;font-weight:600;line-height:1.35;white-space:normal;word-break:normal;overflow-wrap:normal;min-width:0}
+.tcard-name{font-size:14px;font-weight:600;overflow-wrap:break-word;word-break:normal;line-height:1.35;min-width:0}.tcard>div:nth-child(2){min-width:0;flex:1 1 auto}.tcard{min-width:0}
 .tcard-email{font-size:11px;color:var(--ink3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* AI */
@@ -4367,7 +4367,17 @@ const SUPER_ADMIN_EMAILS=['india@step4progress.com','jisan@step4progress.co.uk',
 // Domestic/International is a real team-category field, not a hard-coded
 // person rule. This prevents one person's name/email from leaking into the
 // wrong workstream when the Owner/Platform Admin switches views.
+// Business workstream override for the current UK-local management lane.
+// The existing Anushree team row may still have the older/default category;
+// this keeps the UI correct until the profile field is migrated.
+const TEAM_CATEGORY_OVERRIDES={
+  'a.jena@step4progress.co.uk':'Domestic'
+};
 function effectiveTeamCategory(member){
+  const email=String(member?.email||'').trim().toLowerCase();
+  if(TEAM_CATEGORY_OVERRIDES[email]) return TEAM_CATEGORY_OVERRIDES[email];
+  const name=String(member?.full_name||'').trim().replace(/\s+/g,' ').toLowerCase();
+  if(name==='anushree jena') return 'Domestic';
   return String(member?.team_category||'International').trim() || 'International';
 }
 function canSwitchOpsViewUser(){
@@ -4389,6 +4399,10 @@ let superAdminOpsView=null; // 'International' | 'Domestic' | null (non-Super-Ad
 
 function chooseOpsView(view){
   superAdminOpsView=view;
+  // Clear stale dashboard filters/workstream when switching poles.
+  tdFilterCountry='';
+  tdFilterCounsellor='';
+  taskWorkstreamMode='team';
   sessionStorage.setItem('s4p_ops_view',view);
   document.getElementById('ops-view-modal').style.display='none';
   updateOpsViewSwitcher();
@@ -6262,7 +6276,7 @@ async function loadTasksFS(leadId){
         <div style="font-size:11px;color:${overdue?'var(--rose)':'var(--ink3)'};margin-top:2px">${t.due_date?'Due '+new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})+(overdue?' — overdue':''):'No due date'}${t.assigned_to?' · '+esc(t.assigned_to):''}</div>
       </div>
       <button onclick="openTaskDetail('${t.id}')" title="Open task" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:2px 4px"><i class="ti ti-eye"></i></button>
-      ${canDeleteTaskClient(t)?`<button onclick="deleteTaskFS(\'${t.id}\')" title="Delete task" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:0 4px">×</button>`:''}
+      ${canDeleteTaskClient(t)?`<button onclick="deleteTaskFS(\'${t.id}\')" title="Delete task" aria-label="Delete task" style="background:none;border:1px solid var(--line2);color:var(--rose);cursor:pointer;font-size:14px;padding:4px 7px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center"><i class="ti ti-trash"></i></button>`:''}
     </div>`;
   }).join('');
 }
@@ -6619,10 +6633,11 @@ function canManageTaskClient(t){
 // Application, Visa and SOP teams never receive the delete control.
 function canDeleteTaskClient(t){
   // Delete is deliberately unavailable to Counsellors, Agents, Application,
-  // Visa and SOP users. Every elevated root account (Owner, Platform
-  // Administrator, Super Admin) can delete tasks in the data they can see;
-  // country Management can delete tasks inside its own visible workstream.
-  if(isSuperAdmin||isOwner) return true;
+  // Visa and SOP users. Owner, Platform Administrator and Super Admin can
+  // delete tasks in the data they can see; country Management can delete
+  // only inside its own visible workstream.
+  const email=String(currentUser?.email||'').trim().toLowerCase();
+  if(isOwner||isSuperAdmin||email==='india@step4progress.com'||email==='pavitra@step4progress.com'||email==='jisan@step4progress.co.uk') return true;
   if(['Manager','Admin','Director'].includes(myRole)) return canManageTaskClient(t);
   return false;
 }
@@ -10432,7 +10447,7 @@ function renderTasks(list){
         <div style="font-size:11px;color:${overdue?'var(--rose)':'var(--ink3)'};margin-top:2px">${t.due_date?'Due '+new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})+(overdue?' — overdue':''):'No due date'}${t.assigned_to?' · '+esc(t.assigned_to):''}</div>
       </div>
       <button onclick="openTaskDetail('${t.id}')" title="Open task" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:2px 4px"><i class="ti ti-eye"></i></button>
-      ${canDeleteTaskClient(t)?`<button onclick="deleteTask(\'${t.id}\')" title="Delete task" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:0 4px">×</button>`:''}
+      ${canDeleteTaskClient(t)?`<button onclick="deleteTask(\'${t.id}\')" title="Delete task" aria-label="Delete task" style="background:none;border:1px solid var(--line2);color:var(--rose);cursor:pointer;font-size:14px;padding:4px 7px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center"><i class="ti ti-trash"></i></button>`:''}
     </div>`;
   }).join(''):emptyState('✅','No tasks yet.');
 }

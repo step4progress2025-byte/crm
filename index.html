@@ -824,20 +824,13 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <div style="font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--ink)">Task Dashboard</div>
             <div id="td-header-meta" style="font-size:12px;color:var(--ink3);margin-top:4px">Your task workspace</div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div id="td-ops-workstream" style="display:none;align-items:center;gap:4px;background:var(--paper2);border:1px solid var(--line);border-radius:10px;padding:3px">
-              <button type="button" id="td-ops-intl" onclick="chooseOpsView('International')" style="border:0;border-radius:7px;padding:7px 10px;background:transparent;color:var(--ink2);font-size:11px;font-weight:700;cursor:pointer">🌍 International</button>
-              <button type="button" id="td-ops-domestic" onclick="chooseOpsView('Domestic')" style="border:0;border-radius:7px;padding:7px 10px;background:transparent;color:var(--ink2);font-size:11px;font-weight:700;cursor:pointer">🇬🇧 UK Domestic</button>
-            </div>
-            <button class="btn btn-p" onclick="openTaskModalStandalone()"><i class="ti ti-plus"></i>Add task</button>
-          </div>
+          <button class="btn btn-p" onclick="openTaskModalStandalone()"><i class="ti ti-plus"></i>Add task</button>
         </div>
         <!-- Personal view — Counsellors only. Deliberately simple: no
              KPI cards, no by-assignee breakdown (meaningless for a
              single person only ever seeing their own tasks), no
              reassign controls. Just four clean tabs and a checklist. -->
         <div id="my-tasks-personal-view" style="display:none">
-          <div id="mtp-workstream-label" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--paper2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--ink3)"></div>
           <div style="display:flex;align-items:center;gap:18px;background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:16px 20px;margin-bottom:16px">
             <div style="position:relative;width:64px;height:64px;flex-shrink:0"><canvas id="mtp-today-donut"></canvas>
               <div id="mtp-today-donut-label" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--pine)"></div>
@@ -1627,7 +1620,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
         <div id="prod-sub-monitor" style="display:none">
           <div class="card" style="margin-bottom:16px">
-            <div class="card-h"><span class="card-t">📊 Lead Response & Work Monitor</span></div>
+            <div class="card-h"><span class="card-t">⏱️ Team Response Time</span></div>
             <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">Genuine operational visibility into how quickly new leads get a first response, company-wide — intended to spot process bottlenecks, not to rank individual staff.</p>
             <div id="team-response-stats"></div>
           </div>
@@ -2324,12 +2317,14 @@ What would you like help with today?</div>
       <div class="ff"><label>Priority</label><select id="task-priority"><option value="Medium">Normal</option><option value="High">High</option><option value="Low">Low</option></select></div>
       <div class="ff full" id="task-assignee-wrap" style="display:none"><label>Assign to (optional)</label><select id="task-assignee-picker"><option value="">Leave as lead's counsellor</option></select></div>
       <div class="ff full"><label>Notes <span style="font-weight:400;color:var(--ink3)">(optional)</span></label><textarea id="task-notes" rows="3" placeholder="Anything the assignee should know…" style="resize:vertical"></textarea></div>
-      <div class="ff full" style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--paper2)">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600"><input type="checkbox" id="task-set-reminder" onchange="toggleTaskReminderFields()"> Set a reminder for this task</label>
-        <div id="task-reminder-fields" class="fg" style="display:none;margin-top:10px;gap:10px">
+      <div class="ff full" style="padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600">
+          <input type="checkbox" id="task-set-reminder" onchange="toggleTaskReminderFields()" style="cursor:pointer">
+          Set a reminder for this task
+        </label>
+        <div id="task-reminder-fields" class="fg" style="display:none;margin-top:10px">
           <div class="ff"><label>Reminder date</label><input type="date" id="task-reminder-date"></div>
           <div class="ff"><label>Reminder time</label><input type="time" id="task-reminder-time" value="09:00"></div>
-          <div class="ff full"><label>Reminder note</label><input id="task-reminder-note" placeholder="What should you remember? (optional)"></div>
         </div>
       </div>
     </div>
@@ -4364,6 +4359,12 @@ async function acceptPendingTeamInviteIfNeeded(){
 // even another Super Admin. Add more emails here to grant a new person
 // the exact same full access India has, without touching this protection.
 const SUPER_ADMIN_EMAILS=['india@step4progress.com','jisan@step4progress.co.uk','pavitra@step4progress.com'];
+const DOMESTIC_MANAGEMENT_EMAILS=['ajena@step4progress.co.uk'];
+function effectiveTeamCategory(member){
+  const email=String(member?.email||'').trim().toLowerCase();
+  if(DOMESTIC_MANAGEMENT_EMAILS.includes(email)) return 'Domestic';
+  return member?.team_category||'International';
+}
 const OWNER_EMAIL='india@step4progress.com';
 // OWNERS is a set of untouchable-root accounts — each with their own
 // display title — protected from being edited, demoted, or removed by
@@ -4375,57 +4376,7 @@ const OWNERS={
   'pavitra@step4progress.com':'Platform Administrator',
 };
 let myOffice=null, isSuperAdmin=false, isOwner=false, myOwnerTitle=null, myName=null, myRole='Counsellor', myCountry=null, myTeamCategory='International', canSeeFinance=false;
-function isDomesticStaffMember(t){
-  const email=String(t?.email||'').trim().toLowerCase();
-  const name=String(t?.full_name||'').trim().toLowerCase();
-  return String(t?.team_category||'').trim().toLowerCase()==='domestic' || email==='a.jena@step4progress.co.uk' || name==='anushree jena';
-}
-function leadAssignedStaff(l){
-  const who=String(l?.counsellor||'').trim().toLowerCase();
-  return (teamList||[]).find(t=>String(t?.full_name||'').trim().toLowerCase()===who)||null;
-}
-// Domestic/International is a workflow/team classification, not simply a
-// student's destination country. A UK international applicant can remain in
-// the International workstream; a UK-local lead assigned to Domestic belongs
-// to Domestic.
-function isDomesticLead(l){
-  const staff=leadAssignedStaff(l);
-  if(staff)return isDomesticStaffMember(staff);
-  // Legacy fallback: manually entered UK leads without an assignee are treated
-  // as Domestic; website/auto-captured leads stay International until assigned.
-  const country=String(l?.country||'').trim().toLowerCase();
-  const source=String(l?.source||'').trim().toLowerCase();
-  return country==='uk' && (!source || source==='manual' || source==='walk-in' || source==='referral');
-}
-function taskIsDomestic(t){
-  // Workstream follows the lead/team business classification first.
-  // This keeps a UK international applicant in International even though
-  // the destination country is UK, while UK-local Domestic work stays in
-  // the Domestic workstream. The assignee is only the fallback for legacy
-  // tasks where the lead classification is unavailable.
-  if(t?.leads){
-    const assignedLeadStaff=leadAssignedStaff(t.leads);
-    if(assignedLeadStaff)return isDomesticStaffMember(assignedLeadStaff);
-    const leadCountry=String(t.leads.country||'').trim().toLowerCase();
-    const leadSource=String(t.leads.source||'').trim().toLowerCase();
-    if(leadCountry==='uk' && (!leadSource || leadSource==='manual' || leadSource==='walk-in' || leadSource==='referral')) return true;
-    if(leadCountry && !(leadCountry==='uk' && (!leadSource || leadSource==='manual' || leadSource==='walk-in' || leadSource==='referral'))) return false;
-  }
-  const staff=(teamList||[]).find(x=>String(x?.full_name||'').trim().toLowerCase()===String(t?.assigned_to||'').trim().toLowerCase());
-  if(staff)return isDomesticStaffMember(staff);
-  return false;
-}
-
-function currentTaskWorkstream(){
-  if(isSuperAdmin) return superAdminOpsView || 'International';
-  return String(myTeamCategory||'').trim().toLowerCase()==='domestic' ? 'Domestic' : 'International';
-}
-
-function taskWorkstreamLabel(view){
-  return view==='Domestic' ? '🇬🇧 UK Domestic' : '🌍 International';
-}
-
-let superAdminOpsView='International'; // 'International' | 'Domestic' — elevated users switch; others are locked to their team
+let superAdminOpsView=null; // 'International' | 'Domestic' | null (non-Super-Admins always null, unused)
 
 function chooseOpsView(view){
   superAdminOpsView=view;
@@ -4436,8 +4387,6 @@ function chooseOpsView(view){
   renderLeads();
   badges();
   renderFU();
-  if(document.getElementById('sc-taskdashboard')?.classList.contains('active')) renderTaskDashboard();
-  if(document.getElementById('sc-team')?.classList.contains('active')) renderTeam(teamList);
   // Activity Monitor has its own separate Category filter — keep it in
   // sync too, in case the person is already sitting on that screen when
   // they toggle Domestic/International, rather than only updating it the
@@ -4497,18 +4446,13 @@ function opsViewScopedLeads(sourceLeads){
   } else if(myRole==='Admin'||myRole==='Manager'||myRole==='Director'){
     scoped=sourceLeads.filter(l=>l.country===myCountry);
   } else if(myRole==='Counsellor'){
-    scoped=sourceLeads.filter(l=>String(l.counsellor||'').trim().toLowerCase()===String(myName||'').trim().toLowerCase());
+    scoped=sourceLeads.filter(l=>l.counsellor===myName);
   } else {
     scoped=sourceLeads;
   }
 
-  // Domestic staff never see International operations, and vice versa.
-  if(myTeamCategory==='Domestic'&&!isSuperAdmin){
-    scoped=scoped.filter(isDomesticLead);
-  } else if(myTeamCategory!=='Domestic'&&!isSuperAdmin && ['Admin','Manager','Director'].includes(myRole)){
-    scoped=scoped.filter(l=>!isDomesticLead(l));
-  }
   if(!isSuperAdmin||!superAdminOpsView)return scoped;
+  const isDomesticLead=l=>String(l?.country||'').trim().toLowerCase()==='uk';
   return superAdminOpsView==='Domestic'
     ? scoped.filter(isDomesticLead)
     : scoped.filter(l=>!isDomesticLead(l));
@@ -4566,7 +4510,7 @@ async function onLogin(user){
   myOffice=profile?.office||null;
   myName=name;
   myRole=role;
-  myTeamCategory=profile?.team_category||'International';
+  myTeamCategory=DOMESTIC_MANAGEMENT_EMAILS.includes((user.email||'').toLowerCase())?'Domestic':(profile?.team_category||'International');
   myCountry=profile?.country||Object.keys(OFFICE_MAP).find(c=>OFFICE_MAP[c].includes(myOffice))||null;
   isSuperAdmin=SUPER_ADMIN_EMAILS.includes((user.email||'').toLowerCase());
   // Finance follows the elevated-access tier: Owner, Platform Administrator,
@@ -4599,8 +4543,12 @@ async function onLogin(user){
   // per session (sessionStorage — survives a page refresh, resets on a
   // genuinely new login/tab). Non-Super-Admins never see this at all.
   if(isSuperAdmin){
-    superAdminOpsView=sessionStorage.getItem('s4p_ops_view')||'International';
-    updateOpsViewSwitcher();
+    superAdminOpsView=sessionStorage.getItem('s4p_ops_view');
+    if(!superAdminOpsView){
+      document.getElementById('ops-view-modal').style.display='flex';
+    } else {
+      updateOpsViewSwitcher();
+    }
   }
   // Removes "India" as a selectable option from every remaining CRM
 // office/country dropdown, for non-Owner Super Admins only — closes the
@@ -6258,12 +6206,13 @@ async function loadTasksFS(leadId){
   el.innerHTML=data.map(t=>{
     const overdue=t.status!=='Done'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
     return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${t.status==='Done'?';opacity:.5':''}">
-      <input type="checkbox" ${t.status==='Done'?'checked':''} onchange="toggleTaskFS('${t.id}',this.checked)" style="margin-top:3px;cursor:pointer">
-      <div style="flex:1">
+      <div style="flex:1;cursor:pointer" onclick="openTaskDetail('${t.id}')">
         <div style="font-size:13px;font-weight:600${t.status==='Done'?';text-decoration:line-through':''}">${esc(t.title)}${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}</div>
+        ${t.notes?`<div style="font-size:11px;color:var(--ink3);margin-top:3px">📝 ${esc(String(t.notes).length>90?String(t.notes).slice(0,90)+'…':t.notes)}</div>`:''}
         <div style="font-size:11px;color:${overdue?'var(--rose)':'var(--ink3)'};margin-top:2px">${t.due_date?'Due '+new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})+(overdue?' — overdue':''):'No due date'}${t.assigned_to?' · '+esc(t.assigned_to):''}</div>
       </div>
-      <button onclick="deleteTaskFS('${t.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button>
+      <button onclick="openTaskDetail('${t.id}')" title="Open task" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:2px 4px"><i class="ti ti-eye"></i></button>
+      <button onclick="deleteTaskFS('${t.id}')" title="Delete task" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:0 4px">×</button>
     </div>`;
   }).join('');
 }
@@ -6432,11 +6381,7 @@ function openTaskModal(){
   document.getElementById('task-due').value='';
   if(document.getElementById('task-priority'))document.getElementById('task-priority').value='Medium';
   if(document.getElementById('task-notes'))document.getElementById('task-notes').value='';
-  if(document.getElementById('task-set-reminder'))document.getElementById('task-set-reminder').checked=false;
-  if(document.getElementById('task-reminder-fields'))document.getElementById('task-reminder-fields').style.display='none';
-  if(document.getElementById('task-reminder-date'))document.getElementById('task-reminder-date').value=new Date().toISOString().substring(0,10);
-  if(document.getElementById('task-reminder-time'))document.getElementById('task-reminder-time').value='09:00';
-  if(document.getElementById('task-reminder-note'))document.getElementById('task-reminder-note').value='';
+  resetTaskReminderFields();
   document.getElementById('modal-task').classList.add('open');
 }
 // Standalone mode — opened from the Task Dashboard's "Add task" button,
@@ -6472,12 +6417,25 @@ function openTaskModalStandalone(){
   }
   document.getElementById('task-title').value='';
   document.getElementById('task-due').value='';
-  if(document.getElementById('task-set-reminder'))document.getElementById('task-set-reminder').checked=false;
-  if(document.getElementById('task-reminder-fields'))document.getElementById('task-reminder-fields').style.display='none';
-  if(document.getElementById('task-reminder-date'))document.getElementById('task-reminder-date').value=new Date().toISOString().substring(0,10);
-  if(document.getElementById('task-reminder-time'))document.getElementById('task-reminder-time').value='09:00';
-  if(document.getElementById('task-reminder-note'))document.getElementById('task-reminder-note').value='';
+  if(document.getElementById('task-priority'))document.getElementById('task-priority').value='Medium';
+  if(document.getElementById('task-notes'))document.getElementById('task-notes').value='';
+  resetTaskReminderFields();
   document.getElementById('modal-task').classList.add('open');
+}
+function resetTaskReminderFields(){
+  const cb=document.getElementById('task-set-reminder');
+  const wrap=document.getElementById('task-reminder-fields');
+  if(cb)cb.checked=false;
+  if(wrap)wrap.style.display='none';
+  const date=document.getElementById('task-reminder-date');
+  const time=document.getElementById('task-reminder-time');
+  if(date)date.value='';
+  if(time)time.value='09:00';
+}
+function toggleTaskReminderFields(){
+  const cb=document.getElementById('task-set-reminder');
+  const wrap=document.getElementById('task-reminder-fields');
+  if(wrap)wrap.style.display=cb?.checked?'grid':'none';
 }
 async function saveTaskModal(){
   const title=document.getElementById('task-title').value.trim();
@@ -6485,12 +6443,8 @@ async function saveTaskModal(){
   const dueDate=document.getElementById('task-due').value||null;
   const priority=document.getElementById('task-priority')?.value||'Medium';
   const notes=document.getElementById('task-notes')?.value.trim()||null;
-  const setReminder=!!document.getElementById('task-set-reminder')?.checked;
-  const reminderDate=document.getElementById('task-reminder-date')?.value||null;
-  const reminderTime=document.getElementById('task-reminder-time')?.value||null;
-  const reminderNote=document.getElementById('task-reminder-note')?.value.trim()||'';
-  if(setReminder&&!reminderDate){toast('Please choose a reminder date.');return;}
   const btn=document.getElementById('save-task-btn');
+
   let leadId,assignedTo;
   if(taskModalStandalone){
     leadId=document.getElementById('task-lead-picker').value;
@@ -6499,45 +6453,66 @@ async function saveTaskModal(){
     const l=leads.find(x=>x.id===leadId);
     const restrictedSelf=(myRole==='Counsellor'||myTeamCategory==='Domestic'||['Application Team','Visa Team','SOP Team'].includes(myRole)||myTeamCategory==='Agent')&&!isSuperAdmin;
     assignedTo=restrictedSelf?myName:(overrideAssignee||l?.counsellor||null);
-  }else{
+  } else {
     if(!curId){toast('No lead selected.');return;}
     leadId=curId;
     const l=leads.find(x=>x.id===curId);
     assignedTo=l?.counsellor||null;
   }
+
   const selectedLead=leads.find(x=>x.id===leadId);
   if(!selectedLead){toast('Lead not found. Please reopen the task window and try again.');return;}
   const taskDraft={lead_id:leadId,title,due_date:dueDate,assigned_to:assignedTo,status:'Open',source:'manual',priority,notes,leads:{country:selectedLead.country||myCountry||''}};
   if(!canManageTaskClient(taskDraft)){toast('You cannot create this task for the selected lead or assignee.');return;}
   btn.disabled=true;btn.textContent='Saving…';
-  // The live tasks table has notes but does not have a priority column.
-  // Keep priority as a UI value only so Add Task never fails because of a
-  // non-existent column, and never retry a failed insert as a duplicate.
-  const{data:inserted,error}=await sb.from('tasks').insert({
-    lead_id:leadId,title,due_date:dueDate,assigned_to:assignedTo,
-    status:'Open',source:'manual',notes
-  }).select('id').single();
+  // The live tasks schema has `notes` but does NOT have a `priority` column.
+  // Do not include the UI-only priority value in the database insert: doing so
+  // makes PostgREST reject the whole insert and the fallback used to discard
+  // the notes as well.
+  let{error}=await sb.from('tasks').insert({
+    lead_id:leadId,
+    title,
+    due_date:dueDate,
+    assigned_to:assignedTo,
+    status:'Open',
+    source:'manual',
+    notes
+  });
   btn.disabled=false;btn.textContent='Save';
-  if(error){toast('Error saving task: '+error.message);return;}
-  const taskId=inserted?.id;
-  if(setReminder&&taskId){
-    const marker=`Task reminder [task:${taskId}]${reminderNote?' — '+reminderNote:' — '+title}`;
-    const{error:remErr}=await sb.from('reminders').insert([{
-      lead_id:leadId,reminder_date:reminderDate,reminder_time:reminderTime,
-      notes:marker,done:false
-    }]);
-    if(remErr) toast('Task saved, but the reminder could not be set: '+remErr.message);
-    else toast('Task and reminder saved.');
-  }else toast('Task added!');
+  if(error){toast('Error: '+error.message);return;}
+
+  // Optional task reminder uses the existing lead-level reminders table.
+  // We do this only after the task insert succeeds, so a failed task never
+  // leaves behind an orphan reminder.
+  const reminderEnabled=!!document.getElementById('task-set-reminder')?.checked;
+  if(reminderEnabled){
+    const reminderDate=document.getElementById('task-reminder-date')?.value||'';
+    const reminderTime=document.getElementById('task-reminder-time')?.value||'09:00';
+    if(!reminderDate){
+      toast('Task saved, but no reminder was set because no reminder date was selected.');
+    }else{
+      const reminderNotes=`Task reminder: ${title}${notes?` — ${notes}`:''}`;
+      const{error:reminderError}=await sb.from('reminders').insert([{
+        lead_id:leadId,
+        reminder_date:reminderDate,
+        reminder_time:reminderTime,
+        notes:reminderNotes,
+        done:false
+      }]);
+      if(reminderError){
+        console.error('Task reminder insert failed:', reminderError);
+        toast('Task saved, but reminder could not be set: '+reminderError.message);
+      } else {
+        toast('Task and reminder saved.');
+      }
+    }
+  }
+
   closeModal('modal-task');
   if(curId){loadTasks(curId);loadTasksFS(curId);}
   loadMyTasks();
   if(document.getElementById('sc-taskdashboard')?.classList.contains('active'))renderTaskDashboard();
-}
-function toggleTaskReminderFields(){
-  const on=!!document.getElementById('task-set-reminder')?.checked;
-  const wrap=document.getElementById('task-reminder-fields');
-  if(wrap)wrap.style.display=on?'grid':'none';
+  toast('Task added!');
 }
 
 function canManageTaskClient(t){
@@ -6582,19 +6557,37 @@ async function openTaskDetail(taskId){
   const allowed=(()=>{
     if(isOwner||isSuperAdmin)return isOwner || t.leads?.country!=='India' || (currentUser?.email||'').toLowerCase()==='pavitra@step4progress.com';
     if(myRole==='Counsellor'||myTeamCategory==='Domestic'||['Application Team','Visa Team','SOP Team'].includes(myRole)||myTeamCategory==='Agent')return assignee===myName;
-    if(['Admin','Manager','Director'].includes(myRole))return !!staff&&staff.country===myCountry;
+    if(['Admin','Manager','Director'].includes(myRole))return !!staff&&staff.country===myCountry&&effectiveTeamCategory(staff)===myTeamCategory;
     return assignee===myName;
   })();
   if(!allowed){toast('This task is outside what your account can access.');return;}
+
   const overdue=t.status!=='Done'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
-  const{data:taskReminders}=await sb.from('reminders').select('id,lead_id,reminder_date,reminder_time,notes,done').eq('lead_id',t.lead_id).eq('done',false).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true});
-  const taskReminder=(taskReminders||[]).find(r=>String(r.notes||'').includes(`[task:${t.id}]`)) || (taskReminders||[]).find(r=>String(r.notes||'').startsWith(`Task reminder: ${t.title}`));
   document.getElementById('tdetail-title').textContent=t.title||'Task details';
   const statusLabel=taskStatusLabel(t.status);
   const statusTone=taskStatusTone(t.status);
+  document.getElementById('tdetail-sub').innerHTML=`<span style="display:inline-flex;align-items:center;gap:6px"><span class="pill" style="background:${statusTone.bg};color:${statusTone.tx}">${statusLabel}</span><span>·</span><span>${t.source==='auto'?'Auto-created':'Manual'}</span></span>`;
+
+  const{data:allLeadReminders}=await sb.from('reminders').select('id,reminder_date,reminder_time,notes,done').eq('lead_id',t.lead_id).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true}).limit(100);
+  const taskPrefix=`[Task:${t.id}]`;
+  const legacyPrefix=`Task reminder: ${t.title}`;
+  const taskReminderRows=(allLeadReminders||[]).filter(r=>String(r.notes||'').startsWith(taskPrefix)||String(r.notes||'').startsWith(legacyPrefix));
+  const activeReminder=taskReminderRows.find(r=>!r.done)||taskReminderRows[0]||null;
+  const stripReminderNote=(r)=>{
+    const raw=String(r?.notes||'');
+    if(raw.startsWith(taskPrefix))return raw.slice(taskPrefix.length).replace(/^\s*[—:-]?\s*/,'').trim();
+    if(raw.startsWith(legacyPrefix))return raw.slice(legacyPrefix.length).replace(/^\s*[—:-]?\s*/,'').trim();
+    return raw;
+  };
+
+  const canChange=canManageTaskClient(t);
+  const dateVal=activeReminder?.reminder_date||'';
+  const timeVal=activeReminder?.reminder_time?String(activeReminder.reminder_time).substring(0,5):'09:00';
+  const reminderNote=stripReminderNote(activeReminder);
+  const reminderStatus=activeReminder?(activeReminder.done?'Completed reminder':'Active reminder'):'';
   const priorityLabel=t.priority||'Medium';
   const priorityTone=priorityLabel==='High'?'var(--rose)':priorityLabel==='Low'?'var(--sage)':'var(--gold)';
-  document.getElementById('tdetail-sub').innerHTML=`<span style="display:inline-flex;align-items:center;gap:6px"><span class="pill" style="background:${statusTone.bg};color:${statusTone.tx}">${statusLabel}</span><span>·</span><span>${t.source==='auto'?'Auto-created':'Manual'}</span></span>`;
+
   document.getElementById('tdetail-body').innerHTML=`
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px">
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Lead</div><div style="font-weight:700;margin-top:4px">${t.lead_id?`<a href="#" onclick="event.preventDefault();closeModal('modal-task-detail');openLeadDetail('${t.lead_id}')" style="color:var(--pine);text-decoration:underline">${esc(t.leads?.name||'Open lead')}</a>`:esc(t.leads?.name||'No lead linked')}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${esc(t.leads?.lead_id||'')}</div></div>
@@ -6602,50 +6595,94 @@ async function openTaskDetail(taskId){
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Due</div><div style="font-weight:700;margin-top:4px;color:${overdue?'var(--rose)':'var(--ink)'}">${t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'No date'}</div>${overdue?'<div style="font-size:11px;color:var(--rose);margin-top:2px">Overdue</div>':''}</div>
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Priority</div><div style="margin-top:5px"><span class="pill" style="background:${priorityLabel==='High'?'#FDE7E7':priorityLabel==='Low'?'var(--sage-l)':'var(--gold-l)'};color:${priorityTone}">${esc(priorityLabel)}</span></div></div>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 7px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Task status</div><div style="font-size:10px;color:var(--ink3)">How is this task progressing?</div></div>
-    <div id="tdetail-status-buttons" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px">
-      <button type="button" data-task-status="Open" ${canManageTaskClient(t)?'':'disabled'} style="border:1px solid ${t.status==='Open'?'var(--sky)':'var(--line2)'};background:${t.status==='Open'?'var(--sky-l)':'var(--paper)'};color:${t.status==='Open'?'var(--sky)':'var(--ink2)'};border-radius:9px;padding:10px 8px;font-weight:700;cursor:${canManageTaskClient(t)?'pointer':'default'}">○ Not Started</button>
-      <button type="button" data-task-status="In Progress" ${canManageTaskClient(t)?'':'disabled'} style="border:1px solid ${t.status==='In Progress'?'var(--gold)':'var(--line2)'};background:${t.status==='In Progress'?'var(--gold-l)':'var(--paper)'};color:${t.status==='In Progress'?'var(--gold)':'var(--ink2)'};border-radius:9px;padding:10px 8px;font-weight:700;cursor:${canManageTaskClient(t)?'pointer':'default'}">◉ In Progress</button>
-      <button type="button" data-task-status="Done" ${canManageTaskClient(t)?'':'disabled'} style="border:1px solid ${t.status==='Done'?'var(--sage)':'var(--line2)'};background:${t.status==='Done'?'var(--sage-l)':'var(--paper)'};color:${t.status==='Done'?'var(--sage)':'var(--ink2)'};border-radius:9px;padding:10px 8px;font-weight:700;cursor:${canManageTaskClient(t)?'pointer':'default'}">✓ Completed</button>
+
+    <div style="margin:0 0 14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Notes</div><div style="font-size:10px;color:var(--ink3)">For counsellor + manager context</div></div>
+      <textarea id="tdetail-notes" ${canChange?'':'disabled'} style="width:100%;min-height:88px;resize:vertical;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:var(--paper2);color:var(--ink);font-family:var(--font-b);font-size:12.5px;line-height:1.5;box-sizing:border-box">${esc(t.notes||'')}</textarea>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 6px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Notes</div><div style="font-size:10px;color:var(--ink3)">Task context</div></div>
-    <div style="padding:12px;border:1px solid var(--line);border-radius:10px;white-space:pre-wrap;min-height:60px;color:var(--ink2)">${esc(t.notes||'No additional notes.')}</div>
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:14px 0 6px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Reminder</div><div style="font-size:10px;color:var(--ink3)">Task follow-up</div></div>
-    <div style="padding:12px;border:1px solid var(--line);border-radius:10px;min-height:50px;color:var(--ink2)">${taskReminder?`<div style="font-weight:700">⏰ ${taskReminder.reminder_date?new Date(taskReminder.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):''}${taskReminder.reminder_time?' · '+taskReminder.reminder_time.substring(0,5):''}</div><div style="font-size:12px;color:var(--ink3);margin-top:4px">${esc(String(taskReminder.notes||'').replace(/^Task reminder( \[task:[^\]]+\])?\s*[:—-]?\s*/i,''))}</div>`:'No task reminder set.'}</div>${taskReminder?`<button onclick=\"deleteEmbeddedTaskReminder('${taskReminder.id}','${t.id}')\" style=\"float:right;margin-top:-24px;background:none;border:none;color:var(--rose);cursor:pointer\" title=\"Delete reminder\">×</button>`:''}</div>\n  `;
-  const completeBtn=document.getElementById('tdetail-complete-btn');
-  const canChange=canManageTaskClient(t);
-  completeBtn.style.display=canChange?'inline-flex':'none';
-  completeBtn.textContent=t.status==='Done'?'↩ Reopen':'✓ Mark Complete';
+
+    <div style="margin:0 0 14px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Reminder</div><div style="font-size:10px;color:var(--ink3)">${activeReminder?esc(reminderStatus):'Optional task follow-up'}</div></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;margin-bottom:9px"><input type="checkbox" id="tdetail-reminder-enabled" ${activeReminder?'checked':''} ${canChange?'':'disabled'}> Set / edit reminder</label>
+      <div id="tdetail-reminder-fields" style="display:${activeReminder?'grid':'none'};grid-template-columns:1fr 1fr;gap:8px">
+        <input id="tdetail-reminder-date" type="date" value="${esc(dateVal)}" ${canChange?'':'disabled'} style="padding:8px;border:1px solid var(--line2);border-radius:8px;background:#fff;font-family:var(--font-b)">
+        <input id="tdetail-reminder-time" type="time" value="${esc(timeVal)}" ${canChange?'':'disabled'} style="padding:8px;border:1px solid var(--line2);border-radius:8px;background:#fff;font-family:var(--font-b)">
+        <textarea id="tdetail-reminder-note" placeholder="What should I remember?" ${canChange?'':'disabled'} style="grid-column:1/-1;min-height:52px;resize:vertical;padding:9px;border:1px solid var(--line2);border-radius:8px;background:#fff;font-family:var(--font-b)">${esc(reminderNote)}</textarea>
+      </div>
+      ${activeReminder&&canChange?`<div style="display:flex;justify-content:flex-end;margin-top:8px"><button type="button" id="tdetail-delete-reminder" style="border:0;background:none;color:var(--rose);font-size:11px;font-weight:700;cursor:pointer">Delete this reminder</button></div>`:''}
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 7px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Task status</div><div style="font-size:10px;color:var(--ink3)">Select the status, then save it</div></div>
+    <div id="tdetail-status-buttons" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+      <button type="button" data-task-status="Open" ${canChange?'':'disabled'} style="border:1px solid var(--line2);background:var(--paper);color:var(--ink2);border-radius:9px;padding:10px 8px;font-weight:700;cursor:${canChange?'pointer':'default'}">○ Not Started</button>
+      <button type="button" data-task-status="In Progress" ${canChange?'':'disabled'} style="border:1px solid var(--line2);background:var(--paper);color:var(--ink2);border-radius:9px;padding:10px 8px;font-weight:700;cursor:${canChange?'pointer':'default'}">◉ In Progress</button>
+      <button type="button" data-task-status="Done" ${canChange?'':'disabled'} style="border:1px solid var(--line2);background:var(--paper);color:var(--ink2);border-radius:9px;padding:10px 8px;font-weight:700;cursor:${canChange?'pointer':'default'}">✓ Completed</button>
+    </div>
+    <div style="font-size:10.5px;color:var(--ink3);margin-top:8px">A task is completed only when <b>Completed</b> is selected and <b>Save status</b> is clicked. The lead itself is completed separately by the lead's Converted/Rejected status.</div>
+  `;
+
   let selectedTaskStatus=t.status==='Done'?'Done':t.status==='In Progress'?'In Progress':'Open';
   const statusButtons=[...document.querySelectorAll('#tdetail-status-buttons [data-task-status]')];
   const paintTaskStatusButtons=()=>{
     statusButtons.forEach(btn=>{
       const active=btn.dataset.taskStatus===selectedTaskStatus;
       const cfg=btn.dataset.taskStatus==='Done'?{border:'var(--sage)',bg:'var(--sage-l)',tx:'var(--sage)'}:btn.dataset.taskStatus==='In Progress'?{border:'var(--gold)',bg:'var(--gold-l)',tx:'var(--gold)'}:{border:'var(--sky)',bg:'var(--sky-l)',tx:'var(--sky)'};
-      btn.style.borderColor=active?cfg.border:'var(--line2)';
-      btn.style.background=active?cfg.bg:'var(--paper)';
-      btn.style.color=active?cfg.tx:'var(--ink2)';
+      btn.style.borderColor=active?cfg.border:'var(--line2)';btn.style.background=active?cfg.bg:'var(--paper)';btn.style.color=active?cfg.tx:'var(--ink2)';
     });
   };
   statusButtons.forEach(btn=>btn.onclick=()=>{selectedTaskStatus=btn.dataset.taskStatus;paintTaskStatusButtons();});
   paintTaskStatusButtons();
-  const statusSave=document.getElementById('tdetail-save-status-footer');
-  if(statusSave){ statusSave.style.display=canChange?'inline-flex':'none'; statusSave.onclick=async()=>{
-    if(!canManageTaskClient(t)){toast('You do not have permission to change this task.');return;}
-    statusSave.disabled=true;
-    const ok=await saveTaskStatus(t.id,selectedTaskStatus);
-    statusSave.disabled=false;
-    if(!ok)return;
-    closeModal('modal-task-detail');renderTaskDashboard();loadMyTasks();
-  }; }
-  completeBtn.onclick=async()=>{
-    if(!canManageTaskClient(t)){toast('You do not have permission to change this task.');return;}
-    completeBtn.disabled=true;
-    const next=t.status==='Done'?'Open':'Done';
-    const ok=await saveTaskStatus(t.id,next);
-    completeBtn.disabled=false;
-    if(!ok)return;
-    closeModal('modal-task-detail');renderTaskDashboard();loadMyTasks();
+
+  const reminderEnabled=document.getElementById('tdetail-reminder-enabled');
+  const reminderFields=document.getElementById('tdetail-reminder-fields');
+  if(reminderEnabled)reminderEnabled.onchange=()=>{if(reminderFields)reminderFields.style.display=reminderEnabled.checked?'grid':'none';};
+  const deleteReminderBtn=document.getElementById('tdetail-delete-reminder');
+  if(deleteReminderBtn)deleteReminderBtn.onclick=async()=>{
+    if(!activeReminder)return;
+    if(!confirm('Delete this task reminder?'))return;
+    const{error}=await sb.from('reminders').delete().eq('id',activeReminder.id);
+    if(error){toast('Could not delete reminder: '+error.message);return;}
+    toast('Reminder deleted.');
+    openTaskDetail(t.id);
+  };
+
+  const completeBtn=document.getElementById('tdetail-complete-btn');
+  const statusSave=document.getElementById('tdetail-save-status');
+  completeBtn.style.display=canChange?'inline-flex':'none';
+  statusSave.style.display=canChange?'inline-flex':'none';
+  completeBtn.textContent=t.status==='Done'?'↩ Reopen':'✓ Mark Complete';
+  completeBtn.onclick=()=>{
+    if(!canChange)return;
+    selectedTaskStatus=t.status==='Done'?'Open':'Done';
+    paintTaskStatusButtons();
+    toast(selectedTaskStatus==='Done'?'Completed selected — click Save status to apply.':'Reopen selected — click Save status to apply.');
+  };
+  statusSave.onclick=async()=>{
+    if(!canChange){toast('You do not have permission to change this task.');return;}
+    statusSave.disabled=true;completeBtn.disabled=true;
+    const notes=(document.getElementById('tdetail-notes')?.value||'').trim();
+    const dbStatus=selectedTaskStatus==='Done'?'Done':selectedTaskStatus==='In Progress'?'In Progress':'Open';
+    const{error:taskError}=await sb.from('tasks').update({status:dbStatus,completed_at:dbStatus==='Done'?new Date().toISOString():null,notes}).eq('id',t.id);
+    if(taskError){statusSave.disabled=false;completeBtn.disabled=false;toast('Could not save task: '+taskError.message);return;}
+
+    const enabled=!!document.getElementById('tdetail-reminder-enabled')?.checked;
+    const reminderDate=document.getElementById('tdetail-reminder-date')?.value||'';
+    const reminderTime=document.getElementById('tdetail-reminder-time')?.value||'09:00';
+    const reminderText=(document.getElementById('tdetail-reminder-note')?.value||'').trim();
+    if(enabled){
+      if(!reminderDate){statusSave.disabled=false;completeBtn.disabled=false;toast('Task saved. Choose a reminder date to save the reminder.');return;}
+      const reminderPayload={lead_id:t.lead_id,reminder_date:reminderDate,reminder_time:reminderTime,notes:`${taskPrefix}${reminderText?' '+reminderText:''}`,done:false};
+      if(activeReminder){
+        const{error:e}=await sb.from('reminders').update(reminderPayload).eq('id',activeReminder.id);
+        if(e){statusSave.disabled=false;completeBtn.disabled=false;toast('Task saved, but reminder could not be updated: '+e.message);return;}
+      }else{
+        const{error:e}=await sb.from('reminders').insert([reminderPayload]);
+        if(e){statusSave.disabled=false;completeBtn.disabled=false;toast('Task saved, but reminder could not be created: '+e.message);return;}
+      }
+    }
+    statusSave.disabled=false;completeBtn.disabled=false;
+    toast(dbStatus==='Done'?'Task completed and saved.':'Task updated and saved.');
+    closeModal('modal-task-detail');renderTaskDashboard();loadMyTasks();loadDashReminders();
   };
   document.getElementById('tdetail-lead-btn').onclick=()=>{closeModal('modal-task-detail');if(t.lead_id)openLeadDetail(t.lead_id);};
   document.getElementById('modal-task-detail').classList.add('open');
@@ -6801,6 +6838,22 @@ function renderTaskDailySnapshot(scoped){
   }
 }
 
+function taskReminderFor(t,reminders){
+  const idPrefix=`[Task:${t.id}]`;
+  const legacyPrefix=`Task reminder: ${t.title}`;
+  return (reminders||[]).find(r=>String(r.notes||'').startsWith(idPrefix))
+      || (reminders||[]).find(r=>String(r.notes||'').startsWith(legacyPrefix));
+}
+function taskReminderText(r,t){
+  if(!r)return '';
+  const raw=String(r.notes||'');
+  const p1=`[Task:${t.id}]`;
+  const p2=`Task reminder: ${t.title}`;
+  if(raw.startsWith(p1))return raw.slice(p1.length).replace(/^\s*[—:-]?\s*/,'').trim();
+  if(raw.startsWith(p2))return raw.slice(p2.length).replace(/^\s*[—:-]?\s*/,'').trim();
+  return raw;
+}
+
 async function renderTaskDashboard(){
   // Existing counsellor assignments from before the task workflow was added
   // are healed here once: every assigned lead gets an actionable task, and
@@ -6819,50 +6872,52 @@ async function renderTaskDashboard(){
   // - Admin / Manager / Director: tasks assigned to people in their own country/team scope.
   // The assignee is the primary task-visibility boundary; the lead country is a secondary safety check.
   const staffByName=new Map((teamList||[]).map(x=>[(x.full_name||'').trim(),x]));
+  const taskCategory=(t)=>effectiveTeamCategory(staffByName.get((t.assigned_to||'').trim()));
   const isElevatedGlobal=isOwner || ((currentUser?.email||'').toLowerCase()==='pavitra@step4progress.com');
   const isJisan=(currentUser?.email||'').toLowerCase()==='jisan@step4progress.co.uk';
   const isOwnCountryStaff=staff=>staff && myCountry && staff.country===myCountry;
-  const activeTaskWorkstream=currentTaskWorkstream();
-  if(isElevatedGlobal || isJisan){
-    // Owner / Platform Administrator / Super Admin always work inside one
-    // operational workstream at a time. They can switch between the two;
-    // they are never shown a mixed Domestic + International task board.
-    if(isJisan) scoped=scoped.filter(t=>t.leads?.country!=='India');
-    scoped=scoped.filter(t=>activeTaskWorkstream==='Domestic'?taskIsDomestic(t):!taskIsDomestic(t));
+  if(isElevatedGlobal && !superAdminOpsView){
+    // Global view: Owner / Platform Administrator can see both operational poles.
+  } else if(isElevatedGlobal && superAdminOpsView){
+    // Domestic/International is a TEAM boundary, not a country shortcut.
+    // This matters because UK can contain both local Domestic work and UK international study-abroad work.
+    scoped=scoped.filter(t=>taskCategory(t)===superAdminOpsView);
+  } else if(isJisan){
+    const nonIndia=scoped.filter(t=>t.leads?.country!=='India');
+    scoped=superAdminOpsView?nonIndia.filter(t=>taskCategory(t)===superAdminOpsView):nonIndia;
   } else if(myRole==='Counsellor' || myTeamCategory==='Domestic' || ['Application Team','Visa Team','SOP Team'].includes(myRole) || myTeamCategory==='Agent'){
-    const targetName=String(myName||'').trim().toLowerCase();
-    scoped=scoped.filter(t=>String(t.assigned_to||'').trim().toLowerCase()===targetName);
-    // Personal task views are still locked to the person's workstream.
-    scoped=scoped.filter(t=>activeTaskWorkstream==='Domestic'?taskIsDomestic(t):!taskIsDomestic(t));
+    scoped=scoped.filter(t=>(t.assigned_to||'').trim()===myName && (myTeamCategory!=='Domestic'||taskCategory(t)==='Domestic'));
   } else if(['Admin','Manager','Director'].includes(myRole)){
     scoped=scoped.filter(t=>{
       const taskAssignee=(t.assigned_to||'').trim();
       const a=staffByName.get(taskAssignee);
-      const ownCountry=a ? isOwnCountryStaff(a) : (!!myCountry && t.leads?.country===myCountry);
-      if(!ownCountry)return false;
-      return activeTaskWorkstream==='Domestic'?taskIsDomestic(t):!taskIsDomestic(t);
+      if(a){
+        // Domestic management never sees International operations; International management excludes Domestic.
+        if(effectiveTeamCategory(a)!==myTeamCategory)return false;
+        return isOwnCountryStaff(a);
+      }
+      return false;
     });
   } else {
     scoped=scoped.filter(t=>(t.assigned_to||'').trim()===myName);
-    scoped=scoped.filter(t=>activeTaskWorkstream==='Domestic'?taskIsDomestic(t):!taskIsDomestic(t));
   }
+
+  // Pull only reminders belonging to the already-authorized task leads.
+  // The reminder is lead-level in the database, but the [Task:id] marker lets the task board
+  // show the correct reminder without mixing one lead's unrelated reminders into another task.
+  const scopedLeadIds=[...new Set(scoped.map(t=>t.lead_id).filter(Boolean))];
+  let scopedTaskReminders=[];
+  if(scopedLeadIds.length){
+    const rq=await sb.from('reminders').select('id,lead_id,reminder_date,reminder_time,notes,done').in('lead_id',scopedLeadIds).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true}).limit(1000);
+    if(!rq.error&&rq.data)scopedTaskReminders=rq.data;
+  }
+  scoped.forEach(t=>{t._taskReminder=taskReminderFor(t,scopedTaskReminders);});
 
   const headerMeta=document.getElementById('td-header-meta');
   if(headerMeta){
     const openCount=scoped.filter(t=>t.status!=='Done').length;
     const doneCount=scoped.filter(t=>t.status==='Done').length;
     headerMeta.textContent=`${scoped.length} task${scoped.length===1?'':'s'} · ${openCount} open · ${doneCount} completed`;
-  }
-  const opsBar=document.getElementById('td-ops-workstream');
-  if(opsBar){
-    const active=activeTaskWorkstream;
-    if(isSuperAdmin){
-      opsBar.style.display='inline-flex';
-      opsBar.innerHTML=`<button type="button" id="td-ops-intl" onclick="chooseOpsView('International')" style="border:0;border-radius:7px;padding:7px 10px;background:${active==='International'?'var(--gold-l)':'transparent'};color:${active==='International'?'var(--pine)':'var(--ink2)'};font-size:11px;font-weight:700;cursor:pointer">🌍 International</button><button type="button" id="td-ops-domestic" onclick="chooseOpsView('Domestic')" style="border:0;border-radius:7px;padding:7px 10px;background:${active==='Domestic'?'var(--gold-l)':'transparent'};color:${active==='Domestic'?'var(--pine)':'var(--ink2)'};font-size:11px;font-weight:700;cursor:pointer">🇬🇧 UK Domestic</button>`;
-    }else{
-      opsBar.style.display='inline-flex';
-      opsBar.innerHTML=`<span style="padding:7px 10px;font-size:11px;font-weight:800;color:var(--pine)">${taskWorkstreamLabel(active)} <span style="font-weight:600;color:var(--ink3)">Team</span></span>`;
-    }
   }
 
   // Counsellors get the simple personal view (Today/Tomorrow/Pending/
@@ -6878,11 +6933,6 @@ async function renderTaskDashboard(){
   document.getElementById('td-workstream-toggle').style.display=isPersonalView?'none':'block';
   if(isPersonalView){
     myTasksPersonalData=scoped;
-    const ws=document.getElementById('mtp-workstream-label');
-    if(ws){
-      const domestic=currentTaskWorkstream()==='Domestic';
-      ws.innerHTML=`<span>${domestic?'🇬🇧 UK Domestic':'🌍 International'} <b>My Tasks</b></span><span style="font-size:11px">${scoped.filter(t=>t.status!=='Done').length} open · ${scoped.filter(t=>t.status==='Done').length} completed</span>`;
-    }
     renderMyTasksPersonalTab();
     return;
   }
@@ -6963,7 +7013,10 @@ async function renderTaskDashboard(){
 
   // Full task list, filterable by state.
   const filterState=document.getElementById('td-filter-state')?.value||'';
-  let listItems=filterState==='done'?done:filterState?groups[filterState]:open;
+  // Active views must never contain completed tasks, even if an unexpected
+  // status value slips into the client-side dataset.
+  const activeOpen=open.filter(t=>t.status!=='Done');
+  let listItems=filterState==='done'?done:filterState?groups[filterState]:activeOpen;
   const el=document.getElementById('td-task-list');
   if(!listItems.length){el.innerHTML=emptyState('🎉','Nothing here.');return;}
   // Management-tier can reassign a task inline, right from this list —
@@ -6984,20 +7037,20 @@ async function renderTaskDashboard(){
           ${assigneeNames.map(n=>`<option value="${esc(n)}"${n===t.assigned_to?' selected':''}>${esc(n)}</option>`).join('')}
         </select>`
       : `<span style="font-size:11px;color:var(--ink3);flex-shrink:0">${esc(t.assigned_to||'Unassigned')}</span>`;
-    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);${isDone?'opacity:.55':''}">
-      <input type="checkbox" ${isDone?'checked':''} onchange="toggleTaskDashboardItem('${t.id}',this.checked)" style="cursor:pointer">
+    const reminder=t._taskReminder;
+    const reminderNote=taskReminderText(reminder,t);
+    const reminderLabel=reminder?(reminder.reminder_date?new Date(reminder.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'No date')+(reminder.reminder_time?' · '+String(reminder.reminder_time).substring(0,5):''):'';
+    const notePreview=String(t.notes||'').trim();
+    const canDelete=canManageTaskClient(t);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);${isDone?'opacity:.55':''}">
       ${avatar}
-      <div style="flex:1;font-size:13px">
-        ${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open lead">${esc(leadName)}</a>`:`<b>${esc(leadName)}</b>`} — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:var(--ink);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open task">${esc(t.title)}</a>
-        ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
-        <span class="pill" style="background:${taskStatusTone(t.status).bg};color:${taskStatusTone(t.status).tx};font-size:9px">${taskStatusLabel(t.status)}</span>
-        ${t.priority?` <span class="pill" style="background:${t.priority==='High'?'#FDE7E7':t.priority==='Low'?'var(--sage-l)':'var(--gold-l)'};color:${t.priority==='High'?'var(--rose)':t.priority==='Low'?'var(--sage)':'var(--gold)'};font-size:9px">${esc(t.priority)}</span>`:''}
-        ${hasReminder?` <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">⏰ ${esc(t.__taskReminder.label)}</span>`:''}
-        ${t.notes?`<div style="font-size:11px;color:var(--ink3);margin-top:4px">${esc(t.notes)}</div>`:''}
+      <div style="flex:1;min-width:0;font-size:13px">
+        <div>${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open lead">${esc(leadName)}</a>`:`<b>${esc(leadName)}</b>`} — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:var(--ink);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open task">${esc(t.title)}</a> ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''} <span class="pill" style="background:${taskStatusTone(t.status).bg};color:${taskStatusTone(t.status).tx};font-size:9px">${taskStatusLabel(t.status)}</span></div>
+        ${(notePreview||reminder)?`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;font-size:10.5px;color:var(--ink3)">${notePreview?`<span title="Task note">📝 ${esc(notePreview.length>90?notePreview.slice(0,90)+'…':notePreview)}</span>`:''}${reminder?`<span title="Task reminder">⏰ ${esc(reminderLabel)}${reminderNote?' · '+esc(reminderNote.length>70?reminderNote.slice(0,70)+'…':reminderNote):''}</span>`:''}</div>`:''}
       </div>
       ${assigneeCell}
       <span style="font-size:11px;color:var(--ink3);flex-shrink:0;min-width:60px;text-align:right">${dateLabel}</span>
-      ${canReassign?`<button onclick="openTaskDetail('${t.id}')" title="Task details" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 3px"><i class="ti ti-eye"></i></button><button onclick="deleteTaskDashboardItem('${t.id}')" title="Delete" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:15px;padding:0 3px">×</button>`:''}
+      <button onclick="openTaskDetail('${t.id}')" title="Open task" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 3px"><i class="ti ti-eye"></i></button>${canDelete?`<button onclick="deleteTaskDashboardItem('${t.id}')" title="Delete task" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:15px;padding:0 3px">×</button>`:''}
     </div>`;
   }).join('');
 }
@@ -7009,24 +7062,7 @@ function switchMyTasksTab(tab){
   document.querySelectorAll('.mtp-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   renderMyTasksPersonalTab();
 }
-async function loadTaskReminderMarkers(tasks){
-  const leadIds=[...new Set((tasks||[]).map(t=>t.lead_id).filter(Boolean))];
-  if(!leadIds.length)return;
-  const{data}=await sb.from('reminders').select('id,lead_id,reminder_date,reminder_time,notes,done').in('lead_id',leadIds).eq('done',false).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true});
-  const rows=data||[];
-  (tasks||[]).forEach(t=>{
-    const marker=`[task:${t.id}]`;
-    const exact=rows.find(r=>String(r.notes||'').includes(marker));
-    const legacy=exact||rows.find(r=>String(r.notes||'').startsWith(`Task reminder: ${t.title}`));
-    if(legacy){
-      const dt=legacy.reminder_date?new Date(legacy.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
-      const tm=legacy.reminder_time?legacy.reminder_time.substring(0,5):'';
-      t.__taskReminder={id:legacy.id,label:[dt,tm].filter(Boolean).join(' · ')};
-    }
-  });
-}
-async function renderMyTasksPersonalTab(){
-  await loadTaskReminderMarkers(myTasksPersonalData);
+function renderMyTasksPersonalTab(){
   const today=new Date().toISOString().substring(0,10);
   const tomorrow=new Date(Date.now()+86400000).toISOString().substring(0,10);
   const open=myTasksPersonalData.filter(t=>t.status!=='Done');
@@ -7067,29 +7103,20 @@ async function renderMyTasksPersonalTab(){
     const leadName=t.leads?.name||'Unknown lead';
     const isDone=t.status==='Done';
     const dateLabel=t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'No date';
-    const hasReminder=!!t.__taskReminder;
+    const reminder=t._taskReminder;
+    const reminderNote=taskReminderText(reminder,t);
+    const reminderLabel=reminder?(reminder.reminder_date?new Date(reminder.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'No date')+(reminder.reminder_time?' · '+String(reminder.reminder_time).substring(0,5):''):'';
+    const notePreview=String(t.notes||'').trim();
     return `<div style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)">
-      <input type="checkbox" ${isDone?'checked':''} onchange="toggleMyTaskPersonal('${t.id}',this.checked)" style="cursor:pointer;width:18px;height:18px">
-      <div style="flex:1;font-size:13.5px">
-        ${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open lead">${esc(leadName)}</a>`:`<b style="${isDone?'text-decoration:line-through;color:var(--ink3)':''}">${esc(leadName)}</b>`} — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:${isDone?'var(--ink3)':'var(--ink)'};${isDone?'text-decoration:line-through;':''}text-underline-offset:2px;cursor:pointer" title="Open task">${esc(t.title)}</a>
-        ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
-        ${t.priority?` <span class="pill" style="background:${t.priority==='High'?'#FDE7E7':t.priority==='Low'?'var(--sage-l)':'var(--gold-l)'};color:${t.priority==='High'?'var(--rose)':t.priority==='Low'?'var(--sage)':'var(--gold)'};font-size:9px">${esc(t.priority)}</span>`:''}
+      <div style="flex:1;min-width:0;font-size:13.5px">
+        ${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open lead">${esc(leadName)}</a>`:`<b style="${isDone?'text-decoration:line-through;color:var(--ink3)':''}">${esc(leadName)}</b>`} — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:${isDone?'var(--ink3)':'var(--ink)'};${isDone?'text-decoration:line-through;':''}text-underline-offset:2px;cursor:pointer" title="Open task">${esc(t.title)}</a> ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
+        ${(notePreview||reminder)?`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;font-size:10.5px;color:var(--ink3)">${notePreview?`<span>📝 ${esc(notePreview.length>100?notePreview.slice(0,100)+'…':notePreview)}</span>`:''}${reminder?`<span>⏰ ${esc(reminderLabel)}${reminderNote?' · '+esc(reminderNote.length>75?reminderNote.slice(0,75)+'…':reminderNote):''}</span>`:''}</div>`:''}
       </div>
       <span style="font-size:11.5px;color:var(--ink3);flex-shrink:0">${dateLabel}</span>
-      ${canManageTaskClient(t)?`<button onclick="event.preventDefault();event.stopPropagation();deleteTaskDashboardItem('${t.id}')" title="Delete task" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:15px;padding:2px 4px">×</button>`:''}
     </div>`;
   }).join('');
 }
-async function toggleMyTaskPersonal(taskId,checked){
-  const t=myTasksPersonalData.find(x=>x.id===taskId);
-  if(!t||!canManageTaskClient(t)){toast('You do not have permission to change this task.');return;}
-  const dbStatus=checked?'Done':'Open';
-  const{data,error}=await sb.from('tasks').update({status:dbStatus,completed_at:checked?new Date().toISOString():null}).eq('id',taskId).select('id,status,completed_at').maybeSingle();
-  if(error||!data){toast('Could not update task: '+(error?.message||'no row was updated'));return;}
-  t.status=data.status;t.completed_at=data.completed_at;
-  toast(checked?'Task completed.':'Task reopened.');
-  renderTaskDashboard();
-}
+async function toggleMyTaskPersonal(taskId,checked){toast('Open the task and use Completed → Save status.');}
 
 async function editTaskDashboardItem(taskId){
   const t=(await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle()).data;
@@ -7105,15 +7132,6 @@ async function editTaskDashboardItem(taskId){
   renderTaskDashboard();
   loadMyTasks();
 }
-async function deleteEmbeddedTaskReminder(reminderId,taskId){
-  if(!confirm('Delete this task reminder?'))return;
-  const{error}=await sb.from('reminders').delete().eq('id',reminderId);
-  if(error){toast('Error deleting reminder: '+error.message);return;}
-  toast('Task reminder deleted.');
-  closeModal('modal-task-detail');
-  openTaskDetail(taskId);
-  loadDashReminders();
-}
 async function deleteTaskDashboardItem(taskId){
   const{data:t}=await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle();
   if(!t){toast('Task not found.');return;}
@@ -7121,11 +7139,7 @@ async function deleteTaskDashboardItem(taskId){
   if(!confirm('Delete this task? This cannot be undone.'))return;
   const{error}=await sb.from('tasks').delete().eq('id',taskId);
   if(error){toast('Error deleting: '+error.message);return;}
-  // Remove reminders that were explicitly embedded with this task.
-  const{data:taskRems}=await sb.from('reminders').select('id,notes').eq('lead_id',t.lead_id);
-  const embeddedIds=(taskRems||[]).filter(r=>String(r.notes||'').includes(`[task:${taskId}]`)).map(r=>r.id);
-  if(embeddedIds.length)await sb.from('reminders').delete().in('id',embeddedIds);
-  toast('Task and its embedded reminder deleted.');
+  toast('Task deleted.');
   renderTaskDashboard();
   loadMyTasks();
 }
@@ -7147,13 +7161,7 @@ function filterTaskDashboardByCard(filterKey){
   renderTaskDashboard();
   document.getElementById('td-all-tasks-card')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
-async function toggleTaskDashboardItem(taskId,checked){
-  const{data:t}=await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle();
-  if(!t||!canManageTaskClient(t)){toast('You do not have permission to change this task.');renderTaskDashboard();return;}
-  const{error}=await sb.from('tasks').update({status:checked?'Done':'Open',completed_at:checked?new Date().toISOString():null}).eq('id',taskId);
-  if(error){toast('Could not update task: '+error.message);return;}
-  renderTaskDashboard();loadMyTasks();toast(checked?'✅ Task done':'↩ Reopened');
-}
+async function toggleTaskDashboardItem(taskId,checked){toast('Open the task and use Completed → Save status.');}
 
 async function updateStatus(){
   if(curId) broadcastStartEditing(curId);
@@ -7470,13 +7478,7 @@ async function saveLead(){
     const maxId=leads.reduce((max,l)=>{const n=parseInt((l.lead_id||'S4P-0000').split('-')[1]);return n>max?n:max;},0);data.lead_id='S4P-'+String(maxId+1).padStart(4,'0');
     // Counsellors can only add leads assigned to themselves — this mirrors the
     // Import restriction. Round-robin / typing another name is only for Admins.
-    // UK leads are never auto-round-robin assigned. For a manual UK lead,
-    // the person creating it owns the first assignment; Management can
-    // deliberately reassign it later. International leads retain the
-    // existing round-robin behaviour.
-    if(String(data.country||'').trim().toLowerCase()==='uk'){
-      data.counsellor=myName||data.counsellor||null;
-    } else if(myRole==='Counsellor'&&!isSuperAdmin){
+    if(myRole==='Counsellor'&&!isSuperAdmin){
       data.counsellor=myName;
     } else if(!data.counsellor){
       const rr=await getNextCounsellorForOffice(data.office);data.counsellor=rr.name;
@@ -8115,7 +8117,7 @@ function renderManagementAndOperationsTeams(team){
   }
 
   const mgmtRoles=['Manager','Admin','Director'];
-  const mgmt=(team||[]).filter(t=>mgmtRoles.includes(t.role)&&!isDomesticStaffMember(t)&&!isOwnerRowHiddenFromMe(t));
+  const mgmt=(team||[]).filter(t=>mgmtRoles.includes(t.role)&&effectiveTeamCategory(t)!=='Domestic'&&!isOwnerRowHiddenFromMe(t));
   if(effectiveView!=='Domestic')mgmtEl.innerHTML=`<div class="card" style="margin-bottom:16px">
     <div class="card-h"><span class="card-t">🌍 International — Management Team</span><span style="font-size:11px;color:var(--ink3)">${mgmt.length} member${mgmt.length!==1?'s':''} — Manager, Admin & Director, across every country</span></div>
     <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
@@ -8145,19 +8147,27 @@ function renderManagementAndOperationsTeams(team){
     <div style="display:flex;gap:20px;flex-wrap:wrap">${opsCols}</div>
   </div>`;
 
-  // ── Domestic Operations (UK-internal, no round-robin, Management-assigned only) ──
+  // ── UK Domestic pole: Management and Operations are visibly separate. ──
   if(domesticEl){
     if(effectiveView!=='Domestic'){domesticEl.innerHTML='';}
     else{
-    const domestic=(team||[]).filter(t=>isDomesticStaffMember(t));
-    domesticEl.innerHTML=`<div class="card" style="margin-bottom:16px">
-      <div class="card-h"><span class="card-t">🇬🇧 Domestic Operations</span><span style="font-size:11px;color:var(--ink3)">${domestic.length} member${domestic.length!==1?'s':''} — UK-internal only, never receives leads automatically</span></div>
-      <div class="team-grid">${domestic.length?domestic.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
+      const domestic=(team||[]).filter(t=>effectiveTeamCategory(t)==='Domestic');
+      const domesticMgmt=domestic.filter(t=>mgmtRoles.includes(t.role));
+      const domesticOps=domestic.filter(t=>!mgmtRoles.includes(t.role));
+      const cardFor=(t)=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · UK Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
-        </div>`).join(''):emptyState('🇬🇧','No Domestic team members yet.')}</div>
-    </div>`;
+        </div>`;
+      domesticEl.innerHTML=`
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h"><span class="card-t">🇬🇧 UK Domestic — Management Team</span><span style="font-size:11px;color:var(--ink3)">${domesticMgmt.length} member${domesticMgmt.length!==1?'s':''} — UK-local management only</span></div>
+          <div class="team-grid">${domesticMgmt.length?domesticMgmt.map(cardFor).join(''):emptyState('🏛️','No Domestic management members yet.')}</div>
+        </div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h"><span class="card-t">🇬🇧 UK Domestic — Operations Team</span><span style="font-size:11px;color:var(--ink3)">${domesticOps.length} member${domesticOps.length!==1?'s':''} — manually assigned; no round-robin</span></div>
+          <div class="team-grid">${domesticOps.length?domesticOps.map(cardFor).join(''):emptyState('👥','No Domestic operations members yet.')}</div>
+        </div>`;
     }
   }
 
@@ -8211,7 +8221,7 @@ function renderTeam(team){
   // India office list below), since Management wants a single place to
   // see everyone physically on the India team regardless of role.
   const officeExcludedRoles=['Manager','Admin','Director','Application Team','Visa Team','SOP Team','Agent'];
-  (team||[]).filter(t=>(!officeExcludedRoles.includes(t.role)||t.country==='India')&&!isDomesticStaffMember(t)).forEach(t=>{
+  (team||[]).filter(t=>(!officeExcludedRoles.includes(t.role)||t.country==='India')&&effectiveTeamCategory(t)!=='Domestic').forEach(t=>{
     // If office is blank, or doesn't match a known office for their country
     // (e.g. a stale value from before offices were consolidated), derive the
     // correct office from country instead of showing a phantom "Unassigned"
@@ -8949,7 +8959,7 @@ async function loadCommissions(){
       // Domestic/International is based purely on country (which office is
       // assisting the student), never nationality — see opsViewScopedLeads
       // for the full reasoning.
-      const isDomesticLead=l=>l&&(l.nationality==='UK'||l.country==='UK');
+      const isDomesticLead=l=>String(l?.country||'').trim().toLowerCase()==='uk';
       commissions=data.filter(c=>superAdminOpsView==='Domestic'?isDomesticLead(c.leads):!isDomesticLead(c.leads));
     } else {
       commissions=data;
@@ -10221,12 +10231,13 @@ function renderTasks(list){
   el.innerHTML=list.length?list.map(t=>{
     const overdue=t.status!=='Done'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
     return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${t.status==='Done'?';opacity:.5':''}">
-      <input type="checkbox" ${t.status==='Done'?'checked':''} onchange="toggleTask('${t.id}',this.checked)" style="margin-top:3px;cursor:pointer">
-      <div style="flex:1">
+      <div style="flex:1;cursor:pointer" onclick="openTaskDetail('${t.id}')">
         <div style="font-size:13px;font-weight:600${t.status==='Done'?';text-decoration:line-through':''}">${esc(t.title)}${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}</div>
+        ${t.notes?`<div style="font-size:11px;color:var(--ink3);margin-top:3px">📝 ${esc(String(t.notes).length>90?String(t.notes).slice(0,90)+'…':t.notes)}</div>`:''}
         <div style="font-size:11px;color:${overdue?'var(--rose)':'var(--ink3)'};margin-top:2px">${t.due_date?'Due '+new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})+(overdue?' — overdue':''):'No due date'}${t.assigned_to?' · '+esc(t.assigned_to):''}</div>
       </div>
-      <button onclick="deleteTask('${t.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">×</button>
+      <button onclick="openTaskDetail('${t.id}')" title="Open task" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:2px 4px"><i class="ti ti-eye"></i></button>
+      <button onclick="deleteTask('${t.id}')" title="Delete task" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:0 4px">×</button>
     </div>`;
   }).join(''):emptyState('✅','No tasks yet.');
 }
@@ -11664,35 +11675,40 @@ async function loadResponseTimeStats(scopedLeadsForStats){
   const{data,error}=await sb.from('activity_log').select('lead_id,created_at').eq('event_type','status_change').order('created_at',{ascending:true});
   if(error||!data)return null;
   const firstActionByLead={};
-  data.forEach(row=>{if(!(row.lead_id in firstActionByLead))firstActionByLead[row.lead_id]=row.created_at;});
+  data.forEach(row=>{ if(!(row.lead_id in firstActionByLead)) firstActionByLead[row.lead_id]=row.created_at; });
+
   const responseMins=[];
-  let unrecorded=0;
-  (scopedLeadsForStats||[]).forEach(l=>{
+  let uncontacted=0;
+  scopedLeadsForStats.forEach(l=>{
     const firstAction=firstActionByLead[l.id];
-    if(!firstAction){unrecorded++;return;}
+    if(!firstAction){ uncontacted++; return; }
     const mins=(new Date(firstAction).getTime()-new Date(l.created_at).getTime())/60000;
-    if(mins>=0)responseMins.push(mins);
+    if(mins>=0) responseMins.push(mins);
   });
-  const total=(scopedLeadsForStats||[]).length;
-  if(!responseMins.length)return{avgMins:null,within15:0,unrecordedPct:total?Math.round(unrecorded/total*100):0};
+
+  const total=scopedLeadsForStats.length;
+  if(!responseMins.length) return {avgMins:null,within15:0,within1hr:0,over4hr:0,uncontactedPct:total?Math.round(uncontacted/total*100):0};
   const avgMins=responseMins.reduce((a,b)=>a+b,0)/responseMins.length;
-  return{avgMins,within15:Math.round(responseMins.filter(m=>m<=15).length/responseMins.length*100),unrecordedPct:total?Math.round(unrecorded/total*100):0};
+  const pct=(fn)=>Math.round(responseMins.filter(fn).length/responseMins.length*100);
+  return {
+    avgMins,
+    within15:pct(m=>m<=15),
+    within1hr:pct(m=>m<=60),
+    over4hr:pct(m=>m>240),
+    uncontactedPct:total?Math.round(uncontacted/total*100):0,
+  };
 }
 function formatResponseStatsHtml(stats){
-  if(!stats)return '<p style="font-size:13px;color:var(--ink3);font-style:italic">Could not load response data.</p>';
-  let avgLabel='—';
-  if(stats.avgMins!=null){
-    if(stats.avgMins<60)avgLabel=Math.round(stats.avgMins)+' min';
-    else if(stats.avgMins<1440)avgLabel=(stats.avgMins/60).toFixed(1)+' hrs';
-    else avgLabel=(stats.avgMins/1440).toFixed(1)+' days';
-  }
+  if(!stats)return '<p style="font-size:13px;color:var(--ink3);font-style:italic">Could not load response time data.</p>';
+  const avgLabel=stats.avgMins==null?'—':(stats.avgMins<60?Math.round(stats.avgMins)+' min':(stats.avgMins/60).toFixed(1)+' hrs');
   return `<div class="fg" style="gap:12px">
-    <div class="kpi"><div class="kpi-l">Average first response</div><div class="kpi-v">${avgLabel}</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">Time from lead creation to first recorded CRM response.</div></div>
-    <div class="kpi"><div class="kpi-l">Within 15 min</div><div class="kpi-v kv-g">${stats.within15}%</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">Of leads with a recorded first response.</div></div>
-    <div class="kpi"><div class="kpi-l">No recorded first action</div><div class="kpi-v kv-r">${stats.unrecordedPct}%</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">No first CRM action is recorded yet.</div></div>
+    <div class="kpi"><div class="kpi-l">Average response</div><div class="kpi-v">${avgLabel}</div></div>
+    <div class="kpi"><div class="kpi-l">Within 15 min</div><div class="kpi-v kv-g">${stats.within15}%</div></div>
+    <div class="kpi"><div class="kpi-l">Within 1 hour</div><div class="kpi-v kv-g">${stats.within1hr}%</div></div>
+    <div class="kpi"><div class="kpi-l">Over 4 hours</div><div class="kpi-v kv-o">${stats.over4hr}%</div></div>
+    <div class="kpi"><div class="kpi-l">Never contacted</div><div class="kpi-v kv-r">${stats.uncontactedPct}%</div></div>
   </div>`;
 }
-
 async function renderMyResponseStats(){
   const el=document.getElementById('my-response-stats');
   if(!el)return;
@@ -11875,7 +11891,7 @@ async function renderActivityMonitor(){
   let members=(teamList||[]).filter(t=>{
     if(isOwnerRowHiddenFromMe(t))return false;
     const categoryFilter=document.getElementById('am-category')?.value||'All';
-    if(categoryFilter!=='All'&&(t.team_category||'International')!==categoryFilter)return false;
+    if(categoryFilter!=='All'&&effectiveTeamCategory(t)!==categoryFilter)return false;
     if(countryFilter&&countryFilter!=='All'){
       // Compare against the REAL office value(s) via OFFICE_MAP, not the
       // plain country name directly — India/UK are stored as "India HQ"/
@@ -12189,7 +12205,7 @@ function broadcastStopEditing(leadId) {
     <div class="modal" style="width:min(680px,calc(100vw - 32px));max-height:90vh;overflow:auto">
       <div class="mhead"><div><span class="mtitle" id="tdetail-title">Task details</span><div id="tdetail-sub" style="font-size:11px;color:var(--ink3);margin-top:2px"></div></div><button class="mclose" onclick="closeModal('modal-task-detail')">×</button></div>
       <div id="tdetail-body" style="padding:18px 20px"></div>
-      <div class="mfoot"><button class="btn" onclick="closeModal('modal-task-detail')">Close</button><button class="btn" id="tdetail-complete-btn"></button><button class="btn" id="tdetail-save-status-footer" style="display:none">Save status</button><button class="btn btn-p" id="tdetail-lead-btn">Open Lead →</button></div>
+      <div class="mfoot"><button class="btn" onclick="closeModal('modal-task-detail')">Close</button><button class="btn" id="tdetail-complete-btn"></button><button class="btn btn-p" id="tdetail-save-status">Save status</button><button class="btn btn-p" id="tdetail-lead-btn">Open Lead →</button></div>
     </div>
   </div>
 

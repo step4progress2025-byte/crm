@@ -1820,7 +1820,7 @@ What would you like help with today?</div>
         <select id="f-prio"><option>High</option><option selected>Medium</option><option>Low</option></select>
       </div>
       <div class="ff"><label>Assistance needed from *</label>
-        <select id="f-country" onchange="syncLeadOffice();syncMobileCode();syncBudgetCurrency();populateCounsellorDropdown()">
+        <select id="f-country" onchange="syncLeadOffice();syncMobileCode();syncBudgetCurrency();populateCounsellorDropdown();setupAssignModeUI()">
           <option value="">Select assistance needed from...</option>
           <option value="India">India</option><option value="UK">UK</option><option value="Pakistan">Pakistan</option><option value="Bangladesh">Bangladesh</option>
           <option value="Other">Other (assigned to India — our base of operations)</option>
@@ -1850,7 +1850,7 @@ What would you like help with today?</div>
       </div>
       <div class="ff" id="f-counsel-wrap">
         <label>Counsellor</label>
-        <select id="f-counsel"><option value="">Auto-assign (round robin)</option></select>
+        <select id="f-counsel"><option value="">Select counsellor (manual)</option></select>
       </div>
       <div class="ff full sdiv" style="border-top:1px solid var(--line);margin-top:4px;padding-top:10px">Sub-team assignment (optional)</div>
       <div class="ff"><label>Application Team</label><select id="f-application-team"><option value="">Unassigned</option></select></div>
@@ -2139,7 +2139,7 @@ What would you like help with today?</div>
           <select id="bal-country"><option value="">Detect from data (if mapped)</option><option>India</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option></select>
         </div>
         <div class="ff"><label>Assign leads to</label>
-          <select id="bal-assign-mode"><option value="unassigned">Leave unassigned</option><option value="roundrobin">Auto-assign (Round Robin)</option></select>
+          <select id="bal-assign-mode"><option value="unassigned">Leave unassigned</option><option value="roundrobin">Auto-assign (Round Robin — UK excluded)</option></select>
         </div>
         <div class="ff full"><label><input type="checkbox" id="bal-notify" style="width:auto;margin-right:6px">Notify assigned counsellors</label></div>
       </div>
@@ -2317,6 +2317,16 @@ What would you like help with today?</div>
       <div class="ff"><label>Priority</label><select id="task-priority"><option value="Medium">Normal</option><option value="High">High</option><option value="Low">Low</option></select></div>
       <div class="ff full" id="task-assignee-wrap" style="display:none"><label>Assign to (optional)</label><select id="task-assignee-picker"><option value="">Leave as lead's counsellor</option></select></div>
       <div class="ff full"><label>Notes <span style="font-weight:400;color:var(--ink3)">(optional)</span></label><textarea id="task-notes" rows="3" placeholder="Anything the assignee should know…" style="resize:vertical"></textarea></div>
+      <div class="ff full" style="padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600">
+          <input type="checkbox" id="task-set-reminder" onchange="toggleTaskReminderFields()" style="cursor:pointer">
+          Set a reminder for this task
+        </label>
+        <div id="task-reminder-fields" class="fg" style="display:none;margin-top:10px">
+          <div class="ff"><label>Reminder date</label><input type="date" id="task-reminder-date"></div>
+          <div class="ff"><label>Reminder time</label><input type="time" id="task-reminder-time" value="09:00"></div>
+        </div>
+      </div>
     </div>
     <div class="mfoot">
       <button class="btn" onclick="closeModal('modal-task')">Cancel</button>
@@ -3380,6 +3390,30 @@ function isDomesticOrAgent(){return myTeamCategory==='Domestic'||myTeamCategory=
 // Manager (e.g. Anusree) can also allot counsellors for Domestic leads,
 // without touching International in any way.
 function isDomesticAdmin(){return myTeamCategory==='Domestic'&&(myRole==='Admin'||myRole==='Manager');}
+
+// A lead's Domestic/International business classification is determined by
+// the team handling the lead, not merely by the student's country or phone.
+// This matters because a UK-based/international student can still be an
+// International lead, while a genuine UK-local query belongs to the Domestic
+// team. For legacy/unassigned records where no team category exists yet, we
+// deliberately do NOT guess Domestic from country alone.
+function isDomesticLeadRecord(lead){
+  if(!lead)return false;
+  const assigneeName=String(lead.counsellor||'').trim().toLowerCase();
+  if(assigneeName){
+    const assignee=(teamList||[]).find(t=>String(t.full_name||'').trim().toLowerCase()===assigneeName);
+    if(assignee?.team_category)return assignee.team_category==='Domestic';
+  }
+  return false;
+}
+
+// New manual leads created while working in the Domestic operational context
+// must be assigned to the current user. This is the explicit "no round robin"
+// rule requested for UK-local/Domestic work. International keeps its existing
+// round-robin flow unchanged.
+function isDomesticEntryContext(){
+  return myTeamCategory==='Domestic' || (isSuperAdmin && superAdminOpsView==='Domestic');
+}
 // Restricted from Finance/Reports/Team/Digital Marketing/Team Dashboards —
 // same tier as Counsellor, no exception for Domestic Admin here. Domestic
 // Admin's wider visibility (their whole Domestic team's leads, not just
@@ -3420,6 +3454,8 @@ async function getNextForGlobalRole(roleName){
   return chosen?.full_name||'';
 }
 async function getNextCounsellorForOffice(office){
+  // UK leads are deliberately excluded from round-robin everywhere.
+  if(String(office||'').trim().toLowerCase()==='uk hq')return{name:'',country:'UK',office};
   const pool=getRoundRobinCounsellorPool(office);
   if(!pool.length)return{name:'',country:'',office};
   const idx=(rrStateByOffice[office]||0)%pool.length;
@@ -3457,7 +3493,7 @@ function detectCountryFromPhone(phone){
     if(p.startsWith(prefix)){
       // UK is deliberately excluded from auto-detection here. A UK-format
       // phone number is a genuinely weak signal for whether someone is
-      // actually a Domestic (UK-resident) client — diaspora numbers,
+      // actually a Domestic (UK-local) client — diaspora numbers,
       // WhatsApp-registered numbers, and international students who've
       // simply lived in the UK before all produce +44 numbers without
       // being real Domestic leads. Since this one field fully reroutes a
@@ -3582,7 +3618,7 @@ async function confirmMetaBulkUpload(){
   let uploaded=0, failed=0;
   for(const l of validLeads){
     const office=COUNTRY_DEFAULT_OFFICE[l.country]||null;
-    const picked=office?await getNextCounsellorForOffice(office):{name:''};
+    const picked=(l.country==='UK')?{name:''}:(office?await getNextCounsellorForOffice(office):{name:''});
     const{data:inserted,error}=await sb.from('leads').insert({
       name:l.name||'Meta Lead',
       mobile:l.mobile,
@@ -3964,13 +4000,51 @@ function toggleAssignMode(){
   }
 }
 function setupAssignModeUI(){
+  const domestic=isDomesticEntryContext();
+  const selectedCountry=String(document.getElementById('f-country')?.value||'').trim().toLowerCase();
+  const ukNoRoundRobin=selectedCountry==='uk';
   const canChoose=!(myRole==='Counsellor'&&!isSuperAdmin);
   const modeWrap=document.getElementById('f-assign-mode-wrap');
   const counselWrap=document.getElementById('f-counsel-wrap');
   if(!modeWrap||!counselWrap)return;
+
+  // Domestic never offers round-robin. The lead is assigned to the person
+  // entering it, so the UI cannot accidentally choose the International pool.
+  if(domestic){
+    modeWrap.style.display='none';
+    counselWrap.style.display='';
+    const sel=document.getElementById('f-counsel');
+    if(sel){
+      if(![...sel.options].some(o=>o.value===myName)){
+        sel.innerHTML=`<option value="${esc(myName||'')}">${esc(myName||'')}</option>`;
+      }
+      sel.value=myName||'';
+      sel.disabled=true;
+    }
+    return;
+  }
+
+  // UK leads never use round-robin — this applies to UK International as
+  // well as UK Domestic. Management can deliberately pick a counsellor;
+  // otherwise the lead stays unassigned rather than being auto-routed.
+  if(ukNoRoundRobin){
+    modeWrap.style.display='none';
+    counselWrap.style.display='';
+    const sel=document.getElementById('f-counsel');
+    if(sel){
+      sel.disabled=!(canChoose);
+      const current=sel.value||'';
+      populateCounsellorDropdown();
+      sel.value=current;
+      if(!sel.value && myRole==='Counsellor'&&!isSuperAdmin)sel.value=myName||'';
+    }
+    return;
+  }
+
   modeWrap.style.display=canChoose?'':'none';
   if(canChoose){
-    document.querySelector('input[name="f-assign-mode"][value="auto"]').checked=true;
+    const auto=document.querySelector('input[name="f-assign-mode"][value="auto"]');
+    if(auto)auto.checked=true;
     counselWrap.style.display='none';
   } else {
     counselWrap.style.display='';
@@ -4185,6 +4259,15 @@ function populateCounsellorDropdown(){
   const sel=document.getElementById('f-counsel');
   if(!sel)return;
   const current=sel.value;
+
+  // Domestic is self-assigned and never enters the round-robin pool.
+  if(isDomesticEntryContext()){
+    sel.innerHTML=`<option value="${esc(myName||'')}">${esc(myName||'')}</option>`;
+    sel.value=myName||'';
+    sel.disabled=true;
+    return;
+  }
+
   if(!office){
     // Nothing meaningful to show until a native country (and therefore an
     // office) has actually been chosen — showing any names here before that
@@ -4436,7 +4519,7 @@ function opsViewScopedLeads(sourceLeads){
   }
 
   if(!isSuperAdmin||!superAdminOpsView)return scoped;
-  const isDomesticLead=l=>String(l?.country||'').trim().toLowerCase()==='uk';
+  const isDomesticLead=isDomesticLeadRecord;
   return superAdminOpsView==='Domestic'
     ? scoped.filter(isDomesticLead)
     : scoped.filter(l=>!isDomesticLead(l));
@@ -5862,7 +5945,7 @@ async function updateStatusFS(){
   loadTasksFS(curId);
   loadActivityLogFS(curId);
 }
-function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';populateAgentDropdown();document.getElementById('f-agent').value=l.agent||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-type').value=l.ielts_type||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-finance-years').value=l.finance_years||'';document.getElementById('f-class-timing').value=l.class_timing||'';document.getElementById('f-student-id').value=l.student_id||'';document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range,l.budget_currency);syncBudgetRangeOptions(l.budget_range||'');document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
+function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;const leadModeHint=document.getElementById('lead-mode-hint');if(leadModeHint)leadModeHint.style.display='none';document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';populateAgentDropdown();document.getElementById('f-agent').value=l.agent||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-type').value=l.ielts_type||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-finance-years').value=l.finance_years||'';document.getElementById('f-class-timing').value=l.class_timing||'';document.getElementById('f-student-id').value=l.student_id||'';document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range,l.budget_currency);syncBudgetRangeOptions(l.budget_range||'');document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
 async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;setSyncing();const{error,data}=await sb.from('leads').delete().eq('id',curId).select();if(error){setSyncErr();toast('Error deleting lead: '+error.message);return;}if(!data||!data.length){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 // Generates a message genuinely suited to WHERE this lead actually is
@@ -6364,6 +6447,7 @@ function openTaskModal(){
   document.getElementById('task-due').value='';
   if(document.getElementById('task-priority'))document.getElementById('task-priority').value='Medium';
   if(document.getElementById('task-notes'))document.getElementById('task-notes').value='';
+  resetTaskReminderFields();
   document.getElementById('modal-task').classList.add('open');
 }
 // Standalone mode — opened from the Task Dashboard's "Add task" button,
@@ -6399,7 +6483,25 @@ function openTaskModalStandalone(){
   }
   document.getElementById('task-title').value='';
   document.getElementById('task-due').value='';
+  if(document.getElementById('task-priority'))document.getElementById('task-priority').value='Medium';
+  if(document.getElementById('task-notes'))document.getElementById('task-notes').value='';
+  resetTaskReminderFields();
   document.getElementById('modal-task').classList.add('open');
+}
+function resetTaskReminderFields(){
+  const cb=document.getElementById('task-set-reminder');
+  const wrap=document.getElementById('task-reminder-fields');
+  if(cb)cb.checked=false;
+  if(wrap)wrap.style.display='none';
+  const date=document.getElementById('task-reminder-date');
+  const time=document.getElementById('task-reminder-time');
+  if(date)date.value='';
+  if(time)time.value='09:00';
+}
+function toggleTaskReminderFields(){
+  const cb=document.getElementById('task-set-reminder');
+  const wrap=document.getElementById('task-reminder-fields');
+  if(wrap)wrap.style.display=cb?.checked?'grid':'none';
 }
 async function saveTaskModal(){
   const title=document.getElementById('task-title').value.trim();
@@ -6429,21 +6531,49 @@ async function saveTaskModal(){
   const taskDraft={lead_id:leadId,title,due_date:dueDate,assigned_to:assignedTo,status:'Open',source:'manual',priority,notes,leads:{country:selectedLead.country||myCountry||''}};
   if(!canManageTaskClient(taskDraft)){toast('You cannot create this task for the selected lead or assignee.');return;}
   btn.disabled=true;btn.textContent='Saving…';
-  let{error}=await sb.from('tasks').insert({lead_id:leadId,title,due_date:dueDate,assigned_to:assignedTo,status:'Open',source:'manual',priority,notes});
-  // Keep Add Task usable against an older tasks schema while the optional
-  // priority/notes migration is still pending. Only retry when Supabase
-  // clearly reports a missing column/schema-cache problem; permission or
-  // validation failures must never be retried as a second insert.
-  if(error){
-    const em=String(error.message||'').toLowerCase();
-    const optionalSchemaIssue=em.includes('priority')||em.includes('notes')||em.includes('schema cache')||em.includes('column');
-    if(optionalSchemaIssue){
-      const retry=await sb.from('tasks').insert({lead_id:leadId,title,due_date:dueDate,assigned_to:assignedTo,status:'Open',source:'manual'});
-      error=retry.error;
-    }
-  }
+  // The live tasks schema has `notes` but does NOT have a `priority` column.
+  // Do not include the UI-only priority value in the database insert: doing so
+  // makes PostgREST reject the whole insert and the fallback used to discard
+  // the notes as well.
+  let{error}=await sb.from('tasks').insert({
+    lead_id:leadId,
+    title,
+    due_date:dueDate,
+    assigned_to:assignedTo,
+    status:'Open',
+    source:'manual',
+    notes
+  });
   btn.disabled=false;btn.textContent='Save';
   if(error){toast('Error: '+error.message);return;}
+
+  // Optional task reminder uses the existing lead-level reminders table.
+  // We do this only after the task insert succeeds, so a failed task never
+  // leaves behind an orphan reminder.
+  const reminderEnabled=!!document.getElementById('task-set-reminder')?.checked;
+  if(reminderEnabled){
+    const reminderDate=document.getElementById('task-reminder-date')?.value||'';
+    const reminderTime=document.getElementById('task-reminder-time')?.value||'09:00';
+    if(!reminderDate){
+      toast('Task saved, but no reminder was set because no reminder date was selected.');
+    }else{
+      const reminderNotes=`Task reminder: ${title}${notes?` — ${notes}`:''}`;
+      const{error:reminderError}=await sb.from('reminders').insert([{
+        lead_id:leadId,
+        reminder_date:reminderDate,
+        reminder_time:reminderTime,
+        notes:reminderNotes,
+        done:false
+      }]);
+      if(reminderError){
+        console.error('Task reminder insert failed:', reminderError);
+        toast('Task saved, but reminder could not be set: '+reminderError.message);
+      } else {
+        toast('Task and reminder saved.');
+      }
+    }
+  }
+
   closeModal('modal-task');
   if(curId){loadTasks(curId);loadTasksFS(curId);}
   loadMyTasks();
@@ -6504,12 +6634,29 @@ async function openTaskDetail(taskId){
   const priorityLabel=t.priority||'Medium';
   const priorityTone=priorityLabel==='High'?'var(--rose)':priorityLabel==='Low'?'var(--sage)':'var(--gold)';
   document.getElementById('tdetail-sub').innerHTML=`<span style="display:inline-flex;align-items:center;gap:6px"><span class="pill" style="background:${statusTone.bg};color:${statusTone.tx}">${statusLabel}</span><span>·</span><span>${t.source==='auto'?'Auto-created':'Manual'}</span></span>`;
+  const{data:taskReminders}=await sb.from('reminders').select('id,reminder_date,reminder_time,notes,done').eq('lead_id',t.lead_id).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true}).limit(50);
+  const taskReminderRows=(taskReminders||[]).filter(r=>String(r.notes||'').startsWith(`Task reminder: ${t.title}`));
+  const reminderHtml=taskReminderRows.length
+    ? taskReminderRows.map(r=>{
+        const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'No date';
+        const tm=r.reminder_time?String(r.reminder_time).substring(0,5):'';
+        return `<div style="display:flex;align-items:flex-start;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--paper2);${r.done?'opacity:.55':''}">
+          <span style="font-size:15px">⏰</span>
+          <div style="flex:1"><div style="font-weight:700">${esc(dt)}${tm?' · '+esc(tm):''}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${r.done?'Completed reminder':'Active reminder'}</div></div>
+        </div>`;
+      }).join('')
+    : `<div style="font-size:12px;color:var(--ink3);padding:10px 0">No task reminder set.</div>`;
+
   document.getElementById('tdetail-body').innerHTML=`
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px">
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Lead</div><div style="font-weight:700;margin-top:4px">${t.lead_id?`<a href="#" onclick="event.preventDefault();closeModal('modal-task-detail');openLeadDetail('${t.lead_id}')" style="color:var(--pine);text-decoration:underline">${esc(t.leads?.name||'Open lead')}</a>`:esc(t.leads?.name||'No lead linked')}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${esc(t.leads?.lead_id||'')}</div></div>
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Assigned to</div><div style="font-weight:700;margin-top:4px">${esc(assignee||'Unassigned')}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${esc(staff?.role||'')}</div></div>
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Due</div><div style="font-weight:700;margin-top:4px;color:${overdue?'var(--rose)':'var(--ink)'}">${t.due_date?new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'No date'}</div>${overdue?'<div style="font-size:11px;color:var(--rose);margin-top:2px">Overdue</div>':''}</div>
       <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Priority</div><div style="margin-top:5px"><span class="pill" style="background:${priorityLabel==='High'?'#FDE7E7':priorityLabel==='Low'?'var(--sage-l)':'var(--gold-l)'};color:${priorityTone}">${esc(priorityLabel)}</span></div></div>
+    </div>
+    <div style="margin:0 0 14px">
+      <div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700;margin-bottom:7px">Task notes</div>
+      <div style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2);white-space:pre-wrap;min-height:44px;color:var(--ink2)">${esc(t.notes||'No notes added.')}</div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 7px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Task status</div><div style="font-size:10px;color:var(--ink3)">How is this task progressing?</div></div>
     <div id="tdetail-status-buttons" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px">
@@ -6520,6 +6667,8 @@ async function openTaskDetail(taskId){
     <div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button id="tdetail-save-status" ${canManageTaskClient(t)?'':'disabled'} style="border:1px solid var(--line2);background:var(--pine);color:white;border-radius:9px;padding:8px 14px;font-weight:700;cursor:pointer">Save status</button></div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 6px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Notes</div><div style="font-size:10px;color:var(--ink3)">Task context</div></div>
     <div style="padding:12px;border:1px solid var(--line);border-radius:10px;white-space:pre-wrap;min-height:60px;color:var(--ink2)">${esc(t.notes||'No additional notes.')}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:14px 0 6px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Reminder</div><div style="font-size:10px;color:var(--ink3)">Task follow-up</div></div>
+    ${reminderHtml}
   `;
   const completeBtn=document.getElementById('tdetail-complete-btn');
   const canChange=canManageTaskClient(t);
@@ -6735,13 +6884,14 @@ async function renderTaskDashboard(){
     // Owner / Platform Administrator: global when no operational view is selected.
   } else if(isElevatedGlobal && superAdminOpsView){
     // Owner / Platform Administrator can also use the same UK Domestic vs
-    // International operational switcher. Domestic is strictly lead.country=UK.
-    const isDomesticLead=l=>String(l?.country||'').trim().toLowerCase()==='uk';
+    // International operational switcher. Domestic follows the lead's
+    // assigned team category, not merely the lead's country.
+    const isDomesticLead=isDomesticLeadRecord;
     scoped=scoped.filter(t=>superAdminOpsView==='Domestic'?isDomesticLead(t.leads):!isDomesticLead(t.leads));
   } else if(isJisan){
     const nonIndia=scoped.filter(t=>t.leads?.country!=='India');
     if(superAdminOpsView){
-      const isDomesticLead=l=>String(l?.country||'').trim().toLowerCase()==='uk';
+      const isDomesticLead=isDomesticLeadRecord;
       scoped=nonIndia.filter(t=>superAdminOpsView==='Domestic'?isDomesticLead(t.leads):!isDomesticLead(t.leads));
     } else scoped=nonIndia;
   } else if(myRole==='Counsellor' || myTeamCategory==='Domestic' || ['Application Team','Visa Team','SOP Team'].includes(myRole) || myTeamCategory==='Agent'){
@@ -6858,7 +7008,10 @@ async function renderTaskDashboard(){
 
   // Full task list, filterable by state.
   const filterState=document.getElementById('td-filter-state')?.value||'';
-  let listItems=filterState==='done'?done:filterState?groups[filterState]:open;
+  // Active views must never contain completed tasks, even if an unexpected
+  // status value slips into the client-side dataset.
+  const activeOpen=open.filter(t=>t.status!=='Done');
+  let listItems=filterState==='done'?done:filterState?groups[filterState]:activeOpen;
   const el=document.getElementById('td-task-list');
   if(!listItems.length){el.innerHTML=emptyState('🎉','Nothing here.');return;}
   // Management-tier can reassign a task inline, right from this list —
@@ -7093,6 +7246,7 @@ function editLead(){
   if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}
   editedFromView='side';
   editMode=true;
+  const leadModeHint=document.getElementById('lead-mode-hint');if(leadModeHint)leadModeHint.style.display='none';
   document.getElementById('modal-title').textContent='Edit lead';
   document.getElementById('f-name').value=l.name||'';
   {const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}
@@ -7142,6 +7296,8 @@ function editLead(){
 // ── ADD/EDIT LEAD ─────────────────────────────────────────────────
 function openAddLead(){
   editMode=false;curId=null;
+  const leadModeHint=document.getElementById('lead-mode-hint');
+  if(leadModeHint)leadModeHint.style.display=isDomesticEntryContext()?'block':'none';
   document.getElementById('modal-title').textContent='Add new lead';
   ['f-name','f-mobile','f-email','f-city','f-dob','f-qual','f-notes','f-fu','f-visa-deadline','f-ielts-score','f-finance-years','f-class-timing','f-student-id','f-walink','f-doclink'].forEach(id=>document.getElementById(id).value='');
   ['f-intake','f-ielts-type','f-ielts-status','f-english'].forEach(id=>document.getElementById(id).value='');
@@ -7162,7 +7318,11 @@ function openAddLead(){
   populateSubTeamDropdowns();
   setupAssignModeUI();
   const counselField=document.getElementById('f-counsel');
-  if(myRole==='Counsellor'&&!isSuperAdmin){
+  if(isDomesticEntryContext()){
+    // Domestic manual lead: always self-assign; no round-robin.
+    counselField.value=myName||'';
+    counselField.disabled=true;
+  } else if(myRole==='Counsellor'&&!isSuperAdmin){
     // Counsellors can only add leads to themselves — field is pre-filled and locked.
     // Managers, Admins and the Super Admin can freely assign any counsellor.
     if(![...counselField.options].some(o=>o.value===myName)){
@@ -7327,10 +7487,18 @@ async function saveLead(){
   } else {
     // auto lead ID
     const maxId=leads.reduce((max,l)=>{const n=parseInt((l.lead_id||'S4P-0000').split('-')[1]);return n>max?n:max;},0);data.lead_id='S4P-'+String(maxId+1).padStart(4,'0');
-    // Counsellors can only add leads assigned to themselves — this mirrors the
-    // Import restriction. Round-robin / typing another name is only for Admins.
-    if(myRole==='Counsellor'&&!isSuperAdmin){
+    // Domestic manual leads are ALWAYS assigned to the person entering them.
+    // They never touch round-robin. International retains the existing
+    // counsellor/manual/round-robin behaviour.
+    const ukLead=String(data.country||'').trim().toLowerCase()==='uk';
+    if(isDomesticEntryContext()){
       data.counsellor=myName;
+    } else if(myRole==='Counsellor'&&!isSuperAdmin){
+      data.counsellor=myName;
+    } else if(ukLead){
+      // UK never uses round-robin. If Management has not deliberately chosen
+      // a counsellor, leave the lead unassigned for manual handling.
+      data.counsellor=data.counsellor||null;
     } else if(!data.counsellor){
       const rr=await getNextCounsellorForOffice(data.office);data.counsellor=rr.name;
     }
@@ -8449,6 +8617,13 @@ function openBulkAssignWizard(){
   document.getElementById('modal-bulk-assign-wizard').classList.add('open');
 }
 function selectBawMethod(method){
+  if(method==='roundrobin'){
+    const hasUK=bawSelectedIds.some(id=>String(leads.find(x=>x.id===id)?.country||'').trim().toLowerCase()==='uk');
+    if(hasUK){
+      toast('UK leads cannot be assigned by Round Robin. Use Single or Custom assignment.');
+      return;
+    }
+  }
   bawMethod=method;
   document.querySelectorAll('.baw-method-card').forEach(c=>c.classList.toggle('selected',c.dataset.method===method));
 }
@@ -8666,7 +8841,7 @@ async function balCommit(){
     const country=forcedCountry||r.country||'India';
     const office=COUNTRY_DEFAULT_OFFICE[country]||'India HQ';
     let counsellor=null;
-    if(assignMode==='roundrobin'){
+    if(assignMode==='roundrobin' && String(country||'').trim().toLowerCase()!=='uk'){
       const picked=await getNextCounsellorForOffice(office);
       counsellor=picked?.name||null;
     }
@@ -8799,10 +8974,9 @@ async function loadCommissions(){
     if(!isSuperAdmin){
       commissions=data.filter(c=>c.leads&&c.leads.office===myOffice);
     } else if(superAdminOpsView){
-      // Domestic/International is based purely on country (which office is
-      // assisting the student), never nationality — see opsViewScopedLeads
-      // for the full reasoning.
-      const isDomesticLead=l=>l&&(l.nationality==='UK'||l.country==='UK');
+      // Domestic/International follows the assigned team's category; country
+      // alone is not a reliable Domestic signal.
+      const isDomesticLead=isDomesticLeadRecord;
       commissions=data.filter(c=>superAdminOpsView==='Domestic'?isDomesticLead(c.leads):!isDomesticLead(c.leads));
     } else {
       commissions=data;
@@ -10270,9 +10444,9 @@ async function loadMyTasks(){
     scoped=scoped.filter(t=>t.assigned_to===myName);
   } else if(isSuperAdmin&&superAdminOpsView){
     // Must respect the Domestic/International ops-view toggle the same
-    // way the main Leads list does (by country — which office is
-    // assisting the student — never by nationality).
-    const isDomesticLead=l=>l&&(l.nationality==='UK'||l.country==='UK');
+    // way the main Leads list does: based on the assigned team's
+    // Domestic/International category, not simply the student's country.
+    const isDomesticLead=isDomesticLeadRecord;
     scoped=scoped.filter(t=>superAdminOpsView==='Domestic'?isDomesticLead(t.leads):!isDomesticLead(t.leads));
   } else if(!isSuperAdmin){
     scoped=scoped.filter(t=>t.leads?.country===myCountry);
@@ -12071,5 +12245,6 @@ function broadcastStopEditing(leadId) {
   </div>
 
 
+<!-- S4P CRM v3 — Boss Requirements Final RC: Domestic self-assignment/no round-robin + task notes/reminders + completed-task filtering preserved. -->
 </body>
 </html>

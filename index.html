@@ -1625,7 +1625,6 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div id="prod-sub-monitor" style="display:none">
           <div class="card" style="margin-bottom:16px">
             <div class="card-h"><span class="card-t">📊 Lead Response &amp; Work Monitor</span></div>
-            <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">A simple view of new leads, first response, unrecorded first actions and today’s work. It is an operational monitor, not a staff productivity score.</p>
             <div id="team-response-stats"></div>
           </div>
           <div class="card" style="margin-bottom:16px">
@@ -6665,6 +6664,16 @@ async function saveTaskStatus(taskId,status){
   toast('Task status → '+taskStatusLabel(dbStatus));
   return true;
 }
+async function deleteTaskReminder(reminderId,taskId){
+  const{data:t}=await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle();
+  if(!t||!canManageTaskClient(t)){toast('You do not have permission to delete this reminder.');return;}
+  if(!confirm('Delete this task reminder?'))return;
+  const{error}=await sb.from('reminders').delete().eq('id',reminderId);
+  if(error){toast('Could not delete reminder: '+error.message);return;}
+  toast('Reminder deleted.');
+  openTaskDetail(taskId);
+  loadDashReminders();
+}
 async function openTaskDetail(taskId){
   const{data:t,error}=await sb.from('tasks').select('*,leads(id,name,country,nationality,lead_id,email,mobile)').eq('id',taskId).maybeSingle();
   if(error||!t){toast('Task not found.');return;}
@@ -6695,6 +6704,7 @@ async function openTaskDetail(taskId){
         return `<div style="display:flex;align-items:flex-start;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--paper2);${r.done?'opacity:.55':''}">
           <span style="font-size:15px">⏰</span>
           <div style="flex:1"><div style="font-weight:700">${esc(dt)}${tm?' · '+esc(tm):''}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px">${r.done?'Completed reminder':'Active reminder'}</div>${reminderNote?`<div style="font-size:12px;color:var(--ink2);margin-top:6px;padding-top:6px;border-top:1px solid var(--line);white-space:pre-wrap"><b>Reminder note:</b> ${esc(reminderNote)}</div>`:''}</div>
+          ${canManageTaskClient(t)?`<button type="button" onclick="deleteTaskReminder('${r.id}','${t.id}')" title="Delete reminder" style="border:0;background:none;color:var(--rose);cursor:pointer;font-size:16px;padding:2px 4px">×</button>`:''}
         </div>`;
       }).join('')
     : `<div style="font-size:12px;color:var(--ink3);padding:10px 0">No task reminder set.</div>`;
@@ -6759,6 +6769,27 @@ async function openTaskDetail(taskId){
     if(!ok)return;
     closeModal('modal-task-detail');renderTaskDashboard();loadMyTasks();
   };
+  const detailDeleteBtn=document.getElementById('tdetail-delete-btn');
+  const canDeleteTask=canManageTaskClient(t);
+  if(detailDeleteBtn){
+    detailDeleteBtn.style.display=canDeleteTask?'inline-flex':'none';
+    detailDeleteBtn.onclick=async()=>{
+      if(!canDeleteTask)return;
+      if(!confirm('Delete this task and its linked reminder(s)? This cannot be undone.'))return;
+      detailDeleteBtn.disabled=true;
+      const{data:linkedReminders}=await sb.from('reminders').select('id,notes').eq('lead_id',t.lead_id).limit(200);
+      const ids=(linkedReminders||[]).filter(r=>String(r.notes||'').includes(`[task:${t.id}]`)).map(r=>r.id);
+      if(ids.length){
+        const{error:remErr}=await sb.from('reminders').delete().in('id',ids);
+        if(remErr){detailDeleteBtn.disabled=false;toast('Could not delete linked reminder: '+remErr.message);return;}
+      }
+      const{error:taskErr}=await sb.from('tasks').delete().eq('id',t.id);
+      if(taskErr){detailDeleteBtn.disabled=false;toast('Could not delete task: '+taskErr.message);return;}
+      toast('Task deleted.');
+      closeModal('modal-task-detail');
+      renderTaskDashboard();loadMyTasks();
+    };
+  }
   document.getElementById('tdetail-lead-btn').onclick=()=>{closeModal('modal-task-detail');if(t.lead_id)openLeadDetail(t.lead_id);};
   document.getElementById('modal-task-detail').classList.add('open');
 }
@@ -7111,7 +7142,7 @@ async function renderTaskDashboard(){
         ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
         <span class="pill" style="background:${taskStatusTone(t.status).bg};color:${taskStatusTone(t.status).tx};font-size:9px">${taskStatusLabel(t.status)}</span>
         ${t.priority?` <span class="pill" style="background:${t.priority==='High'?'#FDE7E7':t.priority==='Low'?'var(--sage-l)':'var(--gold-l)'};color:${t.priority==='High'?'var(--rose)':t.priority==='Low'?'var(--sage)':'var(--gold)'};font-size:9px">${esc(t.priority)}</span>`:''}
-        ${(taskReminderMap.get(t.id)||[]).map(r=>{const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';const tm=r.reminder_time?String(r.reminder_time).substring(0,5):'';const note=String(r.notes||'').replace(/^Task reminder(?: \[task:[^\]]+\])?: /,'').replace(/^\s*[—-]\s*/,'').trim();return `<div style="margin-top:5px;font-size:11px;color:${r.done?'var(--ink3)':'var(--gold)'}"><span style="font-weight:700">⏰ ${r.done?'Reminder done':'Reminder'}${dt?' · '+esc(dt):''}${tm?' · '+esc(tm):''}</span>${note?` <span style="color:var(--ink3)">— ${esc(note)}</span>`:''}</div>`;}).join('')}
+        ${(taskReminderMap.get(t.id)||[]).map(r=>{const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';const tm=r.reminder_time?String(r.reminder_time).substring(0,5):'';const note=String(r.notes||'').replace(/^Task reminder(?: \[task:[^\]]+\])?: /,'').replace(/^\s*[—-]\s*/,'').trim();return `<div style="display:flex;align-items:center;gap:5px;margin-top:5px;font-size:11px;color:${r.done?'var(--ink3)':'var(--gold)'}"><span style="flex:1"><span style="font-weight:700">⏰ ${r.done?'Reminder done':'Reminder'}${dt?' · '+esc(dt):''}${tm?' · '+esc(tm):''}</span>${note?` <span style="color:var(--ink3)">— ${esc(note)}</span>`:''}</span>${canManageTaskClient(t)?`<button type="button" onclick="event.stopPropagation();deleteTaskReminder('${r.id}','${t.id}')" title="Delete reminder" style="border:0;background:none;color:var(--rose);cursor:pointer;font-size:14px;padding:0 2px">×</button>`:''}</div>`;}).join('')}
       </div>
       ${assigneeCell}
       <span style="font-size:11px;color:var(--ink3);flex-shrink:0;min-width:60px;text-align:right">${dateLabel}</span>
@@ -7174,8 +7205,11 @@ function renderMyTasksPersonalTab(){
         ${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open lead">${esc(leadName)}</a>`:`<b style="${isDone?'text-decoration:line-through;color:var(--ink3)':''}">${esc(leadName)}</b>`} — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:${isDone?'var(--ink3)':'var(--ink)'};${isDone?'text-decoration:line-through;':''}text-underline-offset:2px;cursor:pointer" title="Open task">${esc(t.title)}</a>
         ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
         ${t.priority?` <span class="pill" style="background:${t.priority==='High'?'#FDE7E7':t.priority==='Low'?'var(--sage-l)':'var(--gold-l)'};color:${t.priority==='High'?'var(--rose)':t.priority==='Low'?'var(--sage)':'var(--gold)'};font-size:9px">${esc(t.priority)}</span>`:''}
+        ${t.notes?`<div style="font-size:10.5px;color:var(--ink3);margin-top:3px">📝 ${esc(t.notes)}</div>`:''}
+        ${(taskReminderMap.get(t.id)||[]).map(r=>{const dt=r.reminder_date?new Date(r.reminder_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';const tm=r.reminder_time?String(r.reminder_time).substring(0,5):'';const note=String(r.notes||'').replace(/^Task reminder(?: \[task:[^\]]+\])?: /,'').replace(/^\s*[—-]\s*/,'').trim();return `<div style="font-size:10.5px;color:${r.done?'var(--ink3)':'var(--gold)'};margin-top:3px">⏰ ${r.done?'Reminder done':'Reminder'}${dt?' · '+esc(dt):''}${tm?' · '+esc(tm):''}${note?` — ${esc(note)}`:''}</div>`;}).join('')}
       </div>
       <span style="font-size:11.5px;color:var(--ink3);flex-shrink:0">${dateLabel}</span>
+      ${canReassign?`<button onclick="deleteTaskDashboardItem('${t.id}')" title="Delete task" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:15px;padding:0 4px">×</button>`:''}
     </div>`;
   }).join('');
 }
@@ -7206,12 +7240,19 @@ async function deleteTaskDashboardItem(taskId){
   const{data:t}=await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle();
   if(!t){toast('Task not found.');return;}
   if(!canManageTaskClient(t)){toast('You do not have permission to delete this task.');renderTaskDashboard();return;}
-  if(!confirm('Delete this task? This cannot be undone.'))return;
+  if(!confirm('Delete this task and its linked reminder(s)? This cannot be undone.'))return;
+  const{data:linkedReminders}=await sb.from('reminders').select('id,notes').eq('lead_id',t.lead_id).limit(200);
+  const ids=(linkedReminders||[]).filter(r=>String(r.notes||'').includes(`[task:${t.id}]`)).map(r=>r.id);
+  if(ids.length){
+    const{error:remErr}=await sb.from('reminders').delete().in('id',ids);
+    if(remErr){toast('Could not delete linked reminder: '+remErr.message);return;}
+  }
   const{error}=await sb.from('tasks').delete().eq('id',taskId);
   if(error){toast('Error deleting: '+error.message);return;}
   toast('Task deleted.');
   renderTaskDashboard();
   loadMyTasks();
+  loadDashReminders();
 }
 async function reassignTask(taskId,newAssignee){
   const{data:t}=await sb.from('tasks').select('*,leads(country)').eq('id',taskId).maybeSingle();
@@ -10457,9 +10498,12 @@ async function loadDashReminders(){
     const pillBg=isOverdue?'#FEE2E2':isToday?'var(--rose-l)':'var(--gold-l)';
     const pillTx=isOverdue?'#B91C1C':isToday?'var(--rose)':'var(--gold)';
     const pillLabel=isOverdue?('Overdue · '+dt):isToday?'Today':dt;
+    const taskMatch=String(r.notes||'').match(/\[task:([^\]]+)\]/);
+    const taskId=taskMatch?taskMatch[1]:'';
     return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="openLeadDetail('${r.lead_id}')">
       <span class="pill" style="background:${pillBg};color:${pillTx};font-weight:600">${pillLabel}</span>
-      <div style="flex:1;font-size:13px"><b>${esc(leadName)}</b>${tm?' · '+tm:''}${r.notes?' — '+esc(r.notes):''}</div>
+      <div style="flex:1;font-size:13px"><b>${esc(leadName)}</b>${tm?' · '+tm:''}${r.notes?' — '+esc(String(r.notes).replace(/^Task reminder(?: \[task:[^\]]+\])?: /,'').replace(/^\s*[—-]\s*/,'').trim()):''}</div>
+      ${taskId?`<button type="button" onclick="event.stopPropagation();deleteTaskReminder('${r.id}','${taskId}')" title="Delete task reminder" style="border:0;background:none;color:var(--rose);cursor:pointer;font-size:15px;padding:0 3px">×</button>`:''}
     </div>`;
   }).join('');
 }
@@ -11807,6 +11851,8 @@ async function loadResponseTimeStats(scopedLeadsForStats){
   return {
     avgMins,
     within15:pctWithin15,
+    within15Count:responseMins.filter(m=>m<=15).length,
+    responseCount:responseMins.length,
     uncontactedPct:total?Math.round(uncontacted/total*100):0,
     newLeadsToday,completedToday,pendingToday
   };
@@ -11814,11 +11860,11 @@ async function loadResponseTimeStats(scopedLeadsForStats){
 function formatResponseStatsHtml(stats){
   if(!stats)return '<p style="font-size:13px;color:var(--ink3);font-style:italic">Could not load lead response and work data.</p>';
   const avgLabel=stats.avgMins==null?'—':(stats.avgMins<60?Math.round(stats.avgMins)+' min':(stats.avgMins<1440?Math.round(stats.avgMins/60)+' hrs':(stats.avgMins/1440).toFixed(1)+' days'));
-  return `<div class="fg" style="gap:12px">
-    <div class="kpi"><div class="kpi-l">New leads today</div><div class="kpi-v">${stats.newLeadsToday}</div></div>
-    <div class="kpi"><div class="kpi-l">Average first response</div><div class="kpi-v">${avgLabel}</div><div style="font-size:11px;color:var(--ink3);margin-top:4px">${stats.within15}% received a recorded response within 15 min</div></div>
-    <div class="kpi"><div class="kpi-l">No recorded first action</div><div class="kpi-v kv-r">${stats.uncontactedPct}%</div><div style="font-size:11px;color:var(--ink3);margin-top:4px">No first CRM action is recorded yet</div></div>
-    <div class="kpi"><div class="kpi-l">Today’s work</div><div class="kpi-v">${stats.completedToday} completed</div><div style="font-size:11px;color:var(--ink3);margin-top:4px">${stats.pendingToday} tasks due today still open</div></div>
+  return `<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">
+    <div style="padding:13px 15px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div class="kpi-l">📥 New leads</div><div class="kpi-v" style="margin-top:5px">${stats.newLeadsToday}</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">today</div></div>
+    <div style="padding:13px 15px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div class="kpi-l">⚡ First response</div><div class="kpi-v" style="margin-top:5px">${avgLabel}</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">${stats.within15Count} of ${stats.responseCount} within 15 min</div></div>
+    <div style="padding:13px 15px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div class="kpi-l">📌 No action recorded</div><div class="kpi-v kv-r" style="margin-top:5px">${stats.uncontactedPct}%</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">first CRM action missing</div></div>
+    <div style="padding:13px 15px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)"><div class="kpi-l">📋 Today’s work</div><div class="kpi-v" style="margin-top:5px">${stats.completedToday} done</div><div style="font-size:10px;color:var(--ink3);margin-top:3px">${stats.pendingToday} due today</div></div>
   </div>`;
 }
 async function renderMyResponseStats(){
@@ -11978,15 +12024,14 @@ function populateActivityMonitorCountryFilter(){
     sel.innerHTML=`<option value="${esc(myOffice||'')}">${esc(myOffice||'—')}</option>`;
     sel.disabled=true;
   }
-  // Default the Category filter to match the Super Admin's current
-  // Domestic/International ops-view toggle — same pattern already used
-  // for Reports' country dropdown. Still fully overridable by hand
-  // afterward; this just stops Activity Monitor showing the whole team
-  // (including the opposite pole) every time you open it while in
-  // Domestic or International mode.
+  // Keep Activity Monitor neutral on entry. The user can choose
+  // Domestic or International explicitly instead of the current top-level
+  // ops view silently changing this filter.
   const categorySel=document.getElementById('am-category');
-  if(categorySel&&isSuperAdmin&&superAdminOpsView){
-    categorySel.value=superAdminOpsView;
+  if(categorySel && !categorySel.dataset.userChosen){ categorySel.value='All'; }
+  if(categorySel && !categorySel.dataset.bound){
+    categorySel.addEventListener('change',()=>{ categorySel.dataset.userChosen='1'; });
+    categorySel.dataset.bound='1';
   }
 }
 async function renderActivityMonitor(){
@@ -12315,7 +12360,7 @@ function broadcastStopEditing(leadId) {
     <div class="modal" style="width:min(680px,calc(100vw - 32px));max-height:90vh;overflow:auto">
       <div class="mhead"><div><span class="mtitle" id="tdetail-title">Task details</span><div id="tdetail-sub" style="font-size:11px;color:var(--ink3);margin-top:2px"></div></div><button class="mclose" onclick="closeModal('modal-task-detail')">×</button></div>
       <div id="tdetail-body" style="padding:18px 20px"></div>
-      <div class="mfoot"><button class="btn" onclick="closeModal('modal-task-detail')">Close</button><button class="btn" id="tdetail-complete-btn"></button><button class="btn" id="tdetail-save-status">Save status</button><button class="btn btn-p" id="tdetail-lead-btn">Open Lead →</button></div>
+      <div class="mfoot"><button class="btn" onclick="closeModal('modal-task-detail')">Close</button><button class="btn" id="tdetail-complete-btn"></button><button class="btn" id="tdetail-save-status">Save status</button><button class="btn" id="tdetail-delete-btn" style="color:var(--rose);border-color:var(--rose);display:none">Delete task</button><button class="btn btn-p" id="tdetail-lead-btn">Open Lead →</button></div>
     </div>
   </div>
 

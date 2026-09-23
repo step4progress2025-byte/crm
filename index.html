@@ -7725,7 +7725,7 @@ async function saveLead(){
     const res=await sb.from('leads').insert([data]).select();
     error=res.error;
     let newLeadId=null;
-    if(!error&&res.data){leads.unshift(res.data[0]);newLeadId=res.data[0].id;newlyCreatedLeadId=newLeadId;logEvents.push(['created',`Lead created, assigned to ${data.counsellor||'Unassigned'}`]);if(pendingQueryConversionId)markPendingQueryConverted(newLeadId);}
+    if(!error&&res.data){leads.unshift(res.data[0]);newLeadId=res.data[0].id;newlyCreatedLeadId=newLeadId;logEvents.push(['created',`Lead created, assigned to ${data.counsellor||'Unassigned'}`]);if(pendingQueryConversionId)await markPendingQueryConverted(newLeadId);}
     toast('Lead added: '+name);
     if(!error&&data.next_followup)warnIfHoliday(data.next_followup,data.office);
     if(!error&&newLeadId)logEvents.forEach(([type,detail])=>logActivity(newLeadId,type,detail));
@@ -12020,7 +12020,8 @@ async function loadQueries(channel){
   const listEl=document.getElementById('q-'+channel+'-list');
   if(!listEl)return;
   listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink3);font-style:italic">Loading…</div>';
-  const{data,error}=await sb.from('website_enquiries').select('*').eq('channel',channel).order('created_at',{ascending:false}).limit(200);
+  const dbChannel=channel==='web'?'website':channel;
+  const{data,error}=await sb.from('website_enquiries').select('*').eq('channel',dbChannel).order('created_at',{ascending:false}).limit(200);
   if(error){
     listEl.innerHTML=`<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load — has website_enquiries been created yet? (${esc(error.message)})</div>`;
     return;

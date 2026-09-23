@@ -582,7 +582,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <div style="font-size:13px;color:var(--ink3);margin-bottom:22px">Choose which dashboard to view — you can switch anytime from the top bar.</div>
       <div style="display:flex;flex-direction:column;gap:10px">
         <button onclick="chooseOpsView('International')" style="padding:14px;border:none;border-radius:10px;background:var(--pine);color:#fff;font-size:14px;font-weight:600;cursor:pointer">🌍 International Operations<div style="font-size:11px;font-weight:400;opacity:.85;margin-top:2px">India, Pakistan, Bangladesh</div></button>
-        <button onclick="chooseOpsView('Domestic')" style="padding:14px;border:1.5px solid var(--line2);border-radius:10px;background:#fff;color:var(--ink);font-size:14px;font-weight:600;cursor:pointer">🇬🇧 UK Only<div style="font-size:11px;font-weight:400;opacity:.7;margin-top:2px">UK internal only</div></button>
+        <button onclick="chooseOpsView('Domestic')" style="padding:14px;border:1.5px solid var(--line2);border-radius:10px;background:#fff;color:var(--ink);font-size:14px;font-weight:600;cursor:pointer">🇬🇧 Domestic Operations<div style="font-size:11px;font-weight:400;opacity:.7;margin-top:2px">UK internal only</div></button>
       </div>
     </div>
   </div>
@@ -918,8 +918,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       </section>
 
       <!-- Queries — shared intake pipeline for Web / Instagram / WhatsApp.
-           India + Web only for now; Instagram/WhatsApp and other
-           countries slot in later with zero changes to this screen. -->
+           India + Web only for now; the table and this screen already
+           support UK/Pakistan/Bangladesh and the other two channels
+           without any redesign — they'll simply start showing data
+           once those pipelines exist. -->
       <section id="sc-queries" class="screen">
         <div style="display:flex;border-bottom:1px solid var(--line);margin-bottom:16px">
           <button class="q-subtab active" data-sub="web" onclick="setQuerySubtab('web')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--pine);border-bottom:2px solid var(--pine)">🌐 Web<span class="nbadge" id="nb-q-web" style="margin-left:6px">0</span></button>
@@ -930,31 +932,27 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div id="q-sub-web">
           <div class="card">
             <div class="card-h"><span class="card-t">🌐 Website enquiries</span></div>
-            <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">Every submission from the website's enquiry form lands here first — review it, then convert it into a proper lead (or dismiss it if it's spam/a duplicate).</div>
+            <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">Every submission from the website's enquiry form lands here first — review it, then convert it into a proper lead (or dismiss it if it's spam/not relevant).</div>
             <div id="q-web-list"></div>
           </div>
         </div>
         <div id="q-sub-instagram" style="display:none">
           <div class="card">
             <div class="card-h"><span class="card-t">📷 Instagram enquiries</span></div>
-            <div id="q-instagram-empty">
-              <div style="text-align:center;padding:40px 20px;color:var(--ink3)">
-                <div style="font-size:32px;margin-bottom:8px">📷</div>
-                <div style="font-weight:600;margin-bottom:4px">This channel isn't connected yet.</div>
-                <div style="font-size:12.5px">DMs and comments will appear here automatically once the Instagram integration is built.</div>
-              </div>
+            <div style="text-align:center;padding:40px 20px;color:var(--ink3)">
+              <div style="font-size:32px;margin-bottom:8px">📷</div>
+              <div style="font-weight:600;margin-bottom:4px">This channel isn't connected yet.</div>
+              <div style="font-size:12.5px">DMs and comments will appear here automatically once the Instagram integration is built.</div>
             </div>
           </div>
         </div>
         <div id="q-sub-whatsapp" style="display:none">
           <div class="card">
             <div class="card-h"><span class="card-t">💬 WhatsApp enquiries</span></div>
-            <div id="q-whatsapp-empty">
-              <div style="text-align:center;padding:40px 20px;color:var(--ink3)">
-                <div style="font-size:32px;margin-bottom:8px">💬</div>
-                <div style="font-weight:600;margin-bottom:4px">This channel isn't connected yet.</div>
-                <div style="font-size:12.5px">Incoming WhatsApp queries will appear here automatically once that integration is built.</div>
-              </div>
+            <div style="text-align:center;padding:40px 20px;color:var(--ink3)">
+              <div style="font-size:32px;margin-bottom:8px">💬</div>
+              <div style="font-weight:600;margin-bottom:4px">This channel isn't connected yet.</div>
+              <div style="font-size:12.5px">Incoming WhatsApp queries will appear here automatically once that integration is built.</div>
             </div>
           </div>
         </div>
@@ -1669,7 +1667,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <div class="ff"><label>Category</label>
                 <select id="am-category" onchange="renderActivityMonitor()">
                   <option value="All">All</option>
-                  <option value="Domestic">UK only</option>
+                  <option value="Domestic">Domestic (Home recruitment) only</option>
                   <option value="International">International only</option>
                 </select>
               </div>
@@ -4486,7 +4484,7 @@ function syncTaskDashboardOpsSwitcher(){
   }
   td.style.display='inline-flex';
   td.innerHTML=superAdminOpsView==='Domestic'
-    ? '🇬🇧 UK <i class="ti ti-switch-horizontal" style="font-size:12px"></i>'
+    ? '🇬🇧 Domestic <i class="ti ti-switch-horizontal" style="font-size:12px"></i>'
     : superAdminOpsView==='International'
       ? '🌍 International <i class="ti ti-switch-horizontal" style="font-size:12px"></i>'
       : '🌍 / 🇬🇧 Choose team view';
@@ -4497,13 +4495,13 @@ function updateOpsViewSwitcher(){
   if(!canSwitchOpsViewUser()||!superAdminOpsView){ el.style.display='none'; return; }
   el.style.display='inline-flex';
   el.innerHTML=superAdminOpsView==='Domestic'
-    ? '🇬🇧 UK <i class="ti ti-switch-horizontal" style="font-size:12px"></i>'
+    ? '🇬🇧 Domestic <i class="ti ti-switch-horizontal" style="font-size:12px"></i>'
     : '🌍 International <i class="ti ti-switch-horizontal" style="font-size:12px"></i>';
   const td=document.getElementById('td-ops-view-switcher');
   if(td){
     td.style.display='inline-flex';
     td.innerHTML=superAdminOpsView==='Domestic'
-      ? '🇬🇧 UK <i class="ti ti-switch-horizontal" style="font-size:12px"></i>'
+      ? '🇬🇧 Domestic <i class="ti ti-switch-horizontal" style="font-size:12px"></i>'
       : '🌍 International <i class="ti ti-switch-horizontal" style="font-size:12px"></i>';
   }
 }
@@ -5327,7 +5325,7 @@ function renderDash(){
   }
   const scopeNote=document.getElementById('dash-scope-note');
   if(scopeNote){
-    if(isSuperAdmin) scopeNote.textContent=superAdminOpsView==='Domestic'?'🇬🇧 UK Only — UK leads only':superAdminOpsView==='International'?'🌍 International Operations — non-UK leads':'Showing all countries and offices · Super Admin view';
+    if(isSuperAdmin) scopeNote.textContent=superAdminOpsView==='Domestic'?'🇬🇧 Domestic Operations — UK leads only':superAdminOpsView==='International'?'🌍 International Operations — non-UK leads':'Showing all countries and offices · Super Admin view';
     else if(myTeamCategory==='Agent') scopeNote.textContent='Agent Portal — showing only leads assigned to you by Management';
     else if(myTeamCategory==='Domestic'&&myRole==='Admin') scopeNote.textContent='Domestic Operations — showing your whole Domestic team assigned leads';
     else if(myTeamCategory==='Domestic') scopeNote.textContent='Domestic Operations — showing only leads assigned to you by Management';
@@ -6896,20 +6894,7 @@ function populateTaskDashboardFilters(scoped, staffByName){
   const counsellorEl=document.getElementById('td-filter-counsellor');
   if(!countryEl||!counsellorEl)return;
 
-  // Fixed, role-based list — same pattern already used for Reports and
-  // Activity Monitor's country dropdowns. The previous version derived
-  // this from whichever countries happened to appear in the CURRENTLY
-  // scoped tasks, which meant a country with zero open tasks right now
-  // (e.g. Bangladesh) would silently vanish from the filter entirely —
-  // you couldn't even select it to confirm it really had nothing. A
-  // country should always be selectable if this person is allowed to
-  // see it, regardless of today's task count.
-  let countries;
-  if(isOwner) countries=['India','UK','Pakistan','Bangladesh'];
-  else if(isSuperAdmin) countries=['UK','Pakistan','Bangladesh']; // India excluded — matches every other Super Admin view
-  else if(myCountry) countries=[myCountry];
-  else countries=[...new Set(scoped.map(t=>t.leads?.country).filter(Boolean))].sort();
-
+  const countries=[...new Set(scoped.map(t=>t.leads?.country).filter(Boolean))].sort();
   if(tdFilterCountry && !countries.includes(tdFilterCountry)) tdFilterCountry='';
   countryEl.innerHTML='<option value="">All countries</option>'+countries.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
   countryEl.value=tdFilterCountry;
@@ -7543,7 +7528,7 @@ function editLead(){
 // ── ADD/EDIT LEAD ─────────────────────────────────────────────────
 function openAddLead(){
   editMode=false;curId=null;
-  pendingQueryConversionId=null; // reset here; convertQueryToLead() re-sets it right after calling this, only when actually converting a query
+  pendingQueryConversionId=null; // reset here; convertQueryToLead() re-sets it right after calling this
   document.getElementById('modal-title').textContent='Add new lead';
   ['f-name','f-mobile','f-email','f-city','f-dob','f-qual','f-notes','f-fu','f-visa-deadline','f-ielts-score','f-finance-years','f-class-timing','f-student-id','f-walink','f-doclink'].forEach(id=>document.getElementById(id).value='');
   ['f-intake','f-ielts-type','f-ielts-status','f-english'].forEach(id=>document.getElementById(id).value='');
@@ -12014,6 +11999,11 @@ function setProdSubtab(sub){
 }
 
 // ── Queries — shared Web/Instagram/WhatsApp intake pipeline ──────────
+// Reads from website_enquiries (the real, deployed table — not a
+// placeholder name). Multi-country by design: enquiry_country can be
+// India/UK/Pakistan/Bangladesh, so a country badge is shown on each
+// row for anyone (Owner/Super Admin) who might see more than one
+// country's queries at once.
 function setQuerySubtab(sub){
   ['web','instagram','whatsapp'].forEach(s=>{
     const panel=document.getElementById('q-sub-'+s);
@@ -12022,46 +12012,47 @@ function setQuerySubtab(sub){
     if(btn){btn.style.color=s===sub?'var(--pine)':'var(--ink3)';btn.style.borderBottomColor=s===sub?'var(--pine)':'transparent';}
   });
   if(sub==='web')loadQueries('web');
-  // Instagram/WhatsApp intentionally do nothing yet — they show their
-  // static "not connected" state until those pipelines exist. When they
-  // do, this becomes loadQueries('instagram') / loadQueries('whatsapp'),
-  // same function, just a different channel argument — nothing else
-  // about this screen needs to change.
+  // Instagram/WhatsApp intentionally do nothing yet — static "not
+  // connected" state until those pipelines exist.
 }
 let queriesCache={web:[],instagram:[],whatsapp:[]};
 async function loadQueries(channel){
   const listEl=document.getElementById('q-'+channel+'-list');
   if(!listEl)return;
   listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink3);font-style:italic">Loading…</div>';
-  const{data,error}=await sb.from('queries').select('*').eq('channel',channel).order('received_at',{ascending:false}).limit(200);
+  const{data,error}=await sb.from('website_enquiries').select('*').eq('channel',channel).order('created_at',{ascending:false}).limit(200);
   if(error){
-    listEl.innerHTML=`<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load — has the queries table been created yet? (${esc(error.message)})</div>`;
+    listEl.innerHTML=`<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load — has website_enquiries been created yet? (${esc(error.message)})</div>`;
     return;
   }
   queriesCache[channel]=data||[];
   renderQueriesList(channel);
 }
+const QUERY_COUNTRY_BADGE_COLORS={India:['#FEF3C7','#92400E'],UK:['#DBEAFE','#1E40AF'],Pakistan:['#D1FAE5','#065F46'],Bangladesh:['#FCE7F3','#9D174D']};
 function renderQueriesList(channel){
   const listEl=document.getElementById('q-'+channel+'-list');
   if(!listEl)return;
-  const items=(queriesCache[channel]||[]).filter(q=>q.status!=='Dismissed');
+  const items=(queriesCache[channel]||[]).filter(q=>q.status!=='Not Relevant'&&q.status!=='Spam');
   if(!items.length){listEl.innerHTML=emptyState('📭','No queries yet.');return;}
   listEl.innerHTML=items.map(q=>{
-    const dupBadge=q.possible_duplicate_lead_id?`<span class="pill" style="background:#FEF3C7;color:#92400E;font-size:10px;margin-left:6px" title="Matches an existing lead's phone/email"><i class="ti ti-alert-triangle"></i> Possible duplicate</span>`:'';
-    const statusBadge=q.status==='Converted'?`<span class="pill" style="background:#D1FAE5;color:#065F46;font-size:10px;margin-left:6px">✅ Converted</span>`:'';
-    const contactBits=[q.raw_name,q.raw_email,q.raw_mobile].filter(Boolean).join(' · ')||'No contact details given';
-    const receivedLabel=new Date(q.received_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    const[cbg,ctx]=QUERY_COUNTRY_BADGE_COLORS[q.enquiry_country]||['#F3F4F6','#374151'];
+    const countryBadge=`<span class="pill" style="background:${cbg};color:${ctx};font-size:10px">${esc(q.enquiry_country||'—')}</span>`;
+    const dupBadge=q.duplicate_of_lead_id?`<span class="pill" style="background:#FEF3C7;color:#92400E;font-size:10px;margin-left:4px" title="Matches an existing lead's phone/email"><i class="ti ti-alert-triangle"></i> Possible duplicate</span>`:'';
+    const statusBadge=q.status==='Converted'?`<span class="pill" style="background:#D1FAE5;color:#065F46;font-size:10px;margin-left:4px">✅ Converted</span>`:'';
+    const contactBits=[q.full_name,q.email,q.phone].filter(Boolean).join(' · ')||'No contact details given';
+    const extraBits=[q.study_destination?`Destination: ${esc(q.study_destination)}`:null,q.nationality?`Nationality: ${esc(q.nationality)}`:null].filter(Boolean).join(' · ');
+    const receivedLabel=new Date(q.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
     const actions=q.status==='Converted'
       ? `<button class="btn" style="font-size:11.5px;padding:5px 10px" onclick="openLeadDetail('${q.converted_lead_id}')">View lead →</button>`
       : `<button class="btn btn-p" style="font-size:11.5px;padding:5px 10px" onclick="convertQueryToLead('${q.id}')"><i class="ti ti-user-plus"></i> Convert to lead</button>
          <button class="btn" style="font-size:11.5px;padding:5px 10px;color:var(--rose)" onclick="dismissQuery('${q.id}')">Dismiss</button>`;
     return `<div style="border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
-        <div style="font-weight:600;font-size:13.5px">${esc(contactBits)}${dupBadge}${statusBadge}</div>
+        <div style="font-weight:600;font-size:13.5px">${countryBadge} ${esc(contactBits)}${dupBadge}${statusBadge}</div>
         <div style="font-size:11px;color:var(--ink3);flex-shrink:0">${receivedLabel}</div>
       </div>
-      ${q.message?`<div style="font-size:13px;color:var(--ink2);margin-bottom:8px;white-space:pre-wrap">${esc(q.message)}</div>`:''}
-      ${q.source_detail?`<div style="font-size:11px;color:var(--ink3);margin-bottom:8px">From: ${esc(q.source_detail)}</div>`:''}
+      ${q.message?`<div style="font-size:13px;color:var(--ink2);margin-bottom:6px;white-space:pre-wrap">${esc(q.message)}</div>`:''}
+      ${extraBits?`<div style="font-size:11px;color:var(--ink3);margin-bottom:8px">${extraBits}</div>`:''}
       <div style="display:flex;gap:6px">${actions}</div>
     </div>`;
   }).join('');
@@ -12069,37 +12060,39 @@ function renderQueriesList(channel){
 function convertQueryToLead(queryId){
   const q=[...queriesCache.web,...queriesCache.instagram,...queriesCache.whatsapp].find(x=>x.id===queryId);
   if(!q){toast('Query not found.');return;}
-  // Pre-fill the existing Add Lead form with whatever contact info we
-  // have, source set to match the channel it came from — the counsellor
-  // just fills in the gaps (program interest, etc.) and saves normally.
+  // Pre-fills the existing Add Lead form. enquiry_country maps directly
+  // onto f-country — the two are the same "assistance needed from"
+  // concept under two names, one per system.
   openAddLead();
   const sourceMap={web:'Website Enquiry',instagram:'Meta Enquiry',whatsapp:'WhatsApp'};
   setTimeout(()=>{
-    const nameEl=document.getElementById('f-name');if(nameEl)nameEl.value=q.raw_name||'';
-    const emailEl=document.getElementById('f-email');if(emailEl)emailEl.value=q.raw_email||'';
-    const mobileEl=document.getElementById('f-mobile');if(mobileEl)mobileEl.value=q.raw_mobile||'';
+    const nameEl=document.getElementById('f-name');if(nameEl)nameEl.value=q.full_name||'';
+    const emailEl=document.getElementById('f-email');if(emailEl)emailEl.value=q.email||'';
+    const mobileEl=document.getElementById('f-mobile');if(mobileEl)mobileEl.value=q.phone||'';
+    const countryEl=document.getElementById('f-country');if(countryEl&&q.enquiry_country)countryEl.value=q.enquiry_country;
+    const destEl=document.getElementById('f-dest');if(destEl&&q.study_destination)destEl.value=q.study_destination;
+    const natEl=document.getElementById('f-nationality');if(natEl&&q.nationality)natEl.value=q.nationality;
     const srcEl=document.getElementById('f-src');if(srcEl)srcEl.value=sourceMap[q.channel]||'Other';
     const notesEl=document.getElementById('f-notes');if(notesEl&&q.message)notesEl.value='From '+q.channel+' query: '+q.message;
   },100);
-  // Mark this query converted only once the lead is actually saved —
-  // handled by tagging the query id on the modal, picked up in
-  // saveLead()'s success path so we don't mark it converted if the
-  // counsellor cancels out of the form instead.
+  // Marked converted only once the lead is actually saved — see the
+  // hook in saveLead()'s success path — so cancelling out of the form
+  // leaves the query untouched, still available to convert later.
   pendingQueryConversionId=queryId;
 }
 let pendingQueryConversionId=null;
 async function markPendingQueryConverted(newLeadId){
   if(!pendingQueryConversionId)return;
-  await sb.from('queries').update({status:'Converted',converted_lead_id:newLeadId}).eq('id',pendingQueryConversionId);
+  await sb.from('website_enquiries').update({status:'Converted',converted_lead_id:newLeadId}).eq('id',pendingQueryConversionId);
   pendingQueryConversionId=null;
   ['web','instagram','whatsapp'].forEach(loadQueries);
   updateQueriesBadge();
 }
 async function dismissQuery(queryId){
-  const reason=prompt('Why dismiss this? (e.g. spam, wrong number, duplicate) — kept for the record, not shown publicly:');
-  if(reason===null)return; // cancelled
-  const{error}=await sb.from('queries').update({
-    status:'Dismissed',dismissed_reason:reason.trim()||'No reason given',dismissed_by:currentUser?.id,dismissed_at:new Date().toISOString()
+  const isSpam=confirm('Is this spam? Click OK for Spam, Cancel to mark as Not Relevant instead.');
+  const reason=prompt('Optional note (kept for the record, not shown publicly):')||'';
+  const{error}=await sb.from('website_enquiries').update({
+    status:isSpam?'Spam':'Not Relevant',updated_at:new Date().toISOString()
   }).eq('id',queryId);
   if(error){toast('Error: '+error.message);return;}
   toast('Query dismissed.');
@@ -12107,13 +12100,12 @@ async function dismissQuery(queryId){
   if(channel)loadQueries(channel);
   updateQueriesBadge();
 }
-// Lightweight count for the sidebar badge — only counts what this
-// specific person is actually allowed to see (RLS on the queries table
-// already enforces this at the DB level too, this is just for the UI).
+// Lightweight count for the sidebar badge — RLS on website_enquiries
+// already enforces who can see what; this is just the matching UI count.
 async function updateQueriesBadge(){
   const badgeEl=document.getElementById('nb-queries');
   if(!badgeEl||isRestrictedStaffRole())return;
-  const{count}=await sb.from('queries').select('id',{count:'exact',head:true}).eq('status','New');
+  const{count}=await sb.from('website_enquiries').select('id',{count:'exact',head:true}).eq('status','New');
   animateCounterTo(badgeEl,count||0);
   const webBadge=document.getElementById('nb-q-web');
   if(webBadge)animateCounterTo(webBadge,count||0);

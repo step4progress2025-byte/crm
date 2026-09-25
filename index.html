@@ -949,11 +949,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div id="q-sub-whatsapp" style="display:none">
           <div class="card">
             <div class="card-h"><span class="card-t">💬 WhatsApp enquiries</span></div>
-            <div style="text-align:center;padding:40px 20px;color:var(--ink3)">
-              <div style="font-size:32px;margin-bottom:8px">💬</div>
-              <div style="font-weight:600;margin-bottom:4px">This channel isn't connected yet.</div>
-              <div style="font-size:12.5px">Incoming WhatsApp queries will appear here automatically once that integration is built.</div>
-            </div>
+            <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">Captured when someone starts a WhatsApp chat from the website — not every message to the office number, just enquiries that intentionally began here.</div>
+            <div id="q-whatsapp-list"></div>
           </div>
         </div>
       </section>
@@ -12012,8 +12009,9 @@ function setQuerySubtab(sub){
     if(btn){btn.style.color=s===sub?'var(--pine)':'var(--ink3)';btn.style.borderBottomColor=s===sub?'var(--pine)':'transparent';}
   });
   if(sub==='web')loadQueries('web');
-  // Instagram/WhatsApp intentionally do nothing yet — static "not
-  // connected" state until those pipelines exist.
+  if(sub==='whatsapp')loadQueries('whatsapp');
+  // Instagram intentionally does nothing yet — static "not connected"
+  // state until that pipeline exists.
 }
 let queriesCache={web:[],instagram:[],whatsapp:[]};
 async function loadQueries(channel){

@@ -939,11 +939,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div id="q-sub-instagram" style="display:none">
           <div class="card">
             <div class="card-h"><span class="card-t">📷 Instagram enquiries</span></div>
-            <div style="text-align:center;padding:40px 20px;color:var(--ink3)">
-              <div style="font-size:32px;margin-bottom:8px">📷</div>
-              <div style="font-weight:600;margin-bottom:4px">This channel isn't connected yet.</div>
-              <div style="font-size:12.5px">DMs and comments will appear here automatically once the Instagram integration is built.</div>
-            </div>
+            <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">Ad-originated Instagram DMs — organic messages and messages from existing leads are handled separately and never appear here as a new enquiry.</div>
+            <div id="q-instagram-list"></div>
           </div>
         </div>
         <div id="q-sub-whatsapp" style="display:none">
@@ -1013,6 +1010,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="btn" onclick="clearBulkSelection()" style="font-size:12px;padding:5px 10px;background:rgba(255,255,255,.15);color:#fff;border:none">Clear selection</button>
           </div>
           <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;margin-top:-6px">
+            <input type="number" id="random-select-count" placeholder="e.g. 100" min="1" style="width:90px;font-size:12px;padding:5px 8px;border:1px solid var(--line2);border-radius:var(--r)">
+            <button class="btn" onclick="selectRandomLeads()" style="font-size:12px;padding:5px 12px"><i class="ti ti-dice"></i>Select random</button>
             <button class="btn" onclick="navFilter('ls-st','Dropped')" style="font-size:12px;padding:5px 12px;background:var(--rose-l,#FEE2E2);color:var(--rose,#991B1B);border-color:transparent"><i class="ti ti-trash-x"></i>Drop List</button>
             <button class="btn" onclick="openBulkAddLeadsWizard()" style="font-size:12px;padding:5px 12px"><i class="ti ti-file-upload"></i>Bulk Add Leads</button>
             <button class="btn" onclick="exportCurrentView()" style="font-size:12px;padding:5px 12px"><i class="ti ti-download"></i>Export this view</button>
@@ -7526,6 +7525,7 @@ function editLead(){
 function openAddLead(){
   editMode=false;curId=null;
   pendingQueryConversionId=null; // reset here; convertQueryToLead() re-sets it right after calling this
+  pendingQueryInstagramIgsid=null; // same reasoning — reset here, re-set by convertQueryToLead() only when actually converting a query
   document.getElementById('modal-title').textContent='Add new lead';
   ['f-name','f-mobile','f-email','f-city','f-dob','f-qual','f-notes','f-fu','f-visa-deadline','f-ielts-score','f-finance-years','f-class-timing','f-student-id','f-walink','f-doclink'].forEach(id=>document.getElementById(id).value='');
   ['f-intake','f-ielts-type','f-ielts-status','f-english'].forEach(id=>document.getElementById(id).value='');
@@ -8741,6 +8741,40 @@ function populateExportCounsellorDropdown(){
 // pure frontend + a single batch Supabase call, zero new infrastructure.
 function getSelectedLeadIds(){
   return Array.from(document.querySelectorAll('.bulk-lead-checkbox:checked')).map(cb=>cb.dataset.id);
+}
+// Randomly selects N leads from whatever's currently visible in the
+// table — i.e. respects any filters already applied (status, country,
+// counsellor, etc.), same as every other bulk action already does.
+// Uses a proper Fisher-Yates shuffle so every visible lead has an equal
+// chance of being picked, not just "the first N in whatever order they
+// happen to be rendered in."
+function selectRandomLeads(){
+  const countInput=document.getElementById('random-select-count');
+  const n=parseInt(countInput.value,10);
+  if(!n||n<1){toast('Enter how many leads to randomly select.');countInput.focus();return;}
+
+  const allCheckboxes=Array.from(document.querySelectorAll('.bulk-lead-checkbox'));
+  if(!allCheckboxes.length){toast('No leads currently visible to select from.');return;}
+
+  // Uncheck everything first, so this always produces a clean, exact
+  // selection rather than adding on top of whatever was already checked.
+  allCheckboxes.forEach(cb=>cb.checked=false);
+
+  const pool=[...allCheckboxes];
+  // Fisher-Yates shuffle
+  for(let i=pool.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [pool[i],pool[j]]=[pool[j],pool[i]];
+  }
+  const actualCount=Math.min(n,pool.length);
+  pool.slice(0,actualCount).forEach(cb=>cb.checked=true);
+
+  onBulkCheckboxChange();
+  if(actualCount<n){
+    toast(`Only ${actualCount} lead(s) were visible — selected all of them (fewer than the ${n} requested).`);
+  } else {
+    toast(`${actualCount} lead(s) randomly selected from the current view.`);
+  }
 }
 function toggleSelectAllLeads(checked){
   document.querySelectorAll('.bulk-lead-checkbox').forEach(cb=>cb.checked=checked);
@@ -12010,8 +12044,7 @@ function setQuerySubtab(sub){
   });
   if(sub==='web')loadQueries('web');
   if(sub==='whatsapp')loadQueries('whatsapp');
-  // Instagram intentionally does nothing yet — static "not connected"
-  // state until that pipeline exists.
+  if(sub==='instagram')loadQueries('instagram');
 }
 let queriesCache={web:[],instagram:[],whatsapp:[]};
 async function loadQueries(channel){
@@ -12040,6 +12073,7 @@ function renderQueriesList(channel){
     const statusBadge=q.status==='Converted'?`<span class="pill" style="background:#D1FAE5;color:#065F46;font-size:10px;margin-left:4px">✅ Converted</span>`:'';
     const contactBits=[q.full_name,q.email,q.phone].filter(Boolean).join(' · ')||'No contact details given';
     const extraBits=[q.study_destination?`Destination: ${esc(q.study_destination)}`:null,q.nationality?`Nationality: ${esc(q.nationality)}`:null].filter(Boolean).join(' · ');
+    const sourceDetailLine=q.source_detail?`<div style="font-size:11px;color:var(--ink3);margin-bottom:4px">${esc(q.source_detail)}</div>`:'';
     const receivedLabel=new Date(q.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
     const actions=q.status==='Converted'
       ? `<button class="btn" style="font-size:11.5px;padding:5px 10px" onclick="openLeadDetail('${q.converted_lead_id}')">View lead →</button>`
@@ -12051,6 +12085,7 @@ function renderQueriesList(channel){
         <div style="font-size:11px;color:var(--ink3);flex-shrink:0">${receivedLabel}</div>
       </div>
       ${q.message?`<div style="font-size:13px;color:var(--ink2);margin-bottom:6px;white-space:pre-wrap">${esc(q.message)}</div>`:''}
+      ${sourceDetailLine}
       ${extraBits?`<div style="font-size:11px;color:var(--ink3);margin-bottom:8px">${extraBits}</div>`:''}
       <div style="display:flex;gap:6px">${actions}</div>
     </div>`;
@@ -12078,12 +12113,18 @@ function convertQueryToLead(queryId){
   // hook in saveLead()'s success path — so cancelling out of the form
   // leaves the query untouched, still available to convert later.
   pendingQueryConversionId=queryId;
+  pendingQueryInstagramIgsid=q.instagram_igsid||null;
 }
 let pendingQueryConversionId=null;
+let pendingQueryInstagramIgsid=null;
 async function markPendingQueryConverted(newLeadId){
   if(!pendingQueryConversionId)return;
   await sb.from('website_enquiries').update({status:'Converted',converted_lead_id:newLeadId}).eq('id',pendingQueryConversionId);
+  if(pendingQueryInstagramIgsid){
+    await sb.from('leads').update({instagram_igsid:pendingQueryInstagramIgsid}).eq('id',newLeadId);
+  }
   pendingQueryConversionId=null;
+  pendingQueryInstagramIgsid=null;
   ['web','instagram','whatsapp'].forEach(loadQueries);
   updateQueriesBadge();
 }

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
 <script>
@@ -1598,12 +1598,17 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div class="es-sub">Once you log a call above, it'll show up here.</div>
         </div>
         <div id="cl-content" style="display:none">
-          <div class="clabel" id="cl-count"></div>
-          <div class="tw">
-            <table class="tbl">
-              <thead><tr><th>Lead</th><th>Counsellor</th><th>Date</th><th>Duration</th><th>Outcome</th><th>Recording</th><th></th></tr></thead>
-              <tbody id="cl-tbody"></tbody>
-            </table>
+          <div class="clabel" id="cl-count" onclick="toggleCallLogTable()" style="cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none">
+            <i class="ti ti-chevron-right" id="cl-toggle-icon" style="transition:transform .15s"></i>
+            <span id="cl-count-text"></span>
+          </div>
+          <div id="cl-table-wrap" style="display:none">
+            <div class="tw">
+              <table class="tbl">
+                <thead><tr><th>Lead</th><th>Counsellor</th><th>Date</th><th>Duration</th><th>Outcome</th><th>Recording</th><th></th></tr></thead>
+                <tbody id="cl-tbody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
         </div>
@@ -11793,13 +11798,22 @@ function toggleCallRecordingPlayer(callId){
     if(audioEl)audioEl.pause();
   }
 }
+function toggleCallLogTable(){
+  const wrap=document.getElementById('cl-table-wrap');
+  const icon=document.getElementById('cl-toggle-icon');
+  const isOpen=wrap.style.display!=='none';
+  wrap.style.display=isOpen?'none':'block';
+  icon.style.transform=isOpen?'rotate(0deg)':'rotate(90deg)';
+  const label=document.getElementById('cl-count-text').textContent.split(' — ')[0];
+  document.getElementById('cl-count-text').textContent=label+' — click to '+(isOpen?'show':'hide');
+}
 function renderCallLogs(){
   const empty=document.getElementById('cl-empty'), content=document.getElementById('cl-content');
   if(!empty||!content)return;
   if(!callLogs.length){empty.style.display='flex';content.style.display='none';return;}
   empty.style.display='none';content.style.display='block';
   const canDelete=isSuperAdmin||myRole==='Admin'||myRole==='Director';
-  document.getElementById('cl-count').textContent=callLogs.length+' call'+(callLogs.length!==1?'s':'')+' logged';
+  document.getElementById('cl-count-text').textContent=callLogs.length+' call'+(callLogs.length!==1?'s':'')+' logged — click to '+(document.getElementById('cl-table-wrap').style.display==='none'?'show':'hide');
   const statusColors={initiated:['var(--gold-l)','var(--gold)'],ringing:['var(--gold-l)','var(--gold)'],'in-progress':['var(--sage-l)','#0F6E56'],completed:['var(--sage-l)','#0F6E56'],'no-answer':['#FCEBEB','#A32D2D'],failed:['#FCEBEB','#A32D2D'],busy:['#FCEBEB','#A32D2D']};
   document.getElementById('cl-tbody').innerHTML=callLogs.map(c=>{
     const dt=c.call_date?new Date(c.call_date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';

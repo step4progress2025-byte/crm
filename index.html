@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <script>
@@ -1010,8 +1010,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="btn" onclick="clearBulkSelection()" style="font-size:12px;padding:5px 10px;background:rgba(255,255,255,.15);color:#fff;border:none">Clear selection</button>
           </div>
           <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;margin-top:-6px">
-            <input type="number" id="random-select-count" placeholder="e.g. 100" min="1" style="width:90px;font-size:12px;padding:5px 8px;border:1px solid var(--line2);border-radius:var(--r)">
-            <button class="btn" onclick="selectRandomLeads()" style="font-size:12px;padding:5px 12px"><i class="ti ti-dice"></i>Select random</button>
+            <span id="random-select-wrap" style="display:flex;gap:8px">
+              <input type="number" id="random-select-count" placeholder="e.g. 100" min="1" style="width:90px;font-size:12px;padding:5px 8px;border:1px solid var(--line2);border-radius:var(--r)">
+              <button class="btn" onclick="selectRandomLeads()" style="font-size:12px;padding:5px 12px"><i class="ti ti-dice"></i>Select random</button>
+            </span>
             <button class="btn" onclick="navFilter('ls-st','Dropped')" style="font-size:12px;padding:5px 12px;background:var(--rose-l,#FEE2E2);color:var(--rose,#991B1B);border-color:transparent"><i class="ti ti-trash-x"></i>Drop List</button>
             <button class="btn" onclick="openBulkAddLeadsWizard()" style="font-size:12px;padding:5px 12px"><i class="ti ti-file-upload"></i>Bulk Add Leads</button>
             <button class="btn" onclick="exportCurrentView()" style="font-size:12px;padding:5px 12px"><i class="ti ti-download"></i>Export this view</button>
@@ -5707,6 +5709,8 @@ function renderLeads(){
   if(!canBulkAct){
     const bar=document.getElementById('bulk-actions-bar');
     if(bar) bar.style.display='none';
+    const randomSelectWrap=document.getElementById('random-select-wrap');
+    if(randomSelectWrap) randomSelectWrap.style.display='none';
   }
   // Same ops-view scoping already applied to the Dashboard's numbers —
   // this was the actual bug: Domestic/International correctly filtered
@@ -12301,22 +12305,27 @@ async function renderActivityMonitor(){
     if(!byMember[u.team_id].latest)byMember[u.team_id].latest=u;
   });
 
-  // Real call stats, per counsellor — pulled from the same whatsapp_calls
-  // table the WhatsApp Calls tab uses (matched on counsellor name, same
-  // as everywhere else this field is used). This is genuinely new: this
-  // table never queried call data before.
+  // Real call stats, per counsellor — combines BOTH call_logs (the
+  // regular Call Recorder tab's data — this is where most counsellors'
+  // actual logged calls live) and whatsapp_calls (the WhatsApp desktop
+  // recorder's data). Originally this only read whatsapp_calls, which
+  // meant anyone whose calls were logged via the regular Call Recorder
+  // — the majority of real usage — showed "No calls" here even with a
+  // full call history, since that data was never being looked at.
   await loadWhatsAppCalls();
+  await loadCallLogs();
   const callStatsByName={};
-  whatsappCalls.forEach(c=>{
-    const name=c.counsellor;
+  function addCallStat(name,isConnected,seconds){
     if(!name)return;
     if(!callStatsByName[name])callStatsByName[name]={total:0,connected:0,seconds:0};
     callStatsByName[name].total++;
-    if(c.status==='answered'||c.status==='completed'){
+    if(isConnected){
       callStatsByName[name].connected++;
-      callStatsByName[name].seconds+=c.duration_seconds||0;
+      callStatsByName[name].seconds+=seconds||0;
     }
-  });
+  }
+  whatsappCalls.forEach(c=>addCallStat(c.counsellor,c.status==='answered'||c.status==='completed',c.duration_seconds));
+  callLogs.forEach(c=>addCallStat(c.counsellor,c.outcome==='Connected',(c.duration_mins||0)*60));
 
   listEl.innerHTML=`<div class="tw"><table class="tbl"><thead><tr><th>Name</th><th>Team</th><th>Country</th><th>Updates (7d)</th><th>Calls</th><th>Talk time</th><th>Latest update</th></tr></thead><tbody>`+
     members.map(m=>{

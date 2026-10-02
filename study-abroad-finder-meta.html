@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="favicon-180.png">
+<title>Step4Progress Opportunity Finder — Study abroad options by tuition fee budget</title>
+<link rel="canonical" href="https://www.step4progress.com/study-abroad-finder-meta.html">
+<meta name="description" content="Find study-abroad options with tuition fees around your budget. Tuition fees only — living costs, visa, insurance and travel are additional.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Step4Progress Opportunity Finder">
+<meta property="og:description" content="Find study-abroad options with tuition fees around your budget.">
+<meta property="og:url" content="https://www.step4progress.com/study-abroad-finder-meta.html">
+<meta property="og:image" content="https://www.step4progress.com/step4progress-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@500;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+  /* Tokens carried over from opportunity-finder.html; accent switched to brand orange */
+  :root{
+    --ink-navy:#1B2A4A;
+    --passport-blue:#2F4B7C;
+    --orange:#D4540E;
+    --orange-dark:#B5450A;
+    --orange-tint:#FDF1E8;
+    --paper:#F7F4EC;
+    --charcoal:#26262A;
+    --muted:#63636b;
+    --line:rgba(27,42,74,0.16);
+    --error:#A8382F;
+    --ok:#1F6B45;
+    --radius:6px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--charcoal);
+    font-family:'Inter','Noto Sans Tamil',system-ui,sans-serif;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3{font-family:'Fraunces','Noto Sans Tamil',serif;font-weight:600;color:var(--ink-navy);margin:0;letter-spacing:-0.01em;}
+  a{color:var(--passport-blue);}
+  :focus-visible{outline:3px solid var(--orange);outline-offset:2px;}
+  [hidden]{display:none !important;}
+
+  .utility-bar{background:#0D2137;color:rgba(255,255,255,.75);font-size:12px;padding:8px 16px;text-align:center;}
+  .utility-bar a{color:#fff;text-decoration:none;font-weight:600;}
+  .tool-logo-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#fff;border-bottom:1px solid var(--line);}
+  .tool-logo-bar img{height:48px;width:auto;display:block;}
+  .tool-logo-bar span{font-size:13px;font-weight:600;color:var(--ink-navy);}
+
+  .wrap{max-width:760px;margin:0 auto;padding:24px 16px 56px;}
+
+  /* Hero */
+
+  /* Disclaimer */
+  .notice{background:var(--orange-tint);border-left:4px solid var(--orange);padding:12px 14px;border-radius:0 var(--radius) var(--radius) 0;font-size:14px;color:#4a2a12;margin:16px 0;}
+  .notice.demo{background:#FFF7CC;border-color:#B58900;color:#4d3d00;font-weight:600;}
+  .notice.plain{background:#fff;border-color:var(--passport-blue);color:#33333a;}
+
+  /* Progress */
+  .progress{list-style:none;display:flex;gap:4px;padding:0;margin:0 0 20px;}
+  .progress li{flex:1;text-align:center;font-size:11.5px;font-weight:600;color:var(--muted);border-top:4px solid var(--line);padding-top:8px;}
+  .progress li b{display:block;font-size:14px;}
+  .progress li.done{border-color:var(--ink-navy);color:var(--ink-navy);}
+  .progress li.current{border-color:var(--orange);color:var(--orange-dark);}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:22px 18px;}
+  .card > h2{font-size:23px;line-height:1.3;}
+  .sub{color:var(--muted);font-size:14.5px;margin:6px 0 18px;}
+
+  /* Budget options */
+  .budget-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;border:0;padding:0;margin:0;}
+  @media(min-width:560px){.budget-grid{grid-template-columns:repeat(3,1fr);}}
+  .budget-grid label{display:block;cursor:pointer;}
+  .budget-grid input{position:absolute;opacity:0;}
+  .budget-grid span{display:flex;align-items:center;justify-content:center;min-height:60px;border:2px solid var(--line);border-radius:var(--radius);font-weight:700;color:var(--ink-navy);font-size:16px;background:#fff;}
+  .budget-grid input:checked + span{border-color:var(--orange);background:var(--orange-tint);color:var(--orange-dark);}
+  .budget-grid input:focus-visible + span{outline:3px solid var(--orange);outline-offset:2px;}
+
+  /* Fields */
+  .fields{display:grid;gap:16px;}
+  @media(min-width:620px){.fields{grid-template-columns:1fr 1fr;}.fields .full{grid-column:1/-1;}}
+  .field label{display:block;font-size:14px;font-weight:600;color:var(--ink-navy);margin-bottom:6px;}
+  .field label i{color:var(--error);font-style:normal;}
+  .field input,.field select,.field textarea{width:100%;min-height:50px;padding:12px;font:inherit;color:var(--charcoal);background:#fff;border:1.5px solid rgba(27,42,74,.3);border-radius:var(--radius);}
+  .field textarea{min-height:96px;resize:vertical;}
+  .field.invalid input,.field.invalid select,.field.invalid textarea{border-color:var(--error);}
+  .err{color:var(--error);font-size:13px;margin-top:5px;min-height:0;}
+  .phone-row{display:flex;gap:8px;}
+  .phone-row .cc{flex:0 0 64px;display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(27,42,74,.3);border-radius:var(--radius);font-weight:600;background:#f4f4f6;}
+  .hp{position:absolute;left:-9999px;}
+
+  /* Buttons */
+  .btn{display:inline-flex;align-items:center;justify-content:center;min-height:54px;padding:14px 22px;font:inherit;font-weight:700;border-radius:var(--radius);border:2px solid transparent;cursor:pointer;text-decoration:none;text-align:center;}
+  .btn-primary{background:var(--orange);color:#fff;}
+  .btn-primary:hover{background:var(--orange-dark);}
+  .btn-navy{background:var(--ink-navy);color:#fff;}
+  .btn-ghost{background:#fff;color:var(--ink-navy);border-color:var(--ink-navy);}
+  .btn:disabled{background:#c7c7cf;color:#fff;cursor:not-allowed;}
+  .actions{display:flex;gap:10px;margin-top:22px;}
+  .actions .btn-primary{flex:1;}
+  @media(max-width:480px){.actions{flex-direction:column-reverse;}.actions .btn{width:100%;}}
+
+  /* Summary */
+  .summary{margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:15px;}
+  .summary dt{color:var(--muted);}
+  .summary dd{margin:0;font-weight:600;color:var(--ink-navy);word-break:break-word;}
+
+  /* Result cards */
+  .opp{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-top:14px;}
+  .opp-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-weight:600;color:var(--ink-navy);}
+  .opp-top .flag{margin-right:8px;vertical-align:-3px;border-radius:2px;}
+  .tag{font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:999px;}
+  .tag-good{background:#E3F3EA;color:var(--ok);}
+  .tag-possible{background:#E6EDF8;color:var(--passport-blue);}
+  .tag-explore{background:#EFEAD9;color:#5b4a14;}
+  .tag-stretch{background:var(--orange-tint);color:var(--orange-dark);}
+  .opp h3{font-size:20px;}
+  .opp .course{margin:2px 0 12px;color:#45454d;}
+  .facts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 12px;}
+  .facts div{background:var(--paper);border-radius:var(--radius);padding:9px 11px;}
+  .facts dt{font-size:12px;color:var(--muted);}
+  .facts dd{margin:0;font-weight:700;color:var(--ink-navy);font-size:15px;}
+  .opp h4{margin:0 0 4px;font-size:14px;color:var(--ink-navy);}
+  .opp ul{margin:0 0 10px;padding-left:20px;font-size:14.5px;}
+  .opp p{margin:0 0 8px;font-size:14.5px;}
+  .opp .fine{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;margin:10px 0 0;}
+
+  .cta{background:var(--ink-navy);color:#fff;border-radius:var(--radius);padding:22px 18px;margin-top:22px;}
+  .cta h2{color:#fff;font-size:21px;}
+  .cta p{color:rgba(255,255,255,.82);margin:8px 0 16px;font-size:14.5px;}
+  .cta .btns{display:grid;gap:10px;}
+  @media(min-width:620px){.cta .btns{grid-template-columns:repeat(3,1fr);}}
+  .cta .btn-ghost{border-color:#fff;}
+  .cta .thanks{background:rgba(255,255,255,.1);border-radius:var(--radius);padding:12px;margin-top:14px;font-size:14.5px;}
+  footer{text-align:center;font-size:12.5px;color:var(--muted);padding:0 16px 32px;}
+
+  /* ===== Vivid layer ===== */
+  .btn{transition:transform .12s, background .15s, box-shadow .15s;}
+  .btn:active{transform:scale(.97);}
+  .btn-primary{box-shadow:0 6px 16px rgba(212,84,14,.35);}
+  .card{border-radius:12px;box-shadow:0 8px 24px rgba(27,42,74,.07);}
+  .step{animation:stepIn .28s ease-out;}
+  @keyframes stepIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  .progress li{transition:border-color .3s,color .3s;}
+  .progress li b{width:28px;height:28px;line-height:28px;border-radius:50%;margin:0 auto 4px;background:#e4e2da;color:var(--muted);transition:background .3s,color .3s;}
+  .progress li.done b{background:var(--ink-navy);color:#fff;}
+  .progress li.current b{background:var(--orange);color:#fff;box-shadow:0 0 0 4px rgba(212,84,14,.18);}
+  .budget-grid span{flex-direction:column;gap:2px;min-height:72px;border-radius:10px;transition:transform .12s,border-color .15s,background .15s;}
+  .budget-grid small{font-size:12px;font-weight:600;color:var(--muted);}
+  .budget-grid label:active span{transform:scale(.97);}
+  .budget-grid input:checked + span{box-shadow:0 6px 16px rgba(212,84,14,.18);}
+  .budget-grid input:checked + span small{color:var(--orange-dark);}
+  .live{margin:14px 0 0;padding:10px 12px;border-radius:10px;background:#E3F3EA;color:var(--ok);font-weight:600;font-size:14.5px;}
+  .live:empty{display:none;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chips button{font:inherit;font-weight:600;font-size:14.5px;min-height:44px;padding:8px 14px;border-radius:999px;border:1.5px solid rgba(27,42,74,.3);background:#fff;color:var(--ink-navy);cursor:pointer;transition:transform .12s,background .15s,border-color .15s;}
+  .chips button:active{transform:scale(.95);}
+  .chips button[aria-pressed="true"]{background:var(--ink-navy);border-color:var(--ink-navy);color:#fff;}
+  .field.invalid .chips button{border-color:var(--error);}
+  .opp{border-radius:12px;border-left:6px solid var(--line);box-shadow:0 6px 18px rgba(27,42,74,.06);animation:stepIn .35s ease-out backwards;}
+  .opp.tag-good-card{border-left-color:var(--ok);}
+  .opp.tag-possible-card{border-left-color:var(--passport-blue);}
+  .opp.tag-explore-card{border-left-color:#B58900;}
+  .opp.tag-stretch-card{border-left-color:var(--orange);}
+  .facts .fee{grid-column:1/-1;background:var(--orange-tint);}
+  .facts .fee strong{font-size:20px;color:var(--orange-dark);}
+  .opp .intern{background:#E3F3EA;border-radius:8px;padding:8px 10px;}
+  .cta{border-radius:12px;background:radial-gradient(120% 120% at 100% 0%,rgba(212,84,14,.45),transparent 55%),var(--ink-navy);}
+  @media (prefers-reduced-motion:reduce){.step,.opp{animation:none;}.btn,.chips button,.budget-grid span{transition:none;}}
+
+  /* ===== Landing page (from the approved mockup) ===== */
+  .topstrip{background:#0D2137;color:rgba(255,255,255,.85);font-size:13px;padding:8px 20px;display:flex;gap:18px;flex-wrap:wrap;justify-content:center;}
+  .topstrip a{color:#fff;text-decoration:none;font-weight:600;}
+  .nav{background:#fff;border-bottom:1px solid var(--line);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .nav img{height:52px;width:auto;display:block;}
+  .nav .btn{min-height:46px;padding:10px 18px;}
+  .land{max-width:1120px;margin:0 auto;padding:0 16px;}
+  .hero{background:linear-gradient(180deg,#FFF3E8 0%,#EAF3FB 100%);padding:36px 0 40px;}
+  .hero-grid{display:grid;gap:28px;align-items:center;}
+  @media(min-width:920px){.hero-grid{grid-template-columns:1.15fr .85fr;}}
+  .eyebrow{font-size:13px;font-weight:700;letter-spacing:.22em;color:var(--ink-navy);margin:0 0 12px;}
+  .hero h1{font-size:clamp(30px,5.4vw,50px);line-height:1.18;}
+  .hero h1::after{content:"";display:block;width:92px;height:6px;border-radius:6px;background:var(--orange);margin-top:14px;transform:rotate(-2deg);}
+  .hero .lede{font-size:19px;color:var(--ink-navy);margin:18px 0 0;max-width:30ch;}
+  .hero .lede b{color:var(--orange-dark);}
+  .perks{list-style:none;padding:0;margin:22px 0;display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  @media(min-width:560px){.perks{grid-template-columns:repeat(4,1fr);}}
+  .perks li{font-size:13.5px;font-weight:600;color:var(--ink-navy);line-height:1.35;}
+  .perks svg{display:block;width:30px;height:30px;margin-bottom:6px;stroke:var(--ink-navy);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .startcard{background:#fff;border:1px solid rgba(212,84,14,.25);border-radius:16px;padding:20px 18px;box-shadow:0 14px 34px rgba(27,42,74,.10);}
+  .startcard h2{font-size:23px;}
+  .startcard p{margin:6px 0 14px;color:#45454d;font-size:14.5px;}
+  .hb{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  @media(min-width:620px){.hb{grid-template-columns:repeat(6,1fr);}}
+  .hb button{font:inherit;font-weight:700;font-size:15px;min-height:52px;border-radius:10px;border:1.5px solid var(--line);background:#fff;color:var(--ink-navy);cursor:pointer;transition:transform .12s,background .15s,border-color .15s;}
+  .hb button:active{transform:scale(.96);}
+  .hb button[aria-pressed="true"]{border-color:var(--orange);background:var(--orange-tint);color:var(--orange-dark);box-shadow:0 6px 14px rgba(212,84,14,.18);}
+  .hrow{display:grid;gap:10px;margin-top:12px;}
+  @media(min-width:620px){.hrow{grid-template-columns:1fr 1fr;}}
+  .hrow input{width:100%;min-height:54px;padding:12px 14px;font:inherit;border:1.5px solid var(--line);border-radius:10px;}
+  .where{margin-top:14px;font-size:13.5px;font-weight:600;color:var(--ink-navy);}
+  .flagrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .flagrow span{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:12.5px;font-weight:600;background:#f1efe8;color:#8a8a92;transition:background .25s,color .25s,opacity .25s;}
+  .flagrow span img{border-radius:2px;opacity:.35;transition:opacity .25s;}
+  .flagrow span.on{background:#E3F3EA;color:var(--ok);}
+  .flagrow span.on img{opacity:1;}
+  .tuition-note{display:flex;gap:8px;font-size:13.5px;color:#4a2a12;margin:14px 0 0;}
+  .tuition-note::before{content:"i";flex:0 0 20px;height:20px;border-radius:50%;background:#F5A524;color:#fff;font-weight:700;font-size:13px;text-align:center;line-height:20px;}
+  .herr{color:var(--error);font-size:13.5px;margin-top:8px;}
+  .visual{position:relative;min-height:320px;border-radius:20px;overflow:hidden;background:radial-gradient(120% 100% at 100% 0%,rgba(212,84,14,.5),transparent 60%),linear-gradient(160deg,#2F4B7C,#1B2A4A);}
+  .visual img.photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .scribble{font-family:'Caveat',cursive;font-size:clamp(30px,5vw,42px);line-height:1.05;color:#fff;position:absolute;left:22px;bottom:22px;transform:rotate(-5deg);text-shadow:0 2px 10px rgba(0,0,0,.35);}
+  .scribble::after{content:"";display:block;width:70%;height:5px;border-radius:5px;background:var(--orange);margin-top:6px;}
+  .sticky-note{font-family:'Caveat',cursive;font-size:22px;line-height:1.1;color:var(--ink-navy);background:#FFF3C4;padding:12px 14px;position:absolute;right:18px;top:18px;transform:rotate(4deg);box-shadow:0 8px 18px rgba(0,0,0,.25);}
+  @media(max-width:919px){.visual{min-height:220px;order:-1;}}
+  .how{background:#fff;border-radius:16px;box-shadow:0 10px 28px rgba(27,42,74,.07);padding:28px 18px;margin:28px 0 16px;text-align:center;}
+  .how h2{font-size:clamp(22px,3.6vw,28px);}
+  .how > p{color:var(--muted);margin:8px 0 22px;}
+  .steps5{list-style:none;padding:0;margin:0;display:grid;gap:18px;text-align:left;}
+  @media(min-width:560px){.steps5{grid-template-columns:repeat(2,1fr);}}
+  @media(min-width:920px){.steps5{grid-template-columns:repeat(5,1fr);}}
+  .steps5 b{display:inline-flex;width:30px;height:30px;border-radius:50%;align-items:center;justify-content:center;color:#fff;font-size:15px;margin-bottom:8px;}
+  .steps5 li:nth-child(1) b{background:#E8621A}.steps5 li:nth-child(2) b{background:#3B6FD4}.steps5 li:nth-child(3) b{background:#8B4FC7}
+  .steps5 li:nth-child(4) b{background:#2E9E62}.steps5 li:nth-child(5) b{background:#E8621A}
+  .steps5 strong{display:block;color:var(--ink-navy);font-size:15.5px;}
+  .steps5 span{font-size:14px;color:#55555d;}
+  .tiles{display:grid;gap:12px;margin-bottom:28px;}
+  @media(min-width:560px){.tiles{grid-template-columns:repeat(2,1fr);}}
+  @media(min-width:920px){.tiles{grid-template-columns:repeat(4,1fr);}}
+  .tiles div{background:#fff;border-radius:12px;padding:14px 16px;border:1px solid var(--line);}
+  .tiles strong{display:block;color:var(--ink-navy);font-size:14.5px;}
+  .tiles span{font-size:13.5px;color:#55555d;}
+  .closing{background:radial-gradient(90% 140% at 0% 100%,rgba(212,84,14,.4),transparent 55%),linear-gradient(160deg,#1B2A4A,#0D2137);color:#fff;padding:44px 0;text-align:center;}
+  .closing h2{color:#fff;font-size:clamp(26px,4.6vw,38px);}
+  .closing h2 em{font-style:normal;color:#FF8A4C;}
+  .closing p{color:rgba(255,255,255,.85);margin:12px 0 22px;}
+  .closing .row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;align-items:center;}
+  .closing a.talk{color:#fff;font-weight:600;}
+  .consent{display:flex;gap:10px;align-items:flex-start;font-weight:500 !important;font-size:14px !important;line-height:1.45;cursor:pointer;}
+  .consent input{width:22px;min-height:22px;height:22px;flex:0 0 22px;margin-top:1px;accent-color:var(--orange);}
+  .btn-wa{background:#1FA855;color:#fff;width:100%;font-size:17px;box-shadow:0 6px 16px rgba(31,168,85,.3);}
+  .btn-wa:hover{background:#178a45;}
+</style>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DBW7YJ352G"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-DBW7YJ352G');
+</script>
+</head>
+<body>
+
+<div class="topstrip"><a href="tel:+919159158881">+91 915 915 8881</a><a href="mailto:india@step4progress.com">india@step4progress.com</a></div>
+<header class="nav">
+  <a href="index.html"><img src="step4progress-logo.png" alt="Step4Progress — smart step for your education"></a>
+  <!-- Add the main-site menu links here (Study Abroad, Destinations, Courses, Scholarships) using your real page URLs -->
+  <button class="btn btn-primary js-start">Find My Options</button>
+</header>
+
+<main>
+<div id="landing">
+  <section class="hero">
+    <div class="land hero-grid">
+      <div>
+        <p class="eyebrow">STEP4PROGRESS OPPORTUNITY FINDER</p>
+        <h1>உங்க Tuition Fee Budget-க்கு ஏற்ற Study Abroad Options கண்டுபிடிக்கலாம்!</h1>
+        <p class="lede">Find real study-abroad opportunities with <b>tuition fees around your budget.</b></p>
+        <ul class="perks">
+          <li><svg viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/></svg>Real universities and courses</li>
+          <li><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>Options for different budgets</li>
+          <li><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.500 0 18M12 3c-3 3.5-3 14.500 0 18"/></svg>Multiple destinations</li>
+          <li><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5.500 20c.6-3.600 3.200-5.500 6.500-5.500s5.900 1.900 6.500 5.500"/><circle cx="4.800" cy="10" r="2"/><circle cx="19.200" cy="10" r="2"/></svg>Free expert guidance</li>
+        </ul>
+
+        <div class="startcard" id="startCard">
+          <h2>Start with your Tuition Fee Budget</h2>
+          <p>Select or enter your approximate annual tuition fee budget (in INR).</p>
+          <div class="hb" id="heroBudgets" role="group" aria-label="Tuition fee budget"></div>
+          <div class="hrow">
+            <input id="heroCustom" type="text" inputmode="numeric" autocomplete="off" placeholder="Custom amount (min ₹3,00,000)" aria-label="Custom tuition fee budget in rupees">
+            <button class="btn btn-primary" id="heroGo">Find My Options</button>
+          </div>
+          <div class="herr" id="heroErr" role="alert"></div>
+          <div class="where" id="heroWhere" role="status"></div>
+          <div class="flagrow" id="heroFlags"></div>
+          <p class="tuition-note"><span><b>₹3 lakhs refers to tuition fees only.</b> Living expenses, accommodation, visa, insurance, travel and other costs are additional.</span></p>
+        </div>
+      </div>
+
+      <div class="visual" aria-hidden="true">
+        <!-- Drop your hero photo next to this page as hero-student.jpg; until then the coloured panel shows -->
+        <img class="photo" src="hero-student.jpg" alt="" onerror="this.remove()">
+        <div class="sticky-note">Plan Early.<br>Study Smarter.<br>Go Further.</div>
+        <div class="scribble">Same Budget.<br>Bigger Possibilities.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="land">
+    <section class="how">
+      <h2>How the Opportunity Finder Works</h2>
+      <p>Just 5 simple steps to discover study-abroad options that may fit your profile.</p>
+      <ol class="steps5">
+        <li><b>1</b><strong>Choose Tuition Fee Budget</strong><span>Starting from ₹3 lakhs</span></li>
+        <li><b>2</b><strong>Share Your Profile</strong><span>Qualification, what you studied, course interest and intake</span></li>
+        <li><b>3</b><strong>Confirm on WhatsApp</strong><span>Send one ready-made message from your number</span></li>
+        <li><b>4</b><strong>See Matching Options</strong><span>3–5 relevant universities and courses for your budget and profile</span></li>
+        <li><b>5</b><strong>Get Expert Guidance</strong><span>Talk to our counsellor on WhatsApp or call for next steps</span></li>
+      </ol>
+    </section>
+    <div class="tiles">
+      <div><strong>Explore Real Options</strong><span>Fees checked against university and institute sources</span></div>
+      <div><strong>Multiple Destinations</strong><span id="tileCountries">UK, Germany, Singapore and more</span></div>
+      <div><strong>For All Student Profiles</strong><span>10th, 12th, Diploma, UG, PG and more</span></div>
+      <div><strong>Free Counselling Support</strong><span>Personalised guidance from our team</span></div>
+    </div>
+  </div>
+
+  <section class="closing">
+    <div class="land">
+      <h2>Your Study Abroad Journey Can <em>Start Here.</em></h2>
+      <p>Enter your tuition fee budget and find out what's possible.</p>
+      <div class="row"><button class="btn btn-primary js-start">Find My Options</button><a class="talk" href="tel:+919159158881">Talk to a Counsellor</a></div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
+  <section id="wizard" hidden>
+    <ol class="progress" id="progress" aria-label="Progress">
+      <li><b>1</b>Budget</li><li><b>2</b>Profile</li><li><b>3</b>WhatsApp</li><li><b>4</b>Find options</li><li><b>5</b>Results</li>
+    </ol>
+
+    <!-- STEP 1 -->
+    <div class="card step" id="step1" hidden>
+      <h2 tabindex="-1">உங்க Tuition Fee Budget எவ்வளவு?</h2>
+      <p class="sub">Choose your tuition fee budget per year, in Indian rupees.</p>
+      <fieldset class="budget-grid" id="budgetGrid"><legend class="hp">Tuition fee budget</legend></fieldset>
+      <p class="live" id="liveCount" role="status"></p>
+      <div class="field" id="f-custom" style="margin-top:16px">
+        <label for="customBudget">Or enter your own tuition fee budget (₹)</label>
+        <input id="customBudget" type="text" inputmode="numeric" autocomplete="off" placeholder="Minimum 3,00,000">
+        <div class="err" id="e-custom" role="alert"></div>
+      </div>
+      <div class="notice">This budget refers to TUITION FEES ONLY. Living expenses and other costs are additional.</div>
+      <div class="actions"><button class="btn btn-primary" id="next1">Next: your profile</button></div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="card step" id="step2" hidden>
+      <h2 tabindex="-1">Tell us about yourself</h2>
+      <p class="sub">உங்க profile-க்கு ஏற்ற options காட்ட இந்த details தேவை.</p>
+      <div class="fields">
+        <div class="field" id="f-name"><label for="name">Full name <i>*</i></label><input id="name" type="text" autocomplete="name"><div class="err" role="alert"></div></div>
+        <div class="field" id="f-age"><label for="age">Age <i>*</i></label><input id="age" type="text" inputmode="numeric" maxlength="2"><div class="err" role="alert"></div></div>
+        <div class="field" id="f-area"><label for="area">Area / City <i>*</i></label><input id="area" type="text" autocomplete="address-level2"><div class="err" role="alert"></div></div>
+        <div class="field" id="f-qualification"><label for="qualification">Highest qualification <i>*</i></label><select id="qualification"></select><div class="err" role="alert"></div></div>
+        <div class="field full" id="f-studied" hidden><label for="studied">What did you study? <i>*</i></label><select id="studied"></select><div class="err" role="alert"></div></div>
+        <div class="field" id="f-course"><label for="course">Course / field interested in <i>*</i></label><select id="course"></select><div class="err" role="alert"></div></div>
+        <div class="field" id="f-intake"><label for="intake">Preferred intake <i>*</i></label><select id="intake"></select><div class="err" role="alert"></div></div>
+        <div class="field" id="f-phone"><label for="phone">Phone number <i>*</i></label>
+          <div class="phone-row"><span class="cc">+91</span><input id="phone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel-national" placeholder="10-digit mobile number"></div>
+          <div class="err" role="alert"></div></div>
+        <div class="field full" id="f-notes"><label for="notes">Notes / message</label>
+          <textarea id="notes" maxlength="1000" placeholder="Tell us anything about your study-abroad plans, concerns or questions."></textarea><div class="err" role="alert"></div></div>
+      </div>
+      <div class="field" id="f-consent" style="margin-top:16px">
+        <label class="consent"><input type="checkbox" id="consent"> <span>I agree that Step4Progress may contact me by phone and WhatsApp about study-abroad options, and store the details I entered for that purpose.</span></label>
+        <!-- Add a link to your privacy policy page here -->
+        <div class="err" role="alert"></div>
+      </div>
+      <input type="text" id="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="actions"><button class="btn btn-ghost" data-back="1">Back</button><button class="btn btn-primary" id="next2">Next: verify phone</button></div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="card step" id="step3" hidden>
+      <h2 tabindex="-1">Confirm your number on WhatsApp</h2>
+      <p class="sub">உங்க WhatsApp-ல இருந்து ஒரு message அனுப்புங்க. Tap the button and press send: that confirms <b id="verifyPhone"></b> is really yours, and a counsellor can reply to you there.</p>
+      <a class="btn btn-wa" id="waConfirm" target="_blank" rel="noopener" href="#">Send message on WhatsApp</a>
+      <p class="sub" id="waHint" style="margin:12px 0 0" role="status">The message is already written. It costs nothing to send.</p>
+      <div class="actions"><button class="btn btn-ghost" data-back="2">Back</button><button class="btn btn-primary" id="next3" disabled>See my options</button></div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="card step" id="step4" hidden>
+      <h2 tabindex="-1">Check your details</h2>
+      <p class="sub">We match options on tuition fee, qualification, course and intake, across all countries in our list.</p>
+      <dl class="summary" id="summary"></dl>
+      <div class="notice">Your budget is for tuition fees only. Living expenses, accommodation, visa, insurance, travel and other costs are additional.</div>
+      <div class="actions"><button class="btn btn-ghost" data-back="2">Edit details</button><button class="btn btn-primary" id="findBtn">Find my options</button></div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step" id="step5" hidden>
+      <h2 tabindex="-1" id="resultsTitle">Your options</h2>
+      <p class="sub" id="resultsSub"></p>
+      <div class="notice demo" id="demoBanner" hidden>DEMO DATA — placeholder records. Not real options.</div>
+      <div class="notice plain" id="coverageNote" hidden></div>
+      <div id="resultList"></div>
+      <div class="notice">₹3 lakhs refers to tuition fees only. Living expenses, accommodation, visa, insurance, travel and other costs are additional.</div>
+      <div class="notice plain">Results are for guidance only. Tuition fees, eligibility, scholarships and visa requirements may change. Always confirm details with the university and relevant authorities.</div>
+
+      <div class="cta">
+        <h2>Want to know which option actually fits your profile?</h2>
+        <p>Our counsellor will guide you with detailed information including living costs, scholarships, visa process and next steps.</p>
+        <div class="btns">
+          <a class="btn btn-primary" href="tel:+919159158881">Talk to a Counsellor</a>
+          <a class="btn btn-ghost" id="waBtn" target="_blank" rel="noopener" href="https://wa.me/919159158881">WhatsApp Us</a>
+          <button class="btn btn-ghost" id="counselBtn">Request Free Counselling</button>
+        </div>
+        <div class="thanks" id="thanks" hidden role="status"></div>
+      </div>
+      <div class="actions"><button class="btn btn-ghost" data-back="2">Edit details</button></div>
+    </div>
+  </section>
+</div>
+</main>
+
+<footer>Step4Progress Opportunity Finder · +91 915 915 8881</footer>
+
+<script>
+/* =====================================================================
+   CONFIG
+   ===================================================================== */
+// Same Supabase project and anon key as opportunity-finder.html
+const SUPABASE_URL = 'https://jvreglqrrdnwttjasvwg.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2cmVnbHFycmRud3R0amFzdndnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDM3NzEsImV4cCI6MjA5NTQxOTc3MX0.I_X-ljOPlLFYLeWz6hE15nL8z0MPqmsSdWcgwole8GE';
+const LEADS_TABLE_URL = SUPABASE_URL + '/rest/v1/opportunity_finder_leads';
+
+const DATA_IS_DEMO = false;   // all records below were checked against official sources on LAST_VERIFIED
+// Approximate mid-market rates on 2 Oct 2026, used only to show a rupee estimate. Update regularly.
+const FX = {EUR:109, GBP:128, USD:96, CAD:67, AUD:67, NZD:54, SGD:75, MYR:23};
+const FX_DATE = '2 Oct 2026';
+const SYMBOL = {EUR:'€', GBP:'£', USD:'US$', CAD:'C$', AUD:'A$', NZD:'NZ$', SGD:'S$', MYR:'RM '};
+const META_PIXEL_ID = '1413519817162815';     // paste your Meta Pixel ID here before running ads; empty = pixel off
+const NOTES_REQUIRED = false; // brief lists notes as mandatory; kept optional to avoid junk entries
+const STRETCH_LIMIT = 1.25;   // show options up to 25% above budget as "Budget Stretch"
+const MIN_BUDGET = 300000;
+const WHATSAPP = '919159158881';
+
+/* =====================================================================
+   OPTIONS
+   ===================================================================== */
+const BUDGETS = [
+  {id:'3-5',   label:'₹3–5 Lakhs',   min:300000,  max:500000},
+  {id:'5-10',  label:'₹5–10 Lakhs',  min:500000,  max:1000000},
+  {id:'10-15', label:'₹10–15 Lakhs', min:1000000, max:1500000},
+  {id:'15-20', label:'₹15–20 Lakhs', min:1500000, max:2000000},
+  {id:'20-30', label:'₹20–30 Lakhs', min:2000000, max:3000000},
+  {id:'30+',   label:'₹30 Lakhs+',   min:3000000, max:Infinity}
+];
+const QUALIFICATIONS = ['10th','12th','Diploma','UG','PG','PhD','Other'];
+const COURSES = ['Business','IT','Engineering','Healthcare','Nursing','Data / AI','Finance','Hospitality','Design','Education','Other'];
+const DESTINATIONS = ['UK','Canada','USA','Australia','Germany','Finland','Ireland','Singapore','New Zealand','Other'];
+// Flag images (same flagcdn source as the main site) — Windows browsers do not draw flag emoji
+const FLAG_CODE = {UK:'gb',Canada:'ca',USA:'us',Australia:'au',Germany:'de',Finland:'fi',Ireland:'ie',Singapore:'sg','New Zealand':'nz',Malaysia:'my'};
+const flagImg = c => FLAG_CODE[c] ? '<img class="flag" src="https://flagcdn.com/24x18/'+FLAG_CODE[c]+'.png" width="24" height="18" alt="">' : '';
+
+// Asked only of students who already hold a diploma or degree
+const STUDIED = ['Commerce / Business','Computer Science / IT','Engineering','Science','Health / Nursing','Arts / Humanities','Hospitality','Other'];
+const HAS_DEGREE = ['Diploma','UG','PG','PhD'];
+// Master's and PhD courses in these fields normally expect a related first degree.
+// This is a screening rule of thumb, NOT a verified entry requirement: the card always says to confirm.
+// Fields not listed (Business, Hospitality, Education, Design) are treated as open to any background.
+const RELATED = {
+  'IT':['Computer Science / IT','Engineering','Science'],
+  'Data / AI':['Computer Science / IT','Engineering','Science'],
+  'Engineering':['Engineering'],
+  'Healthcare':['Health / Nursing','Science'],
+  'Nursing':['Health / Nursing'],
+  'Finance':['Commerce / Business','Engineering','Science']
+};
+const POSTGRAD = ["Master's",'PhD','PG Diploma'];
+
+const QUAL_RANK = {'10th':1,'12th':2,'Diploma':3,'UG':4,'PG':5,'PhD':6};
+// Which degree levels make sense as a next step for each qualification
+const NEXT_LEVELS = {
+  '10th':['Foundation','Diploma'], '12th':["Bachelor's",'Diploma','Advanced Diploma','Foundation'],
+  'Diploma':["Bachelor's",'Advanced Diploma'], 'UG':["Master's",'PG Diploma','Advanced Diploma','Diploma'],
+  'PG':["Master's",'PhD'], 'PhD':['PhD',"Master's"]
+};
+// Intake windows: a record's intake months are matched against the chosen window
+const WINDOWS = [
+  {key:'Jan', label:'January–March',  months:['Jan','Feb','Mar'], start:0},
+  {key:'May', label:'May–July',       months:['May','Jun','Jul'], start:4},
+  {key:'Sep', label:'August–October', months:['Aug','Sep','Oct'], start:7}
+];
+
+/* =====================================================================
+   DATASET — REAL DATA. Every fee below was read from the source in `url`
+   on 2 Oct 2026. Same shape as the planned Supabase table
+   `opportunity_universities`, plus:
+     field    — course category used by the matcher (null = fee applies to
+                every course at that level, so the student must check the
+                university's course list)
+     fee_year — academic year the published fee applies to
+   null means "not verified yet": the page then tells the student to check
+   the university, instead of showing a guess.
+   ===================================================================== */
+const LAST_VERIFIED = '2026-10-02';
+function rec(country, university, url, course, field, degree_level, fee, currency, fee_year, extra){
+  return Object.assign({country, university, course, field, degree_level,
+    tuition_fee:fee, currency, tuition_fee_inr:Math.round(fee * FX[currency] / 1000) * 1000, fee_year,
+    duration:null, intake:null, fee_basis:'a year',
+    minimum_qualification: degree_level === "Bachelor's" ? '12th' : degree_level === 'PhD' ? 'PG' : 'UG',
+    scholarship_available:'Check university', part_time_work:'Check current visa rules',
+    important_requirements:'Entry requirements are set per course. See the university course page.',
+    url, last_verified:LAST_VERIFIED}, extra || {});
+}
+// Whole-course fees: when the course length is verified (years), the yearly cost is total / years.
+function yearly(r){
+  r.total_inr = r.tuition_fee_inr;
+  if(r.years && r.years > 1) r.tuition_fee_inr = Math.round(r.total_inr / r.years / 1000) * 1000;
+  return r;
+}
+// Singapore private-institute diplomas with an industrial attachment (IA). Fees are for the full course.
+function sgDiploma(university, url, course, field, level, fee, duration, years, internship, extra){
+  return rec('Singapore', university, url, course, field, level, fee, 'SGD', 'current published fee', Object.assign({
+    duration, years, internship, private_institute:true, fee_basis:'for the full course',
+    minimum_qualification: level === 'Advanced Diploma' ? '12th' : '10th', entry_unverified:true,
+    important_requirements:'Diploma from a private institute, not a university degree. Application and other fees are extra.'}, extra || {}));
+}
+const STEI = ['STEi Institute','https://www.stei.edu.sg/fees/'];
+const IA_ASK = 'Industrial attachment included. Ask the institute whether it is paid.';
+const SIX_SIX = '6 months study + 6 months industrial attachment';
+const GALWAY = ['Ireland','University of Galway','https://www.universityofgalway.ie/courses/fees-and-funding/tab2content/'];
+const GALWAY_NOTE = {important_requirements:'Fee is the international (non-EU) total including levies. Entry requirements are set per course.'};
+const STUTT = ['Germany','University of Stuttgart','https://www.uni-stuttgart.de/en/study/master-programs/'];
+const STUTT_NOTE = {intake:['Oct','Apr'], important_requirements:'Taught in English. Non-EU tuition is €1,500 per semester; a semester contribution is charged on top.'};
+const TEES = ['UK','Teesside University','https://www.tees.ac.uk/sections/international/fees.cfm'];
+const TEES_NOTE = 'A £4,000 deposit is required before the university issues a CAS for the Student visa.';
+
+const OPPORTUNITIES = [
+  // Ireland — University of Galway postgraduate fee table, 2026/27
+  rec(...GALWAY,'MSc Computer Science – Data Analytics','Data / AI',"Master's",28640,'EUR','2026/27',GALWAY_NOTE),
+  rec(...GALWAY,'MSc Computer Science – Artificial Intelligence','Data / AI',"Master's",28640,'EUR','2026/27',GALWAY_NOTE),
+  rec(...GALWAY,'MSc Business Analytics','Business',"Master's",21640,'EUR','2026/27',GALWAY_NOTE),
+  rec(...GALWAY,'MSc International Management','Business',"Master's",21640,'EUR','2026/27',GALWAY_NOTE),
+  rec(...GALWAY,'MSc Corporate Finance','Finance',"Master's",21640,'EUR','2026/27',GALWAY_NOTE),
+  rec(...GALWAY,'MSc Information Systems Management','IT',"Master's",21640,'EUR','2026/27',GALWAY_NOTE),
+  rec(...GALWAY,'MSc Software Design & Development','IT',"Master's",18440,'EUR','2026/27',GALWAY_NOTE),
+  rec(...GALWAY,'ME Mechanical Engineering','Engineering',"Master's",28640,'EUR','2026/27',GALWAY_NOTE),
+  rec(...GALWAY,'MSc Global Hospitality Management and Intercultural Communication','Hospitality',"Master's",19440,'EUR','2026/27',GALWAY_NOTE),
+  rec(...GALWAY,'MSc Clinical Research','Healthcare',"Master's",20040,'EUR','2026/27',GALWAY_NOTE),
+  rec(...GALWAY,'MA Health Promotion','Healthcare',"Master's",19140,'EUR','2026/27',GALWAY_NOTE),
+  rec(...GALWAY,'Structured PhD in Computer Science','IT','PhD',15140,'EUR','2026/27',GALWAY_NOTE),
+  rec(...GALWAY,'Structured PhD in Business, Public Policy and Law','Business','PhD',14640,'EUR','2026/27',GALWAY_NOTE),
+
+  // Germany — University of Stuttgart, non-EU tuition €1,500 per semester
+  rec(...STUTT,'MSc Computer Science','IT',"Master's",3000,'EUR','per year (2 semesters)',STUTT_NOTE),
+  rec(...STUTT,'MSc Electrical Engineering','Engineering',"Master's",3000,'EUR','per year (2 semesters)',STUTT_NOTE),
+
+  // Finland
+  rec('Finland','University of Eastern Finland','https://www.uef.fi/en/international-masters-degree-programmes',
+    "Master's degree programmes taught in English",null,"Master's",10000,'EUR','per academic year',
+    {duration:'Typically 2 years', intake:['Sep'], important_requirements:'Bachelor\'s degree and fluent English required. Applications go through Studyinfo.fi.'}),
+
+  // UK — Teesside University international fees, 2026-27
+  rec(...TEES,'Undergraduate degrees (full-time)',null,"Bachelor's",17000,'GBP','2026-27',{important_requirements:TEES_NOTE}),
+  rec(...TEES,'Postgraduate taught degrees (MSc/MA), one-year',null,"Master's",17000,'GBP','2026-27',{duration:'1 year', important_requirements:TEES_NOTE}),
+  rec(...TEES,'Postgraduate taught degrees (MSc/MA), two-year Advanced Practice / Applied',null,"Master's",10000,'GBP','2026-27',{duration:'2 years', important_requirements:TEES_NOTE}),
+  rec(...TEES,'MBA (Global), two-year','Business',"Master's",10000,'GBP','2026-27',{duration:'2 years', important_requirements:TEES_NOTE}),
+  rec(...TEES,'MSc Nursing & Health, pre-registration (Applied)','Nursing',"Master's",17000,'GBP','2026-27',{duration:'2 years', important_requirements:TEES_NOTE}),
+
+  // Canada — Thompson Rivers University, international undergraduate campus tuition
+  rec('Canada','Thompson Rivers University','https://www.tru.ca/current/enrolment-services/tuition.html',
+    'Undergraduate programs (up to 12 credits per semester)',null,"Bachelor's",17721,'CAD','current published rate, 2 semesters',
+    {intake:['Sep','Jan','May'], important_requirements:'Published as C$8,860.56 per semester for 12 or fewer credits; extra credits and student fees cost more.'}),
+
+  // USA — Wichita State University, international undergraduate estimate
+  rec('USA','Wichita State University','https://www.wichita.edu/admissions/international/Undergraduate/TotalExpenses.php',
+    'Undergraduate programs (estimated tuition and fees, 9 months)',null,"Bachelor's",20100,'USD','2026-2027 estimate',
+    {intake:['Aug','Jan','Jun'], important_requirements:'University estimate for fall and spring; final tuition is announced each July. Medical insurance is required.'}),
+
+  // Australia — Charles Darwin University course page (latest fee shown there is for 2024)
+  rec('Australia','Charles Darwin University','https://www.cdu.edu.au/node/44378',
+    'Master of Information Technology (Artificial Intelligence)','Data / AI',"Master's",31688,'AUD','2024 fee — ask for the current fee, which is likely higher',
+    {important_requirements:'English language requirements apply. The fee shown is the 2024 annual fee from the course page.'}),
+
+  // New Zealand — University of Waikato international fees page (2025 estimates)
+  ...[['Master of Information Technology','IT',43817],['Master of Business and Management','Business',56910],
+      ['Master of Educational Management','Education',56548],['Master of Business Administration','Business',68192]]
+    .map(c => rec('New Zealand','University of Waikato','https://www.waikato.ac.nz/international/fees-and-costs',
+      c[0],c[1],"Master's",c[2],'NZD','2025 estimate',
+      {important_requirements:'Estimated fee for one year of full-time study; each qualification page shows the latest figure.'})),
+
+  // Singapore — Nanyang Technological University programme pages
+  rec('Singapore','Nanyang Technological University','https://www.ntu.edu.sg/computing/admissions/graduate-programmes/detail/master-of-science-in-artificial-intelligence',
+    'MSc Artificial Intelligence','Data / AI',"Master's",63220,'SGD','AY2025/26 onwards',
+    {fee_basis:'for the full programme', important_requirements:'Full-time students are billed over 2 semesters. Application fee S$50.'}),
+  ...[['MSc Mechanical Engineering',55099.50],['MSc Robotics & Intelligent Systems',56682.18],['MSc Supply Chain Engineering',53562.60]]
+    .map(c => rec('Singapore','Nanyang Technological University','https://www.ntu.edu.sg/mae/admissions/current-students/graduate-studies/tuition-fees-for-all-msc-programmes-for-current-students',
+      c[0],'Engineering',"Master's",c[1],'SGD','AY2026-27',{fee_basis:'for the full programme'})),
+  rec('Singapore','Nanyang Technological University','https://www.ntu.edu.sg/sss/admissions/graduate-education/msc-in-applied-economics/fees-and-awards',
+    'MSc Applied Economics','Finance',"Master's",45450,'SGD','AY2026/27',
+    {duration:'1 year', fee_basis:'for the full programme', important_requirements:'Collected over 3 trimesters. An economics course, listed here under Finance.'}),
+
+  // Singapore — James Cook University Singapore, official course listing with fees (international column)
+  ...[['Master of Business Administration','Business',"Master's",41529],
+      ['Master of Information Technology (Majoring in Computing)','IT',"Master's",55372],
+      ['Master of International Tourism and Hospitality Management','Hospitality',"Master's",55372],
+      ['Bachelor of Business','Business',"Bachelor's",64746],
+      ['Bachelor of Information Technology','IT',"Bachelor's",64746]]
+    .map(c => rec('Singapore','James Cook University Singapore','https://jcu.edu.sg/courses-and-study/fees/course-listing-with-fees',
+      c[0],c[1],c[2],c[3],'SGD','current published fee',
+      {fee_basis:'for the full course', important_requirements:'Fee covers the whole course, not one year. Check the course length with the university.'})),
+
+  // Malaysia — Asia Pacific University (APU), 2026 international postgraduate fee guide
+  ...[['MSc in Data Science and Business Analytics','Data / AI',45800],['Master of Science in Artificial Intelligence','Data / AI',45800],
+      ['Master of Science in Cyber Security','IT',45800],['Master of Education in Learning Design and Technology','Education',34800]]
+    .map(c => rec('Malaysia','Asia Pacific University of Technology & Innovation (APU)','https://www.apu.edu.my',
+      c[0],c[1],"Master's",c[2],'MYR','2026 fee guide',
+      {fee_basis:'for the full programme', important_requirements:'Paid over 3 semesters. Excludes 6% service tax, visa (EMGS) and registration fees. Confirm with APU.'})),
+
+  // Singapore — private institutes, diploma + industrial attachment
+  sgDiploma('TMC Academy','https://www.tmc.edu.sg/diploma-and-certificate/hospitalitytourism/diploma-in-hospitality-and-tourism-management-(with-6-months-industrial-attachment)',
+    'Diploma in Hospitality and Tourism Management','Hospitality','Diploma',5480.80,'8 months study + 6 months industrial attachment',14/12,
+    'Paid internship, according to the institute. You must be 18 or older for the attachment.'),
+  sgDiploma('Kingston International College','https://kingston.edu.sg/academic-programmers/diploma-in-hospitality-and-tourism-management/',
+    'Diploma in Hospitality and Tourism Management','Hospitality','Diploma',6104,SIX_SIX,1,
+    'Industrial attachment included; a training work permit is required. Ask whether it is paid.',
+    {important_requirements:'Diploma from a private institute, not a university degree. Confirm that this total applies to international students.'}),
+  sgDiploma(...STEI,'Diploma in Hospitality Management','Hospitality','Diploma',8000,SIX_SIX,1,IA_ASK),
+  sgDiploma(...STEI,'Diploma in Business Administration','Business','Diploma',8000,SIX_SIX,1,IA_ASK),
+  sgDiploma(...STEI,'Diploma in Logistics & Supply Chain Management','Business','Diploma',8000,SIX_SIX,1,IA_ASK),
+  sgDiploma(...STEI,'Advanced Diploma in Hospitality Management','Hospitality','Advanced Diploma',8000,SIX_SIX,1,IA_ASK),
+  sgDiploma(...STEI,'Advanced Diploma in Logistics & Supply Chain Management','Business','Advanced Diploma',8000,SIX_SIX,1,IA_ASK),
+  sgDiploma('SISH Institute','https://sish.edu.sg/academic-programmes/diploma-courses/diploma-in-hospitality-operations/',
+    'Diploma in Hospitality Operations','Hospitality','Diploma',8100,SIX_SIX,1,IA_ASK,
+    {entry_unverified:false, important_requirements:'Minimum age 17. Diploma from a private institute, not a university degree. Application fee is extra.'}),
+  sgDiploma('Amity Global Institute','https://www.amitysingapore.sg/courses/diploma-in-hospitality-operations-and-management/',
+    'Diploma in Hospitality Operations and Management','Hospitality','Diploma',7500,'6 months taught + 6 months internship or project',1,
+    'Attachment is not guaranteed: students who cannot secure one do a project instead.',
+    {important_requirements:'Tuition only: about S$1,430 in non-tuition fees is charged on top. Diploma from a private institute, not a university degree.'})
+].map(yearly);
+const COVERED = [...new Set(OPPORTUNITIES.map(o => o.country))];
+
+/* =====================================================================
+   HELPERS
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const inr = n => '₹' + Number(n).toLocaleString('en-IN');
+const state = {step:0, budget:null, profile:null, waTapped:false, waRef:null, matches:[], leadSaved:false, saveFailed:false};
+
+// Which ad or post the visitor came from (utm_* and fbclid in the page link) — saved with the lead
+const CAMPAIGN = (() => {
+  const q = new URLSearchParams(location.search), out = {};
+  ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','fbclid'].forEach(k => { if(q.get(k)) out[k] = q.get(k).slice(0, 200); });
+  return out;
+})();
+
+// Meta Pixel loads only when an ID is set. Events go to Google Analytics as well.
+if(META_PIXEL_ID){
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;
+  s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', META_PIXEL_ID); fbq('track', 'PageView');
+}
+function track(name, standard){
+  try{
+    if(window.gtag) gtag('event', name);
+    if(window.fbq) standard ? fbq('track', standard) : fbq('trackCustom', name);
+  }catch(e){}
+}
+
+function fillSelect(id, items, placeholder){
+  $(id).innerHTML = '<option value="">'+placeholder+'</option>' + items.map(i => {
+    const v = typeof i === 'string' ? i : i.value, l = typeof i === 'string' ? i : i.label;
+    return '<option value="'+esc(v)+'">'+esc(l)+'</option>';
+  }).join('');
+}
+// Next four intake windows from today, plus "Not sure yet"
+function intakeOptions(){
+  const now = new Date(), out = [];
+  let y = now.getFullYear();
+  while(out.length < 4){
+    WINDOWS.forEach(w => {
+      if(out.length < 4 && new Date(y, w.start, 1) > now) out.push({value:w.key+' '+y, label:w.label+' '+y});
+    });
+    y++;
+  }
+  out.push({value:'Not sure', label:'Not sure yet'});
+  return out;
+}
+
+/* =====================================================================
+   NAVIGATION
+   ===================================================================== */
+function goTo(n){
+  state.step = n;
+  document.querySelectorAll('.step').forEach(s => s.hidden = true);
+  const el = $('step'+n);
+  el.hidden = false;
+  [...$('progress').children].forEach((li, i) => {
+    li.className = i+1 < n ? 'done' : i+1 === n ? 'current' : '';
+    if(i+1 === n) li.setAttribute('aria-current','step'); else li.removeAttribute('aria-current');
+  });
+  window.scrollTo(0, 0);
+  const h = el.querySelector('h2'); if(h) h.focus({preventScroll:true});
+}
+document.querySelectorAll('.js-start').forEach(b => b.addEventListener('click', () => {
+  if($('landing').hidden) return;
+  $('startCard').scrollIntoView({behavior:'smooth', block:'center'});
+}));
+document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => goTo(Number(b.dataset.back))));
+
+/* =====================================================================
+   STEP 1 — BUDGET
+   ===================================================================== */
+// Counts come straight from the dataset, so the numbers shown are always real
+const fits = max => OPPORTUNITIES.filter(o => o.tuition_fee_inr <= max);
+function showLive(max, label){
+  const f = fits(max), c = new Set(f.map(o => o.country)).size;
+  $('liveCount').textContent = f.length
+    ? f.length + (f.length === 1 ? ' course' : ' courses') + ' in ' + c + (c === 1 ? ' country' : ' countries') + ' have tuition within ' + label + ' a year.'
+    : '';
+}
+$('budgetGrid').insertAdjacentHTML('beforeend', BUDGETS.map(b => {
+  const n = fits(b.max).length;
+  return '<label><input type="radio" name="budget" value="'+b.id+'"><span>'+b.label+'<small>'+n+(n === 1 ? ' course' : ' courses')+'</small></span></label>';
+}).join(''));
+$('budgetGrid').addEventListener('change', e => {
+  $('customBudget').value = ''; $('e-custom').textContent = '';
+  const b = BUDGETS.find(x => x.id === e.target.value); if(b) showLive(b.max, b.label);
+});
+$('customBudget').addEventListener('input', e => {
+  const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
+  e.target.value = digits ? Number(digits).toLocaleString('en-IN') : '';
+  if(digits) document.querySelectorAll('input[name=budget]').forEach(r => r.checked = false);
+  if(Number(digits) >= MIN_BUDGET) showLive(Number(digits), inr(Number(digits))); else $('liveCount').textContent = '';
+});
+$('next1').addEventListener('click', () => {
+  const custom = Number($('customBudget').value.replace(/\D/g, ''));
+  const picked = document.querySelector('input[name=budget]:checked');
+  if(custom){
+    if(custom < MIN_BUDGET){ $('e-custom').textContent = 'The minimum tuition fee budget is ₹3,00,000.'; return; }
+    state.budget = {id:'custom', label:inr(custom), min:MIN_BUDGET, max:custom};
+  } else if(picked){
+    state.budget = BUDGETS.find(b => b.id === picked.value);
+  } else { $('e-custom').textContent = 'Choose a budget or enter your own amount.'; return; }
+  $('e-custom').textContent = '';
+  goTo(2);
+});
+
+/* ---------- Landing hero: budget chips + flags that light up ---------- */
+$('tileCountries').textContent = COVERED.slice(0, 4).join(', ') + ' and more';
+$('heroFlags').innerHTML = COVERED.map(c => '<span data-c="'+esc(c)+'">'+flagImg(c)+esc(c)+'</span>').join('');
+function heroShow(max, label){
+  const on = new Set(fits(max).map(o => o.country));
+  $('heroFlags').querySelectorAll('span').forEach(s => s.classList.toggle('on', on.has(s.dataset.c)));
+  $('heroWhere').textContent = on.size
+    ? 'Courses with tuition within ' + label + ' a year in ' + on.size + (on.size === 1 ? ' country:' : ' countries:')
+    : 'No courses in our list at this budget yet.';
+}
+$('heroBudgets').innerHTML = BUDGETS.map(b => '<button type="button" data-id="'+b.id+'" aria-pressed="false">'+b.label.replace(' Lakhs','L')+'</button>').join('');
+function heroPick(id){
+  const b = BUDGETS.find(x => x.id === id);
+  $('heroBudgets').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.id === id)));
+  $('heroCustom').value = ''; $('heroErr').textContent = '';
+  const r = document.querySelector('input[name=budget][value="'+id+'"]');
+  r.checked = true; r.dispatchEvent(new Event('change', {bubbles:true}));
+  heroShow(b.max, b.label);
+}
+$('heroBudgets').addEventListener('click', e => { if(e.target.dataset.id) heroPick(e.target.dataset.id); });
+$('heroCustom').addEventListener('input', e => {
+  const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
+  e.target.value = digits ? Number(digits).toLocaleString('en-IN') : '';
+  $('customBudget').value = e.target.value; $('customBudget').dispatchEvent(new Event('input'));
+  if(digits){
+    $('heroBudgets').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', 'false'));
+    if(Number(digits) >= MIN_BUDGET) heroShow(Number(digits), inr(Number(digits)));
+  }
+});
+$('heroGo').addEventListener('click', () => {
+  track('budget_selected');
+  $('next1').click();                       // same validation as step 1
+  if(state.step !== 2){ $('heroErr').textContent = $('e-custom').textContent; return; }
+  $('landing').hidden = true; $('wizard').hidden = false; goTo(2);
+});
+heroPick('3-5');
+
+/* =====================================================================
+   STEP 2 — PROFILE + VALIDATION
+   ===================================================================== */
+fillSelect('qualification', QUALIFICATIONS, 'Select qualification');
+fillSelect('course', COURSES, 'Select course / field');
+fillSelect('intake', intakeOptions(), 'Select intake');
+// Tap-to-choose chips drive the (hidden) selects, so validation and saving stay unchanged
+function chipify(id){
+  const sel = $(id), box = document.createElement('div');
+  box.className = 'chips'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', sel.previousElementSibling.textContent);
+  [...sel.options].filter(o => o.value).forEach(o => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = o.textContent; b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', () => {
+      sel.value = o.value; sel.dispatchEvent(new Event('change'));
+      box.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      $('f-'+id).classList.remove('invalid'); $('f-'+id).querySelector('.err').textContent = '';
+    });
+    box.appendChild(b);
+  });
+  sel.hidden = true; sel.after(box);
+}
+fillSelect('studied', STUDIED, 'Select what you studied');
+chipify('qualification'); chipify('studied'); chipify('course');
+$('qualification').addEventListener('change', () => { $('f-studied').hidden = !HAS_DEGREE.includes($('qualification').value); });
+['f-qualification','f-course'].forEach(id => $(id).classList.add('full'));
+['age','phone'].forEach(id => $(id).addEventListener('input', e => e.target.value = e.target.value.replace(/\D/g, '')));
+
+const RULES = {
+  name: v => v.length >= 2 ? '' : 'Enter your full name.',
+  age: v => (/^\d+$/.test(v) && +v >= 14 && +v <= 65) ? '' : 'Enter your age in years (14 to 65).',
+  area: v => v.length >= 2 ? '' : 'Enter your area or city.',
+  qualification: v => v ? '' : 'Select your highest qualification.',
+  studied: v => (v || !HAS_DEGREE.includes($('qualification').value)) ? '' : 'Select what you studied.',
+  course: v => v ? '' : 'Select the course or field you are interested in.',
+  intake: v => v ? '' : 'Select a preferred intake.',
+  phone: v => /^[6-9]\d{9}$/.test(v) ? '' : 'Enter a valid 10-digit Indian mobile number.',
+  notes: v => (!NOTES_REQUIRED || v.length >= 3) ? '' : 'Add a short note about your plans.'
+};
+$('next2').addEventListener('click', () => {
+  if($('website').value) return; // honeypot: bots stop here
+  const p = {}; let firstBad = null;
+  Object.keys(RULES).forEach(k => {
+    const v = $(k).value.trim(), msg = RULES[k](v), box = $('f-'+k);
+    p[k] = v;
+    box.classList.toggle('invalid', !!msg);
+    box.querySelector('.err').textContent = msg;
+    if(msg && !firstBad) firstBad = $(k);
+  });
+  const agreed = $('consent').checked;
+  $('f-consent').querySelector('.err').textContent = agreed ? '' : 'Please tick this box so we can contact you.';
+  if(!agreed && !firstBad) firstBad = $('consent');
+  if(firstBad){ (firstBad.hidden ? firstBad.nextElementSibling.querySelector('button') : firstBad).focus(); return; }
+  p.age = Number(p.age);
+  p.destination = 'Other';   // destination is no longer asked: every country is considered
+  p.phone = '+91' + p.phone;
+  p.intakeLabel = $('intake').selectedOptions[0].textContent;
+  if(state.profile && state.profile.phone !== p.phone){ state.waTapped = false; state.waRef = null; }
+  state.profile = p;
+  $('verifyPhone').textContent = '+91 ' + p.phone.slice(3, 8) + ' ' + p.phone.slice(8);
+  prepareWhatsApp();
+  track('profile_completed');
+  goTo(3);
+});
+
+/* =====================================================================
+   STEP 3 — WHATSAPP CONFIRMATION (zero cost: the student messages us)
+   The page can only know the button was tapped, not that the message was
+   sent, so otp_verified is always saved as false. A counsellor confirms the
+   number when the WhatsApp message arrives: match the Ref code in the
+   message with matched_options.wa_ref in the lead.
+
+   To make this automatic later: connect the number to Meta's Cloud API,
+   receive the incoming message in a Supabase Edge Function, and have that
+   function (not this page) set otp_verified = true for the matching ref.
+   ===================================================================== */
+function prepareWhatsApp(){
+  if(!state.waRef) state.waRef = 'S4P-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+  const msg = 'Hi Step4Progress, I am ' + state.profile.name + '. Please confirm my number for the Opportunity Finder. Ref: ' + state.waRef;
+  $('waConfirm').href = 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(msg);
+  $('next3').disabled = !state.waTapped;
+}
+$('waConfirm').addEventListener('click', () => {
+  state.waTapped = true;
+  $('next3').disabled = false;
+  $('waHint').textContent = 'After you press send in WhatsApp, come back here and tap "See my options".';
+  track('whatsapp_confirm_tap', 'Contact');
+});
+$('next3').addEventListener('click', () => {
+  if(!state.waTapped) return;
+  renderSummary();
+  goTo(4);
+});
+
+/* =====================================================================
+   STEP 4 — MATCHING ENGINE (rules-based)
+   Hard filters: tuition fee within budget (or up to STRETCH_LIMIT above),
+   minimum qualification met, degree level is a sensible next step.
+   Ranking: course field, country, intake, then lower fee.
+   ===================================================================== */
+function renderSummary(){
+  const p = state.profile;
+  const rows = [['Tuition fee budget', state.budget.label + ' per year'], ['Name', p.name], ['Age', p.age], ['Area / City', p.area],
+    ['Qualification', p.qualification + (p.studied ? ' — ' + p.studied : '')], ['Course / field', p.course], ['Countries', 'All countries in our list'],
+    ['Intake', p.intakeLabel], ['Phone', p.phone]];
+  $('summary').innerHTML = rows.map(r => '<dt>'+esc(r[0])+'</dt><dd>'+esc(r[1])+'</dd>').join('');
+}
+
+function matchOpportunities(budget, p){
+  const anyField = p.course === 'Other', anyCountry = p.destination === 'Other';
+  const win = WINDOWS.find(w => w.key === p.intake.split(' ')[0]); // undefined when "Not sure"
+  const rank = QUAL_RANK[p.qualification];                          // undefined when "Other"
+  const out = [];
+
+  OPPORTUNITIES.forEach(o => {
+    const fee = o.tuition_fee_inr;
+    if(fee > budget.max * STRETCH_LIMIT) return;
+    if(rank && rank < QUAL_RANK[o.minimum_qualification]) return;
+    if(rank && !NEXT_LEVELS[p.qualification].includes(o.degree_level)) return;
+    const postgrad = POSTGRAD.includes(o.degree_level);
+    const related = postgrad && o.field ? RELATED[o.field] : null;      // null = open to any background
+    if(related && p.studied && p.studied !== 'Other' && !related.includes(p.studied)) return;
+
+    const inBudget = fee <= budget.max;
+    const allCourses = o.field === null;                 // level-wide fee, not one named course
+    const fieldOk = !anyField && (allCourses || o.field === p.course);
+    const countryOk = !anyCountry && o.country === p.destination;
+    const intakeOk = !!win && !!o.intake && o.intake.some(m => win.months.includes(m));
+
+    let label, order;
+    if(!inBudget){ label = 'Budget Stretch'; order = 3; }
+    else if(fieldOk && !allCourses){ label = 'Good Match'; order = 0; }       // named course in the chosen field
+    else if(fieldOk || anyField){ label = 'Possible Match'; order = 1; }      // level-wide fee, or no field chosen
+    else { label = 'Worth Exploring'; order = 2; }
+
+    const why = [];
+    why.push(inBudget ? 'Tuition fee of '+inr(fee)+(o.years > 1 ? ' a year' : '')+' is within your '+budget.label+' budget'
+                      : 'Tuition fee of '+inr(fee)+' is '+inr(fee - budget.max)+' above your budget');
+    if(o.entry_unverified) why.push('Entry requirement is not confirmed here — check with the institute');
+    else if(postgrad && related && p.studied && p.studied !== 'Other')
+      why.push('Normally needs a related first degree — you studied '+p.studied+'. Confirm the exact requirement on the course page');
+    else if(postgrad)
+      why.push('Needs a completed degree at the level below, often in a related subject — check the course page');
+    else why.push(rank ? 'Asks for '+o.minimum_qualification+' or above — you selected '+p.qualification
+                  : 'Asks for '+o.minimum_qualification+' or above — check how your qualification compares');
+    if(fieldOk && allCourses) why.push('This fee applies to all courses at this level — check that the university offers '+p.course);
+    else if(fieldOk) why.push('Course field matches your interest in '+p.course);
+    else if(!anyField) why.push('Different field ('+o.field+') — shown because it fits your budget and qualification');
+    if(countryOk) why.push('In your preferred destination, '+o.country);
+    else if(!anyCountry) why.push('Not in '+p.destination+' — an alternative country to consider');
+    if(intakeOk) why.push('Has an intake in your preferred window');
+    else if(win && o.intake) why.push('No intake in your preferred window (intakes: '+o.intake.join(', ')+')');
+    else if(win) why.push('Intake dates are not listed here — check the university');
+
+    if(o.internship) why.push('Includes an industrial attachment (internship) as part of the course');
+    const score = (fieldOk ? (allCourses?2:3) : 0) + (countryOk?3:0) + (intakeOk?1:0) + (fee >= budget.min ? 1 : 0);
+    out.push({o, label, order, score, why});
+  });
+
+  out.sort((a, b) => a.order - b.order || b.score - a.score || a.o.tuition_fee_inr - b.o.tuition_fee_inr);
+  // Spread results across countries: best option from each country first, then fill up to 5
+  const picked = [], seen = new Set();
+  out.forEach(m => { if(picked.length < 5 && !seen.has(m.o.country)){ seen.add(m.o.country); picked.push(m); } });
+  out.forEach(m => { if(picked.length < 5 && !picked.includes(m)) picked.push(m); });
+  return picked.sort((a, b) => out.indexOf(a) - out.indexOf(b));
+}
+
+/* =====================================================================
+   LEAD SAVE — insert only (no read-back), same pattern as resume_submissions
+   ===================================================================== */
+// Simple call-first ranking for counsellors: 3-4 = High, 2 = Medium, 0-1 = Low
+function leadPriority(){
+  let s = 0;
+  if(state.budget.max >= 1000000) s++;                                  // tuition budget of ₹10 lakhs or more
+  if(intakeOptions().slice(0, 2).some(o => o.value === state.profile.intake)) s++;   // one of the next two intakes
+  if(state.matches.some(m => m.label === 'Good Match')) s++;
+  if(state.waTapped) s++;
+  return s >= 3 ? 'High' : s === 2 ? 'Medium' : 'Low';
+}
+async function saveLead(){
+  if(state.leadSaved) return;
+  const p = state.profile, b = state.budget;
+  const payload = {
+    id: crypto.randomUUID ? crypto.randomUUID() : undefined,
+    name: p.name, age: p.age, area: p.area, qualification: p.qualification, course: p.course,
+    destination: null, intake: p.intake,   // not asked; matched countries are in matched_options
+    tuition_budget: b.max === Infinity ? b.min : b.max,   // upper end of the chosen range, in INR
+    phone: p.phone, otp_verified: false, notes: p.notes || null,
+    matched_options: {
+      budget_label: b.label, demo_data: DATA_IS_DEMO, studied: p.studied || null,
+      wa_ref: state.waRef, wa_tapped: state.waTapped, consent: true, campaign: CAMPAIGN,
+      priority: leadPriority(),
+      options: state.matches.map(m => ({label:m.label, country:m.o.country, university:m.o.university,
+        course:m.o.course, tuition_fee:m.o.tuition_fee, currency:m.o.currency, tuition_fee_inr:m.o.tuition_fee_inr}))
+    },
+    lead_source: 'Opportunity Finder'
+  };
+  try{
+    const res = await fetch(LEADS_TABLE_URL, {
+      method:'POST',
+      headers:{'apikey':SUPABASE_ANON_KEY, 'Authorization':'Bearer '+SUPABASE_ANON_KEY,
+               'Content-Type':'application/json', 'Prefer':'return=minimal'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Lead save failed: ' + res.status);
+    state.leadSaved = true; state.saveFailed = false;
+    track('lead_saved', 'Lead');
+  }catch(err){
+    console.error(err);
+    state.saveFailed = true;
+  }
+}
+
+/* =====================================================================
+   STEP 5 — RESULTS
+   ===================================================================== */
+const TAG_CLASS = {'Good Match':'tag-good','Possible Match':'tag-possible','Worth Exploring':'tag-explore','Budget Stretch':'tag-stretch'};
+
+function renderResults(){
+  const p = state.profile, list = state.matches;
+  $('demoBanner').hidden = !DATA_IS_DEMO;
+  $('thanks').hidden = true;
+  const uncovered = p.destination !== 'Other' && !COVERED.includes(p.destination);
+  $('coverageNote').hidden = !uncovered;
+  if(uncovered) $('coverageNote').textContent = 'We do not have verified options for ' + p.destination + ' in this tool yet, so these are other countries to consider. A counsellor can check ' + p.destination + ' options for you.';
+  $('resultsTitle').textContent = list.length ? 'Your options, ' + p.name.split(' ')[0] : 'No close matches yet';
+  $('resultsSub').textContent = list.length
+    ? list.length + (list.length === 1 ? ' option' : ' options') + ' for a ' + state.budget.label + ' tuition fee budget, ' + p.course + ', across ' + new Set(list.map(m => m.o.country)).size + (new Set(list.map(m => m.o.country)).size === 1 ? ' country.' : ' countries.')
+    : 'Nothing in our current list fits this budget, qualification and course together. A counsellor can check options for you directly.';
+
+  $('resultList').innerHTML = list.map(m => {
+    const o = m.o;
+    const local = SYMBOL[o.currency] + Number(o.tuition_fee).toLocaleString('en-GB', {minimumFractionDigits: o.tuition_fee % 1 ? 2 : 0});
+    const link = o.url
+      ? '<a href="'+esc(o.url)+'" target="_blank" rel="noopener">View official website</a>'
+      : 'Ask a counsellor for the official link';
+    const verified = o.last_verified ? ' Fee checked on the official source on '+esc(o.last_verified)+'. Rupee amount uses the '+FX_DATE+' exchange rate and will move with it.' : '';
+    return '<article class="opp '+TAG_CLASS[m.label]+'-card" style="animation-delay:'+(list.indexOf(m)*70)+'ms">'
+      + '<div class="opp-top"><span>'+flagImg(o.country)+esc(o.country)+'</span>'
+      + '<span class="tag '+TAG_CLASS[m.label]+'">'+m.label+'</span></div>'
+      + '<h3>'+esc(o.university)+'</h3><p class="course">'+esc(o.course)+' · '+esc(o.degree_level)+(o.private_institute ? ' · Private institute' : '')+'</p>'
+      + '<dl class="facts">'
+      + '<div class="fee"><dt>Tuition fee</dt><dd><strong>About '+inr(o.tuition_fee_inr)+'</strong> '+esc(o.years > 1 ? 'a year' : o.fee_basis)+'<br><span style="font-weight:500">'+local+(o.years > 1 ? ' for the full course (about '+inr(o.total_inr)+')' : '')+', '+esc(o.fee_year)+'</span></dd></div>'
+      + '<div><dt>Duration</dt><dd>'+esc(o.duration || 'See course page')+'</dd></div>'
+      + '<div><dt>Intake</dt><dd>'+esc(o.intake ? o.intake.join(', ') : 'Check university')+'</dd></div>'
+      + '<div><dt>Scholarship</dt><dd>'+esc(o.scholarship_available)+'</dd></div>'
+      + '</dl>'
+      + '<h4>Why it may fit</h4><ul>'+m.why.map(w => '<li>'+esc(w)+'</li>').join('')+'</ul>'
+      + (o.internship ? '<p class="intern"><b>Internship:</b> '+esc(o.internship)+'</p>' : '')
+      + '<p><b>Eligibility:</b> '+(o.entry_unverified ? 'Confirm entry requirements with the institute. ' : (POSTGRAD.includes(o.degree_level) ? 'A completed degree is required and subject requirements apply. ' : 'Minimum '+esc(o.minimum_qualification)+'. '))+esc(o.important_requirements)+'</p>'
+      + '<p><b>Part-time work:</b> '+esc(o.part_time_work)+'</p>'
+      + '<p><b>Official university:</b> '+link+'</p>'
+      + '<p class="fine">Based on the information provided, this may be a suitable option. Final eligibility must be confirmed with the university.'+verified+'</p>'
+      + '</article>';
+  }).join('');
+
+  const msg = 'Hi Step4Progress, I used the Opportunity Finder. Tuition fee budget: ' + state.budget.label
+    + '. Qualification: ' + p.qualification + '. Course: ' + p.course
+    + '. I would like to speak to a counsellor.';
+  $('waBtn').href = 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(msg);
+}
+
+$('findBtn').addEventListener('click', async () => {
+  if(!state.waTapped){ goTo(3); return; }   // results stay behind the WhatsApp step
+  const btn = $('findBtn');
+  btn.disabled = true; btn.textContent = 'Finding options…';
+  state.matches = matchOpportunities(state.budget, state.profile);
+  await saveLead();
+  btn.disabled = false; btn.textContent = 'Find my options';
+  renderResults();
+  goTo(5);
+});
+
+$('counselBtn').addEventListener('click', async () => {
+  if(!state.leadSaved) await saveLead(); // one retry if the first save failed
+  const t = $('thanks');
+  t.textContent = state.leadSaved
+    ? 'Thank you. Your details are with our team, and a counsellor will call you on ' + state.profile.phone + '.'
+    : 'We could not save your request just now. Please call or WhatsApp us on +91 915 915 8881.';
+  t.hidden = false;
+});
+</script>
+</body>
+</html>

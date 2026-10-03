@@ -2251,7 +2251,7 @@ What would you like help with today?</div>
 
       <div id="mbu-step-upload">
         <p style="font-size:12px;color:var(--ink3);line-height:1.6;margin-bottom:14px">
-          Export your leads from Meta Ads Manager as a CSV, then upload it here. Country is detected automatically from each phone number (+91 → India, +44 → UK, +92 → Pakistan, +880 → Bangladesh) — you'll get a chance to review before anything is saved. Campaign, ad set, and ad name are picked up automatically if your export includes them.
+          Export your leads from Meta Ads Manager as a CSV, then upload it here. Country is detected automatically from each phone number (+91 → India, +44 → UK, +92 → Pakistan, +880 → Bangladesh) — you'll get a chance to review before anything is saved. Campaign, ad set, ad name, email, and city are all picked up automatically if your export includes those columns — <b>make sure "email" and "city" are included as column headers in your export</b> so they show up here.
         </p>
         <input type="file" id="mbu-file-input" accept=".csv" onchange="handleMetaCSVSelected(this.files[0])" style="margin-bottom:14px">
         <div id="mbu-parse-status" style="font-size:12px;color:var(--ink3);font-style:italic"></div>
@@ -2269,7 +2269,7 @@ What would you like help with today?</div>
         </div>
         <div class="tw" style="max-height:400px;border:1px solid var(--line);border-radius:var(--r)">
           <table class="tbl">
-            <thead><tr><th>Name</th><th>Mobile</th><th>Detected Country</th><th>Campaign</th><th>Ad Set</th><th>Ad</th></tr></thead>
+            <thead><tr><th>Name</th><th>Mobile</th><th>Email</th><th>City</th><th>Detected Country</th><th>Campaign</th><th>Ad Set</th><th>Ad</th></tr></thead>
             <tbody id="mbu-preview-tbody"></tbody>
           </table>
         </div>
@@ -3512,7 +3512,12 @@ const COUNTRY_DIAL_CODES=[
 const COUNTRY_DEFAULT_OFFICE={'India':'India HQ','UK':'UK HQ','Pakistan':'Pakistan','Bangladesh':'Bangladesh'};
 
 function detectCountryFromPhone(phone){
-  const p=(phone||'').replace(/[\s\-()]/g,'');
+  // Meta's own Lead Ads CSV export prefixes phone fields with "p:" (a
+  // field-type marker from their export format, not part of the actual
+  // number) — e.g. "p:+923045446114". Without stripping this first,
+  // startsWith('+92') never matches, and every row gets wrongly flagged
+  // as an unrecognized country regardless of how valid the number is.
+  const p=(phone||'').replace(/^p:/i,'').replace(/[\s\-()]/g,'');
   for(const{prefix,country} of COUNTRY_DIAL_CODES){
     if(p.startsWith(prefix)){
       // UK is deliberately excluded from auto-detection here. A UK-format
@@ -3593,6 +3598,7 @@ function handleMetaCSVSelected(file){
     const nameCol=findColumn(headers,['full_name','name','full name']);
     const phoneCol=findColumn(headers,['phone_number','phone','mobile','phone number']);
     const emailCol=findColumn(headers,['email','email_address','email address']);
+    const cityCol=findColumn(headers,['city','home_city','city_name','city name']);
     const campaignCol=findColumn(headers,['campaign_name','campaign','campaign name']);
     const adsetCol=findColumn(headers,['adset_name','ad_set_name','adset','ad set name']);
     const adCol=findColumn(headers,['ad_name','ad','ad name']);
@@ -3604,6 +3610,7 @@ function handleMetaCSVSelected(file){
       name:(r[nameCol]||'').trim(),
       mobile:(r[phoneCol]||'').trim(),
       email:emailCol!==-1?(r[emailCol]||'').trim():'',
+      city:cityCol!==-1?(r[cityCol]||'').trim():'',
       campaign:campaignCol!==-1?(r[campaignCol]||'').trim():'',
       adset:adsetCol!==-1?(r[adsetCol]||'').trim():'',
       ad:adCol!==-1?(r[adCol]||'').trim():'',
@@ -3628,6 +3635,8 @@ function renderMbuPreview(){
   tbody.innerHTML=mbuParsedLeads.map(l=>`<tr style="${!l.country?'background:var(--rose-l)':''}">
     <td style="font-size:12px">${esc(l.name||'—')}</td>
     <td style="font-size:12px">${esc(l.mobile||'—')}</td>
+    <td style="font-size:11px;color:var(--ink3)">${esc(l.email||'—')}</td>
+    <td style="font-size:11px;color:var(--ink3)">${esc(l.city||'—')}</td>
     <td style="font-size:12px">${l.country?esc(l.country):'<span style="color:var(--rose)">Unknown — will be skipped</span>'}</td>
     <td style="font-size:11px;color:var(--ink3)">${esc(l.campaign||'—')}</td>
     <td style="font-size:11px;color:var(--ink3)">${esc(l.adset||'—')}</td>
@@ -3647,6 +3656,7 @@ async function confirmMetaBulkUpload(){
       name:l.name||'Meta Lead',
       mobile:l.mobile,
       email:l.email||null,
+      city:l.city||null,
       country:l.country,
       office,
       counsellor:picked.name||null,
@@ -5089,8 +5099,22 @@ async function loadLeads(){
     else if(myOffice) q=q.eq('office',myOffice);
   }
 
-  const{data,error}=await q;
-  if(!error&&data) leads=data;
+  // Supabase's PostgREST layer silently caps any plain select() at 1000
+  // rows with no error and no warning — this was the real cause of the
+  // lead count appearing stuck at exactly 1000 regardless of how many
+  // leads actually existed. Paging through in batches of 1000 until a
+  // page comes back with fewer than 1000 rows (meaning that was the
+  // last page) fetches everything, however large the table grows.
+  const PAGE_SIZE=1000;
+  let allRows=[],from=0,keepGoing=true;
+  while(keepGoing){
+    const{data,error}=await q.range(from,from+PAGE_SIZE-1);
+    if(error){console.error('loadLeads page fetch failed:',error);break;}
+    if(data&&data.length){allRows=allRows.concat(data);}
+    keepGoing=!!(data&&data.length===PAGE_SIZE);
+    from+=PAGE_SIZE;
+  }
+  leads=allRows;
 }
 async function loadCoaching(){
   const{data,error}=await sb.from('coaching').select('*').order('created_at',{ascending:false});

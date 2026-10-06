@@ -2831,6 +2831,7 @@ const SS={
   "Commission Received":{bg:"#DCFCE7",tx:"#166534"},
   "Defer":        {bg:"#FEF3C7",tx:"#92400E"},
   "Not Interested":  {bg:"#FFE4E6",tx:"#9F1239"},
+  "Call by Mistake": {bg:"#E5E7EB",tx:"#374151"},
   "Dropped":         {bg:"#F1F5F9",tx:"#475569"},
 };
 const PS={High:{bg:"#FFE4E6",tx:"#9F1239"},Medium:{bg:"#FEF9C3",tx:"#854D0E"},Low:{bg:"#DCFCE7",tx:"#166534"}};
@@ -2846,7 +2847,7 @@ function formatExpiryDisplay(dateStr,warnDays){
   if(days<=warnDays)return `<span style="color:var(--gold);font-weight:600">${dateLabel} — ${days}d left</span>`;
   return dateLabel;
 }
-const STATUSES=["New Enquiry","Contacted","Not Interested","Follow Up","Interested","University Shortlist","Documents Pending","Application Submitted","Received Conditional","Received Unconditional","Deposit Paid","Interview Passed","Interview Failed","CAS Applied","CAS Received","Visa Application Submitted","Visa Interview","Visa Received","Visa Rejected","Defer","Enrolled","Pending","Ongoing","Callback Later","Counselling Done","Fees Paid","Conditional Cleared","Onboarded Student","Commission Received","Process Completed","Dropped"];
+const STATUSES=["New Enquiry","Contacted","Not Interested","Call by Mistake","Follow Up","Interested","University Shortlist","Documents Pending","Application Submitted","Received Conditional","Received Unconditional","Deposit Paid","Interview Passed","Interview Failed","CAS Applied","CAS Received","Visa Application Submitted","Visa Interview","Visa Received","Visa Rejected","Defer","Enrolled","Pending","Ongoing","Callback Later","Counselling Done","Fees Paid","Conditional Cleared","Onboarded Student","Commission Received","Process Completed","Dropped"];
 // Chronological forward-journey order, used only for "reached this stage or later"
 // calculations (Applications Submitted, Conversion Funnel). This is deliberately
 // separate from STATUSES above, which is just the dropdown's display order.
@@ -5426,7 +5427,7 @@ function renderDash(){
     return `<div class="prow" onclick="navFilter('ls-st','${s}')" style="cursor:pointer;transition:background .1s" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><span class="pill" style="background:${ss.bg};color:${ss.tx};min-width:132px">${s}</span><div class="bar-t"><div class="bar-f" style="width:${w}%;background:${ss.tx}"></div></div><span class="pn" style="color:${ss.tx}">${n}</span></div>`;
   }).join('');
   const al=document.getElementById('act-list');
-  const dotC={"New Enquiry":"#1E40AF","Enrolled":"#065F46","Fees Paid":"#064E3B","Process Completed":"#1E3A5F","Not Interested":"#9F1239","Counselling Done":"#C05621","Contacted":"#854D0E","Defer":"#92400E","Dropped":"#475569"};
+  const dotC={"New Enquiry":"#1E40AF","Enrolled":"#065F46","Fees Paid":"#064E3B","Process Completed":"#1E3A5F","Not Interested":"#9F1239","Call by Mistake":"#64748B","Counselling Done":"#C05621","Contacted":"#854D0E","Defer":"#92400E","Dropped":"#475569"};
   al.innerHTML=dashLeads.slice(0,6).map(l=>
     `<div class="aitem" onclick="openLeadDetail('${l.id}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><div class="adot" style="background:${dotC[l.status]||'#999'}"></div><div><div class="atext">${esc(l.name)} — ${l.status.toLowerCase()}</div><div class="atime">${ago(l.created_at)}${l.source?' · '+l.source:''}</div></div></div>`
   ).join('');
@@ -5491,7 +5492,7 @@ async function loadDocumentsCountByLead(){
 // black-box score. Closed-out leads (enrolled, rejected, not
 // interested, deferred) get no tag at all, since "hot or cold" isn't
 // a meaningful question for something already finished.
-const CLOSED_STAGES=['Enrolled','Visa Received','Visa Rejected','Not Interested','Deferred'];
+const CLOSED_STAGES=['Enrolled','Visa Received','Visa Rejected','Not Interested','Call by Mistake','Deferred'];
 const ADVANCED_STAGES=['Application Submitted','Received Conditional Offer','Received Unconditional Offer','Deposit Paid','CAS Applied','CAS Received','Visa Application Submitted','Visa Interview'];
 function getLeadIntelligenceTag(l){
   if(CLOSED_STAGES.includes(l.status))return null;
@@ -9566,7 +9567,7 @@ function renderLeaderboard(scoped){
   el.innerHTML=sorted.map((s,i)=>`<div class="rpt-lb-row"><span class="rpt-lb-medal">${medals[i]||(i+1)}</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${esc(s.name)}</div><div class="rpt-lb-bar-t"><div class="rpt-lb-bar-f" style="width:${Math.round(s.enrolled/maxN*100)}%"></div></div></div><span style="font-size:13px;font-weight:700;color:var(--pine)">${s.enrolled}</span></div>`).join('');
 }
 function renderIntakeChart(scoped){
-  const offRamps=['Defer','Not Interested','Dropped','Visa Rejected'];
+  const offRamps=['Defer','Not Interested','Call by Mistake','Dropped','Visa Rejected'];
   const active=scoped.filter(l=>l.intake_month&&!offRamps.includes(l.status));
   destroyChart('intake');
   const ctx=document.getElementById('rpt-intake-chart');
@@ -9775,7 +9776,7 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
   function renderIntakeForecast(allLeads){
     const el=document.getElementById('intake-forecast');
     if(!el)return;
-    const offRamps=['Defer','Not Interested','Dropped','Visa Rejected'];
+    const offRamps=['Defer','Not Interested','Call by Mistake','Dropped','Visa Rejected'];
     const active=allLeads.filter(l=>l.intake_month&&!offRamps.includes(l.status));
     if(!active.length){el.innerHTML=emptyState('📅','No intake data yet — set an Intake Month on leads to see a forecast here.');return;}
     const byIntake={};
@@ -12116,7 +12117,7 @@ function renderQueriesList(channel){
     const contactBits=[q.full_name,q.email,q.phone].filter(Boolean).join(' · ')||'No contact details given';
     const extraBits=[q.study_destination?`Destination: ${esc(q.study_destination)}`:null,q.nationality?`Nationality: ${esc(q.nationality)}`:null].filter(Boolean).join(' · ');
     const sourceDetailLine=q.source_detail?`<div style="font-size:11px;color:var(--ink3);margin-bottom:4px">${esc(q.source_detail)}</div>`:'';
-    const receivedLabel=new Date(q.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    const receivedLabel=(()=>{if(!q.created_at)return'—';const d=new Date(q.created_at);if(isNaN(d))return'—';const full=d.toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true});const mins=Math.floor((Date.now()-d.getTime())/60000);const ago=mins<1?'just now':mins<60?mins+' min ago':mins<1440?Math.floor(mins/60)+' h ago':Math.floor(mins/1440)+' d ago';return`<div style="font-weight:600;color:var(--ink2)">${full}</div><div style="text-align:right">${ago}</div>`;})();
     const actions=q.status==='Converted'
       ? `<button class="btn" style="font-size:11.5px;padding:5px 10px" onclick="openLeadDetail('${q.converted_lead_id}')">View lead →</button>`
       : `<button class="btn btn-p" style="font-size:11.5px;padding:5px 10px" onclick="convertQueryToLead('${q.id}')"><i class="ti ti-user-plus"></i> Convert to lead</button>

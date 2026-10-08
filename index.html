@@ -924,19 +924,19 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
            once those pipelines exist. -->
       <section id="sc-queries" class="screen">
         <div style="display:flex;border-bottom:1px solid var(--line);margin-bottom:16px">
-          <button class="q-subtab active" data-sub="web" onclick="setQuerySubtab('web')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--pine);border-bottom:2px solid var(--pine)">🌐 Web<span class="nbadge" id="nb-q-web" style="margin-left:6px">0</span></button>
-          <button class="q-subtab" data-sub="instagram" onclick="setQuerySubtab('instagram')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent">📷 Instagram</button>
+          <button class="q-subtab" data-sub="web" onclick="setQuerySubtab('web')" hidden style="display:none;padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--pine);border-bottom:2px solid var(--pine)">🌐 Web<span class="nbadge" id="nb-q-web" style="margin-left:6px">0</span></button>
+          <button class="q-subtab active" data-sub="instagram" onclick="setQuerySubtab('instagram')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--pine);border-bottom:2px solid var(--pine)">📷 Instagram</button>
           <button class="q-subtab" data-sub="whatsapp" onclick="setQuerySubtab('whatsapp')" style="padding:9px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3);border-bottom:2px solid transparent">💬 WhatsApp</button>
         </div>
 
-        <div id="q-sub-web">
+        <div id="q-sub-web" style="display:none">
           <div class="card">
             <div class="card-h"><span class="card-t">🌐 Website enquiries</span></div>
             <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">Every submission from the website's enquiry form lands here first — review it, then convert it into a proper lead (or dismiss it if it's spam/not relevant).</div>
             <div id="q-web-list"></div>
           </div>
         </div>
-        <div id="q-sub-instagram" style="display:none">
+        <div id="q-sub-instagram">
           <div class="card">
             <div class="card-h"><span class="card-t">📷 Instagram enquiries</span></div>
             <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">Ad-originated Instagram DMs — organic messages and messages from existing leads are handled separately and never appear here as a new enquiry.</div>
@@ -5238,7 +5238,7 @@ function nav(id,btn){
   if(id==='digitalmarketing'&&roleIsCounsellor&&myRole!=='Digital Marketing'){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
   if(id==='team'&&roleIsCounsellor){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
   if(id==='queries'&&roleIsCounsellor){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
-  if(id==='queries')loadQueries('web');
+  if(id==='queries')setQuerySubtab('instagram');
   if(id==='team')loadPasswordResetRequests();
   // Productivity used to be Admin-tier only — now everyone needs in for
   // "My Daily Update", so the blanket block is gone. Call Recorder and
@@ -12188,10 +12188,8 @@ async function dismissQuery(queryId){
 async function updateQueriesBadge(){
   const badgeEl=document.getElementById('nb-queries');
   if(!badgeEl||isRestrictedStaffRole())return;
-  const{count}=await sb.from('website_enquiries').select('id',{count:'exact',head:true}).eq('status','New');
+  const{count}=await sb.from('website_enquiries').select('id',{count:'exact',head:true}).eq('status','New').neq('channel','website');
   animateCounterTo(badgeEl,count||0);
-  const webBadge=document.getElementById('nb-q-web');
-  if(webBadge)animateCounterTo(webBadge,count||0);
 }
 const LOG_WORK_CATEGORIES=[['🎯','Leads'],['📱','Social'],['✍️','Content'],['🎬','Creative'],['🤝','Students / Clients'],['📚','Research'],['🎓','Applications'],['🧑‍💼','Operations'],['💻','CRM / Product'],['🤖','AI'],['📊','Reports'],['🧠','Strategy'],['✨','Other']];
 const LOG_WORK_EFFORT=[['🌱','Tiny'],['🌿','Solid'],['🌳','Deep Work']];

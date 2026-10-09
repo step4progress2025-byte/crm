@@ -161,8 +161,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .btn-ai{background:var(--pine3);color:#fff;border-color:var(--pine3)}.btn-ai:hover{background:var(--pine2)}
 .btn-del{background:var(--rose-l);color:var(--rose);border-color:#fecdd3}.btn-del:hover{background:#ffe4e6}
 
-.content{flex:1;overflow-y:auto;background:var(--cream);scrollbar-width:auto;scrollbar-color:var(--pine3) var(--cream)}
-.content::-webkit-scrollbar{width:12px}
+.content{flex:1;overflow-y:auto;background:var(--cream)}
+.content::-webkit-scrollbar{width:20px}
 .content::-webkit-scrollbar-track{background:var(--cream)}
 .content::-webkit-scrollbar-thumb{background:var(--pine3);border-radius:99px;border:3px solid var(--cream)}
 .content::-webkit-scrollbar-thumb:hover{background:var(--pine)}
@@ -237,13 +237,13 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .baw-method-card{border:2px solid var(--line2);border-radius:var(--r);padding:16px;cursor:pointer;text-align:center;transition:border-color .15s}
 .baw-method-card:hover{border-color:var(--pine4)}
 .baw-method-card.selected{border-color:var(--pine);background:var(--cream)}
-.tw{overflow-x:auto;border-radius:var(--rl);border:1px solid var(--line);background:var(--paper);box-shadow:var(--sh);scrollbar-width:auto;scrollbar-color:var(--pine3) var(--cream)}
-.tw::-webkit-scrollbar{height:14px}
+.tw{overflow-x:auto;border-radius:var(--rl);border:1px solid var(--line);background:var(--paper);box-shadow:var(--sh)}
+.tw::-webkit-scrollbar{height:20px}
 .tw::-webkit-scrollbar-track{background:var(--cream);border-radius:0 0 var(--rl) var(--rl)}
 .tw::-webkit-scrollbar-thumb{background:var(--pine3);border-radius:99px;border:3px solid var(--cream)}
 .tw::-webkit-scrollbar-thumb:hover{background:var(--pine)}
-#leads-top-scroll{scrollbar-width:auto;scrollbar-color:var(--pine3) var(--cream);border-radius:var(--r);border:1px solid var(--line2)}
-#leads-top-scroll::-webkit-scrollbar{height:14px}
+#leads-top-scroll{min-height:20px;border-radius:var(--r);border:1px solid var(--line2)}
+#leads-top-scroll::-webkit-scrollbar{height:20px}
 #leads-top-scroll::-webkit-scrollbar-track{background:var(--cream);border-radius:var(--r)}
 #leads-top-scroll::-webkit-scrollbar-thumb{background:var(--pine3);border-radius:99px;border:3px solid var(--cream)}
 #leads-top-scroll::-webkit-scrollbar-thumb:hover{background:var(--pine)}
@@ -334,7 +334,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .mover{display:none;position:fixed;inset:0;background:rgba(28,25,23,.5);z-index:200;align-items:center;justify-content:center}
 .mover.open{display:flex}
 .modal{background:var(--paper);border-radius:var(--rxl);border:1px solid var(--line);width:580px;max-width:96vw;max-height:92vh;overflow-y:auto;padding:var(--sp-7);box-shadow:var(--shm);scrollbar-width:auto;scrollbar-color:var(--pine3) var(--paper)}
-.modal::-webkit-scrollbar{width:10px}
+.modal::-webkit-scrollbar{width:16px}
 .modal::-webkit-scrollbar-track{background:var(--paper)}
 .modal::-webkit-scrollbar-thumb{background:var(--pine3);border-radius:99px;border:2px solid var(--paper)}
 .modal::-webkit-scrollbar-thumb:hover{background:var(--pine)}
@@ -388,9 +388,25 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .sync-dot.error{background:var(--rose)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--line2);border-radius:99px}
+/* Wide, always-visible scrollbars: easy to grab with a laptop touchpad. NOTE: do not set the
+   standard scrollbar-width / scrollbar-color on elements - Chrome/Edge then ignore these rules and
+   fall back to the thin auto-hiding Windows bar. Firefox gets them via the @supports block below. */
+::-webkit-scrollbar{width:16px;height:16px}
+::-webkit-scrollbar-track{background:var(--cream);border-radius:99px}
+::-webkit-scrollbar-thumb{background:var(--pine3);border-radius:99px;border:3px solid var(--cream);min-height:56px;min-width:56px}
+::-webkit-scrollbar-thumb:hover{background:var(--pine)}
+::-webkit-scrollbar-thumb:active{background:var(--pine2)}
+::-webkit-scrollbar-corner{background:transparent}
+.sb-nav::-webkit-scrollbar{width:14px}
+.sb-nav::-webkit-scrollbar-track{background:rgba(255,255,255,.08)}
+.sb-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.45);border:3px solid transparent;background-clip:padding-box}
+.sb-nav::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.7);background-clip:padding-box}
+@supports not selector(::-webkit-scrollbar){*{scrollbar-width:auto;scrollbar-color:var(--pine3) var(--cream)}.sb-nav{scrollbar-color:rgba(255,255,255,.5) rgba(255,255,255,.08)}}
+.content:focus{outline:none}
+:focus-visible{outline:2px solid var(--pine3);outline-offset:2px}
+#back-to-top{position:fixed;right:26px;bottom:84px;z-index:90;width:46px;height:46px;border-radius:50%;border:none;background:var(--pine);color:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);display:none;align-items:center;justify-content:center}
+#back-to-top.show{display:flex}
+#back-to-top:hover{background:var(--pine2);transform:translateY(-2px)}
 
 /* ── PRESENCE & LIVE EDITING SYSTEM ─────────────────────────── */
 
@@ -647,7 +663,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <button class="btn btn-p" onclick="openAddLead()"><i class="ti ti-plus"></i>Add lead</button>
       </div>
     </header>
-    <div class="content">
+    <div class="content" tabindex="-1">
 
       <!-- Dashboard -->
       <!-- HOME — calm landing screen. Reminders and My Tasks moved here
@@ -5192,6 +5208,7 @@ function nav(id,btn){
   }
   const T={home:'Home',dashboard:'Dashboard',taskdashboard:'Task Dashboard',queries:'Queries',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digitalmarketing:'Digital Marketing',reports:'Reports',coursefinder:'Course & University Finder',scholarships:'Scholarship Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail',studentportal:'Student Portal',teamchat:'Team Chat'};
   document.getElementById('topbar-title').textContent=T[id]||id;
+  { const _c=document.querySelector('.content'); if(_c){ _c.scrollTop=0; _c.focus({preventScroll:true}); } }
   // Persistent Home button — visible on every screen except the
   // dashboard itself, so there's always a way back to home that doesn't
   // rely on the browser's own back button (which can land somewhere
@@ -12639,5 +12656,17 @@ function broadcastStopEditing(leadId) {
   </div>
 
 
+<button id="back-to-top" type="button" title="Back to top" aria-label="Back to top">&#8593;</button>
+<script>
+/* Comfort helpers: back-to-top button; focus the page area after navigating so
+   PageUp / PageDown / Home / End / Space scroll it from the keyboard or touchpad. */
+(function(){
+  var c=document.querySelector('.content'), b=document.getElementById('back-to-top');
+  if(!c||!b) return;
+  c.addEventListener('scroll',function(){ b.classList.toggle('show', c.scrollTop>500); },{passive:true});
+  b.addEventListener('click',function(){ c.scrollTo({top:0,behavior:'smooth'}); c.focus({preventScroll:true}); });
+  c.addEventListener('mousedown',function(e){ if(!e.target.closest('input,select,textarea,button,a,[contenteditable]')) c.focus({preventScroll:true}); });
+})();
+</script>
 </body>
 </html>

@@ -404,6 +404,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 @supports not selector(::-webkit-scrollbar){*{scrollbar-width:auto;scrollbar-color:var(--pine3) var(--cream)}.sb-nav{scrollbar-color:rgba(255,255,255,.5) rgba(255,255,255,.08)}}
 .content:focus{outline:none}
 :focus-visible{outline:2px solid var(--pine3);outline-offset:2px}
+.dup-badge{display:inline-block;margin-left:6px;font-size:9px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:99px;background:#FEF3C7;color:#92400E;cursor:pointer;vertical-align:middle;white-space:nowrap}
+.dup-badge.dup-split{background:#FEE2E2;color:#991B1B}
 #back-to-top{position:fixed;right:26px;bottom:84px;z-index:90;width:46px;height:46px;border-radius:50%;border:none;background:var(--pine);color:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);display:none;align-items:center;justify-content:center}
 #back-to-top.show{display:flex}
 #back-to-top:hover{background:var(--pine2);transform:translateY(-2px)}
@@ -1030,6 +1032,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <input type="number" id="random-select-count" placeholder="e.g. 100" min="1" style="width:90px;font-size:12px;padding:5px 8px;border:1px solid var(--line2);border-radius:var(--r)">
               <button class="btn" onclick="selectRandomLeads()" style="font-size:12px;padding:5px 12px"><i class="ti ti-dice"></i>Select random</button>
             </span>
+            <button class="btn" id="dup-toggle" onclick="toggleDupOnly()" style="font-size:12px;padding:5px 12px"><i class="ti ti-copy"></i>Duplicates</button>
             <button class="btn" onclick="navFilter('ls-st','Dropped')" style="font-size:12px;padding:5px 12px;background:var(--rose-l,#FEE2E2);color:var(--rose,#991B1B);border-color:transparent"><i class="ti ti-trash-x"></i>Drop List</button>
             <button class="btn" onclick="openBulkAddLeadsWizard()" style="font-size:12px;padding:5px 12px"><i class="ti ti-file-upload"></i>Bulk Add Leads</button>
             <button class="btn" onclick="exportCurrentView()" style="font-size:12px;padding:5px 12px"><i class="ti ti-download"></i>Export this view</button>
@@ -3668,7 +3671,8 @@ async function confirmMetaBulkUpload(){
   let uploaded=0, failed=0;
   for(const l of validLeads){
     const office=COUNTRY_DEFAULT_OFFICE[l.country]||null;
-    const picked=office?await getNextCounsellorForOffice(office):{name:''};
+    const _ownM=existingOwnerForNumber(l.mobile,null);
+    const picked=_ownM?{name:_ownM}:(office?await getNextCounsellorForOffice(office):{name:''});
     const{data:inserted,error}=await sb.from('leads').insert({
       name:l.name||'Meta Lead',
       mobile:l.mobile,
@@ -4189,10 +4193,24 @@ async function syncAssignedLeadTasksForCurrentUser(){
   if(created)console.info(`Created ${created} missing assignment task(s) for ${myName}.`);
 }
 
-async function quickReassignLead(leadId,newCounsellor){
+async function quickReassignLead(leadId,newCounsellor,opts){
   const l=leads.find(x=>x.id===leadId);
   if(!l||l.counsellor===newCounsellor)return;
   if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");renderLeads();return;}
+  // Same number on several leads = one person: steer them to ONE counsellor.
+  if(newCounsellor&&!(opts&&opts.skipDup)){
+    buildDupMap();
+    const g=dupGroup(l);
+    if(g){
+      const others=g.filter(x=>x.id!==l.id);
+      const holders=[...new Set(others.filter(x=>x.counsellor&&x.counsellor!==newCounsellor).map(x=>x.counsellor))];
+      if(holders.length){
+        const keep=holders[0];
+        if(confirm(`This number is on ${others.length} other lead(s) (${others.map(o=>o.lead_id||o.id.substring(0,8)).join(', ')}) already with ${holders.join(', ')}.\n\nSo the same person isn't handled by two counsellors, assign to ${keep}?\n\nOK = assign to ${keep}\nCancel = continue with ${newCounsellor}`)) newCounsellor=keep;
+        if(l.counsellor===newCounsellor){renderLeads();return;}
+      }
+    }
+  }
   const oldCounsellor=l.counsellor;
   setSyncing();
   const{error}=await sb.from('leads').update({counsellor:newCounsellor||null,assigned_at:newCounsellor?new Date().toISOString():null}).eq('id',leadId);
@@ -4211,6 +4229,14 @@ async function quickReassignLead(leadId,newCounsellor){
   }
   toast(newCounsellor?`Reassigned to ${newCounsellor}`:'Unassigned');
   renderDash();renderLeads();
+  if(newCounsellor&&!(opts&&opts.skipDup)){
+    buildDupMap();
+    const g2=dupGroup(l);
+    const rest=g2?g2.filter(x=>x.id!==l.id&&x.counsellor!==newCounsellor):[];
+    if(rest.length&&confirm(`${rest.length} other lead(s) share this number (${rest.map(o=>o.lead_id||o.id.substring(0,8)).join(', ')}).\n\nAssign them to ${newCounsellor} too?`)){
+      for(const o of rest) await quickReassignLead(o.id,newCounsellor,{skipDup:true});
+    }
+  }
 }
 
 // ── Inline Application/Visa/SOP quick-assign, directly in the Leads table ──
@@ -5759,6 +5785,7 @@ function renderLeads(){
   // the KPI tiles, but the Leads list itself never used this at all,
   // so it kept showing everyone's leads regardless of the toggle.
   const scopedLeads=opsViewScopedLeads(leads);
+  buildDupMap(); updateDupButton();
   // Populate counsellor filter dropdown from live leads
   const counselSel=document.getElementById('ls-counsel');
   const existingC=Array.from(counselSel.options).map(o=>o.value);
@@ -5773,7 +5800,7 @@ function renderLeads(){
   const from=document.getElementById('ls-from').value;
   const to=document.getElementById('ls-to').value;
   const assignF=document.getElementById('ls-assign').value;
-  const f=scopedLeads.filter(l=>(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!srcf||l.source===srcf)&&(!counsel||l.counsellor===counsel)&&(!from||l.created_at.substring(0,10)>=from)&&(!to||l.created_at.substring(0,10)<=to)&&(!assignF||(assignF==='assigned'?!!l.counsellor:!l.counsellor))&&smartLeadMatch(l,q));
+  const f=scopedLeads.filter(l=>(!dupOnly||(dupGroup(l)&&(!dupFocus||normalizePhone(l.mobile)===dupFocus)))&&(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!srcf||l.source===srcf)&&(!counsel||l.counsellor===counsel)&&(!from||l.created_at.substring(0,10)>=from)&&(!to||l.created_at.substring(0,10)<=to)&&(!assignF||(assignF==='assigned'?!!l.counsellor:!l.counsellor))&&smartLeadMatch(l,q));
   const empty=leads.length===0;
   document.getElementById('leads-empty').style.display=empty?'flex':'none';
   document.getElementById('leads-content').style.display=empty?'none':'block';
@@ -5796,7 +5823,7 @@ function renderLeads(){
       ${canBulkAct?`<td onclick="event.stopPropagation()"><input type="checkbox" class="bulk-lead-checkbox" data-id="${l.id}" onchange="onBulkCheckboxChange()" style="cursor:pointer"></td>`:''}
       <td style="font-size:12px;color:var(--ink3);font-weight:600">${i+1}</td>
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
-      <td><div class="nc"><div class="av" style="background:${abg};color:${atx}">${ini(l.name)}</div><div><div class="ln">${esc(l.name)}</div><div class="lc">${esc(l.city||'—')}</div></div></div></td>
+      <td><div class="nc"><div class="av" style="background:${abg};color:${atx}">${ini(l.name)}</div><div><div class="ln">${esc(l.name)}${dupBadge(l)}</div><div class="lc">${esc(l.city||'—')}</div></div></div></td>
       <td style="font-size:12px;color:var(--ink3)">${esc(l.mobile||'—')}</td>
       <td onclick="event.stopPropagation()">${contactIcons(l.mobile,l.email,{size:24,leadId:l.id,leadName:l.name})}</td>
       <td style="font-size:12px">${esc(l.program||'—')}</td>
@@ -7632,6 +7659,39 @@ function findDuplicateLead(name,mobile,email,excludeId){
   });
 }
 
+// ── Duplicate labelling + one-counsellor-per-number ─────────────────
+// Same number (last 10 digits, see normalizePhone) on more than one lead = DUPLICATE label in the
+// Leads table. The leads stay separate records (a person can use several tools), but they should be
+// worked by ONE counsellor, so assigning one prompts to keep the group together.
+let dupOnly=false, dupFocus=null, dupMap=new Map();
+function buildDupMap(){
+  dupMap=new Map();
+  (leads||[]).forEach(l=>{const k=normalizePhone(l.mobile);if(k.length<7)return;if(!dupMap.has(k))dupMap.set(k,[]);dupMap.get(k).push(l);});
+  for(const [k,v] of [...dupMap]) if(v.length<2) dupMap.delete(k);
+}
+function dupGroup(l){return dupMap.get(normalizePhone(l.mobile))||null;}
+function dupBadge(l){
+  const g=dupGroup(l); if(!g) return '';
+  const others=g.filter(x=>x.id!==l.id);
+  const split=new Set(g.filter(x=>x.counsellor).map(x=>x.counsellor)).size>1;
+  const tip='Same number as: '+others.map(o=>`${o.lead_id||o.id.substring(0,8)} (${o.counsellor||'Unassigned'}, ${o.status})`).join('; ')+(split?' — assigned to different counsellors, please give them to one':'');
+  return `<span class="dup-badge${split?' dup-split':''}" title="${esc(tip)}" onclick="event.stopPropagation();showDuplicatesOf('${normalizePhone(l.mobile)}')">DUPLICATE ×${g.length}${split?' · different counsellors':''}</span>`;
+}
+function showDuplicatesOf(key){dupOnly=true;dupFocus=key;renderLeads();}
+function toggleDupOnly(){dupOnly=!dupOnly;dupFocus=null;renderLeads();}
+function updateDupButton(){
+  const b=document.getElementById('dup-toggle'); if(!b) return;
+  let leadsInGroups=0; dupMap.forEach(v=>leadsInGroups+=v.length);
+  b.innerHTML=dupOnly?'<i class="ti ti-x"></i>Show all leads':`<i class="ti ti-copy"></i>Duplicates (${leadsInGroups})`;
+  b.style.background=dupOnly?'#FEF3C7':''; b.style.color=dupOnly?'#92400E':'';
+}
+// If this number already belongs to a counsellor, a new lead with it should go to that same person.
+function existingOwnerForNumber(mobile,excludeId){
+  const k=normalizePhone(mobile); if(k.length<7) return null;
+  const o=(leads||[]).find(x=>x.id!==excludeId&&x.counsellor&&normalizePhone(x.mobile)===k&&(teamList||[]).some(t=>t.full_name===x.counsellor));
+  return o?o.counsellor:null;
+}
+
 async function saveLead(){
   const name=document.getElementById('f-name').value.trim();
   if(!name){document.getElementById('f-name').focus();toast('Please enter a name.');return;}
@@ -7767,7 +7827,7 @@ async function saveLead(){
     if(myRole==='Counsellor'&&!isSuperAdmin){
       data.counsellor=myName;
     } else if(!data.counsellor){
-      const rr=await getNextCounsellorForOffice(data.office);data.counsellor=rr.name;
+      const _own=existingOwnerForNumber(data.mobile,null);if(_own){data.counsellor=_own;}else{const rr=await getNextCounsellorForOffice(data.office);data.counsellor=rr.name;}
     }
     if(data.counsellor)data.assigned_at=new Date().toISOString();
     const res=await sb.from('leads').insert([data]).select();
@@ -9161,7 +9221,8 @@ async function balCommit(){
     const office=COUNTRY_DEFAULT_OFFICE[country]||'India HQ';
     let counsellor=null;
     if(assignMode==='roundrobin'){
-      const picked=await getNextCounsellorForOffice(office);
+      const _ownB=existingOwnerForNumber(r.mobile,null);
+      const picked=_ownB?{name:_ownB}:await getNextCounsellorForOffice(office);
       counsellor=picked?.name||null;
     }
     const{data:inserted,error}=await sb.from('leads').insert({

@@ -3390,7 +3390,7 @@ function ago(ts){if(!ts)return'';const d=Date.now()-new Date(ts).getTime();if(d<
 // ── State ────────────────────────────────────────────────────────
 let leads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[], editedFromView=null; function openCreateUser(){
   // Only the Super Admin can add team members / send invites.
-  if(!isSuperAdmin){toast('Only the Super Admin can add team members.');return;}
+  if(!canInviteUsers()){toast('Only the Super Admin can add team members.');return;}
   document.getElementById('inv-name').value='';
   document.getElementById('inv-email-hint').value='';
   document.getElementById('inv-role').value='Counsellor';
@@ -4338,7 +4338,7 @@ function syncInviteOffice(){
   sel.innerHTML=(OFFICE_MAP[c]||[]).map(o=>`<option value="${o}">${o}</option>`).join('');
 }
 async function generateInviteLink(){
-  if(!isSuperAdmin){toast('Only the Super Admin can create team invitations.');return;}
+  if(!canInviteUsers()){toast('Only the Super Admin can create team invitations.');return;}
   const recipientEmail=document.getElementById('inv-recipient-email').value.trim().toLowerCase();
   const role=document.getElementById('inv-role').value;
   const country=document.getElementById('inv-country').value;
@@ -4461,6 +4461,9 @@ async function acceptPendingTeamInviteIfNeeded(){
 // owner's own account can't be edited, demoted, or removed by anyone else,
 // even another Super Admin. Add more emails here to grant a new person
 // the exact same full access India has, without touching this protection.
+// Can create users / invite links WITHOUT being a full super admin.
+const USER_INVITER_EMAILS=['a.jena@step4progress.co.uk'];
+function canInviteUsers(){return isSuperAdmin||USER_INVITER_EMAILS.includes(String(currentUser?.email||'').toLowerCase());}
 const SUPER_ADMIN_EMAILS=['india@step4progress.com','jisan@step4progress.co.uk','pavitra@step4progress.com'];
 // Domestic/International is a real team-category field, not a hard-coded
 // person rule. This prevents one person's name/email from leaking into the
@@ -7351,37 +7354,47 @@ function switchMyTasksTab(tab){
   renderMyTasksPersonalTab();
 }
 function renderMyTasksPersonalTab(){
-  const today=new Date().toISOString().substring(0,10);
-  const tomorrow=new Date(Date.now()+86400000).toISOString().substring(0,10);
+  // Local calendar dates (not UTC) so IST users don't roll over at 05:30.
+  const ld=d=>{const x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');};
+  const today=ld(Date.now());
+  const tomorrow=ld(Date.now()+86400000);
   const open=myTasksPersonalData.filter(t=>t.status!=='Done');
   const done=myTasksPersonalData.filter(t=>t.status==='Done');
 
-  // Today's progress donut — same visual pattern as the management
-  // dashboard's, scoped to just this counsellor's own tasks.
-  const todaysAll=myTasksPersonalData.filter(t=>t.due_date===today);
-  const todaysDone=todaysAll.filter(t=>t.status==='Done').length;
-  const todaysPct=todaysAll.length?Math.round((todaysDone/todaysAll.length)*100):0;
+  // Today's plate = everything still open that is due today, overdue or undated
+  // (unfinished work carries forward until it is done) + whatever was finished today.
+  const plateOpen=open.filter(t=>!t.due_date||t.due_date<=today);
+  const doneToday=done.filter(t=>t.completed_at&&ld(t.completed_at)===today);
+  const todaysAll=plateOpen.length+doneToday.length;
+  const todaysDone=doneToday.length;
+  const todaysPct=todaysAll?Math.round((todaysDone/todaysAll)*100):0;
+  const ok=todaysPct>=80;
+  const ringCol=ok?'#12A56F':'#C0392B';
   destroyTdChart('mtpToday');
   const mtpCtx=document.getElementById('mtp-today-donut')?.getContext('2d');
   if(mtpCtx){
     tdCharts.mtpToday=new Chart(mtpCtx,{
       type:'doughnut',
-      data:{datasets:[{data:todaysAll.length?[todaysDone,todaysAll.length-todaysDone]:[1],
-        backgroundColor:todaysAll.length?['#12A56F','#E6DDCC']:['#E6DDCC'],borderWidth:0}]},
-      options:{cutout:'70%',plugins:{legend:{display:false},tooltip:{enabled:todaysAll.length>0}}},
+      data:{datasets:[{data:todaysAll?[todaysDone,todaysAll-todaysDone]:[1],
+        backgroundColor:todaysAll?[ringCol,ok?'#E6DDCC':'#F3C9C4']:['#E6DDCC'],borderWidth:0}]},
+      options:{cutout:'70%',plugins:{legend:{display:false},tooltip:{enabled:todaysAll>0}}},
     });
   }
   const mtpLabel=document.getElementById('mtp-today-donut-label');
-  if(mtpLabel)mtpLabel.textContent=todaysAll.length?todaysPct+'%':'—';
+  if(mtpLabel){mtpLabel.textContent=todaysAll?todaysPct+'%':'—';mtpLabel.style.color=todaysAll?ringCol:'var(--pine)';}
   const mtpSub=document.getElementById('mtp-today-donut-sub');
-  if(mtpSub)mtpSub.textContent=todaysAll.length?`${todaysDone} of ${todaysAll.length} done today`:'Nothing due today';
+  if(mtpSub){
+    mtpSub.innerHTML=todaysAll
+      ?`${todaysDone} of ${todaysAll} done · ${plateOpen.length} left (includes carried-forward)<br><b style="color:${ringCol}">${ok?'✔ 80% target reached':'Finish '+Math.max(0,Math.ceil(todaysAll*0.8)-todaysDone)+' more to reach 80%'}</b>`
+      :'Nothing pending — all clear';
+  }
 
   let list;
-  // Today is the counsellor's actionable queue: overdue + due today.
-  // My Tasks is the full open queue; date tabs are focused views, with Upcoming for tasks after tomorrow.
+  // Unfinished tasks carry forward: Today and Tomorrow both show everything
+  // still open that is overdue, so nothing disappears until it is completed.
   if(myTasksPersonalActiveTab==='all')list=open;
-  else if(myTasksPersonalActiveTab==='today')list=open.filter(t=>!t.due_date||t.due_date<=today);
-  else if(myTasksPersonalActiveTab==='tomorrow')list=open.filter(t=>t.due_date===tomorrow);
+  else if(myTasksPersonalActiveTab==='today')list=plateOpen;
+  else if(myTasksPersonalActiveTab==='tomorrow')list=open.filter(t=>t.due_date&&t.due_date<=tomorrow);
   else if(myTasksPersonalActiveTab==='pending')list=open.filter(t=>t.due_date&&t.due_date>tomorrow);
   else list=done;
 
@@ -7400,7 +7413,7 @@ function renderMyTasksPersonalTab(){
         ${t.lead_id?`<a href="#" onclick="event.preventDefault();event.stopPropagation();openLeadDetail('${t.lead_id}')" style="font-weight:700;color:var(--pine);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:2px;cursor:pointer" title="Open lead">${esc(leadName)}</a>`:`<b style="${isDone?'text-decoration:line-through;color:var(--ink3)':''}">${esc(leadName)}</b>`} — <a href="#" onclick="event.preventDefault();event.stopPropagation();openTaskDetail('${t.id}')" style="color:${isDone?'var(--ink3)':'var(--ink)'};${isDone?'text-decoration:line-through;':''}text-underline-offset:2px;cursor:pointer" title="Open task">${esc(t.title)}</a> ${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}
         ${(notePreview||reminder)?`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;font-size:10.5px;color:var(--ink3)">${notePreview?`<span>📝 ${esc(notePreview.length>100?notePreview.slice(0,100)+'…':notePreview)}</span>`:''}${reminder?`<span>⏰ ${esc(reminderLabel)}${reminderNote?' · '+esc(reminderNote.length>75?reminderNote.slice(0,75)+'…':reminderNote):''}</span>`:''}</div>`:''}
       </div>
-      <span style="font-size:11.5px;color:var(--ink3);flex-shrink:0">${dateLabel}</span>
+      <span style="font-size:11.5px;color:${(!isDone&&t.due_date&&t.due_date<today)?'#C0392B':'var(--ink3)'};flex-shrink:0;font-weight:${(!isDone&&t.due_date&&t.due_date<today)?'700':'400'}">${dateLabel}${(!isDone&&t.due_date&&t.due_date<today)?' · overdue':''}</span>
     </div>`;
   }).join('');
 }
@@ -9779,7 +9792,7 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
 
     // "Add team member" — Super Admin only, god access.
     const cu=document.getElementById('create-user-btn');
-    if(cu) cu.style.display=isSuperAdmin?'inline-flex':'none';
+    if(cu) cu.style.display=canInviteUsers()?'inline-flex':'none';
 
     // Student Portal tab — Owner/Platform Administrator/Super Admin tier
     // only (isSuperAdmin already covers all three, since it's the same

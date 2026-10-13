@@ -686,6 +686,11 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div id="home-destination-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px"></div>
         </div>
 
+        <div class="card" id="weekly-wins-widget" style="margin-bottom:18px">
+          <div class="card-h"><span class="card-t">🎉 Weekly Wins</span><span style="font-size:11px;color:var(--ink3)">Last 7 days</span></div>
+          <div id="weekly-wins-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px"></div>
+        </div>
+
         <div class="card" id="reminders-widget">
           <div class="card-h"><span class="card-t">⏰ Today's & upcoming reminders</span></div>
           <div id="reminders-dash-list"></div>
@@ -697,6 +702,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div class="card" id="home-followups-widget">
           <div class="card-h"><span class="card-t">📞 Upcoming follow-ups</span><span onclick="nav('followups',document.querySelector('.ni[data-nav=&quot;followups&quot;]'))" style="font-size:12px;color:var(--pine);cursor:pointer;text-decoration:underline">View all →</span></div>
           <div id="home-followups-list"></div>
+        </div>
+        <div class="card" id="my-meetings-widget">
+          <div class="card-h"><span class="card-t">🗓️ My Upcoming Meetings</span></div>
+          <div id="my-meetings-list"></div>
         </div>
 
         <button class="btn btn-p" onclick="goToFullDashboard()" style="width:100%;padding:18px;font-size:16px;font-weight:700;margin-top:8px;border-radius:16px;box-shadow:0 8px 24px rgba(28,63,110,.25)"><i class="ti ti-layout-dashboard"></i>&nbsp; View Full Dashboard</button>
@@ -710,6 +719,16 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button onclick="loadDailyBriefing(true)" title="Refresh" style="background:rgba(255,255,255,.15);border:none;color:#fff;cursor:pointer;font-size:13px;padding:5px 9px;border-radius:99px;display:flex;align-items:center;gap:5px"><i class="ti ti-refresh" id="briefing-refresh-icon"></i></button>
           </div>
           <div id="briefing-text" style="font-family:var(--font-h);font-size:16px;line-height:1.6;max-width:820px">Loading your briefing…</div>
+        </div>
+
+        <div class="card" id="data-health-widget" style="margin-bottom:18px">
+          <div class="card-h" style="cursor:pointer" onclick="toggleDataHealth()">
+            <span class="card-t">🩺 Data Health <span id="dh-count-badge" style="font-size:11px;font-weight:700;color:var(--rose,#9F1239);background:var(--rose-l,#FFE4E6);padding:2px 8px;border-radius:99px;margin-left:6px;display:none"></span></span>
+            <i class="ti ti-chevron-right" id="dh-toggle-icon" style="transition:transform .15s"></i>
+          </div>
+          <div id="dh-content" style="display:none;margin-top:10px">
+            <div id="dh-sections"></div>
+          </div>
         </div>
         <div id="dash-scope-note" style="font-size:11.5px;color:var(--ink3);margin-bottom:10px;font-style:italic"></div>
 
@@ -1037,6 +1056,14 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="btn" onclick="openBulkAddLeadsWizard()" style="font-size:12px;padding:5px 12px"><i class="ti ti-file-upload"></i>Bulk Add Leads</button>
             <button class="btn" onclick="exportCurrentView()" style="font-size:12px;padding:5px 12px"><i class="ti ti-download"></i>Export this view</button>
           </div>
+          <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+            <button class="btn" id="leads-view-table-btn" onclick="setLeadsView('table')" style="font-size:12px;padding:5px 12px"><i class="ti ti-table"></i>Table</button>
+            <button class="btn" id="leads-view-board-btn" onclick="setLeadsView('board')" style="font-size:12px;padding:5px 12px"><i class="ti ti-layout-kanban"></i>Board</button>
+            <span style="width:1px;height:20px;background:var(--line2);margin:0 4px"></span>
+            <select id="ls-saved-views" onchange="applySavedView(this.value)" style="font-size:12px;padding:6px 8px;border:1px solid var(--line2);border-radius:var(--r)"><option value="">Saved views…</option></select>
+            <button class="btn" onclick="saveCurrentView()" style="font-size:12px;padding:5px 12px"><i class="ti ti-device-floppy"></i>Save view</button>
+            <button class="btn" onclick="deleteSavedView()" style="font-size:12px;padding:5px 12px"><i class="ti ti-trash"></i></button>
+          </div>
           <div id="leads-top-scroll" style="overflow-x:auto;overflow-y:hidden;height:16px;margin-bottom:2px" onscroll="document.getElementById('leads-table-wrap').scrollLeft=this.scrollLeft">
             <div id="leads-top-scroll-inner" style="height:1px"></div>
           </div>
@@ -1049,6 +1076,14 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               </tr></thead>
               <tbody id="lead-tbody"></tbody>
             </table>
+          </div>
+          <!-- Kanban board view — same leads, same filters, drag-and-drop between
+               status columns on desktop; every card also has a plain <select>
+               dropdown so moving a card works equally well on touch devices,
+               where native HTML5 drag doesn't. Both paths call the exact same
+               updateLeadStatusDirect(), so a status change is identical either way. -->
+          <div id="leads-board-wrap" style="display:none;overflow-x:auto;padding-bottom:8px">
+            <div id="leads-board-cols" style="display:flex;gap:12px;align-items:flex-start;min-height:120px"></div>
           </div>
         </div>
       </section>
@@ -2433,6 +2468,50 @@ What would you like help with today?</div>
   </div>
 </div>
 
+<!-- Schedule Meeting — booked against a lead, shown to that lead's
+     counsellor in the "My Upcoming Meetings" home widget. -->
+<div class="mover" id="modal-schedule-meeting">
+  <div class="modal" style="width:420px">
+    <div class="mhead"><span class="mtitle">🗓️ Schedule Meeting</span><button class="mclose" onclick="closeModal('modal-schedule-meeting')">×</button></div>
+    <div class="ff"><label>Date</label><input type="date" id="sm-date"></div>
+    <div class="ff"><label>Time (optional)</label><input type="time" id="sm-time"></div>
+    <div class="ff"><label>Notes (optional)</label><textarea id="sm-notes" style="width:100%;min-height:60px;padding:8px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b);font-size:13px"></textarea></div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeModal('modal-schedule-meeting')">Cancel</button>
+      <button class="btn btn-p" onclick="saveScheduledMeeting()"><i class="ti ti-check"></i>Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sponsor/parent view link — shows the generated no-login public link for
+     a parent/sponsor to check a student's progress, with a one-click copy. -->
+<div class="mover" id="modal-sponsor-link">
+  <div class="modal" style="width:440px">
+    <div class="mhead"><span class="mtitle">🔗 Sponsor view link</span><button class="mclose" onclick="closeModal('modal-sponsor-link')">×</button></div>
+    <div style="font-size:12.5px;color:var(--ink3);margin-bottom:12px">Share this with the student's parent/sponsor. No login needed — they'll only see name, program, destination, status, and last updated. Nothing else.</div>
+    <div style="display:flex;gap:6px">
+      <input id="sponsor-link-url" readonly style="flex:1;font-size:12px;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-family:monospace">
+      <button class="btn btn-p" onclick="copySponsorLink()">Copy</button>
+    </div>
+  </div>
+</div>
+
+<!-- Duplicate Lead Modal — replaces the old plain browser confirm()/alert()
+     with a real dialog that shows the existing record's details so staff can
+     actually see what they're deciding about, instead of a one-line popup
+     that's easy to click through without reading. Two modes: a soft confirm
+     (different/no agent — can still add as a new lead) and a hard stop (same
+     mobile number already brought in by a different agent — Anushree's
+     explicit rule: this one is never allowed to proceed, only "view existing"
+     or "OK" are offered). -->
+<div class="mover" id="modal-dup-lead">
+  <div class="modal" style="width:480px">
+    <div class="mhead"><span class="mtitle" id="dup-lead-title">Possible duplicate</span><button class="mclose" onclick="resolveDupLeadModal('cancel')">×</button></div>
+    <div id="dup-lead-body" style="margin-bottom:6px"></div>
+    <div class="mfoot" id="dup-lead-foot"></div>
+  </div>
+</div>
+
 <!-- Activity Log Modal — the full per-lead history, as its own dialog -->
 <div class="mover" id="modal-activity-log">
   <div class="modal" style="width:560px;max-height:80vh">
@@ -2445,12 +2524,44 @@ What would you like help with today?</div>
   </div>
 </div>
 
+<!-- Message Templates — a library of pre-written WhatsApp messages for common
+     moments in a student's journey, picked from a list, auto-filled with the
+     lead's name, editable before sending. Separate from the single
+     auto-selected follow-up message the WhatsApp quick-button already sends —
+     this lets staff choose the right message for the moment instead of only
+     ever getting the one tied to the lead's current status. -->
+<div class="mover" id="modal-message-templates">
+  <div class="modal" style="width:560px;max-height:85vh;display:flex;flex-direction:column">
+    <div class="mhead"><span class="mtitle">💬 Message Templates</span><button class="mclose" onclick="closeModal('modal-message-templates')">×</button></div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:12px">Pick a template below — it fills the box with this lead's name already in place. Edit anything before sending.</div>
+    <div id="mt-template-list" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;margin-bottom:14px;padding-right:4px"></div>
+    <textarea id="mt-text" placeholder="Pick a template above, or just write your own message here…" style="width:100%;min-height:110px;padding:10px;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--font-b);font-size:13px;resize:vertical;line-height:1.5"></textarea>
+    <div class="mfoot">
+      <button class="btn" onclick="closeModal('modal-message-templates')">Cancel</button>
+      <button class="btn btn-p" style="background:#25D366;border-color:#25D366" onclick="sendMessageTemplate()"><i class="ti ti-brand-whatsapp"></i>Send on WhatsApp</button>
+    </div>
+  </div>
+</div>
+
 <!-- Activity Monitor drill-down — every one of a team member's daily updates, grouped by date -->
 <div class="mover" id="modal-member-activity">
   <div class="modal" style="width:460px;max-height:82vh;display:flex;flex-direction:column">
     <div class="mhead"><span class="mtitle" id="ma-title">Activity</span><button class="mclose" onclick="closeModal('modal-member-activity')">×</button></div>
     <div id="ma-sub" style="font-size:12px;color:var(--ink3);margin-bottom:14px"></div>
     <div id="ma-list" style="flex:1;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- Counsellor Activity Timeline — every real CRM action this person has taken
+     across ALL their leads (status changes, calls, reassignments, notes),
+     pulled straight from activity_log and grouped by day. Distinct from the
+     "daily updates" drill-down above, which is their own self-reported
+     write-ups, not actual system-logged actions. -->
+<div class="mover" id="modal-counsellor-activity">
+  <div class="modal" style="width:520px;max-height:82vh;display:flex;flex-direction:column">
+    <div class="mhead"><span class="mtitle" id="ca-title">Activity Timeline</span><button class="mclose" onclick="closeModal('modal-counsellor-activity')">×</button></div>
+    <div id="ca-stat" style="font-size:12px;color:var(--ink3);margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)"></div>
+    <div id="ca-list" style="flex:1;overflow-y:auto"></div>
   </div>
 </div>
 
@@ -2566,6 +2677,9 @@ What would you like help with today?</div>
         <button class="btn btn-ai" onclick="aiAboutLeadFS()"><i class="ti ti-robot"></i>Ask AI</button>
         <button class="btn" style="background:var(--gold-l);color:var(--gold);border-color:var(--gold)" onclick="openCourseFinderForLead(curId)"><i class="ti ti-search"></i>Find Courses</button>
         <button class="btn" style="background:#25D366;color:#fff;border-color:#25D366" onclick="waFollowUpFS()"><i class="ti ti-brand-whatsapp"></i></button>
+        <button class="btn" title="Message templates" onclick="openMessageTemplates()"><i class="ti ti-message-2"></i></button>
+        <button class="btn" title="Sponsor/parent view link" onclick="generateSponsorLink()"><i class="ti ti-link"></i></button>
+        <button class="btn" title="Schedule a meeting" onclick="openScheduleMeetingModal()"><i class="ti ti-calendar-plus"></i></button>
         <button class="btn" id="btn-edit-lead-fs" onclick="editLeadFS()"><i class="ti ti-edit"></i>Edit</button>
         <button class="btn btn-del" id="btn-delete-lead-fs" onclick="deleteLeadFS()"><i class="ti ti-trash"></i>Delete</button>
       </div>
@@ -2797,6 +2911,9 @@ What would you like help with today?</div>
     </div>
     <div class="dfoot">
       <button class="btn btn-ai" style="flex:1" onclick="aiAboutLead()"><i class="ti ti-robot"></i>Ask AI</button>       <button class="btn" style="background:#25D366;color:#fff;border-color:#25D366" onclick="waFollowUp()"><i class="ti ti-brand-whatsapp"></i></button>
+      <button class="btn" title="Message templates" onclick="openMessageTemplates()"><i class="ti ti-message-2"></i></button>
+      <button class="btn" title="Sponsor/parent view link" onclick="generateSponsorLink()"><i class="ti ti-link"></i></button>
+      <button class="btn" title="Schedule a meeting" onclick="openScheduleMeetingModal()"><i class="ti ti-calendar-plus"></i></button>
       <button class="btn" onclick="editLead()"><i class="ti ti-edit"></i>Edit</button>
       <button class="btn btn-del" id="btn-delete-lead" onclick="deleteLead()"><i class="ti ti-trash"></i></button>
     </div>
@@ -4740,6 +4857,9 @@ pruneIndiaFromCrmDropdowns();
   loadMyTasks();
   renderHomeDestinationCards();
   loadHomeFollowups();
+  loadMyMeetings();
+  renderWeeklyWins();
+  renderSavedViewsDropdown();
   await loadNotificationSettings();
   checkUnreadDmCount();
   startNotificationEngine();
@@ -5176,6 +5296,14 @@ async function loadTeam(){
     q=q.neq('country','India');
   }
   const{data}=await q;
+  // A Super Admin account is never a counsellor. If its role column still
+  // says "Counsellor" (or is blank), treat it as "Super Admin" in memory so
+  // every counsellor list, dropdown and round-robin pool drops it at once.
+  // Their saved role in the database is not touched; Director/Admin etc.
+  // are left exactly as they are.
+  (data||[]).forEach(t=>{
+    if(isSuperAdminRow(t)&&(!t.role||t.role==='Counsellor'))t.role='Super Admin';
+  });
   teamList=data||[];
   if(tl) tl.style.display='none';
   renderTeam(data||[]);
@@ -5768,6 +5896,150 @@ function renderSubTeamDetail(){
     </tr>`;
   }).join('');
 }
+// ── Kanban lead board ────────────────────────────────────────────────
+// A curated subset of the full 28-status pipeline — showing all of them
+// as columns would make the board unusable. Anything not in this list
+// (e.g. terminal/negative statuses like Dropped, Not Interested) still
+// shows up, just grouped into a single "Other" column at the end, so no
+// lead silently disappears from the board.
+const KANBAN_COLUMNS=['New Enquiry','Contacted','Interested','Counselling Done','Documents Pending','Application Submitted','Received Conditional','Received Unconditional','Deposit Paid','CAS Received','Visa Application Submitted','Visa Received','Enrolled'];
+let leadsViewMode='table';
+let currentFilteredLeads=[];
+function setLeadsView(mode){
+  leadsViewMode=mode;
+  document.getElementById('leads-table-wrap').style.display=mode==='table'?'':'none';
+  document.getElementById('leads-top-scroll').style.display=mode==='table'?'':'none';
+  document.getElementById('leads-board-wrap').style.display=mode==='board'?'':'none';
+  const tb=document.getElementById('leads-view-table-btn'), bb=document.getElementById('leads-view-board-btn');
+  tb.style.background=mode==='table'?'var(--pine)':''; tb.style.color=mode==='table'?'#fff':'';
+  bb.style.background=mode==='board'?'var(--pine)':''; bb.style.color=mode==='board'?'#fff':'';
+  if(mode==='board')renderLeadsBoard();
+}
+// Single shared status-change path — used by the Kanban board's drag-drop,
+// the Kanban board's mobile <select> fallback, AND anywhere else that
+// wants a one-line "just move this lead's status" call. Deliberately
+// mirrors the exact side effects updateStatusFS() already does (activity
+// log, auto-task creation, dashboard/badge refresh) so a status change
+// behaves identically no matter which screen it was made from.
+async function updateLeadStatusDirect(leadId,newStatus){
+  const l=leads.find(x=>x.id===leadId);
+  if(!l)return;
+  if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");renderLeadsBoard();return;}
+  const oldStatus=l.status;
+  if(oldStatus===newStatus)return;
+  setSyncing();
+  const{error}=await sb.from('leads').update({status:newStatus}).eq('id',leadId);
+  if(error){setSyncErr();toast('Error updating status.');renderLeadsBoard();return;}
+  l.status=newStatus;
+  setSynced();
+  renderLeads();renderDash();badges();
+  autoCreateTaskForStatus(l,newStatus);
+  logActivity(leadId,'status_change',`Status: ${oldStatus} → ${newStatus}`);
+  toast('Status → '+newStatus);
+}
+function renderLeadsBoard(){
+  const wrap=document.getElementById('leads-board-cols');
+  if(!wrap)return;
+  const cols=KANBAN_COLUMNS.concat(['__other__']);
+  wrap.innerHTML=cols.map(col=>{
+    const isOther=col==='__other__';
+    const colLeads=isOther
+      ? currentFilteredLeads.filter(l=>!KANBAN_COLUMNS.includes(l.status))
+      : currentFilteredLeads.filter(l=>l.status===col);
+    const ss=isOther?{bg:'#F1F5F9',tx:'#475569'}:(SS[col]||{bg:'#eee',tx:'#555'});
+    const cards=colLeads.map(l=>{
+      const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
+      const statusOptions=KANBAN_COLUMNS.map(s=>`<option value="${esc(s)}" ${s===l.status?'selected':''}>${esc(s)}</option>`).join('');
+      return `<div class="kb-card" draggable="true" data-lead-id="${l.id}" ondragstart="onKbCardDragStart(event,'${l.id}')" onclick="openLeadDetail('${l.id}')" style="background:#fff;border:1px solid var(--line2);border-radius:var(--r);padding:10px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.04)">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px">${esc(l.name)}${leadIntelligenceBadge(l)}</div>
+        <div style="font-size:11px;color:var(--ink3);margin-bottom:6px">${esc(l.program||'—')} → ${esc(l.destination||'—')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+          <span class="pill" style="background:${ps.bg};color:${ps.tx};font-size:10px">${esc(l.priority||'—')}</span>
+          <span style="font-size:11px;color:var(--ink3)">${esc(l.counsellor||'Unassigned')}</span>
+        </div>
+        <select onclick="event.stopPropagation()" onchange="event.stopPropagation();updateLeadStatusDirect('${l.id}',this.value)" style="width:100%;margin-top:8px;font-size:11px;padding:4px 6px;border:1px solid var(--line2);border-radius:6px">${statusOptions}</select>
+      </div>`;
+    }).join('');
+    return `<div class="kb-col" ondragover="event.preventDefault()" ondrop="onKbColumnDrop(event,'${isOther?'':esc(col)}')" style="flex:0 0 230px;background:var(--paper);border-radius:var(--r);padding:10px;max-height:72vh;overflow-y:auto">
+      <div style="font-size:12px;font-weight:700;color:${ss.tx};background:${ss.bg};padding:6px 10px;border-radius:8px;margin-bottom:10px;display:flex;justify-content:space-between"><span>${isOther?'Other':esc(col)}</span><span>${colLeads.length}</span></div>
+      ${cards||'<div style="font-size:11px;color:var(--ink3);font-style:italic;text-align:center;padding:14px 0">No leads</div>'}
+    </div>`;
+  }).join('');
+}
+let kbDraggingId=null;
+function onKbCardDragStart(ev,leadId){kbDraggingId=leadId;ev.dataTransfer.setData('text/plain',leadId);}
+function onKbColumnDrop(ev,status){
+  ev.preventDefault();
+  const leadId=kbDraggingId||ev.dataTransfer.getData('text/plain');
+  if(!leadId||!status)return;
+  updateLeadStatusDirect(leadId,status);
+  kbDraggingId=null;
+}
+// ── Saved filter Views ───────────────────────────────────────────────
+// Stores a named snapshot of every filter field on the Leads screen in
+// localStorage (per-browser, not synced across staff — same as the
+// rest of this app's local UI preferences). Reapplying just writes the
+// stored values back into the same fields and calls renderLeads().
+const SAVED_VIEWS_KEY='crm_saved_views';
+function getSavedViews(){
+  try{return JSON.parse(localStorage.getItem(SAVED_VIEWS_KEY)||'{}');}catch(e){return{};}
+}
+function renderSavedViewsDropdown(){
+  const sel=document.getElementById('ls-saved-views');
+  if(!sel)return;
+  const views=getSavedViews();
+  const names=Object.keys(views).sort();
+  sel.innerHTML='<option value="">Saved views…</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+}
+function saveCurrentView(){
+  const name=prompt('Name this view (e.g. "My hot UK leads"):');
+  if(!name)return;
+  const views=getSavedViews();
+  views[name]={
+    q:document.getElementById('ls-q').value,
+    st:document.getElementById('ls-st').value,
+    pr:document.getElementById('ls-pr').value,
+    de:document.getElementById('ls-de').value,
+    country:document.getElementById('ls-country').value,
+    src:document.getElementById('ls-src').value,
+    counsel:document.getElementById('ls-counsel').value,
+    from:document.getElementById('ls-from').value,
+    to:document.getElementById('ls-to').value,
+    assign:document.getElementById('ls-assign').value,
+  };
+  localStorage.setItem(SAVED_VIEWS_KEY,JSON.stringify(views));
+  renderSavedViewsDropdown();
+  document.getElementById('ls-saved-views').value=name;
+  toast('View "'+name+'" saved.');
+}
+function applySavedView(name){
+  if(!name)return;
+  const v=getSavedViews()[name];
+  if(!v)return;
+  document.getElementById('ls-q').value=v.q||'';
+  document.getElementById('ls-st').value=v.st||'';
+  document.getElementById('ls-pr').value=v.pr||'';
+  document.getElementById('ls-de').value=v.de||'';
+  document.getElementById('ls-country').value=v.country||'';
+  document.getElementById('ls-src').value=v.src||'';
+  document.getElementById('ls-counsel').value=v.counsel||'';
+  document.getElementById('ls-from').value=v.from||'';
+  document.getElementById('ls-to').value=v.to||'';
+  document.getElementById('ls-assign').value=v.assign||'';
+  renderLeads();
+  toast('Applied view "'+name+'".');
+}
+function deleteSavedView(){
+  const sel=document.getElementById('ls-saved-views');
+  const name=sel.value;
+  if(!name){toast('Pick a saved view first.');return;}
+  if(!confirm('Delete the saved view "'+name+'"?'))return;
+  const views=getSavedViews();
+  delete views[name];
+  localStorage.setItem(SAVED_VIEWS_KEY,JSON.stringify(views));
+  renderSavedViewsDropdown();
+  toast('Deleted.');
+}
 function renderLeads(){
   document.getElementById('leads-loading').style.display='none';
   // Bulk actions (select, reassign, status/priority change) are Management
@@ -5804,6 +6076,11 @@ function renderLeads(){
   const to=document.getElementById('ls-to').value;
   const assignF=document.getElementById('ls-assign').value;
   const f=scopedLeads.filter(l=>(!dupOnly||(dupGroup(l)&&(!dupFocus||normalizePhone(l.mobile)===dupFocus)))&&(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!srcf||l.source===srcf)&&(!counsel||l.counsellor===counsel)&&(!from||l.created_at.substring(0,10)>=from)&&(!to||l.created_at.substring(0,10)<=to)&&(!assignF||(assignF==='assigned'?!!l.counsellor:!l.counsellor))&&smartLeadMatch(l,q));
+  // Shared with the Kanban board view below, so it shows exactly the leads
+  // the current filters/search/scope would show in the table — same data,
+  // two presentations, never out of sync.
+  currentFilteredLeads=f;
+  if(leadsViewMode==='board')renderLeadsBoard();
   const empty=leads.length===0;
   document.getElementById('leads-empty').style.display=empty?'flex':'none';
   document.getElementById('leads-content').style.display=empty?'none':'block';
@@ -6138,6 +6415,125 @@ function getContextualWhatsAppMessage(l){
   }
   // Fallback for any other status — same as the original generic message.
   return `Hi ${name}, this is a follow-up from Step4Progress regarding your ${program} enquiry. How are you doing? We would love to help you take the next step. Please let us know if you have any questions!`;
+}
+
+// ── Message Templates ───────────────────────────────────────────────
+// A real library of pre-written messages a counsellor can pick from for
+// ANY moment, independent of the lead's current status — unlike
+// getContextualWhatsAppMessage() above (which auto-picks exactly ONE
+// message tied to the status, no choice). Each entry's text() takes the
+// lead so the name (and program/destination where relevant) is filled in
+// automatically; the result lands in an editable box before it's sent,
+// so nothing goes out verbatim without a human glancing at it first.
+const MESSAGE_TEMPLATES=[
+  {label:'👋 First contact',text:l=>`Hi ${l.name||'there'}, this is Step4Progress reaching out about your ${l.program||'study abroad'} enquiry. We'd love to understand your goals and help you take the next step — when's a good time for a quick call?`},
+  {label:'🔔 Follow-up (no response yet)',text:l=>`Hi ${l.name||'there'}, just following up on our last message — we don't want you to miss out on anything useful for your ${l.program||'study abroad'} plans. Let us know whenever you're free to talk!`},
+  {label:'📋 Document reminder',text:l=>`Hi ${l.name||'there'}, a quick reminder to send across your pending documents whenever you get a chance — this helps us keep your application moving without delays. Let us know if you need help gathering anything.`},
+  {label:'💰 Fee / payment reminder',text:l=>`Hi ${l.name||'there'}, just a gentle reminder regarding your pending payment for your ${l.program||'program'} application. Please let us know if you have any questions, or if you'd like to discuss the payment options.`},
+  {label:'🎉 Congrats — offer received',text:l=>`Hi ${l.name||'there'}, congratulations! 🎉 Great news on your ${l.destination||'application'} offer. Let's schedule a quick call to walk through the next steps together.`},
+  {label:'🛫 Congrats — visa approved',text:l=>`Hi ${l.name||'there'}, wonderful news — your visa has been approved! 🎉 Huge congratulations from all of us at Step4Progress. Let's connect soon on your pre-departure preparations.`},
+  {label:'🎤 Visa interview prep',text:l=>`Hi ${l.name||'there'}, ahead of your visa interview, would you like to schedule a quick prep session with us? We're happy to go through likely questions together so you feel fully ready.`},
+  {label:'🧊 Re-engagement (gone quiet)',text:l=>`Hi ${l.name||'there'}, it's been a little while since we last spoke about your ${l.program||'study abroad'} plans. We're still here and happy to help whenever you're ready to pick things back up — just let us know!`},
+  {label:'🙏 Thank-you after a call',text:l=>`Hi ${l.name||'there'}, thank you for taking the time to speak with us today! If anything else comes to mind, feel free to reach out anytime. Looking forward to helping you with the next steps.`},
+  {label:'🎊 Festival / holiday greeting',text:l=>`Hi ${l.name||'there'}, wishing you and your family a wonderful festive season from all of us at Step4Progress! 🎊 Looking forward to continuing to support your study abroad journey.`},
+];
+function openMessageTemplates(){
+  if(!curId){toast('Open a lead first.');return;}
+  const l=leads.find(x=>x.id===curId);
+  if(!l){toast('Lead not found.');return;}
+  const listEl=document.getElementById('mt-template-list');
+  listEl.innerHTML=MESSAGE_TEMPLATES.map((t,i)=>`<button onclick="pickMessageTemplate(${i})" style="text-align:left;font-size:12.5px;padding:8px 12px;background:var(--paper);border:1px solid var(--line2);border-radius:var(--r);cursor:pointer;color:var(--ink2)">${t.label}</button>`).join('');
+  document.getElementById('mt-text').value='';
+  document.getElementById('modal-message-templates').classList.add('open');
+}
+function pickMessageTemplate(i){
+  const l=leads.find(x=>x.id===curId);
+  if(!l)return;
+  document.getElementById('mt-text').value=MESSAGE_TEMPLATES[i].text(l);
+}
+// ── Sponsor/parent view link ─────────────────────────────────────────
+// Generates (or reuses) a per-lead public token via the security-definer
+// generate_sponsor_view_token() function — see crm_sponsor_view_link.sql.
+// The resulting link opens sponsor.html with no login, and that page can
+// only ever read 5 narrow fields for exactly this one lead (see that
+// file's comments for why this is safe to hand to a parent/sponsor).
+const SPONSOR_PAGE_URL='https://step4progress2025-byte.github.io/crm/sponsor.html';
+async function generateSponsorLink(){
+  if(!curId){toast('Open a lead first.');return;}
+  toast('Generating link…');
+  const{data,error}=await sb.rpc('generate_sponsor_view_token',{p_lead_id:curId});
+  if(error){toast('Could not generate link — has crm_sponsor_view_link.sql been run in Supabase yet? ('+error.message+')');return;}
+  const token=data;
+  const url=`${SPONSOR_PAGE_URL}?token=${encodeURIComponent(token)}`;
+  document.getElementById('sponsor-link-url').value=url;
+  document.getElementById('modal-sponsor-link').classList.add('open');
+  try{await navigator.clipboard.writeText(url);toast('Link copied to clipboard!');}catch(e){/* clipboard may be blocked — the modal still shows it for manual copy */}
+}
+// ── Schedule Meeting + My Upcoming Meetings ─────────────────────────
+// Booked against a lead (not just a free-floating calendar entry), and
+// attributed to that lead's CURRENT counsellor at the time of saving —
+// so it shows up correctly in that counsellor's "My Upcoming Meetings"
+// widget even when an Admin/Owner is the one who actually scheduled it.
+function openScheduleMeetingModal(){
+  if(!curId){toast('Open a lead first.');return;}
+  document.getElementById('sm-date').value='';
+  document.getElementById('sm-time').value='';
+  document.getElementById('sm-notes').value='';
+  document.getElementById('modal-schedule-meeting').classList.add('open');
+}
+async function saveScheduledMeeting(){
+  if(!curId){toast('No lead selected.');return;}
+  const date=document.getElementById('sm-date').value;
+  if(!date){toast('Please pick a date.');return;}
+  const time=document.getElementById('sm-time').value||null;
+  const notes=document.getElementById('sm-notes').value.trim()||null;
+  const l=leads.find(x=>x.id===curId);
+  const{error}=await sb.from('meetings').insert({
+    lead_id:curId,counsellor_name:l?.counsellor||null,meeting_date:date,meeting_time:time,notes,created_by:myName||null
+  });
+  if(error){toast('Could not schedule — has crm_meetings.sql been run in Supabase yet? ('+error.message+')');return;}
+  closeModal('modal-schedule-meeting');
+  toast('Meeting scheduled!');
+  logActivity(curId,'field_edit',`Meeting scheduled for ${date}${time?' '+time:''}`);
+  loadMyMeetings();
+}
+async function loadMyMeetings(){
+  const el=document.getElementById('my-meetings-list');
+  if(!el)return;
+  const today=new Date().toISOString().substring(0,10);
+  let q=sb.from('meetings').select('*,leads(name,id)').gte('meeting_date',today).order('meeting_date',{ascending:true}).order('meeting_time',{ascending:true}).limit(8);
+  // Same scoping already used for Today's Priorities / Upcoming Follow-ups:
+  // a restricted role (Counsellor etc.) sees only their own meetings;
+  // Admin/Owner/Super Admin see every meeting across the team.
+  if(isRestrictedStaffRole())q=q.eq('counsellor_name',myName||'__none__');
+  const{data,error}=await q;
+  if(error){el.innerHTML='<div style="font-size:12px;color:var(--ink3);font-style:italic">Could not load — has crm_meetings.sql been run in Supabase yet?</div>';return;}
+  if(!data||!data.length){el.innerHTML=emptyState('🗓️','No upcoming meetings scheduled.');return;}
+  el.innerHTML=data.map(m=>{
+    const dt=new Date(m.meeting_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    const tm=m.meeting_time?m.meeting_time.substring(0,5):'';
+    const leadName=m.leads?.name||'Unknown lead';
+    return `<div onclick="${m.leads?.id?`openLeadDetail('${m.leads.id}')`:''}" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);cursor:${m.leads?.id?'pointer':'default'}">
+      <span style="font-size:11px;font-weight:700;color:var(--pine);background:var(--pine-l,#EEEDFE);padding:4px 8px;border-radius:6px;flex-shrink:0">${dt}${tm?' · '+tm:''}</span>
+      <div style="flex:1;font-size:13px"><b>${esc(leadName)}</b>${!isRestrictedStaffRole()&&m.counsellor_name?` <span style="color:var(--ink3)">· ${esc(m.counsellor_name)}</span>`:''}${m.notes?`<div style="font-size:11.5px;color:var(--ink3);margin-top:1px">${esc(m.notes)}</div>`:''}</div>
+    </div>`;
+  }).join('');
+}
+function copySponsorLink(){
+  const el=document.getElementById('sponsor-link-url');
+  el.select();
+  navigator.clipboard?.writeText(el.value).then(()=>toast('Copied!')).catch(()=>{document.execCommand('copy');toast('Copied!');});
+}
+function sendMessageTemplate(){
+  const l=leads.find(x=>x.id===curId);
+  if(!l){toast('Lead not found.');return;}
+  const msg=document.getElementById('mt-text').value.trim();
+  if(!msg){toast('Pick a template or write a message first.');return;}
+  if(!l.mobile){toast('This lead has no mobile number saved.');return;}
+  window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`,'_blank');
+  logNoteText(curId,`Message template sent: "${msg}"`);
+  closeModal('modal-message-templates');
+  toast('Message sent via WhatsApp.');
 }
 
 // Reusable note-logging, extracted from quickAddNote's own save pattern
@@ -7691,6 +8087,40 @@ function dupBadge(l){
   return `<span class="dup-badge${split?' dup-split':''}" title="${esc(tip)}" onclick="event.stopPropagation();showDuplicatesOf('${normalizePhone(l.mobile)}')">DUPLICATE ×${g.length}${split?' · different counsellors':''}</span>`;
 }
 function showDuplicatesOf(key){dupOnly=true;dupFocus=key;renderLeads();}
+// Styled replacement for the old confirm()/alert() shown when saveLead()
+// finds a possible duplicate — see modal-dup-lead in the HTML. Returns a
+// Promise<boolean>: true means "proceed and add as a new lead anyway",
+// false means stop (cancel, or the user chose to open the existing lead
+// instead). hardStop=true is Anushree's rule — same mobile number already
+// brought in by a different agent — and never offers an "add anyway" option.
+let _dupModalResolve=null;
+function showDupLeadModal(dup,hardStop){
+  return new Promise(resolve=>{
+    _dupModalResolve=resolve;
+    document.getElementById('dup-lead-title').textContent=hardStop?'Already in the system':'Possible duplicate found';
+    document.getElementById('dup-lead-body').innerHTML=`
+      <div style="background:var(--paper);border:1px solid var(--line2);border-radius:var(--r);padding:14px;margin-bottom:12px">
+        <div style="font-weight:700;font-size:14px;margin-bottom:6px">${esc(dup.name)} <span style="font-size:11px;color:var(--ink3);font-weight:400">(${esc(dup.lead_id||dup.id.substring(0,8))})</span></div>
+        <div style="font-size:12.5px;color:var(--ink2);display:grid;grid-template-columns:auto 1fr;gap:4px 10px">
+          <div style="color:var(--ink3)">Mobile</div><div>${esc(dup.mobile||'—')}</div>
+          <div style="color:var(--ink3)">Status</div><div>${esc(dup.status||'—')}</div>
+          <div style="color:var(--ink3)">Counsellor</div><div>${esc(dup.counsellor||'Unassigned')}</div>
+          <div style="color:var(--ink3)">Agent</div><div>${esc(dup.agent||'—')}</div>
+        </div>
+      </div>
+      ${hardStop?`<div style="font-size:13px;color:var(--rose)">This student is already in the system, brought in by agent <b>${esc(dup.agent)}</b>. It can't be added again through a different agent — please open the existing record instead.</div>`:`<div style="font-size:13px;color:var(--ink2)">Add this as a new lead anyway, or open the existing one instead?</div>`}
+    `;
+    document.getElementById('dup-lead-foot').innerHTML=hardStop
+      ? `<button class="btn" onclick="resolveDupLeadModal('cancel')">OK</button><button class="btn btn-p" onclick="resolveDupLeadModal('open','${dup.id}')">Open existing lead</button>`
+      : `<button class="btn" onclick="resolveDupLeadModal('cancel')">Cancel</button><button class="btn" onclick="resolveDupLeadModal('open','${dup.id}')">Open existing lead</button><button class="btn btn-p" onclick="resolveDupLeadModal('proceed')">Add anyway</button>`;
+    document.getElementById('modal-dup-lead').classList.add('open');
+  });
+}
+function resolveDupLeadModal(action,dupId){
+  document.getElementById('modal-dup-lead').classList.remove('open');
+  if(action==='open'&&dupId)openLeadDetail(dupId);
+  if(_dupModalResolve){const r=_dupModalResolve;_dupModalResolve=null;r(action==='proceed');}
+}
 function toggleDupOnly(){dupOnly=!dupOnly;dupFocus=null;renderLeads();}
 function updateDupButton(){
   const b=document.getElementById('dup-toggle'); if(!b) return;
@@ -7737,16 +8167,14 @@ async function saveLead(){
     const dup=findDuplicateLead(name,mobileFullCheck,document.getElementById('f-email').value,null);
     if(dup){
       const incomingAgent=document.getElementById('f-agent').value;
-      if(dup.agent&&dup.agent!==incomingAgent){
-        // Anushree's specific ask: a lead already brought in by one agent
-        // must not get separately processed through a different agent —
-        // this is a hard stop, not a confirm/override, since the whole
-        // point is to prevent exactly that from slipping through.
-        alert(`This student is already in the system, brought in by agent ${dup.agent}.\n\n${dup.name} (${dup.lead_id||dup.id.substring(0,8)}) — Status: ${dup.status}\n\nThis can't be added again through a different agent. Please open the existing record instead.`);
-        openLeadDetail(dup.id);
-        return;
-      }
-      const proceed=confirm(`Possible duplicate found:\n\n${dup.name} (${dup.lead_id||dup.id.substring(0,8)})\nMobile: ${dup.mobile||'—'}\nStatus: ${dup.status}\n\nAdd this as a new lead anyway? Click Cancel to stop and look up the existing one instead.`);
+      // Anushree's specific ask: a lead already brought in by one agent
+      // must not get separately processed through a different agent —
+      // this is a hard stop, not a confirm/override, since the whole
+      // point is to prevent exactly that from slipping through. Now shown
+      // via the proper modal (modal-dup-lead) instead of alert()/confirm(),
+      // but the underlying rule is unchanged.
+      const hardStop=!!(dup.agent&&dup.agent!==incomingAgent);
+      const proceed=await showDupLeadModal(dup,hardStop);
       if(!proceed)return;
     }
   }
@@ -8338,6 +8766,30 @@ function isProtectedOwnerRow(t){
 function isOwnerRowHiddenFromMe(t){
   return !isOwner&&isProtectedOwnerRow(t);
 }
+// A team row belonging to one of the elevated accounts (Owner, Platform
+// Administrator, or Jisan's Super Admin). Their `role` column in the
+// team table can hold anything (e.g. a leftover "Counsellor"), so the
+// Team screen must go by the account's actual access tier, not that
+// column — otherwise a Super Admin shows up labelled as a Counsellor.
+function isSuperAdminRow(t){
+  return SUPER_ADMIN_EMAILS.includes(String(t?.email||'').trim().toLowerCase());
+}
+function displayRoleFor(t){
+  const email=String(t?.email||'').trim().toLowerCase();
+  if(OWNERS[email])return OWNERS[email];
+  if(isSuperAdminRow(t))return 'Super Admin';
+  return t?.role||'Counsellor';
+}
+// Who may set a new password for whom (the 🔑 button). Owner and
+// Platform Administrator: anyone except each other. Super Admin (Jisan):
+// anyone outside India, and never an Owner-tier account. Nobody resets
+// their own here (use the normal change-password flow for that).
+function canResetPasswordFor(t){
+  if(!t||(currentUser&&t.id===currentUser.id))return false;
+  if(isOwner)return !isProtectedOwnerRow(t);
+  if(isSuperAdmin)return !isProtectedOwnerRow(t)&&t.country!=='India';
+  return false;
+}
 
 // ── India view-only guard for Super Admins ─────────────────────────
 // A Super Admin (e.g. the UK account) can fully manage every OTHER
@@ -8370,7 +8822,8 @@ function isIndiaTeamReadOnly(t){
 // the Edge Function enforces the exact same rule again server-side, so
 // this isn't just a front-end illusion.
 async function resetTeamMemberPassword(id,email,name){
-  if(!isOwner){toast('Only India and Pavitra can reset passwords.');return;}
+  const target=(teamList||[]).find(x=>x.id===id);
+  if(!canResetPasswordFor(target)){toast('Only the Owner, Platform Administrator or a Super Admin can reset this password.');return;}
   const newPass=prompt(`Set a NEW password for ${name} (${email}).\n\nMinimum 8 characters. Share it with them securely afterwards — this does not email them automatically.`);
   if(newPass===null)return; // cancelled
   if(newPass.trim().length<8){toast('Password must be at least 8 characters.');return;}
@@ -8476,25 +8929,33 @@ function renderManagementAndOperationsTeams(team){
   }
 
   const mgmtRoles=['Manager','Admin','Director'];
-  const mgmt=(team||[]).filter(t=>mgmtRoles.includes(t.role)&&effectiveTeamCategory(t)!=='Domestic'&&!isOwnerRowHiddenFromMe(t));
+  // Super Admin accounts always belong here, whatever their `role` column
+  // happens to say (see isSuperAdminRow).
+  const mgmt=(team||[]).filter(t=>(mgmtRoles.includes(t.role)||isSuperAdminRow(t))&&effectiveTeamCategory(t)!=='Domestic'&&!isOwnerRowHiddenFromMe(t));
+  const keyBtn=(t,size)=>canResetPasswordFor(t)?`<button onclick="event.stopPropagation();resetTeamMemberPassword('${t.id}','${esc(t.email||'')}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Reset password" style="background:none;border:none;color:var(--pine2);cursor:pointer;font-size:${size}px;padding:4px;flex-shrink:0"><i class="ti ti-key"></i></button>`:'';
   if(effectiveView!=='Domestic')mgmtEl.innerHTML=`<div class="card" style="margin-bottom:16px">
     <div class="card-h"><span class="card-t">🌍 International — Management Team</span><span style="font-size:11px;color:var(--ink3)">${mgmt.length} member${mgmt.length!==1?'s':''} — Manager, Admin & Director, across every country</span></div>
     <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
         <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-        <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+        <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(displayRoleFor(t))} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+        ${keyBtn(t,15)}
         ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
       </div>`).join(''):emptyState('🏛️','No Management Team members yet.')}</div>
   </div>`;
 
+  // Shared builder for the Application/Visa/SOP column layout — used by
+  // both International's Operations card (unfiltered-by-category, as it
+  // always was) and Domestic's own Operations breakdown below (filtered
+  // to Domestic members only), so the two never drift apart in markup.
   const opsRoles=[['Application Team','📝'],['Visa Team','🛂'],['SOP Team','✍️']];
-  const opsCols=opsRoles.map(([roleName,icon])=>{
-    const members=(team||[]).filter(t=>t.role===roleName);
+  const buildOpsColumns=(members)=>opsRoles.map(([roleName,icon])=>{
+    const roleMembers=(members||[]).filter(t=>t.role===roleName);
     return `<div style="flex:1;min-width:220px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line)">
         <span style="font-weight:600;font-size:13px;color:var(--pine)">${icon} ${roleName}</span>
-        <span style="font-size:10px;color:var(--ink3);font-style:italic">${members.length} member${members.length!==1?'s':''} — manual hand-off</span>
+        <span style="font-size:10px;color:var(--ink3);font-style:italic">${roleMembers.length} member${roleMembers.length!==1?'s':''} — manual hand-off</span>
       </div>
-      ${members.length?members.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}" style="margin-bottom:8px">
+      ${roleMembers.length?roleMembers.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}" style="margin-bottom:8px">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
@@ -8503,7 +8964,7 @@ function renderManagementAndOperationsTeams(team){
   }).join('');
   if(effectiveView!=='Domestic')opsEl.innerHTML=`<div class="card" style="margin-bottom:16px">
     <div class="card-h"><span class="card-t">🌍 International — Operations Team</span><span style="font-size:11px;color:var(--ink3)">Application, Visa & SOP — pooled globally, not limited to any one country</span></div>
-    <div style="display:flex;gap:20px;flex-wrap:wrap">${opsCols}</div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap">${buildOpsColumns(team)}</div>
   </div>`;
 
   // ── UK Domestic pole: Management and Operations are visibly separate. ──
@@ -8515,17 +8976,29 @@ function renderManagementAndOperationsTeams(team){
       const domesticOps=domestic.filter(t=>!mgmtRoles.includes(t.role));
       const cardFor=(t)=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(t.role)} · UK Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(displayRoleFor(t))} · UK Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+          ${keyBtn(t,15)}
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`;
+      // Operations, split the SAME way International's is — separate
+      // Application/Visa/SOP columns — instead of one flat lumped-together
+      // list. Anyone in domesticOps whose role isn't one of those three
+      // (e.g. a plain Counsellor tagged Domestic) still needs somewhere to
+      // show up, so they get their own "Other" column rather than vanishing.
+      const domesticOpsNamedRoles=['Application Team','Visa Team','SOP Team'];
+      const domesticOpsOther=domesticOps.filter(t=>!domesticOpsNamedRoles.includes(t.role));
       domesticEl.innerHTML=`
         <div class="card" style="margin-bottom:16px">
           <div class="card-h"><span class="card-t">🇬🇧 UK Domestic — Management Team</span><span style="font-size:11px;color:var(--ink3)">${domesticMgmt.length} member${domesticMgmt.length!==1?'s':''} — UK-local management only</span></div>
           <div class="team-grid">${domesticMgmt.length?domesticMgmt.map(cardFor).join(''):emptyState('🏛️','No Domestic management members yet.')}</div>
         </div>
         <div class="card" style="margin-bottom:16px">
-          <div class="card-h"><span class="card-t">🇬🇧 UK Domestic — Operations Team</span><span style="font-size:11px;color:var(--ink3)">${domesticOps.length} member${domesticOps.length!==1?'s':''} — manually assigned; no round-robin</span></div>
-          <div class="team-grid">${domesticOps.length?domesticOps.map(cardFor).join(''):emptyState('👥','No Domestic operations members yet.')}</div>
+          <div class="card-h"><span class="card-t">🇬🇧 UK Domestic — Operations Team</span><span style="font-size:11px;color:var(--ink3)">${domesticOps.length} member${domesticOps.length!==1?'s':''} — split by sub-team, same as International</span></div>
+          <div style="display:flex;gap:20px;flex-wrap:wrap">${buildOpsColumns(domesticOps)}</div>
+          ${domesticOpsOther.length?`<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
+            <div style="font-weight:600;font-size:13px;color:var(--ink3);margin-bottom:8px">Other Domestic staff (not in a named sub-team)</div>
+            <div class="team-grid">${domesticOpsOther.map(cardFor).join('')}</div>
+          </div>`:''}
         </div>`;
     }
   }
@@ -8597,7 +9070,10 @@ function renderTeam(team){
   // India office list below), since Management wants a single place to
   // see everyone physically on the India team regardless of role.
   const officeExcludedRoles=['Manager','Admin','Director','Application Team','Visa Team','SOP Team','Agent'];
-  (team||[]).filter(t=>(!officeExcludedRoles.includes(t.role)||t.country==='India')&&effectiveTeamCategory(t)!=='Domestic').forEach(t=>{
+  // Super Admin accounts outside India live in the Management Team card
+  // instead (see renderManagementAndOperationsTeams), not among an
+  // office's counsellors.
+  (team||[]).filter(t=>(!officeExcludedRoles.includes(t.role)||t.country==='India')&&effectiveTeamCategory(t)!=='Domestic'&&!(isSuperAdminRow(t)&&t.country!=='India')).forEach(t=>{
     // If office is blank, or doesn't match a known office for their country
     // (e.g. a stale value from before offices were consolidated), derive the
     // correct office from country instead of showing a phantom "Unassigned"
@@ -8622,12 +9098,12 @@ function renderTeam(team){
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0">
             <div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div>
-            <div class="tcard-role">${esc(t.role||'Counsellor')}</div>
+            <div class="tcard-role">${esc(displayRoleFor(t))}</div>
             <div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div>
             ${unavail?`<div style="font-size:10px;color:var(--rose);font-weight:600;margin-top:3px">🚫 Unavailable until ${new Date(unavail.to_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${unavail.reason?' — '+esc(unavail.reason):''}${canManage?` · <span onclick="clearUnavailability('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" style="text-decoration:underline;cursor:pointer;color:var(--rose)">Unmark</span>`:''}</div>`:''}
           </div>
           ${canManage?`<button onclick="openUnavailabilityModal('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Mark unavailable" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-calendar-off"></i></button>`:''}
-          <button onclick="resetTeamMemberPassword('${t.id}','${esc(t.email||'')}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Reset password" style="background:none;border:none;color:var(--pine2);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-key"></i></button>
+          ${canResetPasswordFor(t)?`<button onclick="resetTeamMemberPassword('${t.id}','${esc(t.email||'')}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Reset password" style="background:none;border:none;color:var(--pine2);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-key"></i></button>`:''}
           ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc(t.full_name||t.email||'').replace(/'/g,"\'")}')" title="Remove team member" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`;
         }).join('')
@@ -8659,7 +9135,7 @@ async function openTeamMemberProfile(teamId,name){
   // Country managers/admins may only inspect people in their own country.
   if(!isSuperAdmin&&!isOwner&&['Admin','Manager','Director'].includes(myRole)&&member.country!==myCountry){toast('This team member is outside your country scope.');return;}
   document.getElementById('tm-title').textContent=member.full_name||name||'Team member';
-  document.getElementById('tm-sub').textContent=[member.role||'Counsellor',member.country||member.office||''].filter(Boolean).join(' · ');
+  document.getElementById('tm-sub').textContent=[displayRoleFor(member),member.country||member.office||''].filter(Boolean).join(' · ');
   const body=document.getElementById('tm-body');body.innerHTML='<div style="text-align:center;padding:24px;color:var(--ink3);font-style:italic">Loading individual activity…</div>';
   document.getElementById('modal-team-member-profile').classList.add('open');
   const [leadRes,taskRes,updateRes,callRes]=await Promise.all([
@@ -10777,6 +11253,81 @@ async function loadHomeFollowups(){
       <div style="flex:1;font-size:13px"><b>${esc(l.name)}</b> <span style="color:var(--ink3)">· ${esc(l.status)}</span></div>
     </div>`).join('');
 }
+// ── Data Health digest ──────────────────────────────────────────────
+// Flags leads with real data problems that otherwise sit unnoticed:
+// missing phone number, gone quiet for 14+ days (and not in a closed
+// stage, where that's expected), no counsellor assigned, or part of a
+// duplicate-number group. Collapsed by default (same pattern as the
+// WhatsApp call list) — computed once when first expanded, not on every
+// dashboard load, since it scans the whole leads array.
+function toggleDataHealth(){
+  const content=document.getElementById('dh-content');
+  const icon=document.getElementById('dh-toggle-icon');
+  const isHidden=content.style.display==='none';
+  content.style.display=isHidden?'block':'none';
+  if(icon)icon.style.transform=isHidden?'rotate(90deg)':'rotate(0deg)';
+  if(isHidden)renderDataHealth();
+}
+function renderDataHealth(){
+  const el=document.getElementById('dh-sections');
+  const badge=document.getElementById('dh-count-badge');
+  if(!el)return;
+  const scoped=opsViewScopedLeads(leads).filter(l=>!isRestrictedStaffRole()||l.counsellor===myName);
+  const noPhone=scoped.filter(l=>!l.mobile||!l.mobile.trim());
+  const stale=scoped.filter(l=>!CLOSED_STAGES.includes(l.status)&&l.updated_at&&(Date.now()-new Date(l.updated_at).getTime())>14*86400000);
+  const unassigned=scoped.filter(l=>!l.counsellor);
+  buildDupMap();
+  let dupCount=0; dupMap.forEach(v=>dupCount+=v.length);
+  const total=noPhone.length+stale.length+unassigned.length+dupCount;
+  if(badge){badge.style.display=total?'':'none';badge.textContent=total+' issue'+(total!==1?'s':'');}
+  const section=(title,icon,list,renderItem)=>list.length?`
+    <div style="margin-bottom:14px">
+      <div style="font-size:12.5px;font-weight:700;color:var(--ink2);margin-bottom:6px">${icon} ${title} (${list.length})</div>
+      ${list.slice(0,8).map(renderItem).join('')}
+      ${list.length>8?`<div style="font-size:11px;color:var(--ink3);font-style:italic;margin-top:4px">+ ${list.length-8} more</div>`:''}
+    </div>`:'';
+  const rowFor=l=>`<div onclick="openLeadDetail('${l.id}')" style="font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--line);cursor:pointer"><b>${esc(l.name)}</b> <span style="color:var(--ink3)">· ${esc(l.status)}${l.counsellor?' · '+esc(l.counsellor):''}</span></div>`;
+  el.innerHTML=[
+    section('Missing phone number','📵',noPhone,rowFor),
+    section('Gone quiet 14+ days','🕸️',stale,rowFor),
+    section('No counsellor assigned','❓',unassigned,rowFor),
+  ].join('')
+  +(dupCount?`<div style="font-size:12.5px;padding:8px 0;color:var(--ink2)">📑 <b>${dupCount}</b> leads are in duplicate-number groups — <span onclick="nav('leads',document.querySelector('.ni[data-nav=&quot;leads&quot;]'));setTimeout(()=>toggleDupOnly(),300)" style="color:var(--pine);text-decoration:underline;cursor:pointer">view them in Leads</span>.</div>`:'')
+  ||'<div style="font-size:12.5px;color:var(--sage);padding:6px 0">✅ No data issues found — looking clean!</div>';
+}
+// ── Weekly Wins recap ────────────────────────────────────────────────
+// A quick morale/momentum snapshot of the last 7 days, computed straight
+// from leads already in memory — new enquiries by creation date,
+// everything else by updated_at landing in the window AND being in that
+// terminal status right now. That second part is an honest approximation
+// (a lead could have reached a status earlier in the week then changed
+// again later, which wouldn't be reflected) rather than a perfect
+// event-sourced count — a precise version would need to read activity_log
+// for every status, which is a heavier query for a "feel-good" widget.
+function renderWeeklyWins(){
+  const el=document.getElementById('weekly-wins-grid');
+  if(!el)return;
+  const weekAgo=Date.now()-7*86400000;
+  const scoped=opsViewScopedLeads(leads).filter(l=>!isRestrictedStaffRole()||l.counsellor===myName);
+  const inWindow=ts=>ts&&new Date(ts).getTime()>=weekAgo;
+  const newEnquiries=scoped.filter(l=>inWindow(l.created_at)).length;
+  const enrolled=scoped.filter(l=>l.status==='Enrolled'&&inWindow(l.updated_at)).length;
+  const visasApproved=scoped.filter(l=>l.status==='Visa Received'&&inWindow(l.updated_at)).length;
+  const appsSubmitted=scoped.filter(l=>l.status==='Application Submitted'&&inWindow(l.updated_at)).length;
+  const offersReceived=scoped.filter(l=>['Received Conditional','Received Unconditional'].includes(l.status)&&inWindow(l.updated_at)).length;
+  const tiles=[
+    {label:'New enquiries',val:newEnquiries,icon:'👋',color:'var(--pine)'},
+    {label:'Applications sent',val:appsSubmitted,icon:'📨',color:'var(--gold)'},
+    {label:'Offers received',val:offersReceived,icon:'🎓',color:'var(--sage)'},
+    {label:'Visas approved',val:visasApproved,icon:'🛫',color:'var(--sage)'},
+    {label:'Enrolled',val:enrolled,icon:'🎉',color:'var(--sage)'},
+  ];
+  el.innerHTML=tiles.map(t=>`<div style="background:var(--paper);border:1px solid var(--line2);border-radius:var(--r);padding:12px;text-align:center">
+    <div style="font-size:20px">${t.icon}</div>
+    <div style="font-size:22px;font-weight:700;color:${t.color}">${t.val}</div>
+    <div style="font-size:11px;color:var(--ink3)">${t.label}</div>
+  </div>`).join('');
+}
 async function loadDashReminders(){
   const today=new Date().toISOString().split('T')[0];
   // Include OVERDUE reminders (before today, still not done) — previously
@@ -12441,7 +12992,7 @@ async function renderActivityMonitor(){
   whatsappCalls.forEach(c=>addCallStat(c.counsellor,c.status==='answered'||c.status==='completed',c.duration_seconds));
   callLogs.forEach(c=>addCallStat(c.counsellor,c.outcome==='Connected',(c.duration_mins||0)*60));
 
-  listEl.innerHTML=`<div class="tw"><table class="tbl"><thead><tr><th>Name</th><th>Team</th><th>Country</th><th>Updates (7d)</th><th>Calls</th><th>Talk time</th><th>Latest update</th></tr></thead><tbody>`+
+  listEl.innerHTML=`<div class="tw"><table class="tbl"><thead><tr><th>Name</th><th>Team</th><th>Country</th><th>Updates (7d)</th><th>Calls</th><th>Talk time</th><th>Latest update</th><th>Activity</th></tr></thead><tbody>`+
     members.map(m=>{
       const info=byMember[m.id];
       const count=info?.count||0;
@@ -12451,7 +13002,7 @@ async function renderActivityMonitor(){
       const cs=callStatsByName[m.full_name];
       const callsCell=cs?`${cs.connected}/${cs.total} connected`:'<span style="color:var(--ink3);font-style:italic">No calls</span>';
       const talkTimeCell=cs&&cs.seconds?Math.round(cs.seconds/60)+' min':'—';
-      return `<tr onclick="openMemberActivityDetail('${m.id}','${esc((m.full_name||m.email||'').replace(/'/g,"\'"))}','${esc((m.role||'').replace(/'/g,"\'"))}','${esc((m.office||'').replace(/'/g,"\'"))}')" style="cursor:pointer"><td style="font-weight:600">${esc(m.full_name||m.email||'—')}</td><td style="font-size:12px">${esc(m.role||'Counsellor')}</td><td style="font-size:12px">${esc(m.office||'—')}</td><td><span class="pill" style="background:${badgeBg};color:${badgeColor}">${count}</span></td><td style="font-size:12px">${callsCell}</td><td style="font-size:12px">${talkTimeCell}</td><td style="font-size:12.5px;max-width:340px">${latest}</td></tr>`;
+      return `<tr onclick="openMemberActivityDetail('${m.id}','${esc((m.full_name||m.email||'').replace(/'/g,"\'"))}','${esc((m.role||'').replace(/'/g,"\'"))}','${esc((m.office||'').replace(/'/g,"\'"))}')" style="cursor:pointer"><td style="font-weight:600">${esc(m.full_name||m.email||'—')}</td><td style="font-size:12px">${esc(m.role||'Counsellor')}</td><td style="font-size:12px">${esc(m.office||'—')}</td><td><span class="pill" style="background:${badgeBg};color:${badgeColor}">${count}</span></td><td style="font-size:12px">${callsCell}</td><td style="font-size:12px">${talkTimeCell}</td><td style="font-size:12.5px;max-width:300px">${latest}</td><td onclick="event.stopPropagation();openCounsellorActivityTimeline('${esc((m.full_name||m.email||'').replace(/'/g,"\'"))}')" style="cursor:pointer" title="View real CRM activity (status changes, calls, notes)"><i class="ti ti-history" style="color:var(--pine)"></i></td></tr>`;
     }).join('')+
     `</tbody></table></div>`;
 }
@@ -12484,6 +13035,52 @@ async function openMemberActivityDetail(teamId,name,role,office){
       <div style="font-size:13px;line-height:1.5;white-space:pre-wrap">${esc(u.content)}</div>
     </div>`).join('')}
   `).join('');
+}
+// Counsellor Activity Timeline — real CRM actions (status changes, calls,
+// reassignments, notes, viewed) this person has actually taken, pulled
+// from activity_log by actor_name across ALL their leads, not just the
+// leads currently assigned to them (an action they took before being
+// reassigned off a lead should still count). Mirrors the visual style of
+// the per-lead timeline (loadActivityTimeline) for consistency, but each
+// row also names which lead the action was on, since this view spans many.
+async function openCounsellorActivityTimeline(name){
+  if(!name){toast('No name for this team member.');return;}
+  document.getElementById('ca-title').textContent='Activity Timeline — '+name;
+  const statEl=document.getElementById('ca-stat');
+  const listEl=document.getElementById('ca-list');
+  statEl.textContent='';
+  listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink3);font-style:italic">Loading…</div>';
+  document.getElementById('modal-counsellor-activity').classList.add('open');
+
+  const{data,error}=await sb.from('activity_log').select('*').eq('actor_name',name).order('created_at',{ascending:false}).limit(300);
+  if(error){listEl.innerHTML='<div style="color:var(--rose);font-size:13px">Could not load: '+esc(error.message)+'</div>';return;}
+  if(!data||!data.length){statEl.textContent='No activity logged for this person yet.';listEl.innerHTML=emptyState('🕐','No activity recorded yet.');return;}
+
+  statEl.innerHTML=`${data.length} event${data.length!==1?'s':''} logged${data.length===300?' (showing most recent 300)':''}`;
+  const icons={created:'✨',imported:'📥',status_change:'🔄',reassigned:'👤',field_edit:'✏️',viewed:'👁️',office_handoff:'🔁',deleted:'🗑️'};
+  const byDay={}; const dayOrder=[];
+  data.forEach(e=>{
+    const d=new Date(e.created_at);
+    const key=d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    if(!byDay[key]){byDay[key]=[];dayOrder.push(key);}
+    byDay[key].push(e);
+  });
+  const todayKey=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  listEl.innerHTML=dayOrder.map(day=>{
+    const isToday=day===todayKey;
+    const events=byDay[day].map((e,i,arr)=>{
+      const lead=leads.find(l=>l.id===e.lead_id);
+      const leadLabel=lead?`${esc(lead.name)} (${esc(lead.lead_id||lead.id.substring(0,8))})`:'a lead no longer in the system';
+      const time=new Date(e.created_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+      return `<div style="position:relative;padding-left:26px;padding-bottom:${i===arr.length-1?4:14}px">
+        <div style="position:absolute;left:2px;top:2px;width:11px;height:11px;border-radius:50%;background:var(--pine);border:2px solid var(--paper);box-shadow:0 0 0 1px var(--line);z-index:1"></div>
+        ${i<arr.length-1?`<div style="position:absolute;left:7px;top:15px;bottom:-2px;width:2px;background:var(--line)"></div>`:''}
+        <div style="font-size:12.5px;line-height:1.5">${icons[e.event_type]||'•'} ${esc(e.detail||e.event_type)}</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:1px">${time} · on ${leadLabel}${lead?` <span style="color:var(--pine);cursor:pointer;text-decoration:underline" onclick="closeModal('modal-counsellor-activity');openLeadDetail('${lead.id}')">open</span>`:''}</div>
+      </div>`;
+    }).join('');
+    return `<div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 8px 0">${isToday?'Today':day}</div>${events}`;
+  }).join('');
 }
 async function deleteCallLog(id){
   if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete call logs.');return;}

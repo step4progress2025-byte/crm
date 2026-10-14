@@ -1239,6 +1239,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div class="card" style="max-width:620px">
           <div class="card-h"><span class="card-t">Import leads from CSV</span></div>
           <p style="font-size:13px;color:var(--ink3);margin-bottom:16px;line-height:1.65">Supported columns: <strong>Name, Mobile, Email, City, Program, Destination, Status, Source, Priority, Notes</strong>. Headers on row 1. All imported leads are immediately shared with your team.</p>
+          <div id="sample-box-std"></div>
           <div id="import-counsellor-note" style="display:none;margin-bottom:14px;font-size:12px;color:var(--gold);background:var(--gold-l);border:1px solid var(--line2);border-radius:var(--r);padding:9px 12px;line-height:1.5"><i class="ti ti-info-circle"></i> As a Counsellor, any leads you import will be assigned to you only — you can't import into another counsellor's name.</div>
           <div class="import-zone" onclick="document.getElementById('imp-csv').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropCSV(event)">
             <i class="ti ti-upload"></i>
@@ -2222,6 +2223,7 @@ What would you like help with today?</div>
         <div style="font-size:12px;color:var(--ink3)">Supported format: CSV (.csv). First row should be column headers.</div>
       </div>
       <input type="file" id="bal-file-input" accept=".csv" style="display:none" onchange="balHandleFile(this.files[0])">
+      <div id="sample-box-bal" style="margin-top:14px"></div>
       <div id="bal-file-info" style="margin-top:12px;font-size:13px;display:none"></div>
     </div>
 
@@ -2317,6 +2319,7 @@ What would you like help with today?</div>
         <p style="font-size:12px;color:var(--ink3);line-height:1.6;margin-bottom:14px">
           Export your leads from Meta Ads Manager as a CSV, then upload it here. Country is detected automatically from each phone number (+91 → India, +44 → UK, +92 → Pakistan, +880 → Bangladesh) — you'll get a chance to review before anything is saved. Campaign, ad set, ad name, email, and city are all picked up automatically if your export includes those columns — <b>make sure "email" and "city" are included as column headers in your export</b> so they show up here.
         </p>
+        <div id="sample-box-meta" style="margin-bottom:14px"></div>
         <input type="file" id="mbu-file-input" accept=".csv" onchange="handleMetaCSVSelected(this.files[0])" style="margin-bottom:14px">
         <div id="mbu-parse-status" style="font-size:12px;color:var(--ink3);font-style:italic"></div>
 
@@ -3730,7 +3733,65 @@ function findColumn(headers,candidates){
 }
 
 let mbuParsedLeads=[];
+// ── Sample CSV formats (static) — shown wherever leads can be imported ──
+const SAMPLE_CSV={
+  std:{file:'sample_import_leads.csv',
+    title:'Import leads — sample format',
+    required:'Name and Mobile are required. Everything else is optional.',
+    tips:['Save the file as CSV (.csv). Keep the header row exactly as shown (any capitalisation is fine).','Mobile: include the country code, e.g. +919800000001.','Status: use a CRM status such as New Enquiry. Priority: High, Medium or Low.','Follow-up: YYYY-MM-DD (e.g. 2026-11-05). Leave blank if none.','Counsellor must match a team member\'s full name exactly, or leave blank.','If a Notes value contains a comma, avoid it or replace it with a dash — one comma too many shifts the columns.'],
+    headers:['Name','Mobile','Email','City','Qualification','Program','Destination','Status','Source','Priority','Counsellor','Country','Office','Follow-up','Notes'],
+    rows:[
+      ['Sample Student One','+919800000001','student1@example.com','Chennai','12th','Study Abroad - UG','UK','New Enquiry','Instagram','Medium','','India','India HQ','2026-11-05','Wants September intake'],
+      ['Sample Student Two','+923000000002','student2@example.com','Lahore','Bachelors','Study Abroad - PG','Canada','New Enquiry','Walk-in','High','','Pakistan','Pakistan','','Asked about scholarships'],
+      ['Sample Student Three','+8801700000003','','Dhaka','12th','Study Abroad - UG','Australia','New Enquiry','Referral','Low','','Bangladesh','Bangladesh','2026-11-10','']]},
+  bal:{file:'sample_bulk_add_leads.csv',
+    title:'Bulk Add Leads — sample format',
+    required:'Name and Mobile are required. You can match your own column names in the next step, so your headers do not have to be identical.',
+    tips:['Save the file as CSV (.csv), with the first row as column headers.','Mobile: include the country code, e.g. +919800000001. Rows with the same mobile number as an existing lead are flagged as duplicates.','Country = the student\'s nationality / origin country. You can also set one country for the whole file in step 3.','One lead per row. Avoid commas inside Notes.'],
+    headers:['Name','Mobile','Email','Program','Destination','Country','Source','Notes'],
+    rows:[
+      ['Sample Student One','+919800000001','student1@example.com','Study Abroad - UG','UK','India','Instagram','Wants September intake'],
+      ['Sample Student Two','+923000000002','student2@example.com','Study Abroad - PG','Canada','Pakistan','Walk-in','Asked about scholarships'],
+      ['Sample Student Three','+8801700000003','','Study Abroad - UG','Australia','Bangladesh','Referral','']]},
+  meta:{file:'sample_meta_leads.csv',
+    title:'Meta leads — sample format',
+    required:'full_name and phone_number are required (this is the format Meta Ads Manager exports).',
+    tips:['Export straight from Meta Ads Manager / Lead Center as CSV and upload it as it is.','phone_number must include the country code — the country is detected from it (+91 India, +44 UK, +92 Pakistan, +880 Bangladesh).','campaign_name, adset_name and ad_name are optional but let you track which ad produced the lead.'],
+    headers:['full_name','phone_number','email','city','campaign_name','adset_name','ad_name'],
+    rows:[
+      ['Sample Student One','+919800000001','student1@example.com','Chennai','UK Intake Sept','Students 17-22','Video Ad 1'],
+      ['Sample Student Two','+923000000002','student2@example.com','Lahore','Canada PG','Graduates 21-27','Carousel Ad'],
+      ['Sample Student Three','+8801700000003','','Dhaka','Australia UG','Students 17-22','Static Ad 2']]}
+};
+function sampleCsvText(kind){
+  const d=SAMPLE_CSV[kind];
+  const q=v=>/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v;
+  return [d.headers,...d.rows].map(r=>r.map(q).join(',')).join('\r\n')+'\r\n';
+}
+function downloadSampleCsv(kind){
+  const d=SAMPLE_CSV[kind];if(!d)return;
+  const blob=new Blob([sampleCsvText(kind)],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=d.file;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+function renderSampleBoxes(){
+  [['std','sample-box-std'],['bal','sample-box-bal'],['meta','sample-box-meta']].forEach(([kind,id])=>{
+    const el=document.getElementById(id);if(!el||el.dataset.done)return;
+    const d=SAMPLE_CSV[kind];
+    el.dataset.done='1';
+    el.innerHTML=`<div style="border:1px solid var(--line2);border-radius:var(--r);background:var(--cream);padding:12px 14px;margin-bottom:14px;text-align:left">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="font-size:13px;font-weight:600;color:var(--ink)">📄 ${esc(d.title)}</div>
+        <button type="button" class="btn" onclick="downloadSampleCsv('${kind}')" style="font-size:12px;padding:6px 12px"><i class="ti ti-download"></i> Download sample CSV</button>
+      </div>
+      <div style="font-size:12px;color:var(--ink2);margin:8px 0 6px;line-height:1.55"><b>${esc(d.required)}</b></div>
+      <div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:11px;min-width:100%"><thead><tr>${d.headers.map(h=>`<th style="text-align:left;padding:4px 8px;background:var(--paper);border:1px solid var(--line);white-space:nowrap">${esc(h)}</th>`).join('')}</tr></thead><tbody>${d.rows.map(r=>`<tr>${r.map(c=>`<td style="padding:4px 8px;border:1px solid var(--line);white-space:nowrap;color:var(--ink3)">${esc(c)||'&nbsp;'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      <ul style="margin:8px 0 0 16px;padding:0;font-size:11.5px;color:var(--ink3);line-height:1.6">${d.tips.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>
+    </div>`;
+  });
+}
 function openMetaBulkUploadModal(){
+  try{renderSampleBoxes();}catch(e){}
   mbuParsedLeads=[];
   document.getElementById('mbu-file-input').value='';
   document.getElementById('mbu-parse-status').textContent='';
@@ -4972,6 +5033,7 @@ function pruneIndiaFromCrmDropdowns(){
     });
   });
 }
+try{renderSampleBoxes();}catch(e){}
 renderDash();renderLeads();renderFU();badges();updateQueriesBadge();checkNoActivity();applyRoleUI();setTimeout(()=>{applyRoleUI();renderDash();},2000);
 pruneIndiaFromCrmDropdowns();
   loadDashReminders();
@@ -9907,6 +9969,7 @@ let balMapping={};
 let balStep=1;
 let balPreviewData=[];
 function openBulkAddLeadsWizard(){
+  try{renderSampleBoxes();}catch(e){}
   if(!(myRole==='Digital Marketing'&&!isSuperAdmin)){const _bc=document.getElementById('bal-country');if(_bc)_bc.disabled=false;}
   balHeaders=[];balRows=[];balMapping={};balStep=1;balPreviewData=[];
   document.getElementById('bal-file-info').style.display='none';
@@ -9962,7 +10025,7 @@ function balPopulateStep2(){
   // Best-effort auto-guess based on header text, so most files need
   // little to no manual remapping — same spirit as findColumn() used
   // by the existing Meta importer, generalised to any header wording.
-  const guesses={name:['name','full name','student name'],mobile:['mobile','phone','phone number','mobile number'],email:['email','email address'],program:['program','course','preferred course'],destination:['destination','country of interest','interested country'],country:['nationality','origin country'],source:['source','lead source']};
+  const guesses={name:['name','full name','student name'],mobile:['mobile','phone','phone number','mobile number'],email:['email','email address'],program:['program','course','preferred course'],destination:['destination','country of interest','interested country'],country:['nationality','origin country','country'],source:['source','lead source'],notes:['notes','remarks','comment']};
   balMapping={};
   document.getElementById('bal-mapping-list').innerHTML=balHeaders.map((h,i)=>{
     let guessed='';

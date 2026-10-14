@@ -1310,6 +1310,11 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           </select>
         </div>
 
+        <div class="card" id="dm-bulk-card" style="display:none;margin-bottom:16px;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px">
+          <div><span class="card-t">📥 Bulk leads</span><div style="font-size:12px;color:var(--ink3);margin-top:3px">Import a CSV of leads, or export your country's leads as CSV.</div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-gold" onclick="openMetaBulkUploadModal()"><i class="ti ti-brand-meta"></i> Import Meta leads</button><button class="btn btn-gold" onclick="dmOpenImport()"><i class="ti ti-upload"></i> Import leads (CSV)</button><button class="btn" onclick="dmExportLeads()"><i class="ti ti-download"></i> Export leads (CSV)</button></div>
+        </div>
+
         <div id="dm-not-connected-placeholder" style="display:none">
           <div class="card" style="margin-bottom:16px;text-align:center;padding:40px 24px">
             <div style="font-size:36px;margin-bottom:10px">🚧</div>
@@ -3525,7 +3530,11 @@ let leads=[], allLeads=[], coaching=[], currentUser=null, curId=null, editMode=f
   document.getElementById('inv-role').value='Counsellor';
   document.getElementById('inv-country').disabled=false;
   document.getElementById('inv-country').value='India';
+  // Admins/Managers: only non-management roles, only their own country.
+  Array.from(document.getElementById('inv-role').options).forEach(o=>{o.hidden=o.disabled=isLimitedInviter()&&!LIMITED_INVITE_ROLES.includes(o.value);});
+  if(isLimitedInviter()&&!isDomesticOnlyInviter()&&myCountry){document.getElementById('inv-country').value=myCountry;document.getElementById('inv-country').disabled=true;}
   syncInviteOffice();
+  if(isLimitedInviter()&&myOffice){const _o=document.getElementById('inv-office');if(Array.from(_o.options).some(o=>o.value===myOffice))_o.value=myOffice;}
   document.getElementById('invite-link-box').style.display='none';
   document.getElementById('modal-invite').classList.add('open');
 }
@@ -3802,7 +3811,7 @@ async function confirmMetaBulkUpload(){
     const office=COUNTRY_DEFAULT_OFFICE[l.country]||null;
     const _ownM=existingOwnerForNumber(l.mobile,null);
     const picked=_ownM?{name:_ownM}:(office?await getNextCounsellorForOffice(office):{name:''});
-    const{data:inserted,error}=await sb.from('leads').insert({
+    const _mrow={
       name:l.name||'Meta Lead',
       mobile:l.mobile,
       email:l.email||null,
@@ -3819,7 +3828,10 @@ async function confirmMetaBulkUpload(){
       ad:l.ad||null,
       added_by:currentUser?.id,
       upload_batch_id:batchId, // lets this whole upload be undone in one action later
-    }).select();
+    };
+    const _mws=(canSwitchOpsViewUser()&&superAdminOpsView)?superAdminOpsView:((myTeamCategory==='Domestic'||myTeamCategory==='International')?myTeamCategory:null);
+    let{data:inserted,error}=await sb.from('leads').insert(_mws?{..._mrow,workstream:_mws}:_mrow).select();
+    if(error&&_mws&&/workstream/i.test(error.message||'')){({data:inserted,error}=await sb.from('leads').insert(_mrow).select());}
     if(error){failed++;console.error('Bulk upload row failed:',l,error);}
     else{
       uploaded++;
@@ -4473,7 +4485,15 @@ async function generateInviteLink(){
   const country=document.getElementById('inv-country').value;
   const office=document.getElementById('inv-office').value;
   const name=document.getElementById('inv-name').value.trim();
-  const teamCategory=role==='Agent'?'Agent':(document.getElementById('inv-teamcat')?.value||'International');
+  let teamCategory=role==='Agent'?'Agent':(document.getElementById('inv-teamcat')?.value||'International');
+  if(isLimitedInviter()){
+    if(!LIMITED_INVITE_ROLES.includes(role)){toast('You can invite Counsellor, Application, Visa, SOP or Digital Marketing staff.');return;}
+    if(isDomesticOnlyInviter())teamCategory='Domestic';
+    else{
+      if(country!==myCountry){toast('You can only invite people into your own country.');return;}
+      teamCategory='International';
+    }
+  }
   if(!recipientEmail){toast('Enter the recipient email first.');document.getElementById('inv-recipient-email').focus();return;}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)){toast('Enter a valid recipient email.');document.getElementById('inv-recipient-email').focus();return;}
   const btn=document.querySelector('#modal-invite .mfoot .btn');
@@ -4591,8 +4611,13 @@ async function acceptPendingTeamInviteIfNeeded(){
 // even another Super Admin. Add more emails here to grant a new person
 // the exact same full access India has, without touching this protection.
 // Can create users / invite links WITHOUT being a full super admin.
-const USER_INVITER_EMAILS=['a.jena@step4progress.co.uk'];
-function canInviteUsers(){return isSuperAdmin||USER_INVITER_EMAILS.includes(String(currentUser?.email||'').toLowerCase());}
+const USER_INVITER_EMAILS=['a.jena@step4progress.co.uk']; // Domestic-only inviter (not a full admin)
+function isDomesticOnlyInviter(){return !isSuperAdmin&&(USER_INVITER_EMAILS.includes(String(currentUser?.email||'').toLowerCase())||(myTeamCategory==='Domestic'&&['Admin','Manager','Director'].includes(myRole)));}
+function isLimitedInviter(){return !isSuperAdmin&&(USER_INVITER_EMAILS.includes(String(currentUser?.email||'').toLowerCase())||['Admin','Manager','Director'].includes(myRole));}
+// Super Admins + Anushree: unrestricted. Admins/Managers/Directors: may invite non-management staff
+// into their OWN country only (the database enforces the same rules).
+function canInviteUsers(){return isSuperAdmin||USER_INVITER_EMAILS.includes(String(currentUser?.email||'').toLowerCase())||isLimitedInviter();}
+const LIMITED_INVITE_ROLES=['Counsellor','Application Team','Visa Team','SOP Team','Digital Marketing'];
 const SUPER_ADMIN_EMAILS=['india@step4progress.com','jisan@step4progress.co.uk','pavitra@step4progress.com'];
 // Domestic/International is a real team-category field, not a hard-coded
 // person rule. This prevents one person's name/email from leaking into the
@@ -5323,14 +5348,15 @@ async function scopedLeadsQuery(){
     // Management — never country-scoped, never round-robin.
     q=q.eq('counsellor',myName);
   } else if(myTeamCategory==='Domestic'){
-    if(myRole==='Admin'){
+    if(['Admin','Manager','Director'].includes(myRole)){
       // Domestic Admin sees their whole Domestic team's assigned leads,
       // not just their own — but never the International side. Queried
       // fresh here rather than relying on teamList, since that may not
       // have finished loading yet (loadLeads runs in parallel with it).
       const{data:domesticStaff}=await sb.from('team').select('full_name').eq('team_category','Domestic');
       const domesticNames=(domesticStaff||[]).map(t=>t.full_name).filter(Boolean);
-      q=q.in('counsellor',domesticNames.length?domesticNames:['__none__']);
+      const _q=n=>'"'+String(n).replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"';
+      q=q.or((domesticNames.length?'counsellor.in.('+domesticNames.map(_q).join(',')+'),':'')+'workstream.eq.Domestic');
     } else {
       q=q.eq('counsellor',myName);
     }
@@ -8502,7 +8528,7 @@ async function saveLead(){
     if(!error&&data.next_followup)warnIfHoliday(data.next_followup,data.office);
   } else {
     // auto lead ID
-    const maxId=leads.reduce((max,l)=>{const n=parseInt((l.lead_id||'S4P-0000').split('-')[1]);return n>max?n:max;},0);data.lead_id='S4P-'+String(maxId+1).padStart(4,'0');
+    data.lead_id='S4P-'+String((await nextLeadNumber())+1).padStart(4,'0');
     // Counsellors can only add leads assigned to themselves — this mirrors the
     // Import restriction. Round-robin / typing another name is only for Admins.
     if(myRole==='Counsellor'&&!isSuperAdmin){
@@ -9452,6 +9478,15 @@ function parseFile(file){
   reader.readAsText(file);
 }
 
+// Next free S4P lead number. Looks at EVERY lead the user can load (not just the
+// Domestic/International view) and asks the database for the highest id too, so
+// two leads can never get the same number.
+async function nextLeadNumber(){
+  const num=l=>{const n=parseInt(String((l&&l.lead_id)||'S4P-0').split('-')[1]);return isNaN(n)?0:n;};
+  let max=(allLeads||[]).reduce((m,l)=>Math.max(m,num(l)),0);
+  try{const{data}=await sb.from('leads').select('lead_id').order('lead_id',{ascending:false}).limit(1);if(data&&data[0])max=Math.max(max,num(data[0]));}catch(e){}
+  return max;
+}
 async function doImport(){
   if(!importRows.length)return;
   const btn=document.querySelector('#imp-btn .btn');btn.disabled=true;btn.textContent='Importing…';
@@ -9459,8 +9494,9 @@ async function doImport(){
   // Counsellors can only import into their own name — CSV-supplied counsellor is ignored
   // for them so they can't assign imported leads to a colleague.
   const restrictedToSelf=(myRole==='Counsellor'&&!isSuperAdmin);
+  const _baseNum=await nextLeadNumber();
   const allRows=importRows.map((r,i)=>({
-    lead_id:'S4P-'+String(leads.length+i+1).padStart(4,'0'),
+    lead_id:'S4P-'+String(_baseNum+i+1).padStart(4,'0'),
     name:r.name||r.fullname||r['full name']||'',
     mobile:r.mobile||r.phone||'',email:r.email||'',
     city:r.city||r.native||'',
@@ -9485,7 +9521,7 @@ async function doImport(){
   // within the CSV itself (keeping only the first occurrence of each number).
   // Reported back to the user rather than silently dropped, so nothing looks
   // like it "went missing" during import.
-  const existingPhones=new Set(leads.map(l=>normalizePhone(l.mobile)).filter(Boolean));
+  const existingPhones=new Set((allLeads||[]).map(l=>normalizePhone(l.mobile)).filter(Boolean));
   const seenInBatch=new Set();
   let skippedExisting=0, skippedInBatch=0;
   const toInsert=allRows.filter(r=>{
@@ -9871,6 +9907,7 @@ let balMapping={};
 let balStep=1;
 let balPreviewData=[];
 function openBulkAddLeadsWizard(){
+  if(!(myRole==='Digital Marketing'&&!isSuperAdmin)){const _bc=document.getElementById('bal-country');if(_bc)_bc.disabled=false;}
   balHeaders=[];balRows=[];balMapping={};balStep=1;balPreviewData=[];
   document.getElementById('bal-file-info').style.display='none';
   document.getElementById('bal-next-btn').disabled=true;
@@ -9938,7 +9975,7 @@ function balPopulateStep2(){
   }).join('');
 }
 function balPopulateStep4(){
-  const existingMobiles=new Set(leads.map(l=>(l.mobile||'').replace(/\D/g,'')));
+  const existingMobiles=new Set([...(allLeads||[]).map(l=>(l.mobile||'').replace(/\D/g,'')),...(window.__dmMobiles||[])]);
   balPreviewData=balRows.map(row=>{
     const rec={};
     Object.entries(balMapping).forEach(([idx,field])=>{if(field)rec[field]=(row[idx]||'').trim();});
@@ -9964,11 +10001,11 @@ async function balCommit(){
   const btn=document.getElementById('bal-next-btn');
   btn.disabled=true;btn.textContent='Importing…';
   const dupMode=document.getElementById('bal-dup-mode').value;
-  const forcedCountry=document.getElementById('bal-country').value;
+  const forcedCountry=(myRole==='Digital Marketing'&&!isSuperAdmin&&myCountry)?myCountry:document.getElementById('bal-country').value;
   const assignMode=document.getElementById('bal-assign-mode').value;
   let toImport=balPreviewData.filter(r=>r._valid);
   if(dupMode==='skip')toImport=toImport.filter(r=>!r._duplicate);
-  let imported=0;
+  let imported=0,failed=0;
   for(const r of toImport){
     const country=forcedCountry||r.country||'India';
     const office=COUNTRY_DEFAULT_OFFICE[country]||'India HQ';
@@ -9978,15 +10015,19 @@ async function balCommit(){
       const picked=_ownB?{name:_ownB}:await getNextCounsellorForOffice(office);
       counsellor=picked?.name||null;
     }
-    const{data:inserted,error}=await sb.from('leads').insert({
+    const _row={
       name:r.name,mobile:r.mobile,email:r.email||null,program:r.program||null,
       destination:r.destination||null,country,office,source:r.source||'Bulk Import',
       notes:r.notes||null,status:'New Enquiry',priority:'Medium',counsellor,
       created_at:new Date().toISOString(),
-    }).select('id');
+    };
+    const _ws=(canSwitchOpsViewUser()&&superAdminOpsView)?superAdminOpsView:((myTeamCategory==='Domestic'||myTeamCategory==='International')?myTeamCategory:null);
+    let{data:inserted,error}=await sb.from('leads').insert(_ws?{..._row,workstream:_ws}:_row).select('id');
+    if(error&&_ws&&/workstream/i.test(error.message||'')){({data:inserted,error}=await sb.from('leads').insert(_row).select('id'));}
+    if(error)failed++;
     if(!error){imported++;if(inserted?.[0]?.id)await logActivity(inserted[0].id,'created',`Bulk imported lead — assigned to ${counsellor||'Unassigned'}`);}
   }
-  toast(`Imported ${imported} lead(s).`);
+  toast(`Imported ${imported} lead(s).`+(failed?` ${failed} failed — check the file and try those again.`:''));
   btn.disabled=false;
   closeModal('modal-bal-wizard');
   loadLeads().then(()=>{renderLeads();renderDash();badges();});
@@ -10953,7 +10994,25 @@ const META_PULL_URL='https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/meta-
 // countries show a clean placeholder until their own credentials exist.
 const DM_CONNECTED_COUNTRIES=['India','Pakistan','Bangladesh'];
 let dmActiveCountry='India';
+async function dmOpenImport(){
+  if(myCountry){const bc=document.getElementById('bal-country');if(bc){bc.value=myCountry;bc.disabled=true;}}
+  // Digital Marketing can't load the lead list, so fetch this country's mobile numbers to catch duplicates.
+  window.__dmMobiles=new Set();
+  try{const{data}=await fetchAllPages(()=>sb.from('leads').select('mobile').eq('country',myCountry||'India').order('id',{ascending:true}));(data||[]).forEach(r=>{const m=(r.mobile||'').replace(/\D/g,'');if(m)window.__dmMobiles.add(m);});}catch(e){}
+  openBulkAddLeadsWizard();
+  const bc=document.getElementById('bal-country');if(bc&&myCountry){bc.value=myCountry;bc.disabled=true;}
+}
+async function dmExportLeads(){
+  const c=myCountry||'India';
+  toast('Preparing export…');
+  const{data,error}=await fetchAllPages(()=>sb.from('leads').select('*').eq('country',c).order('id',{ascending:true}));
+  if(error){toast('Export failed: '+(error.message||'not allowed'));return;}
+  if(!data.length){toast('No leads to export for '+c+'.');return;}
+  downloadCSV(buildCSV(data),'step4progress_'+c.toLowerCase()+'_leads.csv');
+  toast('Exported '+data.length+' leads.');
+}
 function initDigitalMarketing(){
+  const _bk=document.getElementById('dm-bulk-card');if(_bk)_bk.style.display=(myRole==='Digital Marketing'||isSuperAdmin)?'flex':'none';
   document.getElementById('dm-post-date').value=new Date().toISOString().substring(0,10);
   const sel=document.getElementById('dm-country-select');
   const lockedLabel=document.getElementById('dm-country-locked');

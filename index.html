@@ -1747,7 +1747,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             </div>
           </div>
           <div id="am-list"></div>
-          <div class="card" style="margin-top:16px">
+          <div class="card" id="am-export-log-card" style="margin-top:16px">
             <div class="card-h"><span class="card-t">📤 Export Log</span></div>
             <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">Every CSV export from anywhere in the CRM — who, what, how many rows, when.</p>
             <div class="tw">
@@ -1757,7 +1757,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               </table>
             </div>
           </div>
-          <div class="card" style="margin-top:16px">
+          <div class="card" id="am-known-devices-card" style="margin-top:16px">
             <div class="card-h"><span class="card-t">🔐 New Device Logins</span></div>
             <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">Every time someone signs in from a browser that hasn't logged in as them before.</p>
             <div class="tw">
@@ -3511,7 +3511,7 @@ function contactIcons(mobile,email,opts){
 function ago(ts){if(!ts)return'';const d=Date.now()-new Date(ts).getTime();if(d<3600000)return Math.round(d/60000)+'m ago';if(d<86400000)return Math.round(d/3600000)+'h ago';return Math.round(d/86400000)+'d ago';}
 
 // ── State ────────────────────────────────────────────────────────
-let leads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[], editedFromView=null; function openCreateUser(){
+let leads=[], allLeads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[], editedFromView=null; function openCreateUser(){
   // Only the Super Admin can add team members / send invites.
   if(!canInviteUsers()){toast('Only the Owner, Super Admin or an authorised user can add team members.');return;}
   document.getElementById('inv-name').value='';
@@ -4623,6 +4623,7 @@ let superAdminOpsView=null; // 'International' | 'Domestic' | null (non-Super-Ad
 
 function chooseOpsView(view){
   superAdminOpsView=view;
+  syncLeadsView();
   // Clear stale dashboard filters/workstream when switching poles.
   tdFilterCountry='';
   tdFilterCounsellor='';
@@ -4741,13 +4742,25 @@ function leadIsDomesticWorkstream(l){
   const source=String(l?.source||'').trim().toLowerCase();
   return country==='uk' && (!source||source==='manual'||source==='walk-in'||source==='referral');
 }
+// `leads` is ALWAYS the active side's leads only (Domestic tab = Domestic
+// leads, International tab = International leads) for Owner / Platform Admin /
+// Super Admin; `allLeads` keeps the full set for cross-side lookups
+// (duplicate detection, classifying joined rows). Every screen that reads
+// `leads` therefore follows the toggle automatically.
+function syncLeadsView(){
+  if(canSwitchOpsViewUser()&&superAdminOpsView){
+    leads=allLeads.filter(l=>superAdminOpsView==='Domestic'?leadIsDomesticWorkstream(l):!leadIsDomesticWorkstream(l));
+  } else {
+    leads=allLeads;
+  }
+}
 // Which side (Domestic/International) does a phone contact belong to?
 // Matched to an existing lead by number first (that lead's own side); otherwise
 // a UK (+44) number is Domestic and everything else International.
 function contactIsDomestic(mobile,leadId){
-  if(leadId){const l=(leads||[]).find(x=>x.id===leadId);if(l)return leadIsDomesticWorkstream(l);}
+  if(leadId){const l=(allLeads||[]).find(x=>x.id===leadId);if(l)return leadIsDomesticWorkstream(l);}
   const n=normalizePhone(mobile);
-  if(n){const l=(leads||[]).find(x=>normalizePhone(x.mobile)===n);if(l)return leadIsDomesticWorkstream(l);}
+  if(n){const l=(allLeads||[]).find(x=>normalizePhone(x.mobile)===n);if(l)return leadIsDomesticWorkstream(l);}
   const raw=String(mobile||'').replace(/[\s\-()]/g,'');
   return /^(\+44|0044|44)/.test(raw);
 }
@@ -4779,7 +4792,7 @@ function leadUpdateBarHtml(name,compact){
 }
 // Classify a joined row (commission, task, coaching) through its lead.
 function domesticById(leadId,embedded){
-  const l=(leads||[]).find(x=>x.id===leadId);
+  const l=(allLeads||[]).find(x=>x.id===leadId);
   return leadIsDomesticWorkstream(l||embedded||null);
 }
 function rowInOpsView(leadId,embedded){
@@ -4892,6 +4905,7 @@ async function onLogin(user){
   // genuinely new login/tab). Non-Super-Admins never see this at all.
   if(isSuperAdmin){
     superAdminOpsView=sessionStorage.getItem('s4p_ops_view');
+    syncLeadsView();
     if(!superAdminOpsView){
       document.getElementById('ops-view-modal').style.display='flex';
     } else {
@@ -5068,7 +5082,7 @@ async function doLogout(){
   if(curId) broadcastStopEditing(curId);
   stopNotificationEngine();
   await sb.auth.signOut();
-  leads=[];coaching=[];currentUser=null;myOffice=null;isSuperAdmin=false;isOwner=false;canSeeFinance=false;
+  leads=[];allLeads=[];coaching=[];currentUser=null;myOffice=null;isSuperAdmin=false;isOwner=false;canSeeFinance=false;
   document.getElementById('auth-screen').classList.remove('hidden');
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login-email').value='';
@@ -5278,7 +5292,7 @@ sb.auth.getSession().then(({data:{session}})=>{
 sb.auth.onAuthStateChange((event,session)=>{
   if(event==='SIGNED_IN'&&session&&!currentUser) onLoginGuarded(session.user);
   if(event==='SIGNED_OUT'){
-    currentUser=null;leads=[];coaching=[];
+    currentUser=null;leads=[];allLeads=[];coaching=[];
     document.getElementById('auth-screen').classList.remove('hidden');
     document.getElementById('app').classList.remove('visible');
   }
@@ -5362,7 +5376,7 @@ async function loadLeads(){
     keepGoing=!!(data&&data.length===PAGE_SIZE);
     from+=PAGE_SIZE;
   }
-  leads=allRows;
+  allLeads=allRows;syncLeadsView();
 }
 async function loadCoaching(){
   const{data,error}=await sb.from('coaching').select('*').order('created_at',{ascending:false});
@@ -5387,6 +5401,7 @@ async function loadTeam(){
     if(isSuperAdminRow(t)&&(!t.role||t.role==='Counsellor'))t.role='Super Admin';
   });
   teamList=data||[];
+  syncLeadsView(); // classification depends on each counsellor's team
   if(tl) tl.style.display='none';
   renderTeam(data||[]);
 }
@@ -8080,7 +8095,7 @@ async function deleteLead(){
   const{error,data}=await sb.from('leads').delete().eq('id',curId).select();
   if(error){setSyncErr();toast('Error deleting lead: '+error.message);return;}
   if(!data||!data.length){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}
-  leads=leads.filter(x=>x.id!==curId);
+  allLeads=allLeads.filter(x=>x.id!==curId);syncLeadsView();
   setSynced();closeDover(null);renderLeads();renderDash();badges();setTimeout(checkNoActivity,2000);setTimeout(checkNoActivity,2000);applyRoleUI();toast('Lead deleted.');
 }
 function editLead(){
@@ -8194,7 +8209,7 @@ function findDuplicateLead(name,mobile,email,excludeId){
   const normMobile=normalizePhone(mobile);
   const normName=(name||'').trim().toLowerCase();
   const normEmail=(email||'').trim().toLowerCase();
-  return leads.find(l=>{
+  return (allLeads.length?allLeads:leads).find(l=>{
     if(excludeId&&l.id===excludeId)return false;
     if(normMobile&&normalizePhone(l.mobile)===normMobile)return true;
     if(normName&&normEmail&&(l.name||'').trim().toLowerCase()===normName&&(l.email||'').trim().toLowerCase()===normEmail)return true;
@@ -8265,7 +8280,7 @@ function updateDupButton(){
 // If this number already belongs to a counsellor, a new lead with it should go to that same person.
 function existingOwnerForNumber(mobile,excludeId){
   const k=normalizePhone(mobile); if(k.length<7) return null;
-  const o=(leads||[]).find(x=>x.id!==excludeId&&x.counsellor&&normalizePhone(x.mobile)===k&&(teamList||[]).some(t=>t.full_name===x.counsellor));
+  const o=(allLeads||[]).find(x=>x.id!==excludeId&&x.counsellor&&normalizePhone(x.mobile)===k&&(teamList||[]).some(t=>t.full_name===x.counsellor));
   return o?o.counsellor:null;
 }
 
@@ -8431,7 +8446,7 @@ async function saveLead(){
     const res=await sb.from('leads').insert([data]).select();
     error=res.error;
     let newLeadId=null;
-    if(!error&&res.data){leads.unshift(res.data[0]);newLeadId=res.data[0].id;newlyCreatedLeadId=newLeadId;logEvents.push(['created',`Lead created, assigned to ${data.counsellor||'Unassigned'}`]);if(pendingQueryConversionId)await markPendingQueryConverted(newLeadId);}
+    if(!error&&res.data){allLeads.unshift(res.data[0]);syncLeadsView();newLeadId=res.data[0].id;newlyCreatedLeadId=newLeadId;logEvents.push(['created',`Lead created, assigned to ${data.counsellor||'Unassigned'}`]);if(pendingQueryConversionId)await markPendingQueryConverted(newLeadId);}
     toast('Lead added: '+name);
     if(!error&&data.next_followup)warnIfHoliday(data.next_followup,data.office);
     if(!error&&newLeadId)logEvents.forEach(([type,detail])=>logActivity(newLeadId,type,detail));
@@ -9400,7 +9415,7 @@ async function doImport(){
   const{error,data}=await sb.from('leads').insert(toInsert).select();
   btn.disabled=false;
   if(error){setSyncErr();toast('Import error: '+error.message);return;}
-  if(data)leads=[...data,...leads];
+  if(data){allLeads=[...data,...allLeads];syncLeadsView();}
   if(data)data.forEach(l=>logActivity(l.id,'imported',`Imported via CSV, assigned to ${l.counsellor||'Unassigned'}`));
   setSynced();
   document.getElementById('imp-preview').style.display='none';
@@ -9935,7 +9950,7 @@ async function bulkDeleteLeads(){
   if(error){setSyncErr();toast('Error deleting leads: '+error.message);return;}
   const actuallyDeletedIds=new Set((data||[]).map(l=>l.id));
   if(!actuallyDeletedIds.size){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}
-  leads=leads.filter(l=>!actuallyDeletedIds.has(l.id));
+  allLeads=allLeads.filter(l=>!actuallyDeletedIds.has(l.id));syncLeadsView();
   setSynced();
   clearBulkSelection();
   renderLeads();renderDash();badges();
@@ -10294,7 +10309,7 @@ function renderLeaderboard(scoped){
   if(!sorted.length){el.innerHTML=emptyState('👤','No counsellor data for this scope yet.');return;}
   const maxN=Math.max(...sorted.map(s=>s.enrolled),1);
   const medals=['🥇','🥈','🥉'];
-  el.innerHTML=sorted.map((s,i)=>`<div class="rpt-lb-row"><span class="rpt-lb-medal">${medals[i]||(i+1)}</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${esc(s.name)}</div><div class="rpt-lb-bar-t"><div class="rpt-lb-bar-f" style="width:${Math.round(s.enrolled/maxN*100)}%"></div></div></div><span style="font-size:13px;font-weight:700;color:var(--pine)">${s.enrolled}</span></div>`).join('');
+  el.innerHTML=sorted.map((s,i)=>`<div class="rpt-lb-row"><span class="rpt-lb-medal">${(i<3&&s.enrolled>0)?medals[i]:(i+1)}</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${esc(s.name)}</div><div class="rpt-lb-bar-t"><div class="rpt-lb-bar-f" style="width:${Math.round(s.enrolled/maxN*100)}%"></div></div></div><span style="font-size:13px;font-weight:700;color:var(--pine)">${s.enrolled}</span></div>`).join('');
 }
 function renderIntakeChart(scoped){
   const offRamps=['Defer','Not Interested','Call by Mistake','Dropped','Visa Rejected'];
@@ -12976,7 +12991,12 @@ function setProdSubtab(sub){
   collapseProdLists(); // every list starts closed; open only on click
   if(sub==='calls')loadAllCallData().then(renderCallLogs);
   if(sub==='whatsapp')loadAllCallData().then(renderWhatsAppCalls);
-  if(sub==='monitor'){renderActivityMonitor();renderExportLog();renderKnownDevices();}
+  if(sub==='monitor'){
+    renderActivityMonitor();
+    // Export history and new-device logins: Owner (India) and Platform Admin (Pavitra) only.
+    ['am-export-log-card','am-known-devices-card'].forEach(id=>{const c=document.getElementById(id);if(c)c.style.display=isOwner?'':'none';});
+    if(isOwner){renderExportLog();renderKnownDevices();}
+  }
 }
 
 // ── Queries — shared Web/Instagram/WhatsApp intake pipeline ──────────

@@ -5348,7 +5348,7 @@ async function scopedLeadsQuery(){
     else if(myOffice) q=q.eq('office',myOffice);
   }
 
-  return q;
+  return {q}; // wrapped: a bare query builder is thenable and would be executed by await
 }
 // Fetches every row of a query in pages of 1000 (PostgREST silently caps a plain
 // select), so lists never quietly cut off. `makeQuery` must return a FRESH builder.
@@ -5376,7 +5376,7 @@ async function processLeadRefresh(){
   if(!ids.length)return;
   let rows=[];
   try{
-    const q=await scopedLeadsQuery();
+    const {q}=await scopedLeadsQuery();
     const{data,error}=await q.in('id',ids);
     if(error)throw error;
     rows=data||[];
@@ -5409,7 +5409,7 @@ async function processLeadRefresh(){
   newlyArrived.forEach(r=>setTimeout(()=>{const el=document.querySelector(`[data-lead-id="${r.id}"]`);if(el)el.classList.add('new-lead-flash');},50));
 }
 async function loadLeads(){
-  let q=await scopedLeadsQuery();
+  const {q}=await scopedLeadsQuery();
   // Supabase's PostgREST layer silently caps any plain select() at 1000
   // rows with no error and no warning — this was the real cause of the
   // lead count appearing stuck at exactly 1000 regardless of how many

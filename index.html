@@ -4677,9 +4677,51 @@ function isDomesticOnlyInviter(){return !isSuperAdmin&&(USER_INVITER_EMAILS.incl
 function isLimitedInviter(){return !isSuperAdmin&&(USER_INVITER_EMAILS.includes(String(currentUser?.email||'').toLowerCase())||['Admin','Manager','Director'].includes(myRole));}
 // Super Admins + Anushree: unrestricted. Admins/Managers/Directors: may invite non-management staff
 // into their OWN country only (the database enforces the same rules).
-function canInviteUsers(){return isSuperAdmin||USER_INVITER_EMAILS.includes(String(currentUser?.email||'').toLowerCase())||isLimitedInviter();}
+function canInviteUsers(){return (isSuperAdmin&&!isViewOnly)||USER_INVITER_EMAILS.includes(String(currentUser?.email||'').toLowerCase())||isLimitedInviter();}
 const LIMITED_INVITE_ROLES=['Counsellor','Application Team','Visa Team','SOP Team','Digital Marketing'];
 const SUPER_ADMIN_EMAILS=['india@step4progress.com','jisan@step4progress.co.uk','pavitra@step4progress.com'];
+// VIEW-ONLY viewers: see everything a Super Admin (Jisan) sees — all teams/offices except India — but cannot change anything.
+const VIEW_ONLY_EMAILS=['simun@step4progress.co.uk'];
+let isViewOnly=false;
+const VIEWONLY_WRITE_OK=new Set(['direct_messages','channel_messages','announcement_replies','push_subscriptions','known_devices','export_log']);
+const VIEWONLY_TEAM_SELF_KEYS=['dashboard_prefs','sound_enabled','tour_completed','mobile'];
+const VIEWONLY_MSG='👁 View-only access — you can view everything but cannot change data.';
+function viewOnlyBlockedResult(){
+  const res={data:null,error:{message:'View-only access — you cannot change data.'},count:null,status:403};
+  const chain=new Proxy(function(){},{get:(t,k)=>k==='then'?(ok)=>ok(res):chain,apply:()=>chain});
+  return chain;
+}
+function installViewOnlyGuard(){
+  if(window.__viewOnlyGuard)return;window.__viewOnlyGuard=true;
+  const origFrom=sb.from.bind(sb);
+  sb.from=(t)=>{
+    const q=origFrom(t);
+    return new Proxy(q,{get(tg,k){
+      if(['insert','update','upsert','delete'].includes(k)){
+        return (...a)=>{
+          const okTeam=(t==='team'&&k==='update'&&Object.keys(a[0]||{}).every(x=>VIEWONLY_TEAM_SELF_KEYS.includes(x)));
+          if(VIEWONLY_WRITE_OK.has(t)||okTeam)return tg[k](...a);
+          try{toast(VIEWONLY_MSG);}catch(e){}
+          return viewOnlyBlockedResult();
+        };
+      }
+      const v=tg[k];return typeof v==='function'?v.bind(tg):v;
+    }});
+  };
+  const origRpc=sb.rpc.bind(sb);
+  sb.rpc=(name,...a)=>{
+    if(/^(create|generate|accept|delete|remove|update|set|add|assign|reset|insert|upsert|mark|claim)/i.test(String(name))){try{toast(VIEWONLY_MSG);}catch(e){}return viewOnlyBlockedResult();}
+    return origRpc(name,...a);
+  };
+  const origStorage=sb.storage.from.bind(sb.storage);
+  sb.storage.from=(b)=>{
+    const st=origStorage(b);
+    return new Proxy(st,{get(tg,k){
+      if(['upload','remove','update','move','copy'].includes(k))return ()=>{try{toast(VIEWONLY_MSG);}catch(e){}return Promise.resolve({data:null,error:{message:'View-only access — you cannot change data.'}});};
+      const v=tg[k];return typeof v==='function'?v.bind(tg):v;
+    }});
+  };
+}
 // Domestic/International is a real team-category field, not a hard-coded
 // person rule. This prevents one person's name/email from leaking into the
 // wrong workstream when the Owner/Platform Admin switches views.
@@ -4970,9 +5012,11 @@ async function onLogin(user){
   myTeamCategory=String(profile?.team_category||'International').trim()||'International';
   myCountry=profile?.country||Object.keys(OFFICE_MAP).find(c=>OFFICE_MAP[c].includes(myOffice))||null;
   isSuperAdmin=SUPER_ADMIN_EMAILS.includes((user.email||'').toLowerCase());
+  isViewOnly=VIEW_ONLY_EMAILS.includes((user.email||'').toLowerCase());
+  if(isViewOnly){isSuperAdmin=true;installViewOnlyGuard();} // Jisan-level visibility (India excluded), writes blocked
   // Finance follows the elevated-access tier: Owner, Platform Administrator,
   // and Super Admin. Country Admins/Managers and ordinary team members do not see it.
-  canSeeFinance=isSuperAdmin; // Finance is reserved for the three elevated CRM accounts: Owner, Platform Administrator, and Jisan's Super Admin account.
+  canSeeFinance=isSuperAdmin&&!isViewOnly; // Finance is reserved for the three elevated CRM accounts: Owner, Platform Administrator, and Jisan's Super Admin account.
   myOwnerTitle=OWNERS[(user.email||'').toLowerCase()]||null;
   isOwner=myOwnerTitle!==null;
   document.getElementById('sb-av').textContent=ini(name);
@@ -4984,6 +5028,7 @@ async function onLogin(user){
   // (Director/Manager/etc.) is unchanged in the DB; this is display only.
   let roleLabel=role;
   if(isOwner)roleLabel=myOwnerTitle;
+  else if(isViewOnly)roleLabel='View-only · All teams';
   else if(isSuperAdmin)roleLabel='Super Admin';
   document.getElementById('sb-urole').textContent=roleLabel;
   checkKnownDevice(user);
@@ -5120,7 +5165,9 @@ async function loadPasswordResetRequests(){
         <div style="font-weight:600;font-size:13.5px">${esc(r.team_email)}</div>
         <div style="font-size:11px;color:var(--ink3)">Requested ${new Date(r.requested_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
       </div>
-      <button class="btn btn-p" style="font-size:12px;padding:6px 14px" onclick="actionPasswordResetRequest('${r.id}','${escJs(r.team_email)}')">Set new password</button>
+      ${(isOwner||(isSuperAdmin&&!isViewOnly))
+        ?`<button class="btn btn-p" style="font-size:12px;padding:6px 14px" onclick="actionPasswordResetRequest('${r.id}','${escJs(r.team_email)}')">Set new password</button>`
+        :`<span style="font-size:11px;color:var(--ink3);max-width:170px;text-align:right">Waiting for India, Pavitra or Jisan to set the password</span>`}
     </div>
   `).join('');
 }
@@ -5161,7 +5208,7 @@ async function doLogout(){
   if(curId) broadcastStopEditing(curId);
   stopNotificationEngine();
   await sb.auth.signOut();
-  leads=[];allLeads=[];coaching=[];currentUser=null;myOffice=null;isSuperAdmin=false;isOwner=false;canSeeFinance=false;
+  leads=[];allLeads=[];coaching=[];currentUser=null;myOffice=null;isSuperAdmin=false;isViewOnly=false;isOwner=false;canSeeFinance=false;
   document.getElementById('auth-screen').classList.remove('hidden');
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login-email').value='';
@@ -9142,6 +9189,7 @@ function displayRoleFor(t){
 function canResetPasswordFor(t){
   if(!t||(currentUser&&t.id===currentUser.id))return false;
   if(isOwner)return true;                       // India / Pavitra: anyone
+  if(isViewOnly)return false;
   if(isSuperAdmin)return !isProtectedOwnerRow(t); // Jisan: anyone except India's and Pavitra's accounts
   return false;
 }

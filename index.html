@@ -10080,16 +10080,24 @@ async function bulkDeleteLeads(){
   if(!confirm(warnMsg))return;
 
   setSyncing();
-  const{error,data}=await sb.from('leads').delete().in('id',deletable.map(l=>l.id)).select();
-  if(error){setSyncErr();toast('Error deleting leads: '+error.message);return;}
-  const actuallyDeletedIds=new Set((data||[]).map(l=>l.id));
-  if(!actuallyDeletedIds.size){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}
+  // Delete in small batches: one request with ~1000 ids is too long for the server's URL limit and fails outright.
+  const allIds=deletable.map(l=>l.id);
+  const actuallyDeletedIds=new Set();
+  let firstError=null;
+  for(let i=0;i<allIds.length;i+=100){
+    toast(`Deleting… ${Math.min(i+100,allIds.length)} of ${allIds.length}`);
+    const{error,data}=await sb.from('leads').delete().in('id',allIds.slice(i,i+100)).select('id');
+    if(error){firstError=firstError||error;continue;}
+    (data||[]).forEach(l=>actuallyDeletedIds.add(l.id));
+  }
+  if(!actuallyDeletedIds.size){setSyncErr();toast(firstError?('Error deleting leads: '+firstError.message):'Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}
+  if(firstError)console.error('Some delete batches failed:',firstError);
   allLeads=allLeads.filter(l=>!actuallyDeletedIds.has(l.id));syncLeadsView();
   setSynced();
   clearBulkSelection();
   renderLeads();renderDash();badges();
   if(actuallyDeletedIds.size<deletable.length){
-    toast(`${actuallyDeletedIds.size} of ${deletable.length} lead(s) deleted — the rest were blocked (permission issue).`);
+    toast(`${actuallyDeletedIds.size} of ${deletable.length} lead(s) deleted — the rest were blocked`+(firstError?`: ${firstError.message}`:' (permission issue).'));
   }else{
     toast(`${actuallyDeletedIds.size} lead(s) deleted.`);
   }

@@ -4908,7 +4908,14 @@ async function onLogin(user){
   applyDashboardPrefs();
   loadOfficeHolidays();
   maybeStartGuidedTour(user,!!profile?.tour_completed);
-  await Promise.all([loadLeads(),loadCoaching(),loadTeam(),loadEvents(),loadResumes(),loadRoundRobinState(),loadUnavailability(),loadSopUploadedLeadIds(),loadDocumentsUploadedLeadIds(),loadDocumentsCountByLead(),loadPasswordResetRequests()]);
+  { // One failing loader must never stop the whole CRM from starting.
+    const _loaders={loadLeads,loadCoaching,loadTeam,loadEvents,loadResumes,loadRoundRobinState,loadUnavailability,loadSopUploadedLeadIds,loadDocumentsUploadedLeadIds,loadDocumentsCountByLead,loadPasswordResetRequests};
+    const _names=Object.keys(_loaders);
+    const _res=await Promise.allSettled(_names.map(n=>{try{return Promise.resolve(_loaders[n]());}catch(e){return Promise.reject(e);}}));
+    const _failed=[];
+    _res.forEach((r,i)=>{if(r.status==='rejected'){_failed.push(_names[i]);console.error('Startup loader failed:',_names[i],r.reason);}});
+    if(_failed.length){try{toast('⚠️ Some data did not load ('+_failed.join(', ')+'). Press Ctrl+F5; if it persists, send this message to support.');}catch(e){}}
+  }
  initPresence(user, profile);
   // Super Admin ops-view: International vs Domestic (UK). Asked once
   // per session (sessionStorage — survives a page refresh, resets on a
@@ -6959,7 +6966,12 @@ async function addUniversityLink(isFS){
   const url=urlEl.value.trim();
   const notes=notesEl?notesEl.value.trim():'';
   if(!name||!url){toast('Please enter both a university name and a link.');return;}
-  const{error}=await sb.from('university_links').insert({lead_id:curId,university_name:name,url,notes:notes||null});
+  let{error}=await sb.from('university_links').insert({lead_id:curId,university_name:name,url,notes:notes||null});
+  if(error&&/notes/i.test(error.message||'')){
+    // 'notes' column missing in Supabase — save without it so the link is never lost.
+    ({error}=await sb.from('university_links').insert({lead_id:curId,university_name:name,url}));
+    if(!error&&notes)toast('Link saved. Notes need the database column — ask your admin to run crm_university_links_notes.sql');
+  }
   if(error){toast('Error: '+error.message);return;}
   nameEl.value='';urlEl.value='';if(notesEl)notesEl.value='';
   loadUniversityLinks(curId,isFS);

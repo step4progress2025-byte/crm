@@ -406,7 +406,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 :focus-visible{outline:2px solid var(--pine3);outline-offset:2px}
 .dup-badge{display:inline-block;margin-left:6px;font-size:9px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:99px;background:#FEF3C7;color:#92400E;cursor:pointer;vertical-align:middle;white-space:nowrap}
 .dup-badge.dup-split{background:#FEE2E2;color:#991B1B}
-#back-to-top{position:fixed;right:26px;bottom:84px;z-index:90;width:46px;height:46px;border-radius:50%;border:none;background:var(--pine);color:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);display:none;align-items:center;justify-content:center}
+#back-to-top{position:fixed;right:18px;top:calc(50% + 180px);z-index:90;width:46px;height:46px;border-radius:50%;border:none;background:var(--pine);color:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);display:none;align-items:center;justify-content:center}
 #back-to-top.show{display:flex}
 #back-to-top:hover{background:var(--pine2);transform:translateY(-2px)}
 
@@ -872,6 +872,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
              single person only ever seeing their own tasks), no
              reassign controls. Just four clean tabs and a checklist. -->
         <div id="my-tasks-personal-view" style="display:none">
+          <div id="mtp-lead-update-bar" style="background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:14px 20px;margin-bottom:16px"></div>
           <div style="display:flex;align-items:center;gap:18px;background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:16px 20px;margin-bottom:16px">
             <div style="position:relative;width:64px;height:64px;flex-shrink:0"><canvas id="mtp-today-donut"></canvas>
               <div id="mtp-today-donut-label" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--pine)"></div>
@@ -1648,6 +1649,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div class="ff"><label>Recording (optional)</label><input type="file" id="cl-audio" accept="audio/*"></div>
           <button class="btn btn-p" style="margin-top:8px" onclick="saveCallLog()"><i class="ti ti-device-floppy"></i>Save call log</button>
         </div>
+        <div id="cl-summary"></div>
         <div id="cl-empty" class="empty-state" style="display:none">
           <div class="es-icon"><i class="ti ti-headset"></i></div>
           <div class="es-title">No call logs yet</div>
@@ -1674,6 +1676,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <div class="card-h"><span class="card-t">📱 WhatsApp Calls</span></div>
             <p style="font-size:13px;color:var(--ink3);margin-bottom:0;line-height:1.6">Calls recorded via the WhatsApp desktop recorder, synced in automatically. Restricted to Admins and the Super Admin, same as Call Recorder.</p>
           </div>
+          <div id="wc-summary"></div>
           <div id="wc-empty" class="empty-state" style="display:none">
             <div class="es-icon"><i class="ti ti-brand-whatsapp"></i></div>
             <div class="es-title">No WhatsApp calls yet</div>
@@ -1710,8 +1713,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="btn btn-p" style="margin-top:8px" onclick="submitDailyUpdate()"><i class="ti ti-device-floppy"></i>Save update</button>
           </div>
           <div class="card">
-            <div class="card-h"><span class="card-t">Your recent updates</span></div>
-            <div id="du-my-list"></div>
+            <details><summary style="cursor:pointer;font-weight:600;font-size:13.5px">Your recent updates (click to open)</summary>
+            <div id="du-my-list" style="margin-top:10px"></div></details>
           </div>
         </div>
 
@@ -2435,6 +2438,9 @@ What would you like help with today?</div>
       <div class="ff full"><label>Event title *</label><input id="event-title" placeholder="e.g. UK Universities Seminar"></div>
       <div class="ff"><label>Date *</label><input type="date" id="event-date"></div>
       <div class="ff"><label>Time (optional)</label><input type="time" id="event-time"></div>
+      <div class="ff"><label>Team</label>
+        <select id="event-workstream"><option value="International">International</option><option value="Domestic">Domestic</option></select>
+      </div>
       <div class="ff"><label>Type</label>
         <select id="event-type"><option>Seminar</option><option>Webinar</option><option>Application Deadline</option><option>Follow-up</option><option>Other</option></select>
       </div>
@@ -2589,7 +2595,7 @@ What would you like help with today?</div>
   </div>
 </div>
 
-<div id="chat-float" style="display:none;position:fixed;bottom:78px;right:18px;width:340px;height:440px;background:var(--paper);border-radius:14px 14px 0 0;box-shadow:0 8px 34px rgba(0,0,0,.28);z-index:450;flex-direction:column;overflow:hidden;border:1px solid var(--line)">
+<div id="chat-float" style="display:none;position:fixed;bottom:20px;right:72px;width:340px;height:440px;background:var(--paper);border-radius:14px 14px 0 0;box-shadow:0 8px 34px rgba(0,0,0,.28);z-index:450;flex-direction:column;overflow:hidden;border:1px solid var(--line)">
   <div style="background:var(--pine);color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;flex-shrink:0" onclick="toggleChatFloatMinimize()">
     <span id="chat-float-title" style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">💬</span>
     <div style="display:flex;gap:12px;flex-shrink:0">
@@ -2920,8 +2926,8 @@ What would you like help with today?</div>
   </div>
 </div>
 
-<div id="events-widget" style="position:fixed;bottom:80px;right:18px;width:260px;background:var(--pine);border-radius:12px;padding:12px 14px;z-index:400;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.2)"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"> <span style="color:#fff;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Upcoming events</span> <span onclick="document.getElementById('events-widget').style.display='none'" style="color:rgba(255,255,255,0.6);cursor:pointer;font-size:18px;line-height:1">&times;</span> </div> <div id="events-ticker" style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.6"></div> </div> <div id="dm-bell" onclick="openDmInbox()" style="position:fixed;bottom:24px;right:74px;width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-message-circle-2" style="color:#fff;font-size:20px"></i> <span id="dm-badge" style="position:absolute;top:-2px;right:-2px;background:var(--rose);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="push-bell" onclick="togglePushSubscription()" title="Click to enable notifications" style="position:fixed;bottom:24px;right:128px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2);opacity:.55"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> </div>
-<div id="events-bell" onclick="toggleEventsWidget()" style="position:fixed;top:calc(50% - 60px);right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> <span id="events-badge" style="position:absolute;top:-2px;right:-2px;background:#F1239;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="ann-bell" onclick="openAnnouncements()" style="position:fixed;top:calc(50% + 0px);right:18px;width:44px;height:44px;border-radius:50%;background:var(--ember);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-speakerphone" style="color:#fff;font-size:19px"></i> <span id="ann-badge" style="position:absolute;top:-2px;right:-2px;background:var(--rose);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="super-admin-notif-list" style="position:fixed;bottom:24px;left:18px;z-index:500;display:flex;flex-direction:column-reverse;gap:8px;max-width:320px"></div>
+<div id="events-widget" style="position:fixed;top:calc(50% - 60px);right:72px;width:260px;background:var(--pine);border-radius:12px;padding:12px 14px;z-index:400;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.2)"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"> <span style="color:#fff;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Upcoming events</span> <span onclick="document.getElementById('events-widget').style.display='none'" style="color:rgba(255,255,255,0.6);cursor:pointer;font-size:18px;line-height:1">&times;</span> </div> <div id="events-ticker" style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.6"></div> </div> <div id="dm-bell" onclick="openDmInbox()" style="position:fixed;top:calc(50% + 60px);right:18px;width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-message-circle-2" style="color:#fff;font-size:20px"></i> <span id="dm-badge" style="position:absolute;top:-2px;right:-2px;background:var(--rose);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="push-bell" onclick="togglePushSubscription()" title="Click to enable notifications" style="position:fixed;top:calc(50% + 120px);right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2);opacity:.55"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> </div>
+<div id="events-bell" onclick="toggleEventsWidget()" style="position:fixed;top:calc(50% - 60px);right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-calendar-event" style="color:#fff;font-size:20px"></i> <span id="events-badge" style="position:absolute;top:-2px;right:-2px;background:#F1239;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="ann-bell" onclick="openAnnouncements()" style="position:fixed;top:calc(50% + 0px);right:18px;width:44px;height:44px;border-radius:50%;background:var(--ember);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-speakerphone" style="color:#fff;font-size:19px"></i> <span id="ann-badge" style="position:absolute;top:-2px;right:-2px;background:var(--rose);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="super-admin-notif-list" style="position:fixed;bottom:24px;left:18px;z-index:500;display:flex;flex-direction:column-reverse;gap:8px;max-width:320px"></div>
 <div id="urgent-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,20,20,.6);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
   <div id="urgent-popup-card" style="background:#fff;border-radius:18px;padding:0;max-width:460px;width:92%;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden"></div>
 </div>
@@ -3507,7 +3513,7 @@ function ago(ts){if(!ts)return'';const d=Date.now()-new Date(ts).getTime();if(d<
 // ── State ────────────────────────────────────────────────────────
 let leads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[], editedFromView=null; function openCreateUser(){
   // Only the Super Admin can add team members / send invites.
-  if(!canInviteUsers()){toast('Only the Super Admin can add team members.');return;}
+  if(!canInviteUsers()){toast('Only the Owner, Super Admin or an authorised user can add team members.');return;}
   document.getElementById('inv-name').value='';
   document.getElementById('inv-email-hint').value='';
   document.getElementById('inv-role').value='Counsellor';
@@ -4455,7 +4461,7 @@ function syncInviteOffice(){
   sel.innerHTML=(OFFICE_MAP[c]||[]).map(o=>`<option value="${o}">${o}</option>`).join('');
 }
 async function generateInviteLink(){
-  if(!canInviteUsers()){toast('Only the Super Admin can create team invitations.');return;}
+  if(!canInviteUsers()){toast('You are not authorised to create team invitations.');return;}
   const recipientEmail=document.getElementById('inv-recipient-email').value.trim().toLowerCase();
   const role=document.getElementById('inv-role').value;
   const country=document.getElementById('inv-country').value;
@@ -4647,6 +4653,19 @@ function chooseOpsView(view){
     populateActivityMonitorCountryFilter();
     renderActivityMonitor();
   }
+  refreshProductivityScope();
+  try{
+    try{renderEvents();renderEventsTicker();}catch(e){}
+    if(document.getElementById('sc-resumes')?.classList.contains('active'))renderResumesAdmin();
+    if(document.getElementById('sc-studentportal')?.classList.contains('active')&&window.__spAllStudents)renderStudentPortalTable(window.__spAllStudents);
+    ['sc-queries','sc-coaching','sc-reports','sc-finance'].forEach(id=>{
+      if(!document.getElementById(id)?.classList.contains('active'))return;
+      if(id==='sc-queries'){['web','instagram','whatsapp'].forEach(renderQueriesList);}
+      if(id==='sc-coaching')renderCoaching();
+      if(id==='sc-reports'){rptState.userPickedCountry=false;initReports();loadReport();}
+      if(id==='sc-finance')renderFinance();
+    });
+  }catch(e){}
 }
 function reopenOpsViewModal(){
   document.getElementById('ops-view-modal').style.display='flex';
@@ -4716,9 +4735,56 @@ function leadIsDomesticWorkstream(l){
     const staff=(teamList||[]).find(t=>String(t?.full_name||'').trim().toLowerCase()===assignee);
     if(staff)return effectiveTeamCategory(staff)==='Domestic';
   }
+  // Unassigned: a UK-office lead with UK nationality is Domestic.
+  if(String(l?.country||'').trim().toLowerCase()==='uk' && String(l?.nationality||'').trim().toLowerCase()==='uk')return true;
   const country=String(l?.country||'').trim().toLowerCase();
   const source=String(l?.source||'').trim().toLowerCase();
   return country==='uk' && (!source||source==='manual'||source==='walk-in'||source==='referral');
+}
+// Which side (Domestic/International) does a phone contact belong to?
+// Matched to an existing lead by number first (that lead's own side); otherwise
+// a UK (+44) number is Domestic and everything else International.
+function contactIsDomestic(mobile,leadId){
+  if(leadId){const l=(leads||[]).find(x=>x.id===leadId);if(l)return leadIsDomesticWorkstream(l);}
+  const n=normalizePhone(mobile);
+  if(n){const l=(leads||[]).find(x=>normalizePhone(x.mobile)===n);if(l)return leadIsDomesticWorkstream(l);}
+  const raw=String(mobile||'').replace(/[\s\-()]/g,'');
+  return /^(\+44|0044|44)/.test(raw);
+}
+function contactInOpsView(mobile,leadId){
+  const view=canSwitchOpsViewUser()?superAdminOpsView:null;
+  if(!view)return true;
+  const dom=contactIsDomestic(mobile,leadId);
+  return view==='Domestic'?dom:!dom;
+}
+// ── Lead-update progress (80% rule) ─────────────────────────────────
+// A lead counts as "updated" if it changed (status, notes, reassignment, any
+// edit) in the last 7 days. Closed/finished leads are not counted against
+// the counsellor. Red while at or below 80%, green once above 80%.
+const LEAD_UPDATE_CLOSED=['Not Interested','Call by Mistake','Dropped','Enrolled','Commission Received','Process Completed','Visa Rejected'];
+function leadUpdateStats(name){
+  const mine=(leads||[]).filter(l=>l.counsellor===name&&!LEAD_UPDATE_CLOSED.includes(l.status));
+  const cutoff=Date.now()-7*86400000;
+  const updated=mine.filter(l=>l.updated_at&&new Date(l.updated_at).getTime()>=cutoff).length;
+  const total=mine.length;
+  const pct=total?Math.round(updated/total*100):null;
+  return{total,updated,pct};
+}
+function leadUpdateBarHtml(name,compact){
+  const st=leadUpdateStats(name);
+  if(st.pct===null)return compact?'<span style="font-size:11px;color:var(--ink3)">no active leads</span>':'';
+  const ok=st.pct>80;
+  const col=ok?'#12A56F':'#C0392B';
+  return `<div style="display:flex;align-items:center;gap:8px;${compact?'min-width:200px':''}"><div style="flex:1;height:${compact?6:10}px;background:#E6DDCC;border-radius:99px;overflow:hidden"><div style="width:${Math.min(100,st.pct)}%;height:100%;background:${col}"></div></div><span style="font-size:${compact?11:13}px;font-weight:700;color:${col};white-space:nowrap">${st.pct}%</span>${compact?'':`<span style="font-size:11.5px;color:var(--ink3)">${st.updated} of ${st.total} active leads updated in the last 7 days — ${ok?'on track':'needs to reach above 80%'}</span>`}</div>`;
+}
+// Classify a joined row (commission, task, coaching) through its lead.
+function domesticById(leadId,embedded){
+  const l=(leads||[]).find(x=>x.id===leadId);
+  return leadIsDomesticWorkstream(l||embedded||null);
+}
+function rowInOpsView(leadId,embedded){
+  if(!canSwitchOpsViewUser()||!superAdminOpsView)return true;
+  return superAdminOpsView==='Domestic'?domesticById(leadId,embedded):!domesticById(leadId,embedded);
 }
 function opsViewScopedLeads(sourceLeads){
   let scoped;
@@ -4905,6 +4971,14 @@ pruneIndiaFromCrmDropdowns();
     loadLeads().then(()=>{renderDash();renderLeads();renderFU();badges();});
   }).subscribe();
 
+  // Instant message tone: listen for direct messages addressed to me, rather
+  // than waiting for the 60-second poll to notice them.
+  sb.channel('dm-incoming-'+currentUser.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'direct_messages',filter:'recipient_id=eq.'+currentUser.id},(payload)=>{
+    if(payload.new&&payload.new.sender_id!==currentUser.id){checkUnreadDmCount();} // plays the tone itself when the unread count rises
+  }).subscribe();
+  // Fallback fast poll (every 10s) in case realtime isn't enabled for this table.
+  if(!window._dmFastPoll){window._dmFastPoll=setInterval(()=>{if(currentUser)checkUnreadDmCount();},10000);}
+
   // New password reset requests — alert Admin/Manager (own country
   // only), Super Admin (all except India), and Owner (everything),
   // matching the same access model used for leads and tasks.
@@ -5008,9 +5082,16 @@ let events=[];
 // Events with no specific participants are general/company-wide, visible
 // to everyone as before. Events WITH participants set become private —
 // only the listed people/teams, the creator, and Management can see them.
+function eventInMyWorkstream(e){
+  const view=canSwitchOpsViewUser()?superAdminOpsView:(myTeamCategory==='Domestic'?'Domestic':'International');
+  if(!view)return true;
+  const ws=e.workstream||'International'; // events created before this existed default to International
+  return ws===view;
+}
 function visibleEventsFor(){
-  if(!isRestrictedStaffRole())return events;
-  return events.filter(e=>{
+  const inScope=events.filter(eventInMyWorkstream);
+  if(!isRestrictedStaffRole())return inScope;
+  return inScope.filter(e=>{
     if(!e.participants)return true;
     if(e.created_by===currentUser?.id)return true;
     const parts=e.participants.split(',').map(p=>p.trim()).filter(Boolean);
@@ -5040,6 +5121,7 @@ function openAddEvent(id){
   document.getElementById('event-date').value=ev?.event_date||'';
   document.getElementById('event-time').value=ev?.event_time?ev.event_time.substring(0,5):'';
   document.getElementById('event-type').value=ev?.event_type||'Seminar';
+  document.getElementById('event-workstream').value=ev?.workstream||((canSwitchOpsViewUser()?superAdminOpsView:myTeamCategory)==='Domestic'?'Domestic':'International');
   const selectedParts=ev?.participants?ev.participants.split(',').map(p=>p.trim()).filter(Boolean):[];
   renderEventParticipantsPicker(selectedParts);
   document.getElementById('event-desc').value=ev?.description||'';
@@ -5081,7 +5163,7 @@ function saveQuickInput(){
   if(cb)cb(val);
 }
 
-async function updateEvent(id,title,date,type,desc,time,participants){   const{error}=await sb.from('events').update({title,event_date:date,event_type:type,description:desc,event_time:time,participants}).eq('id',id);   if(!error){await loadEvents();toast('Event updated!');} } async function saveEvent(title,date,type,desc,time,participants){   const{error}=await sb.from('events').insert({title,event_date:date,event_type:type,description:desc,event_time:time,participants,created_by:currentUser.id});   if(!error){await loadEvents();toast('Event added!');} } async function deleteEvent(id){   const ev=events.find(e=>e.id===id);   if(ev&&ev.created_by&&ev.created_by!==currentUser?.id&&!isSuperAdmin){toast('Only the person who created this event can delete it.');return;}   if(!confirm('Delete this event?'))return;   await sb.from('events').delete().eq('id',id);   await loadEvents();   toast('Event deleted.'); } // ══ COMMAND PALETTE — Ctrl+K / Cmd+K, from anywhere ═══════════════
+async function updateEvent(id,title,date,type,desc,time,participants){   const ws=document.getElementById('event-workstream')?.value||'International';   let{error}=await sb.from('events').update({title,event_date:date,event_type:type,description:desc,event_time:time,participants,workstream:ws}).eq('id',id);   if(error&&/workstream/i.test(error.message||'')){({error}=await sb.from('events').update({title,event_date:date,event_type:type,description:desc,event_time:time,participants}).eq('id',id));toast('Saved, but the events table needs the workstream column (run crm_events_workstream.sql).');}   if(!error){await loadEvents();toast('Event updated!');} } async function saveEvent(title,date,type,desc,time,participants){   const ws=document.getElementById('event-workstream')?.value||'International';   let{error}=await sb.from('events').insert({title,event_date:date,event_type:type,description:desc,event_time:time,participants,created_by:currentUser.id,workstream:ws});   if(error&&/workstream/i.test(error.message||'')){({error}=await sb.from('events').insert({title,event_date:date,event_type:type,description:desc,event_time:time,participants,created_by:currentUser.id}));toast('Saved, but the events table needs the workstream column (run crm_events_workstream.sql).');}   if(!error){await loadEvents();toast('Event added!');} } async function deleteEvent(id){   const ev=events.find(e=>e.id===id);   if(ev&&ev.created_by&&ev.created_by!==currentUser?.id&&!isSuperAdmin){toast('Only the person who created this event can delete it.');return;}   if(!confirm('Delete this event?'))return;   await sb.from('events').delete().eq('id',id);   await loadEvents();   toast('Event deleted.'); } // ══ COMMAND PALETTE — Ctrl+K / Cmd+K, from anywhere ═══════════════
 let cmdkSelectedIndex=0;
 let cmdkResults=[];
 document.addEventListener('keydown',(e)=>{
@@ -6040,6 +6122,25 @@ function deleteSavedView(){
   renderSavedViewsDropdown();
   toast('Deleted.');
 }
+function fillSelectKeep(sel,placeholder,values,isCount){
+  if(!sel)return;
+  const cur=sel.value;
+  const uniq=[...new Set(values.filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)));
+  if(cur&&!uniq.includes(cur))uniq.unshift(cur); // never silently drop an active selection
+  sel.innerHTML=`<option value="">${placeholder}</option>`+uniq.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  sel.value=cur||'';
+}
+function rebuildLeadFilterOptions(scoped){
+  fillSelectKeep(document.getElementById('ls-counsel'),'All counsellors',scoped.map(l=>l.counsellor));
+  // Statuses: always the full list from STATUSES (adds e.g. "Call by Mistake"
+  // which the hard-coded dropdown was missing).
+  const st=document.getElementById('ls-st');
+  if(st){const cur=st.value;st.innerHTML='<option value="">All statuses</option>'+STATUSES.map(x=>`<option>${esc(x)}</option>`).join('');st.value=cur||'';}
+  const baseSources=['Meta Ads','Google Ads','Instagram','WhatsApp','Walk-in','Referral','Website','LinkedIn','YouTube','Event / Expo','Website Enquiry','Website Tools Enquiry','Meta Enquiry','Other'];
+  fillSelectKeep(document.getElementById('ls-src'),'All sources',baseSources.concat(scoped.map(l=>l.source)));
+  const baseDest=['UK','New Zealand','Australia','Canada','Europe','USA','Singapore','Malaysia','UAE','Other'];
+  fillSelectKeep(document.getElementById('ls-de'),'All destinations',baseDest.concat(scoped.map(l=>l.destination)));
+}
 function renderLeads(){
   document.getElementById('leads-loading').style.display='none';
   // Bulk actions (select, reassign, status/priority change) are Management
@@ -6062,9 +6163,10 @@ function renderLeads(){
   const scopedLeads=opsViewScopedLeads(leads);
   buildDupMap(); updateDupButton();
   // Populate counsellor filter dropdown from live leads
-  const counselSel=document.getElementById('ls-counsel');
-  const existingC=Array.from(counselSel.options).map(o=>o.value);
-  scopedLeads.forEach(l=>{if(l.counsellor&&!existingC.includes(l.counsellor)){const o=document.createElement('option');o.value=l.counsellor;o.textContent=l.counsellor;counselSel.appendChild(o);existingC.push(l.counsellor);}});
+  // Filter dropdowns are rebuilt from the CURRENT scope on every render (keeping
+  // the selected value), so switching Domestic/International never leaves the
+  // other side's counsellors/sources/destinations behind.
+  rebuildLeadFilterOptions(scopedLeads);
   const q=(document.getElementById('ls-q').value||'').toLowerCase();
   const sf=document.getElementById('ls-st').value;
   const pf=document.getElementById('ls-pr').value;
@@ -6075,17 +6177,17 @@ function renderLeads(){
   const from=document.getElementById('ls-from').value;
   const to=document.getElementById('ls-to').value;
   const assignF=document.getElementById('ls-assign').value;
-  const f=scopedLeads.filter(l=>(!dupOnly||(dupGroup(l)&&(!dupFocus||normalizePhone(l.mobile)===dupFocus)))&&(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!srcf||l.source===srcf)&&(!counsel||l.counsellor===counsel)&&(!from||l.created_at.substring(0,10)>=from)&&(!to||l.created_at.substring(0,10)<=to)&&(!assignF||(assignF==='assigned'?!!l.counsellor:!l.counsellor))&&smartLeadMatch(l,q));
+  const f=scopedLeads.filter(l=>(!dupOnly||(dupGroup(l)&&(!dupFocus||normalizePhone(l.mobile)===dupFocus)))&&(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!srcf||l.source===srcf)&&(!counsel||l.counsellor===counsel)&&(!from||(l.created_at||'').substring(0,10)>=from)&&(!to||(l.created_at||'').substring(0,10)<=to)&&(!assignF||(assignF==='assigned'?!!l.counsellor:!l.counsellor))&&smartLeadMatch(l,q));
   // Shared with the Kanban board view below, so it shows exactly the leads
   // the current filters/search/scope would show in the table — same data,
   // two presentations, never out of sync.
   currentFilteredLeads=f;
   if(leadsViewMode==='board')renderLeadsBoard();
-  const empty=leads.length===0;
+  const empty=scopedLeads.length===0;
   document.getElementById('leads-empty').style.display=empty?'flex':'none';
   document.getElementById('leads-content').style.display=empty?'none':'block';
   if(empty)return;
-  document.getElementById('lcount').textContent=`Showing ${f.length} of ${leads.length} leads`;
+  document.getElementById('lcount').textContent=`Showing ${f.length} of ${scopedLeads.length} leads`;
   const tb=document.getElementById('lead-tbody');tb.innerHTML='';
   if(!f.length){tb.innerHTML=`<tr><td colspan="16">${emptyState('🔍','No leads match your filters.')}</td></tr>`;return;}
   // Single-assignment .map().join() instead of accumulating with += in
@@ -7235,6 +7337,11 @@ async function openTaskDetail(taskId){
       <textarea id="tdetail-notes" ${canChange?'':'disabled'} style="width:100%;min-height:88px;resize:vertical;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:var(--paper2);color:var(--ink);font-family:var(--font-b);font-size:12.5px;line-height:1.5;box-sizing:border-box">${esc(t.notes||'')}</textarea>
     </div>
 
+    ${(t.lead_id&&canChange)?`<div style="margin:0 0 14px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Move the lead</div><div style="font-size:10px;color:var(--ink3)">Optional — updates the lead and adds your notes to it</div></div>
+      <select id="tdetail-lead-status" style="width:100%;padding:9px;border:1px solid var(--line2);border-radius:8px;background:#fff;font-family:var(--font-b);font-size:12.5px"><option value="">Keep the lead's current status${(()=>{const _l=(leads||[]).find(x=>x.id===t.lead_id);return _l?' ('+esc(_l.status)+')':'';})()}</option>${STATUSES.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')}</select>
+    </div>`:''}
+
     <div style="margin:0 0 14px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700">Reminder</div><div style="font-size:10px;color:var(--ink3)">${activeReminder?esc(reminderStatus):'Optional task follow-up'}</div></div>
       <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;margin-bottom:9px"><input type="checkbox" id="tdetail-reminder-enabled" ${activeReminder?'checked':''} ${canChange?'':'disabled'}> Set / edit reminder</label>
@@ -7321,6 +7428,23 @@ async function openTaskDetail(taskId){
     const oldNotes=String(t.notes||'').trim();
     const{error:taskError}=await sb.from('tasks').update({status:dbStatus,completed_at:dbStatus==='Done'?new Date().toISOString():null,notes}).eq('id',t.id);
     if(taskError){statusSave.disabled=false;completeBtn.disabled=false;toast('Could not save task: '+taskError.message);return;}
+    // "Task done" drives the lead: optional new lead status + the notes are
+    // recorded against the lead too, so the lead moves with the work.
+    if(t.lead_id){
+      const newLeadStatus=document.getElementById('tdetail-lead-status')?.value||'';
+      const _lead=(leads||[]).find(x=>x.id===t.lead_id);
+      if(newLeadStatus&&_lead&&_lead.status!==newLeadStatus){await updateLeadStatusDirect(t.lead_id,newLeadStatus);}
+      if(notes&&notes!==oldNotes){
+        try{
+          const stamp=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+          const line=`[${stamp} · ${myName||'staff'}] ${notes}`;
+          const merged=((_lead?.notes||'').trim()?(_lead.notes.trim()+'\n'):'')+line;
+          const{error:ne}=await sb.from('leads').update({notes:merged}).eq('id',t.lead_id);
+          if(!ne&&_lead)_lead.notes=merged;
+          logActivity(t.lead_id,'note',`Task note: ${notes.substring(0,160)}`);
+        }catch(e){}
+      }
+    }
     if(oldStatus!==dbStatus) await logTaskActivity(t.id,'task_status_change',`Status: ${taskStatusLabel(oldStatus)} → ${taskStatusLabel(dbStatus)}`,t.lead_id);
     if(oldNotes!==notes) await logTaskActivity(t.id,'task_note_change',notes?`Notes updated: ${notes.substring(0,120)}`:'Notes cleared',t.lead_id);
 
@@ -7581,7 +7705,8 @@ async function renderTaskDashboard(){
       if(a){
         // Domestic management never sees International operations; International management excludes Domestic.
         if(effectiveTeamCategory(a)!==myTeamCategory)return false;
-        return isOwnCountryStaff(a);
+        // Manager / Admin / Director see their own OFFICE's tasks only.
+        return !!(myOffice&&a.office===myOffice);
       }
       return false;
     });
@@ -7620,6 +7745,8 @@ async function renderTaskDashboard(){
   document.getElementById('td-workstream-toggle').style.display=isPersonalView?'none':'block';
   if(isPersonalView){
     myTasksPersonalData=scoped;
+    const _bar=document.getElementById('mtp-lead-update-bar');
+    if(_bar)_bar.innerHTML=`<div style="font-weight:700;font-size:14px;margin-bottom:8px">Your leads — updated this week</div>`+(leadUpdateBarHtml(myName,false)||'<span style="font-size:12px;color:var(--ink3)">No active leads assigned yet.</span>');
     renderMyTasksPersonalTab();
     return;
   }
@@ -7695,7 +7822,7 @@ async function renderTaskDashboard(){
   });
   const assigneeEntries=Object.entries(byAssignee).sort((a,b)=>b[1]-a[1]);
   document.getElementById('td-by-assignee').innerHTML=assigneeEntries.length
-    ? assigneeEntries.map(([who,count])=>`<div class="prow"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:120px">${esc(who)}</span><div class="bar-t"><div class="bar-f" style="width:${Math.round(count/assigneeEntries[0][1]*100)}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${count}</span></div>`).join('')
+    ? assigneeEntries.map(([who,count])=>`<div class="prow" style="flex-wrap:wrap"><span class="pill" style="background:var(--sky-l);color:var(--sky);min-width:120px">${esc(who)}</span><div class="bar-t"><div class="bar-f" style="width:${Math.round(count/assigneeEntries[0][1]*100)}%;background:var(--pine3)"></div></div><span class="pn" style="color:var(--pine3)">${count}</span>${who!=='Unassigned'?`<div style="flex-basis:100%;margin:2px 0 8px 0;display:flex;align-items:center;gap:8px"><span style="font-size:10.5px;color:var(--ink3);min-width:120px">Leads updated (7d)</span>${leadUpdateBarHtml(who,true)}</div>`:''}</div>`).join('')
     : emptyState('🎉','Nothing outstanding.');
 
   // Full task list, filterable by state.
@@ -8023,8 +8150,15 @@ function openAddLead(){
   // code default, and which country the lead is visible/scoped under).
   document.getElementById('f-country').value='';
   document.getElementById('f-nationality').value='';
+  // Adding from the Domestic tab: pre-set UK office + UK nationality so the
+  // lead is classified Domestic and stays out of International.
+  if(canSwitchOpsViewUser()&&superAdminOpsView==='Domestic'){
+    document.getElementById('f-country').value='UK';
+    document.getElementById('f-nationality').value='UK';
+  }
   syncLeadOffice();
   document.getElementById('f-mobile-code').value='';refreshCountryCombo('f-mobile-code');
+  if(canSwitchOpsViewUser()&&superAdminOpsView==='Domestic'){try{syncMobileCode();syncBudgetCurrency();}catch(e){}}
   document.getElementById('f-status').value='New Enquiry';
   document.getElementById('f-prio').value='Medium';
   document.getElementById('f-agent').value='';
@@ -8268,7 +8402,30 @@ async function saveLead(){
     if(myRole==='Counsellor'&&!isSuperAdmin){
       data.counsellor=myName;
     } else if(!data.counsellor){
-      const _own=existingOwnerForNumber(data.mobile,null);if(_own){data.counsellor=_own;}else{const rr=await getNextCounsellorForOffice(data.office);data.counsellor=rr.name;}
+      const _own=existingOwnerForNumber(data.mobile,null);if(_own){data.counsellor=_own;}else{
+        // Creating from the Domestic / International tab: only that team's counsellors
+        // may receive the lead, so it is classified correctly and stays on that side.
+        const viewPool=(canSwitchOpsViewUser()&&superAdminOpsView)?getOfficeCounsellors(data.office).filter(t=>superAdminOpsView==='Domestic'?effectiveTeamCategory(t)==='Domestic':effectiveTeamCategory(t)!=='Domestic'):null;
+        if(viewPool&&viewPool.length){
+          const key='view:'+superAdminOpsView+':'+data.office;
+          const idx=(rrStateByOffice[key]||0)%viewPool.length;
+          rrStateByOffice[key]=idx+1;
+          data.counsellor=viewPool[idx].full_name;
+        } else {
+          const rr=await getNextCounsellorForOffice(data.office);data.counsellor=rr.name;
+        }
+      }
+    }
+    // Final safety: a lead created while a tab is on must classify to that tab.
+    if(canSwitchOpsViewUser()&&superAdminOpsView){
+      const isDom=leadIsDomesticWorkstream({...data,id:'__new__'});
+      if((superAdminOpsView==='Domestic')!==isDom){
+        const pool=(teamList||[]).filter(t=>(t.role||'Counsellor')==='Counsellor'&&!isSuperAdminRow(t)&&(superAdminOpsView==='Domestic'?effectiveTeamCategory(t)==='Domestic':effectiveTeamCategory(t)!=='Domestic'));
+        const sameOffice=pool.filter(t=>t.office===data.office);
+        const pick=(sameOffice.length?sameOffice:pool)[0];
+        if(pick){data.counsellor=pick.full_name;}
+        else{btn.disabled=false;setSynced();toast('No '+superAdminOpsView+' counsellor is available to take this lead — add one to the '+superAdminOpsView+' team first.');return;}
+      }
     }
     if(data.counsellor)data.assigned_at=new Date().toISOString();
     const res=await sb.from('leads').insert([data]).select();
@@ -8313,7 +8470,7 @@ function visibleCoaching(){
   // Coaching rows aren't tagged with office/country themselves — scope them
   // through the lead they belong to, which is already correctly filtered
   // by loadLeads() (own country for Admins, own leads only for Counsellors).
-  if(isSuperAdmin) return coaching;
+  if(isSuperAdmin) return coaching.filter(c=>rowInOpsView(c.lead_id,null));
   const visibleLeadIds=new Set(leads.map(l=>l.id));
   return coaching.filter(c=>visibleLeadIds.has(c.lead_id));
 }
@@ -8507,14 +8664,18 @@ function renderFU(){
   const cf=document.getElementById('fp-co').value;
   const countryF=document.getElementById('fp-country').value;
   const act=['New Enquiry','Pending','Ongoing','Contacted','Follow Up','Callback Later','Interested','Counselling Done','Defer'];
-  const f=opsViewScopedLeads(leads).filter(l=>act.includes(l.status)&&(!pf||l.priority===pf)&&(!cf||l.counsellor===cf)&&(!countryF||l.country===countryF))
+  const fuBase=opsViewScopedLeads(leads).filter(l=>act.includes(l.status));
+  fillSelectKeep(document.getElementById('fp-co'),'All counsellors',fuBase.map(l=>l.counsellor));
+  document.getElementById('fp-co').value=cf||'';
+  const f=fuBase.filter(l=>(!pf||l.priority===pf)&&(!cf||l.counsellor===cf)&&(!countryF||l.country===countryF))
     .sort((a,b)=>(a.priority==='High'?0:a.priority==='Medium'?1:2)-(b.priority==='High'?0:b.priority==='Medium'?1:2));
-  const empty=f.length===0;
+  const empty=fuBase.length===0; // nothing at all in scope — NOT merely "filters matched nothing"
   document.getElementById('fu-empty').style.display=empty?'flex':'none';
   document.getElementById('fu-content').style.display=empty?'none':'block';
   if(empty)return;
   document.getElementById('fucount').textContent=`${f.length} active follow-up${f.length!==1?'s':''}`;
   const fl=document.getElementById('fu-list');
+  if(!f.length){fl.innerHTML=emptyState('🔍','No follow-ups match these filters.');return;}
   fl.innerHTML=f.map(l=>{
     const cls=l.priority==='High'?'high':l.priority==='Medium'?'medium':'low';
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
@@ -8561,7 +8722,9 @@ async function loadStudentPortalData(){
     el.innerHTML=`<div style="text-align:center;padding:24px;color:var(--rose)">⚠️ ${esc(String(err))}</div>`;
   }
 }
-function renderStudentPortalTable(students){
+function renderStudentPortalTable(allStudents){
+  window.__spAllStudents=allStudents||[];
+  const students=window.__spAllStudents.filter(s=>contactInOpsView(s.phone,s.crm_lead_id));
   const el=document.getElementById('sp-content');
   if(!students.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--ink3);font-style:italic">No student signups yet.</div>';return;}
   const payBadge=(status)=>{
@@ -9041,14 +9204,8 @@ function renderTeam(team){
   const effectiveView=canSwitchOpsViewUser()?(superAdminOpsView||'International'):myTeamCategory;
   if(effectiveView==='Domestic'){
     tg.innerHTML='';
-    const fp=document.getElementById('fp-co');
+    const fp=null; // follow-up counsellor filter is now rebuilt by renderFU() from the scoped leads
     if(fp){
-      const existing=Array.from(fp.options).map(o=>o.value);
-      (team||[]).filter(t=>effectiveTeamCategory(t)==='Domestic').forEach(t=>{
-        if(t.full_name&&!existing.includes(t.full_name)){
-          const o=document.createElement('option');o.value=t.full_name;o.textContent=t.full_name;fp.appendChild(o);
-        }
-      });
     }
     return;
   }
@@ -9123,9 +9280,7 @@ function renderTeam(team){
   }).join('');
 
   // update follow-up counsellor filter
-  const fp=document.getElementById('fp-co');
-  const existing=Array.from(fp.options).map(o=>o.value);
-  (team||[]).forEach(t=>{if(t.full_name&&!existing.includes(t.full_name)){const o=document.createElement('option');o.value=t.full_name;o.textContent=t.full_name;fp.appendChild(o);}});
+  // (follow-up counsellor filter is rebuilt by renderFU() from the scoped leads)
 }
 
 async function openTeamMemberProfile(teamId,name){
@@ -9847,8 +10002,7 @@ async function loadCommissions(){
       // Domestic/International is based purely on country (which office is
       // assisting the student), never nationality — see opsViewScopedLeads
       // for the full reasoning.
-      const isDomesticLead=l=>String(l?.country||'').trim().toLowerCase()==='uk';
-      commissions=data.filter(c=>superAdminOpsView==='Domestic'?isDomesticLead(c.leads):!isDomesticLead(c.leads));
+      commissions=data.filter(c=>rowInOpsView(c.lead_id,c.leads));
     } else {
       commissions=data;
     }
@@ -9961,7 +10115,12 @@ function initReports(){
   if(!dateInput.value) dateInput.value=rptState.date;
   if(isSuperAdmin){
     countrySel.disabled=false;
-    countrySel.innerHTML=isOwner
+    const _rv=superAdminOpsView;
+    countrySel.innerHTML=_rv==='Domestic'
+      ? '<option value="UK">🇬🇧 UK (Domestic)</option>'
+      : _rv==='International'
+      ? (isOwner?'<option value="International">🌍 International (India, Pakistan, Bangladesh)</option><option>India</option><option>Pakistan</option><option>Bangladesh</option>':'<option value="International">🌍 International (Pakistan, Bangladesh)</option><option>Pakistan</option><option>Bangladesh</option>')
+      : isOwner
       ? '<option value="All">🌐 All Countries</option><option value="International">🌍 International (India, Pakistan, Bangladesh)</option><option>India</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option>'
       : '<option value="All">🌐 All Countries</option><option value="International">🌍 International (Pakistan, Bangladesh)</option><option>UK</option><option>Pakistan</option><option>Bangladesh</option>';
     // Default to whatever ops-view is currently active, so Reports agrees
@@ -10007,9 +10166,12 @@ function dateRangeFor(period,dateStr){
   return {start:start.toISOString().substring(0,10),end:dateStr};
 }
 function scopedLeadsFor(country){
-  if(country==='All')return leads;
-  if(country==='International')return leads.filter(l=>l.country!=='UK');
-  return leads.filter(l=>l.country===country);
+  // Always start from the ops-view scoped set so Domestic tab = Domestic
+  // numbers only, International tab = International only.
+  const base=opsViewScopedLeads(leads);
+  if(country==='All')return base;
+  if(country==='International')return base.filter(l=>l.country!=='UK');
+  return base.filter(l=>l.country===country);
 }
 function destroyChart(id){if(rptCharts[id]){rptCharts[id].destroy();delete rptCharts[id];}}
 
@@ -11405,7 +11567,7 @@ async function loadMyTasks(){
   // instead of opening Task Dashboard — assigned leads must still produce
   // an actionable task and appear here.
   await syncAssignedLeadTasksForCurrentUser();
-  const{data,error}=await sb.from('tasks').select('*,leads(name,country)').eq('status','Open').order('due_date',{ascending:true}).limit(200);
+  const{data,error}=await sb.from('tasks').select('*,leads(name,country,office)').eq('status','Open').order('due_date',{ascending:true}).limit(200);
   if(error){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load tasks — has the tasks table been created yet?</div>';return;}
   let scoped=data||[];
   if(myRole==='Counsellor'&&!isSuperAdmin){
@@ -11414,10 +11576,14 @@ async function loadMyTasks(){
     // Must respect the Domestic/International ops-view toggle the same
     // way the main Leads list does (by country — which office is
     // assisting the student — never by nationality).
-    const isDomesticLead=l=>l&&(l.nationality==='UK'||l.country==='UK');
-    scoped=scoped.filter(t=>superAdminOpsView==='Domestic'?isDomesticLead(t.leads):!isDomesticLead(t.leads));
+    scoped=scoped.filter(t=>rowInOpsView(t.lead_id,t.leads));
   } else if(!isSuperAdmin){
-    scoped=scoped.filter(t=>t.leads?.country===myCountry);
+    if(['Admin','Manager','Director'].includes(myRole)){
+      // Management: tasks held by people in their own office only.
+      scoped=scoped.filter(t=>{const a=teamRowByName(t.assigned_to);return a?(a.office===myOffice):(t.leads?.office===myOffice);});
+    } else {
+      scoped=scoped.filter(t=>(t.assigned_to||'').trim()===myName);
+    }
   }
   if(!scoped.length){el.innerHTML=emptyState('🎉','No open tasks right now.');return;}
 
@@ -11770,13 +11936,19 @@ function queueUrgentPopup(html,onView,compactText){
 // first click anywhere on the page, and then works for the rest of the
 // session regardless of what triggers it afterward.
 let sharedAudioCtx=null;
-document.addEventListener('click',function unlockAudioOnce(){
-  if(!sharedAudioCtx){
-    try{ sharedAudioCtx=new(window.AudioContext||window.webkitAudioContext)(); }catch(e){}
-  }
-  if(sharedAudioCtx&&sharedAudioCtx.state==='suspended') sharedAudioCtx.resume();
-  document.removeEventListener('click',unlockAudioOnce);
-},{once:true});
+['click','pointerdown','keydown','touchstart'].forEach(function(evt){
+  document.addEventListener(evt,function unlockAudio(){
+    if(!sharedAudioCtx){
+      try{ sharedAudioCtx=new(window.AudioContext||window.webkitAudioContext)(); }catch(e){}
+    }
+    if(sharedAudioCtx&&sharedAudioCtx.state==='suspended') sharedAudioCtx.resume();
+    // Keep listening until the context is actually running (some browsers
+    // leave it suspended after the first gesture).
+    if(sharedAudioCtx&&sharedAudioCtx.state==='running'){
+      ['click','pointerdown','keydown','touchstart'].forEach(function(e2){document.removeEventListener(e2,unlockAudio);});
+    }
+  },{passive:true});
+});
 
 function playNotificationChime(){
   if(!notificationsEnabled)return;
@@ -11789,7 +11961,21 @@ function playNotificationChime(){
 let mySoundEnabled=true;
 function playChatChime(){
   if(!mySoundEnabled)return;
-  playChimeTone();
+  // Distinct, softer "pop" message tone — different from the alert chime.
+  try{
+    if(!sharedAudioCtx){ sharedAudioCtx=new(window.AudioContext||window.webkitAudioContext)(); }
+    if(sharedAudioCtx.state==='suspended'){ sharedAudioCtx.resume(); }
+    const ctx=sharedAudioCtx, now=ctx.currentTime;
+    [[660,0],[990,.07]].forEach(([freq,delay])=>{
+      const osc=ctx.createOscillator(), gain=ctx.createGain();
+      osc.type='sine';osc.frequency.value=freq;
+      gain.gain.setValueAtTime(0,now+delay);
+      gain.gain.linearRampToValueAtTime(.2,now+delay+.01);
+      gain.gain.exponentialRampToValueAtTime(.001,now+delay+.16);
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.start(now+delay);osc.stop(now+delay+.18);
+    });
+  }catch(e){}
 }
 async function toggleMySoundEnabled(){
   mySoundEnabled=!mySoundEnabled;
@@ -12404,10 +12590,14 @@ async function loadResumes(){
   const nb = document.getElementById('nb-resumes');
   if(nb) nb.textContent = resumesList.length;
 }
+function scopedResumes(){
+  return (resumesList||[]).filter(r=>contactInOpsView(r.mobile,null));
+}
 function renderResumesAdmin(){
   const empty = document.getElementById('resumes-empty');
   const content = document.getElementById('resumes-content');
-  if(!resumesList.length){
+  const resumesShown = scopedResumes();
+  if(!resumesShown.length){
     empty.style.display = 'flex';
     content.style.display = 'none';
     return;
@@ -12415,8 +12605,8 @@ function renderResumesAdmin(){
   empty.style.display = 'none';
   content.style.display = 'block';
   const canDelete = isSuperAdmin || myRole==='Admin' || myRole==='Director';
-  document.getElementById('resumes-count').textContent = resumesList.length + ' resume' + (resumesList.length!==1?'s':'') + ' submitted';
-  document.getElementById('resumes-tbody').innerHTML = resumesList.map(r => {
+  document.getElementById('resumes-count').textContent = resumesShown.length + ' resume' + (resumesShown.length!==1?'s':'') + ' submitted';
+  document.getElementById('resumes-tbody').innerHTML = resumesShown.map(r => {
     const dt = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—';
     const link = r.resume_url
       ? `<a href="${r.resume_url}" target="_blank" style="color:var(--pine);font-weight:600;text-decoration:underline">${esc(r.resume_filename||'View file')}</a>`
@@ -12448,6 +12638,74 @@ async function deleteResume(id){
 // a public `call-recordings` storage bucket in Supabase. See setup notes
 // shared alongside this file for the SQL to create both.
 let callLogs=[];
+// ── Productivity scoping ───────────────────────────────────────────
+// Domestic tab ON = Domestic info only; International tab ON = International
+// info only (for Owner / Platform Admin / Super Admin). Domestic = counsellor
+// is on the Domestic TEAM (team category), in any office. Admin/Manager only
+// ever see their own country; Jisan never sees India's data; counsellors
+// never see recordings (their tabs are hidden and the player is not rendered).
+function teamRowByName(name){
+  const n=String(name||'').trim().toLowerCase();
+  if(!n)return null;
+  return (teamList||[]).find(t=>String(t.full_name||'').trim().toLowerCase()===n)||null;
+}
+function memberInOpsView(t){
+  if(!canSwitchOpsViewUser()||!superAdminOpsView)return true;
+  const dom=effectiveTeamCategory(t)==='Domestic';
+  return superAdminOpsView==='Domestic'?dom:!dom;
+}
+function prodSeesAllCountries(){return isSuperAdmin||myRole==='Director';}
+function prodMemberVisible(t){
+  if(!t)return false;
+  if(isOwnerRowHiddenFromMe(t))return false;
+  if(isIndiaLocked()&&t.country==='India')return false;
+  if(!prodSeesAllCountries()&&t.country!==myCountry)return false;
+  return memberInOpsView(t);
+}
+function callVisibleFor(name){
+  const t=teamRowByName(name);
+  if(t)return prodMemberVisible(t);
+  // Name not matched to any team row (e.g. a removed staff member): only the
+  // all-country tier sees it, only on the International side, never for Jisan
+  // (it could belong to India).
+  return prodSeesAllCountries()&&!isIndiaLocked()&&superAdminOpsView!=='Domestic';
+}
+async function loadAllCallData(){
+  await Promise.all([loadCallLogs(),loadWhatsAppCalls()]);
+}
+// Per-counsellor call totals, one collapsed block per country/office.
+function renderCallCounsellorSummary(targetId){
+  const el=document.getElementById(targetId);
+  if(!el)return;
+  const counts={};
+  (callLogs||[]).forEach(c=>{const k=String(c.counsellor||'').trim().toLowerCase();if(k)counts[k]=(counts[k]||0)+1;});
+  (whatsappCalls||[]).forEach(c=>{const k=String(c.counsellor||'').trim().toLowerCase();if(k)counts[k]=(counts[k]||0)+1;});
+  const members=(teamList||[]).filter(t=>(t.role||'Counsellor')==='Counsellor'&&!isSuperAdminRow(t)&&prodMemberVisible(t));
+  if(!members.length){el.innerHTML='';return;}
+  const byOffice={};
+  members.forEach(t=>{const o=t.office||t.country||'Other';(byOffice[o]=byOffice[o]||[]).push(t);});
+  const scopeLabel=(canSwitchOpsViewUser()&&superAdminOpsView)?(superAdminOpsView==='Domestic'?'Domestic':'International')+' team':'All teams';
+  el.innerHTML=`<div class="card" style="margin-bottom:16px"><div class="card-h"><span class="card-t">📞 Calls per counsellor — ${esc(scopeLabel)}</span></div>`+
+    Object.keys(byOffice).sort().map(o=>{
+      const list=byOffice[o].map(t=>({n:t.full_name||t.email||'—',c:counts[String(t.full_name||'').trim().toLowerCase()]||0})).sort((a,b)=>b.c-a.c||a.n.localeCompare(b.n));
+      const total=list.reduce((a,x)=>a+x.c,0);
+      return `<details style="border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--paper)"><summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px"><span>${esc(o)}</span><span style="color:var(--ink3);font-weight:400;font-size:12px">${list.length} counsellor${list.length!==1?'s':''} · ${total} call${total!==1?'s':''}</span></summary><div style="padding:4px 14px 12px 14px">`+
+        list.map(x=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13px"><span>${esc(x.n)}</span><span class="pill" style="background:${x.c?'var(--sage-l)':'var(--rose-l)'};color:${x.c?'#0F6E56':'var(--rose)'}">${x.c}</span></div>`).join('')+
+        `</div></details>`;
+    }).join('')+`</div>`;
+}
+function collapseProdLists(){
+  const w=document.getElementById('cl-table-wrap'),i=document.getElementById('cl-toggle-icon');
+  if(w)w.style.display='none';if(i)i.style.transform='rotate(0deg)';
+  const c=document.getElementById('wc-content'),wi=document.getElementById('wc-toggle-icon');
+  if(c)c.style.display='none';if(wi)wi.style.transform='rotate(0deg)';
+}
+function refreshProductivityScope(){
+  if(!document.getElementById('sc-productivity')?.classList.contains('active'))return;
+  populateWhatsAppCallFilters();
+  const cur=['calls','whatsapp','myupdate','monitor'].find(s=>document.getElementById('prod-sub-'+s)?.style.display==='block')||'calls';
+  setProdSubtab(cur);
+}
 async function loadCallLogs(){
   const{data,error}=await sb.from('call_logs').select('*').order('call_date',{ascending:false});
   if(!error&&data) callLogs=data;
@@ -12482,14 +12740,17 @@ function toggleCallLogTable(){
 function renderCallLogs(){
   const empty=document.getElementById('cl-empty'), content=document.getElementById('cl-content');
   if(!empty||!content)return;
-  if(!callLogs.length){empty.style.display='flex';content.style.display='none';return;}
+  renderCallCounsellorSummary('cl-summary');
+  const visibleLogs=callLogs.filter(c=>callVisibleFor(c.counsellor));
+  if(!visibleLogs.length){empty.style.display='flex';content.style.display='none';return;}
   empty.style.display='none';content.style.display='block';
   const canDelete=isSuperAdmin||myRole==='Admin'||myRole==='Director';
-  document.getElementById('cl-count-text').textContent=callLogs.length+' call'+(callLogs.length!==1?'s':'')+' logged — click to '+(document.getElementById('cl-table-wrap').style.display==='none'?'show':'hide');
+  const canHear=!isRestrictedStaffRole();
+  document.getElementById('cl-count-text').textContent=visibleLogs.length+' call'+(visibleLogs.length!==1?'s':'')+' logged — click to '+(document.getElementById('cl-table-wrap').style.display==='none'?'show':'hide');
   const statusColors={initiated:['var(--gold-l)','var(--gold)'],ringing:['var(--gold-l)','var(--gold)'],'in-progress':['var(--sage-l)','#0F6E56'],completed:['var(--sage-l)','#0F6E56'],'no-answer':['#FCEBEB','#A32D2D'],failed:['#FCEBEB','#A32D2D'],busy:['#FCEBEB','#A32D2D']};
-  document.getElementById('cl-tbody').innerHTML=callLogs.map(c=>{
+  document.getElementById('cl-tbody').innerHTML=visibleLogs.map(c=>{
     const dt=c.call_date?new Date(c.call_date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
-    const rec=c.recording_url?(`<button onclick="toggleCallRecordingPlayer('${c.id}')" style="background:none;border:1px solid var(--pine);color:var(--pine);border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer">▶ Play</button><div id="cl-rec-player-${c.id}" style="display:none;margin-top:6px"><audio controls preload="none" style="height:32px;max-width:220px"><source src="${c.recording_url}"></audio></div>`):c.auto_recorded?'<span style="color:var(--ink3);font-style:italic">Recording processing…</span>':'<span style="color:var(--ink3);font-style:italic">No recording</span>';
+    const rec=!canHear?'<span style="color:var(--ink3)">—</span>':c.recording_url?(`<button onclick="toggleCallRecordingPlayer('${c.id}')" style="background:none;border:1px solid var(--pine);color:var(--pine);border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer">▶ Play</button><div id="cl-rec-player-${c.id}" style="display:none;margin-top:6px"><audio controls preload="none" style="height:32px;max-width:220px"><source src="${c.recording_url}"></audio></div>`):c.auto_recorded?'<span style="color:var(--ink3);font-style:italic">Recording processing…</span>':'<span style="color:var(--ink3);font-style:italic">No recording</span>';
     const outcomeBadge=c.outcome
       ? `<span class="pill" style="background:var(--sky-l);color:var(--sky)">${esc(c.outcome)}</span>`
       : c.call_status
@@ -12559,7 +12820,7 @@ async function loadWhatsAppCalls(){
 function populateWhatsAppCallFilters(){
   const sel=document.getElementById('wc-filter-counsellor');
   if(!sel)return;
-  const names=[...new Set((teamList||[]).filter(function(t){return t.role==='Counsellor';}).map(function(t){return t.full_name;}).filter(Boolean))].sort();
+  const names=[...new Set((teamList||[]).filter(function(t){return t.role==='Counsellor'&&prodMemberVisible(t);}).map(function(t){return t.full_name;}).filter(Boolean))].sort();
   var opts='<option value="All">All counsellors</option>';
   for(var i=0;i<names.length;i++){ opts+='<option value="'+esc(names[i])+'">'+esc(names[i])+'</option>'; }
   sel.innerHTML=opts;
@@ -12592,7 +12853,9 @@ function renderWhatsAppCalls(){
   const empty=document.getElementById('wc-empty'), content=document.getElementById('wc-content');
   const toggleHeader=document.getElementById('wc-toggle-header');
   if(!empty||!content)return;
-  if(!whatsappCalls.length){
+  renderCallCounsellorSummary('wc-summary');
+  const scopedWaCalls=whatsappCalls.filter(function(c){return callVisibleFor(c.counsellor);});
+  if(!scopedWaCalls.length){
     empty.style.display='flex';
     if(toggleHeader)toggleHeader.style.display='none';
     content.style.display='none';
@@ -12601,14 +12864,14 @@ function renderWhatsAppCalls(){
   empty.style.display='none';
   if(toggleHeader){
     toggleHeader.style.display='flex';
-    document.getElementById('wc-toggle-count').textContent='('+whatsappCalls.length+')';
+    document.getElementById('wc-toggle-count').textContent='('+scopedWaCalls.length+')';
   }
 
   const counsellorFilter=(document.getElementById('wc-filter-counsellor')||{}).value||'All';
   const fromDate=(document.getElementById('wc-filter-date-from')||{}).value||null;
   const toDate=(document.getElementById('wc-filter-date-to')||{}).value||null;
 
-  const filteredCalls=whatsappCalls.filter(function(c){
+  const filteredCalls=scopedWaCalls.filter(function(c){
     if(counsellorFilter!=='All'&&c.counsellor!==counsellorFilter)return false;
     const callDate=c.started_at?c.started_at.substring(0,10):null;
     if(fromDate&&(!callDate||callDate<fromDate))return false;
@@ -12617,14 +12880,14 @@ function renderWhatsAppCalls(){
   });
 
   const canDelete=isSuperAdmin||myRole==='Admin'||myRole==='Director';
-  document.getElementById('wc-count').textContent=filteredCalls.length+' call'+(filteredCalls.length!==1?'s':'')+' logged'+(filteredCalls.length!==whatsappCalls.length?' (of '+whatsappCalls.length+' total)':'');
+  document.getElementById('wc-count').textContent=filteredCalls.length+' call'+(filteredCalls.length!==1?'s':'')+' logged'+(filteredCalls.length!==scopedWaCalls.length?' (of '+scopedWaCalls.length+' total)':'');
 
   const statusColors={ringing:['var(--gold-l)','var(--gold)'],answered:['var(--sage-l)','#0F6E56'],completed:['var(--sage-l)','#0F6E56'],missed:['#FCEBEB','#A32D2D'],failed:['#FCEBEB','#A32D2D']};
 
   document.getElementById('wc-tbody').innerHTML=filteredCalls.map(function(c){
     const dt=c.started_at?new Date(c.started_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'-';
     const durationMins=c.duration_seconds?Math.round(c.duration_seconds/60):null;
-    const rec=c.recording_url?('<button onclick="toggleWhatsAppRecordingPlayer(\''+c.id+'\')" style="background:none;border:1px solid var(--pine3);color:var(--pine3);border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer">▶ Play</button><div id="wc-rec-player-'+c.id+'" style="display:none;margin-top:6px"><audio controls preload="none" style="height:32px;max-width:220px"><source src="'+c.recording_url+'"></audio></div>'):'<span style="color:var(--ink3);font-style:italic">No recording</span>';
+    const rec=isRestrictedStaffRole()?'<span style="color:var(--ink3)">—</span>':c.recording_url?('<button onclick="toggleWhatsAppRecordingPlayer(\''+c.id+'\')" style="background:none;border:1px solid var(--pine3);color:var(--pine3);border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer">▶ Play</button><div id="wc-rec-player-'+c.id+'" style="display:none;margin-top:6px"><audio controls preload="none" style="height:32px;max-width:220px"><source src="'+c.recording_url+'"></audio></div>'):'<span style="color:var(--ink3);font-style:italic">No recording</span>';
     const sc=statusColors[c.status]||['var(--sky-l)','var(--sky)'];
     const statusBadge='<span class="pill" style="background:'+sc[0]+';color:'+sc[1]+'">'+esc(c.status||'-')+'</span>';
     const leadName=(c.leads&&c.leads.name)?c.leads.name:'(unattached)';
@@ -12710,8 +12973,9 @@ function setProdSubtab(sub){
   // not fetched automatically just because the Productivity screen was
   // opened, which was wasting a network call for tabs the person never
   // looks at.
-  if(sub==='calls')loadCallLogs().then(renderCallLogs);
-  if(sub==='whatsapp')loadWhatsAppCalls().then(renderWhatsAppCalls);
+  collapseProdLists(); // every list starts closed; open only on click
+  if(sub==='calls')loadAllCallData().then(renderCallLogs);
+  if(sub==='whatsapp')loadAllCallData().then(renderWhatsAppCalls);
   if(sub==='monitor'){renderActivityMonitor();renderExportLog();renderKnownDevices();}
 }
 
@@ -12750,7 +13014,11 @@ const QUERY_COUNTRY_BADGE_COLORS={India:['#FEF3C7','#92400E'],UK:['#DBEAFE','#1E
 function renderQueriesList(channel){
   const listEl=document.getElementById('q-'+channel+'-list');
   if(!listEl)return;
-  const items=(queriesCache[channel]||[]).filter(q=>q.status!=='Not Relevant'&&q.status!=='Spam');
+  const items=(queriesCache[channel]||[]).filter(q=>q.status!=='Not Relevant'&&q.status!=='Spam').filter(q=>{
+    if(!canSwitchOpsViewUser()||!superAdminOpsView)return true;
+    const dom=String(q.enquiry_country||'').trim().toLowerCase()==='uk';
+    return superAdminOpsView==='Domestic'?dom:!dom;
+  });
   if(!items.length){listEl.innerHTML=emptyState('📭','No queries yet.');return;}
   listEl.innerHTML=items.map(q=>{
     const[cbg,ctx]=QUERY_COUNTRY_BADGE_COLORS[q.enquiry_country]||['#F3F4F6','#374151'];
@@ -12938,6 +13206,8 @@ async function renderActivityMonitor(){
 
   let members=(teamList||[]).filter(t=>{
     if(isOwnerRowHiddenFromMe(t))return false;
+    if(isIndiaLocked()&&t.country==='India')return false;
+    if(!memberInOpsView(t))return false; // Domestic tab = Domestic only, International tab = International only
     const categoryFilter=document.getElementById('am-category')?.value||'All';
     if(categoryFilter!=='All'&&effectiveTeamCategory(t)!==categoryFilter)return false;
     if(countryFilter&&countryFilter!=='All'){
@@ -12990,8 +13260,8 @@ async function renderActivityMonitor(){
       callStatsByName[name].seconds+=seconds||0;
     }
   }
-  whatsappCalls.forEach(c=>addCallStat(c.counsellor,c.status==='answered'||c.status==='completed',c.duration_seconds));
-  callLogs.forEach(c=>addCallStat(c.counsellor,c.outcome==='Connected',(c.duration_mins||0)*60));
+  whatsappCalls.filter(c=>callVisibleFor(c.counsellor)).forEach(c=>addCallStat(c.counsellor,c.status==='answered'||c.status==='completed',c.duration_seconds));
+  callLogs.filter(c=>callVisibleFor(c.counsellor)).forEach(c=>addCallStat(c.counsellor,c.outcome==='Connected',(c.duration_mins||0)*60));
 
   listEl.innerHTML=`<div class="tw"><table class="tbl"><thead><tr><th>Name</th><th>Team</th><th>Country</th><th>Updates (7d)</th><th>Calls</th><th>Talk time</th><th>Latest update</th><th>Activity</th></tr></thead><tbody>`+
     members.map(m=>{

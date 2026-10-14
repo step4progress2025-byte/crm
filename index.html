@@ -721,6 +721,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div id="briefing-text" style="font-family:var(--font-h);font-size:16px;line-height:1.6;max-width:820px">Loading your briefing…</div>
         </div>
 
+        <div id="dash-ops-widgets"></div>
+
         <div class="card" id="data-health-widget" style="margin-bottom:18px">
           <div class="card-h" style="cursor:pointer" onclick="toggleDataHealth()">
             <span class="card-t">🩺 Data Health <span id="dh-count-badge" style="font-size:11px;font-weight:700;color:var(--rose,#9F1239);background:var(--rose-l,#FFE4E6);padding:2px 8px;border-radius:99px;margin-left:6px;display:none"></span></span>
@@ -3441,7 +3443,11 @@ function isAllowedEmail(email){
   return ALLOWED_EMAIL_DOMAINS.some(d=>e.endsWith('@'+d));
 }
 function ini(n){const p=(n||'?').trim().split(' ');return(p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
-function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function esc(s){return(s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+// For values placed inside a JavaScript string literal within an HTML handler attribute,
+// e.g. onclick="openThing('${escJs(name)}')". JS-escape first, then HTML-escape, so a
+// name containing ' or " or \ can never break out of the string or the attribute.
+function escJs(s){return esc((s==null?'':String(s)).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,'\\n'));}
 // SECURITY: only ever treat a user-supplied field as a clickable link if
 // it genuinely starts with http:// or https:// — rejects javascript:,
 // data:, and similar schemes that would otherwise execute arbitrary code
@@ -3497,7 +3503,7 @@ function contactIcons(mobile,email,opts){
   // initProductivity — neither of those changed).
   const canRecordCall=num&&opts.leadId&&(isSuperAdmin||myRole==='Admin'||myRole==='Director'||myRole==='Counsellor');
   const recordCallBtn=canRecordCall
-    ? `<span onclick="event.stopPropagation();placeRecordedCall('${opts.leadId}','${esc((opts.leadName||'').replace(/'/g,"\'"))}')" title="Call (auto-recorded)" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:50%;background:var(--pine-l,#EEEDFE);color:var(--pine2);cursor:pointer;flex-shrink:0">${recordCallSvg}</span>`
+    ? `<span onclick="event.stopPropagation();placeRecordedCall('${opts.leadId}','${escJs((opts.leadName||'').replace(/'/g,"\'"))}')" title="Call (auto-recorded)" style="display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:50%;background:var(--pine-l,#EEEDFE);color:var(--pine2);cursor:pointer;flex-shrink:0">${recordCallSvg}</span>`
     : '';
   const parts=[
     btn(num?`tel:${num.replace(/\s/g,'')}`:'', 'var(--sky-l)','var(--sky)','Call',phoneSvg),
@@ -3552,7 +3558,7 @@ function currentUnavailability(teamId){
   const today=new Date().toISOString().substring(0,10);
   return unavailabilityList.find(u=>u.team_id===teamId&&u.from_date<=today&&today<=u.to_date)||null;
 }
-function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===office&&(t.role||'Counsellor')==='Counsellor'&&!isUnavailableToday(t.id));}
+function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===office&&(t.role||'Counsellor')==='Counsellor'&&!isUnavailableToday(t.id)&&memberInOpsView(t));}
 // Round-robin specifically must never pick a Domestic-category counsellor
 // — Domestic leads are hand-assigned by Management only. This is a
 // separate, narrower pool from getOfficeCounsellors(), which Management
@@ -3567,7 +3573,7 @@ function getRoundRobinCounsellorPool(office){return getOfficeCounsellors(office)
 // like that is exactly the point.
 function getOfficeAssignableStaff(office){
   const managementRoles=['Admin','Manager','Director'];
-  return(teamList||[]).filter(t=>t.office===office&&(t.role==='Counsellor'||managementRoles.includes(t.role))&&!isUnavailableToday(t.id));
+  return(teamList||[]).filter(t=>t.office===office&&(t.role==='Counsellor'||managementRoles.includes(t.role))&&!isUnavailableToday(t.id)&&memberInOpsView(t));
 }
 // Application/Visa/SOP Team are operational staff, same restricted access
 // tier as Counsellor — not management. Used everywhere access is scoped.
@@ -3608,7 +3614,7 @@ function isSubTeamRoleOnly(){return['Application Team','Visa Team','SOP Team'].i
 // for round-robin — a Pakistan-based lead's Visa Team member can be
 // anyone with the "Visa Team" role anywhere, not just Pakistan staff.
 function getGlobalRolePool(roleName){
-  return (teamList||[]).filter(t=>t.role===roleName&&!isUnavailableToday(t.id));
+  return (teamList||[]).filter(t=>t.role===roleName&&!isUnavailableToday(t.id)&&memberInOpsView(t));
 }
 async function getNextForGlobalRole(roleName){
   const pool=getGlobalRolePool(roleName);
@@ -4731,6 +4737,10 @@ function updateOpsViewSwitcher(){
 // Admin/Manager/Counsellor tiers (already fixed to one country or one
 // person's leads, a toggle wouldn't make sense there).
 function leadIsDomesticWorkstream(l){
+  // An explicit workstream stamped at creation (from the Domestic / International tab) always wins,
+  // so a lead with no counsellor still belongs to the tab it was added from.
+  if(l&&l.workstream==='Domestic')return true;
+  if(l&&l.workstream==='International')return false;
   const assignee=String(l?.counsellor||'').trim().toLowerCase();
   if(assignee){
     const staff=(teamList||[]).find(t=>String(t?.full_name||'').trim().toLowerCase()===assignee);
@@ -4953,36 +4963,11 @@ pruneIndiaFromCrmDropdowns();
     // only their own country, matching how the rest of the app already
     // scopes visibility. Without this, one new lead anywhere would
     // sound-alert the entire team globally, which gets noisy fast.
-    const relevantToMe=isSuperAdmin||!payload.new?.country||payload.new.country===myCountry;
-    if(payload.eventType==='INSERT'&&payload.new&&relevantToMe){
-      // Duplicate check — same mobile number already exists on a
-      // different lead. Checked against the in-memory leads array from
-      // before this insert, so the newly-inserted row itself doesn't
-      // count as its own duplicate. Uses a distinct, lower "needs
-      // attention" chime instead of the cheerful new-lead one, so staff
-      // can tell the two apart by ear alone.
-      const newMobile=(payload.new.mobile||'').replace(/[\s\-()]/g,'');
-      const isDuplicate=newMobile&&leads.some(l=>l.id!==payload.new.id&&(l.mobile||'').replace(/[\s\-()]/g,'')===newMobile);
-      if(isDuplicate){
-        playDuplicateLeadChime();
-        toast('⚠️ Possible duplicate lead: '+(payload.new.name||'Unnamed')+' — same mobile number as an existing lead');
-      } else {
-        playNewLeadChime();
-        toast('📥 New lead: '+(payload.new.name||'Unnamed'));
-      }
-      const newId=payload.new.id;
-      loadLeads().then(()=>{
-        renderDash();renderLeads();renderFU();badges();
-        // Briefly highlight the new row so it's visually obvious where
-        // it landed, rather than silently appearing in the table.
-        setTimeout(()=>{
-          const row=document.querySelector(`[data-lead-id="${newId}"]`);
-          if(row)row.classList.add('new-lead-flash');
-        },50);
-      });
-      return;
-    }
-    loadLeads().then(()=>{renderDash();renderLeads();renderFU();badges();});
+    // Apply ONLY the lead(s) that changed (batched over a short window) instead of
+    // every online user re-downloading the entire lead list on every edit.
+    const row=payload.eventType==='DELETE'?payload.old:payload.new;
+    if(!row||!row.id)return;
+    queueLeadRefresh(row.id,payload.eventType);
   }).subscribe();
 
   // Instant message tone: listen for direct messages addressed to me, rather
@@ -5041,7 +5026,7 @@ async function loadPasswordResetRequests(){
         <div style="font-weight:600;font-size:13.5px">${esc(r.team_email)}</div>
         <div style="font-size:11px;color:var(--ink3)">Requested ${new Date(r.requested_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
       </div>
-      <button class="btn btn-p" style="font-size:12px;padding:6px 14px" onclick="actionPasswordResetRequest('${r.id}','${esc(r.team_email)}')">Set new password</button>
+      <button class="btn btn-p" style="font-size:12px;padding:6px 14px" onclick="actionPasswordResetRequest('${r.id}','${escJs(r.team_email)}')">Set new password</button>
     </div>
   `).join('');
 }
@@ -5112,7 +5097,7 @@ function visibleEventsFor(){
     return parts.includes(myName)||parts.includes('TEAM:'+myRole);
   });
 }
-async function loadEvents(){   const{data}=await sb.from('events').select('*').order('event_date',{ascending:true});   if(data){events=data;renderEvents();renderEventsTicker();} } function renderEvents(){   const cal=document.getElementById('events-calendar');   const list=document.getElementById('events-list');   if(!cal)return;   const vEvents=visibleEventsFor();   const now=new Date();   const thisMonth=vEvents.filter(e=>new Date(e.event_date).getMonth()===now.getMonth()&&new Date(e.event_date).getFullYear()===now.getFullYear());   const upcoming=vEvents.filter(e=>new Date(e.event_date)>=now).slice(0,10);   const typeColors={'Seminar':"var(--sky-1)",'Webinar':"var(--sky-1)",'Application Deadline':"var(--rose-1)",'Follow-up':"var(--sage-1)",'Other':"var(--gold-1)"};   cal.innerHTML=vEvents.length?vEvents.map(e=>{     const d=new Date(e.event_date);     const isPast=d<now;     const bg=typeColors[e.event_type]||"var(--gold-1)";     return`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);opacity:${isPast?0.5:1}">     <div style="min-width:48px;text-align:center;background:${bg};border-radius:8px;padding:6px 4px">     <div style="font-size:18px;font-weight:600;color:var(--ink);line-height:1">${d.getDate()}</div>     <div style="font-size:10px;color:var(--ink2)">${d.toLocaleString('default',{month:'short'})}</div>     </div>     <div style="flex:1">     <div style="font-weight:500;font-size:14px;color:var(--ink)">${esc(e.title)}</div>     <div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(e.event_type||'')}${e.description?` · <a href="${e.description}" target="_blank" style="color:var(--pine2)">${esc(e.description)}</a>`:''}</div>     </div>     <button onclick="openAddEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px">✏️</button>${(!e.created_by||e.created_by===currentUser?.id||isSuperAdmin)?`<button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">&times;</button>`:''}     </div>`;}).join(''):emptyState('📅','No events yet. Click Add event to get started.');   list.innerHTML=thisMonth.length?thisMonth.map(e=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink2)"><span><b style="color:var(--ink)">${new Date(e.event_date).getDate()} ${new Date(e.event_date).toLocaleString('default',{month:'short'})}</b> · ${esc(e.title)}</span><span style="display:flex;gap:2px;flex-shrink:0"><button onclick="openAddEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:12px;padding:0 4px">✏️</button>${(!e.created_by||e.created_by===currentUser?.id||isSuperAdmin)?`<button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:15px;padding:0 4px">&times;</button>`:''}</span></div>`).join(''):emptyState('📅','No events this month.'); } function renderEventsTicker(){   const ticker=document.getElementById('events-ticker');   const badge=document.getElementById('events-badge');   if(!ticker)return;   const vEvents=visibleEventsFor();   const now=new Date();   const soon=vEvents.filter(e=>{const d=new Date(e.event_date);return d>=now&&(d-now)<=7*86400000;});   const upcoming=vEvents.filter(e=>new Date(e.event_date)>=now).slice(0,5);   if(badge){if(soon.length>0){badge.textContent=soon.length;badge.style.display='flex';}else{badge.style.display='none';}}   ticker.innerHTML=upcoming.length?upcoming.map(e=>`<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.1)"><span style="opacity:0.7;font-size:11px">${new Date(e.event_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span><br>${esc(e.title)}</div>`).join(''):'<div style="opacity:0.7">No upcoming events</div>'; } function toggleEventsWidget(){   const w=document.getElementById('events-widget');   w.style.display=w.style.display==='none'?'block':'none'; } function toggleOther(selectId,inputId){   const sel=document.getElementById(selectId);   const inp=document.getElementById(inputId);   if(inp)inp.style.display=sel.value==='Other'?'block':'none'; } let editingEventId=null;
+async function loadEvents(){   const{data}=await sb.from('events').select('*').order('event_date',{ascending:true});   if(data){events=data;renderEvents();renderEventsTicker();} } function renderEvents(){   const cal=document.getElementById('events-calendar');   const list=document.getElementById('events-list');   if(!cal)return;   const vEvents=visibleEventsFor();   const now=new Date();   const thisMonth=vEvents.filter(e=>new Date(e.event_date).getMonth()===now.getMonth()&&new Date(e.event_date).getFullYear()===now.getFullYear());   const upcoming=vEvents.filter(e=>new Date(e.event_date)>=now).slice(0,10);   const typeColors={'Seminar':"var(--sky-1)",'Webinar':"var(--sky-1)",'Application Deadline':"var(--rose-1)",'Follow-up':"var(--sage-1)",'Other':"var(--gold-1)"};   cal.innerHTML=vEvents.length?vEvents.map(e=>{     const d=new Date(e.event_date);     const isPast=d<now;     const bg=typeColors[e.event_type]||"var(--gold-1)";     return`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);opacity:${isPast?0.5:1}">     <div style="min-width:48px;text-align:center;background:${bg};border-radius:8px;padding:6px 4px">     <div style="font-size:18px;font-weight:600;color:var(--ink);line-height:1">${d.getDate()}</div>     <div style="font-size:10px;color:var(--ink2)">${d.toLocaleString('default',{month:'short'})}</div>     </div>     <div style="flex:1">     <div style="font-weight:500;font-size:14px;color:var(--ink)">${esc(e.title)}</div>     <div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(e.event_type||'')}${e.description?` · ${safeUrl(e.description)?`<a href="${esc(safeUrl(e.description))}" target="_blank" rel="noopener" style="color:var(--pine2)">${esc(e.description)}</a>`:esc(e.description)}`:''}</div>     </div>     <button onclick="openAddEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px">✏️</button>${(!e.created_by||e.created_by===currentUser?.id||isSuperAdmin)?`<button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px">&times;</button>`:''}     </div>`;}).join(''):emptyState('📅','No events yet. Click Add event to get started.');   list.innerHTML=thisMonth.length?thisMonth.map(e=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink2)"><span><b style="color:var(--ink)">${new Date(e.event_date).getDate()} ${new Date(e.event_date).toLocaleString('default',{month:'short'})}</b> · ${esc(e.title)}</span><span style="display:flex;gap:2px;flex-shrink:0"><button onclick="openAddEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:12px;padding:0 4px">✏️</button>${(!e.created_by||e.created_by===currentUser?.id||isSuperAdmin)?`<button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:15px;padding:0 4px">&times;</button>`:''}</span></div>`).join(''):emptyState('📅','No events this month.'); } function renderEventsTicker(){   const ticker=document.getElementById('events-ticker');   const badge=document.getElementById('events-badge');   if(!ticker)return;   const vEvents=visibleEventsFor();   const now=new Date();   const soon=vEvents.filter(e=>{const d=new Date(e.event_date);return d>=now&&(d-now)<=7*86400000;});   const upcoming=vEvents.filter(e=>new Date(e.event_date)>=now).slice(0,5);   if(badge){if(soon.length>0){badge.textContent=soon.length;badge.style.display='flex';}else{badge.style.display='none';}}   ticker.innerHTML=upcoming.length?upcoming.map(e=>`<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.1)"><span style="opacity:0.7;font-size:11px">${new Date(e.event_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span><br>${esc(e.title)}</div>`).join(''):'<div style="opacity:0.7">No upcoming events</div>'; } function toggleEventsWidget(){   const w=document.getElementById('events-widget');   w.style.display=w.style.display==='none'?'block':'none'; } function toggleOther(selectId,inputId){   const sel=document.getElementById(selectId);   const inp=document.getElementById(inputId);   if(inp)inp.style.display=sel.value==='Other'?'block':'none'; } let editingEventId=null;
 const EVENT_TEAM_OPTIONS=['Counsellor','Manager','Admin','Director','Application Team','Visa Team','SOP Team'];
 function renderEventParticipantsPicker(selectedParts){
   const el=document.getElementById('event-participants-picker');
@@ -5310,7 +5295,9 @@ sb.auth.onAuthStateChange((event,session)=>{
 // `leads` array (Dashboard, Reports, Finance, Activity Monitor, Tasks,
 // Team Dashboards) automatically inherits the same rule, rather than
 // needing separate access logic bolted onto each screen individually.
-async function loadLeads(){
+// Builds the role-scoped leads query (who may see which leads). Shared by the full
+// load and by single-row refreshes triggered by realtime changes.
+async function scopedLeadsQuery(){
   let q=sb.from('leads').select('*').order('lead_id',{ascending:false});
   const subTeamFieldMap={'Application Team':'application_team','Visa Team':'visa_team','SOP Team':'sop_team'};
 
@@ -5361,6 +5348,68 @@ async function loadLeads(){
     else if(myOffice) q=q.eq('office',myOffice);
   }
 
+  return q;
+}
+// Fetches every row of a query in pages of 1000 (PostgREST silently caps a plain
+// select), so lists never quietly cut off. `makeQuery` must return a FRESH builder.
+async function fetchAllPages(makeQuery,maxRows=20000){
+  const PAGE=1000;let all=[],from=0;
+  while(from<maxRows){
+    const{data,error}=await makeQuery().range(from,from+PAGE-1);
+    if(error)return{data:null,error};
+    all=all.concat(data||[]);
+    if(!data||data.length<PAGE)break;
+    from+=PAGE;
+  }
+  return{data:all,error:null};
+}
+let _leadRefreshIds=new Set(), _leadRefreshInserts=new Set(), _leadRefreshTimer=null;
+function queueLeadRefresh(id,eventType){
+  _leadRefreshIds.add(id);
+  if(eventType==='INSERT')_leadRefreshInserts.add(id);
+  clearTimeout(_leadRefreshTimer);
+  _leadRefreshTimer=setTimeout(processLeadRefresh,400);
+}
+async function processLeadRefresh(){
+  const ids=[..._leadRefreshIds], inserts=new Set(_leadRefreshInserts);
+  _leadRefreshIds=new Set();_leadRefreshInserts=new Set();
+  if(!ids.length)return;
+  let rows=[];
+  try{
+    const q=await scopedLeadsQuery();
+    const{data,error}=await q.in('id',ids);
+    if(error)throw error;
+    rows=data||[];
+  }catch(e){
+    // Fall back to a full reload if the single-row fetch fails for any reason.
+    await loadLeads();renderDash();renderLeads();renderFU();badges();return;
+  }
+  const byId=new Map(rows.map(r=>[r.id,r]));
+  const before=new Set(allLeads.map(l=>l.id));
+  const newlyArrived=[];
+  ids.forEach(id=>{
+    const r=byId.get(id);
+    const idx=allLeads.findIndex(l=>l.id===id);
+    if(r){
+      if(idx>=0)allLeads[idx]=r;
+      else{allLeads.unshift(r);if(inserts.has(id))newlyArrived.push(r);}
+    } else if(idx>=0){
+      allLeads.splice(idx,1); // deleted, or moved out of this person's scope
+    }
+  });
+  // Chime only for new leads this person is actually allowed to see.
+  newlyArrived.forEach(r=>{
+    const nm=(r.mobile||'').replace(/[\s\-()]/g,'');
+    const dup=nm&&allLeads.some(l=>l.id!==r.id&&(l.mobile||'').replace(/[\s\-()]/g,'')===nm);
+    if(dup){playDuplicateLeadChime();toast('⚠️ Possible duplicate lead: '+(r.name||'Unnamed')+' — same mobile number as an existing lead');}
+    else{playNewLeadChime();toast('📥 New lead: '+(r.name||'Unnamed'));}
+  });
+  syncLeadsView();
+  renderDash();renderLeads();renderFU();badges();
+  newlyArrived.forEach(r=>setTimeout(()=>{const el=document.querySelector(`[data-lead-id="${r.id}"]`);if(el)el.classList.add('new-lead-flash');},50));
+}
+async function loadLeads(){
+  let q=await scopedLeadsQuery();
   // Supabase's PostgREST layer silently caps any plain select() at 1000
   // rows with no error and no warning — this was the real cause of the
   // lead count appearing stuck at exactly 1000 regardless of how many
@@ -5604,6 +5653,34 @@ function badges(){
 }
 
 // ── DASHBOARD ────────────────────────────────────────────────────
+
+// ── First-contact clock + manager morning view ─────────────────────
+function fcAgeMin(l){const t=l.assigned_at||l.created_at;return t?Math.max(0,(Date.now()-new Date(t).getTime())/60000):0;}
+function fcAgeLabel(m){return m<60?Math.round(m)+'m':m<1440?Math.floor(m/60)+'h '+Math.round(m%60)+'m':Math.floor(m/1440)+'d';}
+function renderDashOpsWidgets(dashLeads){
+  const box=document.getElementById('dash-ops-widgets');if(!box)return;
+  if(isRestrictedStaffRole&&isRestrictedStaffRole()&&!isSuperAdmin){box.innerHTML='';return;}
+  const keepOpen={};box.querySelectorAll('details[data-k]').forEach(d=>{keepOpen[d.dataset.k]=d.open;});
+  const waiting=(dashLeads||[]).filter(l=>l.status==='New Enquiry'&&fcAgeMin(l)>=15).sort((a,b)=>fcAgeMin(b)-fcAgeMin(a));
+  const col=m=>m>60?'#C0392B':'#D97706';
+  const fcRows=waiting.slice(0,30).map(l=>{const m=fcAgeMin(l);
+    return `<div onclick="openLeadDetail('${escJs(l.id)}')" style="cursor:pointer;display:flex;justify-content:space-between;gap:8px;padding:7px 4px;border-bottom:1px solid var(--line,#eee);font-size:13px"><span>${esc(l.name||'—')} <span style="color:var(--ink3)">· ${esc(l.counsellor||'Unassigned')}</span></span><b style="color:${col(m)}">${fcAgeLabel(m)}</b></div>`;}).join('');
+  const names={};
+  (dashLeads||[]).forEach(l=>{const n=l.counsellor||'';if(LEAD_UPDATE_CLOSED.includes(l.status))return;
+    const r=names[n]||(names[n]={active:0,wait:0,stale:0});r.active++;
+    if(l.status==='New Enquiry'&&fcAgeMin(l)>=15)r.wait++;
+    if(!l.updated_at||Date.now()-new Date(l.updated_at).getTime()>7*86400000)r.stale++;});
+  const rows=Object.keys(names).sort((a,b)=>(!a)-(!b)||names[b].wait-names[a].wait||names[b].stale-names[a].stale).map(n=>{const r=names[n];
+    return `<tr><td style="padding:6px 8px">${n?`<a href="javascript:void(0)" onclick="openCounsellorActivityTimeline('${escJs(n)}')">${esc(n)}</a>`:'<i>Unassigned</i>'}</td><td style="text-align:center">${r.active}</td><td style="text-align:center;color:${r.wait?'#C0392B':'inherit'}">${r.wait}</td><td style="text-align:center">${r.stale}</td><td style="text-align:center" class="ovd" data-n="${esc(n)}">–</td><td style="min-width:150px">${n?leadUpdateBarHtml(n,true):''}</td></tr>`;}).join('');
+  box.innerHTML=`<div class="card" style="margin-bottom:18px"><details data-k="fc"${keepOpen.fc?' open':''}><summary style="cursor:pointer;font-weight:600">⏱ First-contact clock — ${waiting.length} lead${waiting.length===1?'':'s'} waiting 15+ min</summary><div style="margin-top:8px">${fcRows||'<div style="color:var(--ink3);font-size:13px">All new enquiries have been picked up 🎉</div>'}</div></details></div>
+  <div class="card" style="margin-bottom:18px"><details data-k="mm"${keepOpen.mm?' open':''} ontoggle="if(this.open)loadMorningOverdue()"><summary style="cursor:pointer;font-weight:600">🌅 Manager morning view — per counsellor</summary><div style="overflow-x:auto;margin-top:8px"><table style="width:100%;font-size:13px;border-collapse:collapse"><thead><tr style="text-align:left;color:var(--ink3)"><th style="padding:6px 8px">Counsellor</th><th>Active</th><th>Waiting</th><th>Untouched 7d</th><th>Overdue tasks</th><th>Updated %</th></tr></thead><tbody>${rows||'<tr><td colspan="6" style="padding:8px;color:var(--ink3)">No active leads</td></tr>'}</tbody></table></div></details></div>`;
+}
+async function loadMorningOverdue(){
+  const today=new Date().toISOString().substring(0,10);
+  const{data}=await fetchAllPages(()=>sb.from('tasks').select('id,assigned_to').eq('status','Open').lt('due_date',today).order('id',{ascending:true}));
+  const c={};(data||[]).forEach(t=>{c[t.assigned_to||'']=(c[t.assigned_to||'']||0)+1;});
+  document.querySelectorAll('#dash-ops-widgets .ovd').forEach(td=>{const n=c[td.dataset.n]||0;td.textContent=n;td.style.color=n?'#C0392B':'inherit';});
+}
 function renderDash(){
   applyDashboardPrefs();
   const dashLeads=opsViewScopedLeads(leads); // full role-based access scoping (Counsellor/country-tier/Super-Admin/Owner), plus Super Admin's own Domestic/International refinement on top
@@ -5706,6 +5783,7 @@ function renderDash(){
   renderCounsellorRank();
   renderRecentLeads();
   renderLatestPayments();
+  try{renderDashOpsWidgets(dashLeads);}catch(e){console.warn('ops widgets',e);}
   // Sub-team cards moved to their own "Team Dashboards" tab
 }
 
@@ -7124,7 +7202,7 @@ function openTaskModal(){
 // - Counsellor: nobody but themselves — they can log their own tasks,
 //   never hand work to someone else.
 function getAssignableTaskRecipients(){
-  if(isOwner||isSuperAdmin) return [...new Set((teamList||[]).map(t=>t.full_name).filter(Boolean))].sort();
+  if(isOwner||isSuperAdmin) return [...new Set((teamList||[]).filter(memberInOpsView).map(t=>t.full_name).filter(Boolean))].sort();
   if(myRole==='Counsellor') return myName?[myName]:[];
   return [...new Set((teamList||[]).filter(t=>t.role==='Counsellor'&&t.country===myCountry).map(t=>t.full_name).filter(Boolean))].sort();
 }
@@ -7514,6 +7592,7 @@ function populateTaskDashboardFilters(scoped, staffByName){
   const countryForCounsellors=tdFilterCountry;
   const counsellors=[...new Set((teamList||[])
     .filter(x=>x.role==='Counsellor')
+    .filter(memberInOpsView)
     .filter(x=>!countryForCounsellors || x.country===countryForCounsellors)
     .filter(x=>staffByName.has((x.full_name||'').trim()))
     .map(x=>(x.full_name||'').trim())
@@ -7664,7 +7743,7 @@ async function renderTaskDashboard(){
   // are healed here once: every assigned lead gets an actionable task, and
   // the task is immediately included in My Tasks.
   await syncAssignedLeadTasksForCurrentUser();
-  const{data,error}=await sb.from('tasks').select('*,leads(name,country,nationality,lead_id)').order('due_date',{ascending:true}).limit(500);
+  const{data,error}=await fetchAllPages(()=>sb.from('tasks').select('*,leads(name,country,nationality,lead_id)').order('due_date',{ascending:true}).order('id',{ascending:true}));
   if(error){
     document.getElementById('td-task-list').innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load tasks — has the tasks table been created yet?</div>';
     return;
@@ -8431,19 +8510,18 @@ async function saveLead(){
         }
       }
     }
-    // Final safety: a lead created while a tab is on must classify to that tab.
-    if(canSwitchOpsViewUser()&&superAdminOpsView){
-      const isDom=leadIsDomesticWorkstream({...data,id:'__new__'});
-      if((superAdminOpsView==='Domestic')!==isDom){
-        const pool=(teamList||[]).filter(t=>(t.role||'Counsellor')==='Counsellor'&&!isSuperAdminRow(t)&&(superAdminOpsView==='Domestic'?effectiveTeamCategory(t)==='Domestic':effectiveTeamCategory(t)!=='Domestic'));
-        const sameOffice=pool.filter(t=>t.office===data.office);
-        const pick=(sameOffice.length?sameOffice:pool)[0];
-        if(pick){data.counsellor=pick.full_name;}
-        else{btn.disabled=false;setSynced();toast('No '+superAdminOpsView+' counsellor is available to take this lead — add one to the '+superAdminOpsView+' team first.');return;}
-      }
-    }
+    // Stamp the side the lead was added from. It then stays on that side even with
+    // no counsellor assigned (Unassigned), and whatever the country or office.
+    if(canSwitchOpsViewUser()&&superAdminOpsView){data.workstream=superAdminOpsView;}
+    else if(myTeamCategory==='Domestic'||myTeamCategory==='International'){data.workstream=myTeamCategory;}
     if(data.counsellor)data.assigned_at=new Date().toISOString();
-    const res=await sb.from('leads').insert([data]).select();
+    let res=await sb.from('leads').insert([data]).select();
+    if(res.error&&/workstream/i.test(res.error.message||'')){
+      // The workstream column hasn't been added yet (run crm_leads_workstream.sql) — save without it.
+      const{workstream,...plain}=data;
+      res=await sb.from('leads').insert([plain]).select();
+      if(!res.error)toast('Saved, but run crm_leads_workstream.sql so no-counsellor leads stay on the right tab.');
+    }
     error=res.error;
     let newLeadId=null;
     if(!error&&res.data){allLeads.unshift(res.data[0]);syncLeadsView();newLeadId=res.data[0].id;newlyCreatedLeadId=newLeadId;logEvents.push(['created',`Lead created, assigned to ${data.counsellor||'Unassigned'}`]);if(pendingQueryConversionId)await markPendingQueryConverted(newLeadId);}
@@ -8802,7 +8880,7 @@ let tcTarget=null;    // channel key string, or {id,name} for dm
 let stagedTcAttachment=null;
 function initTeamChat(){
   document.getElementById('tc-channel-list').innerHTML=TC_CHANNELS.map(c=>
-    `<div onclick="selectTcChannel('${c.key}','${esc(c.label)}')" id="tc-chan-${c.key.replace(/\s+/g,'_')}" style="padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;margin-bottom:2px;display:flex;align-items:center;gap:7px" onmouseover="this.style.background='var(--line)'" onmouseout="if(!this.classList.contains('tc-active'))this.style.background=''">${c.icon} <span>${esc(c.label)}</span></div>`
+    `<div onclick="selectTcChannel('${c.key}','${escJs(c.label)}')" id="tc-chan-${c.key.replace(/\s+/g,'_')}" style="padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;margin-bottom:2px;display:flex;align-items:center;gap:7px" onmouseover="this.style.background='var(--line)'" onmouseout="if(!this.classList.contains('tc-active'))this.style.background=''">${c.icon} <span>${esc(c.label)}</span></div>`
   ).join('');
   renderTcDmList();
   // Default to the channel matching the person's own team, if one
@@ -8822,7 +8900,7 @@ function renderTcDmList(){
     .sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||''));
   el.innerHTML=contacts.map(t=>{
     const isOnline=onlineIds.has(t.id);
-    return `<div onclick="selectTcDm('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" id="tc-dm-item-${t.id}" style="padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12.5px;display:flex;align-items:center;gap:7px;margin-bottom:1px" onmouseover="if(!this.classList.contains('tc-active'))this.style.background='var(--line)'" onmouseout="if(!this.classList.contains('tc-active'))this.style.background=''">
+    return `<div onclick="selectTcDm('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" id="tc-dm-item-${t.id}" style="padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12.5px;display:flex;align-items:center;gap:7px;margin-bottom:1px" onmouseover="if(!this.classList.contains('tc-active'))this.style.background='var(--line)'" onmouseout="if(!this.classList.contains('tc-active'))this.style.background=''">
       <span style="width:7px;height:7px;border-radius:50%;background:${isOnline?'#22C55E':'var(--line2)'};flex-shrink:0"></span>
       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.full_name||'—')}</span>
     </div>`;
@@ -9109,14 +9187,14 @@ function renderManagementAndOperationsTeams(team){
   // Super Admin accounts always belong here, whatever their `role` column
   // happens to say (see isSuperAdminRow).
   const mgmt=(team||[]).filter(t=>(mgmtRoles.includes(t.role)||isSuperAdminRow(t))&&effectiveTeamCategory(t)!=='Domestic'&&!isOwnerRowHiddenFromMe(t));
-  const keyBtn=(t,size)=>canResetPasswordFor(t)?`<button onclick="event.stopPropagation();resetTeamMemberPassword('${t.id}','${esc(t.email||'')}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Reset password" style="background:none;border:none;color:var(--pine2);cursor:pointer;font-size:${size}px;padding:4px;flex-shrink:0"><i class="ti ti-key"></i></button>`:'';
+  const keyBtn=(t,size)=>canResetPasswordFor(t)?`<button onclick="event.stopPropagation();resetTeamMemberPassword('${t.id}','${escJs(t.email||'')}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Reset password" style="background:none;border:none;color:var(--pine2);cursor:pointer;font-size:${size}px;padding:4px;flex-shrink:0"><i class="ti ti-key"></i></button>`:'';
   if(effectiveView!=='Domestic')mgmtEl.innerHTML=`<div class="card" style="margin-bottom:16px">
     <div class="card-h"><span class="card-t">🌍 International — Management Team</span><span style="font-size:11px;color:var(--ink3)">${mgmt.length} member${mgmt.length!==1?'s':''} — Manager, Admin & Director, across every country</span></div>
     <div class="team-grid">${mgmt.length?mgmt.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
         <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-        <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(displayRoleFor(t))} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+        <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(displayRoleFor(t))} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
         ${keyBtn(t,15)}
-        ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+        ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
       </div>`).join(''):emptyState('🏛️','No Management Team members yet.')}</div>
   </div>`;
 
@@ -9134,15 +9212,15 @@ function renderManagementAndOperationsTeams(team){
       </div>
       ${roleMembers.length?roleMembers.map(t=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}" style="margin-bottom:8px">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${keyBtn(t,14)}
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('👥','No one assigned to this team yet.')}
     </div>`;
   }).join('');
   if(effectiveView!=='Domestic')opsEl.innerHTML=`<div class="card" style="margin-bottom:16px">
     <div class="card-h"><span class="card-t">🌍 International — Operations Team</span><span style="font-size:11px;color:var(--ink3)">Application, Visa & SOP — pooled globally, not limited to any one country</span></div>
-    <div style="display:flex;gap:20px;flex-wrap:wrap">${buildOpsColumns(team)}</div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap">${buildOpsColumns((team||[]).filter(t=>effectiveTeamCategory(t)!=='Domestic'))}</div>
   </div>`;
 
   // ── UK Domestic pole: Management and Operations are visibly separate. ──
@@ -9154,9 +9232,9 @@ function renderManagementAndOperationsTeams(team){
       const domesticOps=domestic.filter(t=>!mgmtRoles.includes(t.role));
       const cardFor=(t)=>`<div class="tcard" data-role="${esc(t.role||'Counsellor')}">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(displayRoleFor(t))} · UK Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(displayRoleFor(t))} · UK Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${keyBtn(t,15)}
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`;
       // Operations, split the SAME way International's is — separate
       // Application/Visa/SOP columns — instead of one flat lumped-together
@@ -9188,9 +9266,9 @@ function renderManagementAndOperationsTeams(team){
       <div class="card-h"><span class="card-t">🤝 Agent Portal</span><span style="font-size:11px;color:var(--ink3)">${agents.length} agent${agents.length!==1?'s':''} — external partners, work only on leads Management assigns them</span></div>
       <div class="team-grid">${agents.length?agents.map(t=>`<div class="tcard" data-role="Agent">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
-          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent${t.university_name?' · 🎓 '+esc(t.university_name):''}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
+          <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent${t.university_name?' · 🎓 '+esc(t.university_name):''}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${keyBtn(t,15)}
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('🤝','No agents yet.')}</div>
     </div>`;
   }
@@ -9270,14 +9348,14 @@ function renderTeam(team){
           return `<div class="tcard" data-role="${esc(t.role||'Counsellor')}" style="${unavail?'opacity:.7':''}">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0">
-            <div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div>
+            <div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div>
             <div class="tcard-role">${esc(displayRoleFor(t))}</div>
             <div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div>
-            ${unavail?`<div style="font-size:10px;color:var(--rose);font-weight:600;margin-top:3px">🚫 Unavailable until ${new Date(unavail.to_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${unavail.reason?' — '+esc(unavail.reason):''}${canManage?` · <span onclick="clearUnavailability('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" style="text-decoration:underline;cursor:pointer;color:var(--rose)">Unmark</span>`:''}</div>`:''}
+            ${unavail?`<div style="font-size:10px;color:var(--rose);font-weight:600;margin-top:3px">🚫 Unavailable until ${new Date(unavail.to_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}${unavail.reason?' — '+esc(unavail.reason):''}${canManage?` · <span onclick="clearUnavailability('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" style="text-decoration:underline;cursor:pointer;color:var(--rose)">Unmark</span>`:''}</div>`:''}
           </div>
-          ${canManage?`<button onclick="openUnavailabilityModal('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Mark unavailable" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-calendar-off"></i></button>`:''}
-          ${canResetPasswordFor(t)?`<button onclick="resetTeamMemberPassword('${t.id}','${esc(t.email||'')}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Reset password" style="background:none;border:none;color:var(--pine2);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-key"></i></button>`:''}
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${esc(t.full_name||t.email||'').replace(/'/g,"\'")}')" title="Remove team member" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          ${canManage?`<button onclick="openUnavailabilityModal('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Mark unavailable" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-calendar-off"></i></button>`:''}
+          ${canResetPasswordFor(t)?`<button onclick="resetTeamMemberPassword('${t.id}','${escJs(t.email||'')}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Reset password" style="background:none;border:none;color:var(--pine2);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-key"></i></button>`:''}
+          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${escJs(t.full_name||t.email||'').replace(/'/g,"\'")}')" title="Remove team member" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`;
         }).join('')
       : emptyState('👥','No members yet — share an invite link to add counsellors to this office.');
@@ -9412,7 +9490,9 @@ async function doImport(){
     toast(`Nothing to import — all ${skippedExisting+skippedInBatch} rows matched existing leads or repeated within the file.`);
     return;
   }
-  const{error,data}=await sb.from('leads').insert(toInsert).select();
+  const _ws=(canSwitchOpsViewUser()&&superAdminOpsView)?superAdminOpsView:((myTeamCategory==='Domestic'||myTeamCategory==='International')?myTeamCategory:null);
+  let{error,data}=await sb.from('leads').insert(_ws?toInsert.map(r=>({...r,workstream:_ws})):toInsert).select();
+  if(error&&_ws&&/workstream/i.test(error.message||'')){({error,data}=await sb.from('leads').insert(toInsert).select());}
   btn.disabled=false;
   if(error){setSyncErr();toast('Import error: '+error.message);return;}
   if(data){allLeads=[...data,...allLeads];syncLeadsView();}
@@ -9582,11 +9662,12 @@ function getScopedCounsellorNames(){
       // split on top of the India exclusion, so a bulk-reassign picker in
       // Domestic mode only offers UK counsellors, not everyone non-India.
       if(superAdminOpsView){
-        pool=pool.filter(t=>superAdminOpsView==='Domestic'?t.country==='UK':t.country!=='UK');
+        pool=pool.filter(memberInOpsView);
       }
     }
     else if(myRole==='Admin'||myRole==='Manager'||myRole==='Director')pool=pool.filter(t=>t.country===myCountry);
   }
+  if(canSwitchOpsViewUser()&&superAdminOpsView)pool=pool.filter(memberInOpsView); // applies to Owner / Platform Admin too
   return[...new Set(pool.map(t=>t.full_name))];
 }
 function clearBulkSelection(){
@@ -10153,7 +10234,7 @@ function initReports(){
   }
   const agentSel=document.getElementById('rpt-agent');
   if(agentSel){
-    const agents=[...new Set((teamList||[]).filter(t=>t.role==='Agent').map(t=>t.full_name).filter(Boolean))].sort();
+    const agents=[...new Set((teamList||[]).filter(t=>t.role==='Agent'&&memberInOpsView(t)).map(t=>t.full_name).filter(Boolean))].sort();
     agentSel.innerHTML='<option value="All">All agents</option>'+agents.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
   }
   const uniSel=document.getElementById('rpt-university');
@@ -10787,7 +10868,7 @@ function renderDmInbox(){
   el.innerHTML=contacts.map(t=>{
     const isOnline=onlineIds.has(t.id);
     const hasUnread=unreadDmSenders.has(t.id);
-    return `<div onclick="openDmChat('${t.id}','${esc((t.full_name||t.email||'').replace(/'/g,"\'"))}')" style="display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--line);cursor:pointer;${hasUnread?'background:var(--gold-l)':''}" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background='${hasUnread?'var(--gold-l)':''}'">
+    return `<div onclick="openDmChat('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" style="display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--line);cursor:pointer;${hasUnread?'background:var(--gold-l)':''}" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background='${hasUnread?'var(--gold-l)':''}'">
       <div style="position:relative;flex-shrink:0"><div class="tcard-av" style="width:36px;height:36px;font-size:13px${hasUnread?';box-shadow:0 0 0 2px var(--gold)':''}">${ini(t.full_name||t.email)}</div>${isOnline?'<div style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#22C55E;border:2px solid #fff"></div>':''}</div>
       <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:${hasUnread?'700':'600'}">${esc(t.full_name||'—')}${hasUnread?' 🔴':''}</div><div style="font-size:11px;color:${hasUnread?'var(--gold)':'var(--ink3)'};font-weight:${hasUnread?'600':'400'}">${hasUnread?'New message':(isOnline?'online now':esc(t.role||''))}</div></div>
     </div>`;
@@ -11408,7 +11489,7 @@ function renderHomeDestinationCards(){
   const el=document.getElementById('home-destination-cards');
   if(!el)return;
   el.innerHTML=HOME_DESTINATIONS.map(d=>`
-    <div onclick="navFilter('ls-de','${esc(d.label)}')" style="cursor:pointer;text-align:center;padding:14px 8px;border:1px solid var(--line);border-radius:var(--r);background:var(--paper)" onmouseover="this.style.borderColor='var(--pine4)'" onmouseout="this.style.borderColor='var(--line)'">
+    <div onclick="navFilter('ls-de','${escJs(d.label)}')" style="cursor:pointer;text-align:center;padding:14px 8px;border:1px solid var(--line);border-radius:var(--r);background:var(--paper)" onmouseover="this.style.borderColor='var(--pine4)'" onmouseout="this.style.borderColor='var(--line)'">
       <div style="font-size:22px;margin-bottom:4px">${d.flag}</div>
       <div style="font-size:12px;font-weight:600">${esc(d.label)}</div>
     </div>`).join('');
@@ -11582,7 +11663,7 @@ async function loadMyTasks(){
   // instead of opening Task Dashboard — assigned leads must still produce
   // an actionable task and appear here.
   await syncAssignedLeadTasksForCurrentUser();
-  const{data,error}=await sb.from('tasks').select('*,leads(name,country,office)').eq('status','Open').order('due_date',{ascending:true}).limit(200);
+  const{data,error}=await fetchAllPages(()=>sb.from('tasks').select('*,leads(name,country,office)').eq('status','Open').order('due_date',{ascending:true}).order('id',{ascending:true}));
   if(error){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load tasks — has the tasks table been created yet?</div>';return;}
   let scoped=data||[];
   if(myRole==='Counsellor'&&!isSuperAdmin){
@@ -13293,7 +13374,7 @@ async function renderActivityMonitor(){
       const cs=callStatsByName[m.full_name];
       const callsCell=cs?`${cs.connected}/${cs.total} connected`:'<span style="color:var(--ink3);font-style:italic">No calls</span>';
       const talkTimeCell=cs&&cs.seconds?Math.round(cs.seconds/60)+' min':'—';
-      return `<tr onclick="openMemberActivityDetail('${m.id}','${esc((m.full_name||m.email||'').replace(/'/g,"\'"))}','${esc((m.role||'').replace(/'/g,"\'"))}','${esc((m.office||'').replace(/'/g,"\'"))}')" style="cursor:pointer"><td style="font-weight:600">${esc(m.full_name||m.email||'—')}</td><td style="font-size:12px">${esc(m.role||'Counsellor')}</td><td style="font-size:12px">${esc(m.office||'—')}</td><td><span class="pill" style="background:${badgeBg};color:${badgeColor}">${count}</span></td><td style="font-size:12px">${callsCell}</td><td style="font-size:12px">${talkTimeCell}</td><td style="font-size:12.5px;max-width:300px">${latest}</td><td onclick="event.stopPropagation();openCounsellorActivityTimeline('${esc((m.full_name||m.email||'').replace(/'/g,"\'"))}')" style="cursor:pointer" title="View real CRM activity (status changes, calls, notes)"><i class="ti ti-history" style="color:var(--pine)"></i></td></tr>`;
+      return `<tr onclick="openMemberActivityDetail('${m.id}','${escJs((m.full_name||m.email||'').replace(/'/g,"\'"))}','${escJs((m.role||'').replace(/'/g,"\'"))}','${escJs((m.office||'').replace(/'/g,"\'"))}')" style="cursor:pointer"><td style="font-weight:600">${esc(m.full_name||m.email||'—')}</td><td style="font-size:12px">${esc(m.role||'Counsellor')}</td><td style="font-size:12px">${esc(m.office||'—')}</td><td><span class="pill" style="background:${badgeBg};color:${badgeColor}">${count}</span></td><td style="font-size:12px">${callsCell}</td><td style="font-size:12px">${talkTimeCell}</td><td style="font-size:12.5px;max-width:300px">${latest}</td><td onclick="event.stopPropagation();openCounsellorActivityTimeline('${escJs((m.full_name||m.email||'').replace(/'/g,"\'"))}')" style="cursor:pointer" title="View real CRM activity (status changes, calls, notes)"><i class="ti ti-history" style="color:var(--pine)"></i></td></tr>`;
     }).join('')+
     `</tbody></table></div>`;
 }
@@ -13477,7 +13558,7 @@ function renderOnlineUsers(state) {
   avContainer.innerHTML = users.map(u => {
     const hasUnread = unreadDmSenders.has(u.userId);
     return `
-    <div class="presence-av" onclick="openDmChat('${u.userId}','${esc(u.name||u.email)}')" style="background:${u.color||'#1B998B'};cursor:pointer;position:relative;${hasUnread?'box-shadow:0 0 0 3px var(--gold);animation:pulseUnread 1.4s ease-in-out infinite':''}" title="${esc(u.name||u.email)}${hasUnread?' — new message!':' — click to message'}">
+    <div class="presence-av" onclick="openDmChat('${u.userId}','${escJs(u.name||u.email)}')" style="background:${u.color||'#1B998B'};cursor:pointer;position:relative;${hasUnread?'box-shadow:0 0 0 3px var(--gold);animation:pulseUnread 1.4s ease-in-out infinite':''}" title="${esc(u.name||u.email)}${hasUnread?' — new message!':' — click to message'}">
       ${ini2(u.name||u.email||'?')}
       <div class="online-dot"></div>
       ${hasUnread?'<div style="position:absolute;top:-4px;right:-4px;width:14px;height:14px;background:var(--rose);border:2px solid var(--pine);border-radius:50%;display:flex;align-items:center;justify-content:center"><i class="ti ti-message-dots" style="font-size:8px;color:#fff"></i></div>':''}

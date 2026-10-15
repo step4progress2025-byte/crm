@@ -537,12 +537,21 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       </div>
       <div id="auth-forgot-view" style="display:none">
         <div class="auth-title">Reset your password</div>
-        <div class="auth-sub">Passwords aren't self-service here — enter your email and India or Pavitra will set a new one and pass it to you directly.</div>
-        <div class="auth-field"><label>Email address</label><input type="email" id="forgot-email" placeholder="you@step4progress.com" autocomplete="email"></div>
-        <button class="auth-btn" id="forgot-btn" onclick="submitPasswordResetRequest()">Send request →</button>
+        <div class="auth-sub">Enter your email and we'll send you a link to set a new password.</div>
+        <div class="auth-field"><label>Email address</label><input type="email" id="forgot-email" placeholder="you@step4progress.com" autocomplete="email" onkeydown="if(event.key==='Enter')submitEmailRecovery()"></div>
+        <button class="auth-btn" id="forgot-email-btn" onclick="submitEmailRecovery()">Email me a reset link →</button>
         <div class="auth-err" id="forgot-err"></div>
         <div class="auth-err" id="forgot-success" style="color:#4ADE80;display:none"></div>
+        <div style="text-align:center;margin-top:14px;font-size:12px;color:rgba(255,255,255,.5)">Email not arriving? <span onclick="submitPasswordResetRequest()" id="forgot-btn" style="color:rgba(255,255,255,.75);cursor:pointer;text-decoration:underline">Ask India or Pavitra to set a new password for you</span></div>
         <div style="text-align:center;margin-top:12px"><span onclick="showLoginView()" style="color:rgba(255,255,255,.6);font-size:12.5px;cursor:pointer;text-decoration:underline">← Back to sign in</span></div>
+      </div>
+      <div id="auth-recovery-view" style="display:none">
+        <div class="auth-title">Set a new password</div>
+        <div class="auth-sub">Choose a new password (8 to 25 characters).</div>
+        <div class="auth-field"><label>New password</label><input type="password" id="recovery-pass" placeholder="New password" autocomplete="new-password" maxlength="25"></div>
+        <div class="auth-field"><label>Confirm new password</label><input type="password" id="recovery-pass2" placeholder="Type it again" autocomplete="new-password" maxlength="25" onkeydown="if(event.key==='Enter')submitNewPassword()"></div>
+        <button class="auth-btn" id="recovery-btn" onclick="submitNewPassword()">Save new password →</button>
+        <div class="auth-err" id="recovery-err"></div>
       </div>
       <div id="auth-signup-view" style="display:none">
         <div class="auth-title">Create account</div>
@@ -888,6 +897,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="mtp-tab active" data-tab="all" onclick="switchMyTasksTab('all')">My Tasks</button>
             <button class="mtp-tab" data-tab="today" onclick="switchMyTasksTab('today')">Today</button>
             <button class="mtp-tab" data-tab="tomorrow" onclick="switchMyTasksTab('tomorrow')">Tomorrow</button>
+            <button class="mtp-tab" data-tab="dayafter" onclick="switchMyTasksTab('dayafter')">Day after</button>
             <button class="mtp-tab" data-tab="pending" onclick="switchMyTasksTab('pending')">Upcoming</button>
             <button class="mtp-tab" data-tab="completed" onclick="switchMyTasksTab('completed')">Completed</button>
           </div>
@@ -1774,6 +1784,21 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
                 <tbody id="known-devices-tbody"></tbody>
               </table>
             </div>
+          </div>
+          <div class="card" id="am-access-audit-card" style="margin-top:16px;display:none">
+            <div class="card-h"><span class="card-t">🛡️ Access &amp; Password Activity</span><button class="btn" style="font-size:11px;padding:4px 10px" onclick="renderAccessAudit()">↻ Refresh</button></div>
+            <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">Who created each invite link and for whom, and every password reset attempt (success, denied or error). Passwords are never recorded. Visible to India, Pavitra and Jisan only.</p>
+            <div id="aa-summary" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"></div>
+            <div style="font-weight:700;font-size:13px;margin:8px 0">Invite links</div>
+            <div class="tw"><table class="tbl">
+              <thead><tr><th>Created</th><th>Created by</th><th>For</th><th>Role / office</th><th>Status</th></tr></thead>
+              <tbody id="aa-invites-tbody"></tbody>
+            </table></div>
+            <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Password resets</div>
+            <div class="tw"><table class="tbl">
+              <thead><tr><th>When</th><th>By</th><th>For</th><th>Result</th><th>Details</th></tr></thead>
+              <tbody id="aa-resets-tbody"></tbody>
+            </table></div>
           </div>
         </div>
       </section>
@@ -3331,7 +3356,7 @@ function renderDashAnalytics(dashLeads){
   const alerts=[];
   if(unassigned>0)alerts.push({icon:'⚠️',text:`${unassigned} lead${unassigned!==1?'s':''} unassigned`,action:()=>navFilter('ls-assign','unassigned')});
   if(droppedRecently>0)alerts.push({icon:'📉',text:`${droppedRecently} lead${droppedRecently!==1?'s':''} in the Drop List`,action:()=>navFilter('ls-st','Dropped')});
-  sb.from('tasks').select('id',{count:'exact',head:true}).eq('status','Open').lt('due_date',new Date().toISOString().substring(0,10)).then(({count})=>{
+  sb.from('tasks').select('id',{count:'exact',head:true}).eq('status','Open').lt('due_date',localDateStr()).then(({count})=>{
     if(count>0){
       alerts.push({icon:'⏰',text:`${count} task${count!==1?'s':''} overdue`,action:()=>nav('taskdashboard',document.querySelector('.ni[data-nav="taskdashboard"]'))});
       renderDashAlertsList(alerts);
@@ -3430,7 +3455,7 @@ function renderRecentlyViewed(){
 async function autoCreateTaskForStatus(lead,newStatus){
   const rule=STAGE_TASK_MAP[newStatus];
   if(!rule||!lead)return;
-  const due=new Date(Date.now()+rule.dueDays*86400000).toISOString().substring(0,10);
+  const due=localDateStr(new Date(Date.now()+rule.dueDays*86400000));
   const{error}=await sb.from('tasks').insert({
     lead_id:lead.id,title:rule.title,assigned_to:lead.counsellor||null,
     due_date:due,status:'Open',source:'auto',trigger_status:newStatus
@@ -3563,11 +3588,11 @@ async function loadUnavailability(){
   if(!error&&data) unavailabilityList=data;
 }
 function isUnavailableToday(teamId){
-  const today=new Date().toISOString().substring(0,10);
+  const today=localDateStr();
   return unavailabilityList.some(u=>u.team_id===teamId&&u.from_date<=today&&today<=u.to_date);
 }
 function currentUnavailability(teamId){
-  const today=new Date().toISOString().substring(0,10);
+  const today=localDateStr();
   return unavailabilityList.find(u=>u.team_id===teamId&&u.from_date<=today&&today<=u.to_date)||null;
 }
 function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===office&&(t.role||'Counsellor')==='Counsellor'&&!isUnavailableToday(t.id)&&memberInOpsView(t));}
@@ -3640,14 +3665,18 @@ async function getNextForGlobalRole(roleName){
   if(error)console.error('Failed to persist global round-robin state:',error);
   return chosen?.full_name||'';
 }
-async function getNextCounsellorForOffice(office){
-  const pool=getRoundRobinCounsellorPool(office);
+async function getNextCounsellorForOffice(office,ws){
+  // Domestic/International wall: leads added from the Domestic side rotate only
+  // through Domestic counsellors; everything else through the International pool.
+  if(ws===undefined)ws=(canSwitchOpsViewUser()&&superAdminOpsView)?superAdminOpsView:(myTeamCategory==='Domestic'?'Domestic':null);
+  const pool=ws==='Domestic'?getOfficeCounsellors(office).filter(t=>t.team_category==='Domestic'):getRoundRobinCounsellorPool(office);
   if(!pool.length)return{name:'',country:'',office};
-  const idx=(rrStateByOffice[office]||0)%pool.length;
+  const rrKey=ws==='Domestic'?office+'|Domestic':office;
+  const idx=(rrStateByOffice[rrKey]||0)%pool.length;
   const c=pool[idx];
   const nextIndex=idx+1;
-  rrStateByOffice[office]=nextIndex;
-  const{error}=await sb.from('round_robin_state').upsert({office,last_index:nextIndex},{onConflict:'office'});
+  rrStateByOffice[rrKey]=nextIndex;
+  const{error}=await sb.from('round_robin_state').upsert({office:rrKey,last_index:nextIndex},{onConflict:'office'});
   if(error) console.error('Failed to persist round_robin_state (rotation may repeat until this succeeds):',error);
   return{name:c.full_name,country:c.country,office:c.office};
 }
@@ -4002,21 +4031,21 @@ async function submitPasswordResetRequest(){
   const err=document.getElementById('forgot-err');
   const success=document.getElementById('forgot-success');
   err.textContent='';success.style.display='none';
-  if(!email){err.textContent='Please enter your email address.';return;}
-  btn.disabled=true;btn.textContent='Sending…';
+  if(!email){err.textContent='Please enter your email address first.';return;}
+  const _lbl=btn.textContent;btn.style.pointerEvents='none';btn.textContent='Sending request…';
   try{
     const res=await fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/submit-password-reset-request',{
       method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email}),
     });
     const data=await res.json();
-    if(!res.ok){err.textContent=data.error||'Something went wrong — please try again.';btn.disabled=false;btn.textContent='Send request →';return;}
+    if(!res.ok){err.textContent=data.error||'Something went wrong — please try again.';btn.style.pointerEvents='';btn.textContent=_lbl;return;}
     success.textContent='Request sent. India or Pavitra has been notified and will get in touch with your new password directly.';
     success.style.display='block';
     document.getElementById('forgot-email').value='';
-    btn.disabled=false;btn.textContent='Send request →';
+    btn.style.pointerEvents='';btn.textContent=_lbl;
   }catch(e){
     err.textContent='Could not reach the server — please check your connection and try again.';
-    btn.disabled=false;btn.textContent='Send request →';
+    btn.style.pointerEvents='';btn.textContent=_lbl;
   }
 }
 
@@ -4031,6 +4060,67 @@ function readableAuthError(error,context){
   if(error.error_description) return error.error_description;
   if(error.status===429) return 'Too many attempts — please wait a minute and try again.';
   return 'Something went wrong on the server. Open the browser console (F12) for details, or try again in a moment.';
+}
+
+
+// ── Email password recovery (Supabase Auth) ──────────────────────────
+// recoveryMode is set when the person arrives from the emailed link
+// (#...type=recovery). While it is on, we do NOT log them into the CRM —
+// they must set a new password first.
+let recoveryMode=/[#&?]type=recovery\b/.test(location.hash+location.search);
+function recoveryLinkError(){
+  const h=location.hash+location.search;
+  if(/error_code=otp_expired|error=access_denied/.test(h))return 'That reset link has expired or was already used. Request a new one below.';
+  return '';
+}
+async function submitEmailRecovery(){
+  const email=document.getElementById('forgot-email').value.trim().toLowerCase();
+  const btn=document.getElementById('forgot-email-btn');
+  const err=document.getElementById('forgot-err');
+  const success=document.getElementById('forgot-success');
+  err.textContent='';success.style.display='none';
+  if(!email||!email.includes('@')){err.textContent='Please enter your email address.';return;}
+  btn.disabled=true;btn.textContent='Sending…';
+  try{
+    const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+    if(error){
+      const st=error.status;const msg=String(error.message||'');
+      if(st===429||/rate limit|too many/i.test(msg))err.textContent='Too many reset emails requested. Please wait a few minutes, or ask India or Pavitra to set a new password for you.';
+      else if(/not authorized|not allowed/i.test(msg))err.textContent='The email service could not send to this address yet. Please use "Ask India or Pavitra" below.';
+      else err.textContent='Could not send the email: '+(msg||'unknown error')+'. You can use "Ask India or Pavitra" below.';
+    } else {
+      // Same message whether or not the email exists, so this page never reveals who has an account.
+      success.textContent='If that email has a CRM login, a reset link is on its way. Check your inbox and spam folder. The link works once and expires soon.';
+      success.style.display='block';
+    }
+  }catch(e){err.textContent='Could not reach the server — check your connection and try again.';}
+  btn.disabled=false;btn.textContent='Email me a reset link →';
+}
+function showRecoveryView(){
+  ['auth-login-view','auth-signup-view','auth-forgot-view'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
+  document.getElementById('auth-recovery-view').style.display='block';
+  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('app').classList.remove('visible');
+}
+async function submitNewPassword(){
+  const p1=document.getElementById('recovery-pass').value;
+  const p2=document.getElementById('recovery-pass2').value;
+  const err=document.getElementById('recovery-err');const btn=document.getElementById('recovery-btn');
+  err.textContent='';
+  if(p1.length<8||p1.length>25){err.textContent='Password must be 8 to 25 characters.';return;}
+  if(p1!==p2){err.textContent='The two passwords do not match.';return;}
+  btn.disabled=true;btn.textContent='Saving…';
+  const{error}=await sb.auth.updateUser({password:p1});
+  if(error){err.textContent=readableAuthError(error,'recovery');btn.disabled=false;btn.textContent='Save new password →';return;}
+  recoveryMode=false;
+  try{history.replaceState(null,'',location.pathname);}catch(_e){}
+  await sb.auth.signOut();
+  document.getElementById('recovery-pass').value='';document.getElementById('recovery-pass2').value='';
+  btn.disabled=false;btn.textContent='Save new password →';
+  document.getElementById('auth-recovery-view').style.display='none';
+  showLoginView();
+  const le=document.getElementById('login-err');
+  if(le){le.style.color='#4ADE80';le.textContent='Password updated. Please sign in with your new password.';setTimeout(()=>{le.style.color='';},8000);}
 }
 
 async function doLogin(){
@@ -4348,20 +4438,29 @@ function renderCounsellorCell(l){
   }
   return `<select onchange="quickReassignLead('${l.id}',this.value)" style="font-size:12px;padding:4px 6px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);max-width:150px">${options.join('')}</select>`;
 }
-async function ensureLeadAssignmentTask(lead,assignee,{reassignExisting=true,quiet=false}={}){
+async function ensureLeadAssignmentTask(lead,assignee,{reassignExisting=true,quiet=false,verifyUpdate=false}={}){
   if(!lead||!assignee)return {ok:true,created:false,updated:false};
   const title='Follow up with newly assigned lead';
-  const due=new Date(Date.now()+86400000).toISOString().substring(0,10);
+  const due=localDateStr(new Date(Date.now()+86400000));
   // Keep one canonical assignment task per lead. If one already exists, move it
   // to the current counsellor rather than creating duplicates.
   const{data:existing,error:findError}=await sb.from('tasks').select('id,assigned_to,status').eq('lead_id',lead.id).eq('title',title).eq('status','Open').limit(1);
   if(findError){console.error('Assignment task lookup failed:',findError);return {ok:false,created:false,updated:false,error:findError};}
   if(existing&&existing[0]){
     if(reassignExisting&&existing[0].assigned_to!==assignee){
-      const{error:updateError}=await sb.from('tasks').update({assigned_to:assignee}).eq('id',existing[0].id);
+      // verifyUpdate: ask for the updated row back. A row-level-security
+      // block on UPDATE returns no error and zero rows, which would otherwise
+      // be reported as a successful move.
+      const updateQuery=sb.from('tasks').update({assigned_to:assignee}).eq('id',existing[0].id);
+      const{data:updatedRows,error:updateError}=verifyUpdate?await updateQuery.select('id'):await updateQuery;
       if(updateError){console.error('Assignment task reassignment failed:',updateError);return {ok:false,created:false,updated:false,error:updateError};}
+      if(verifyUpdate&&!(updatedRows&&updatedRows.length)){
+        const blocked={message:'Assignment task was not updated (no row changed — possibly blocked by permissions).'};
+        console.error('Assignment task reassignment failed:',blocked,{taskId:existing[0].id,leadId:lead.id});
+        return {ok:false,created:false,updated:false,error:blocked};
+      }
       if(!quiet)toast(`📋 Assignment task moved to ${assignee}`);
-      return {ok:true,created:false,updated:true};
+      return {ok:true,created:false,updated:true,taskId:existing[0].id,previousAssignee:existing[0].assigned_to||null};
     }
     return {ok:true,created:false,updated:false};
   }
@@ -4382,17 +4481,25 @@ async function syncAssignedLeadTasksForCurrentUser(){
     if(!openByLead.has(t.lead_id))openByLead.set(t.lead_id,t);
     if(t.assigned_to===myName)openByLead.set(t.lead_id,t);
   });
-  let created=0;
+  let created=0,moved=0;
   for(const lead of assignedLeads){
     const current=openByLead.get(lead.id);
     // If the counsellor already has an open task for this lead, it is already
-    // actionable and nothing new is needed. Otherwise create the canonical
-    // assignment task for the counsellor.
+    // actionable and nothing new is needed. Otherwise give the counsellor the
+    // canonical assignment task: move it from the previous holder if one is
+    // still open (one canonical task per lead), or create it if none exists.
     if(current&&current.assigned_to===myName)continue;
-    const result=await ensureLeadAssignmentTask(lead,myName,{reassignExisting:false,quiet:true});
+    const result=await ensureLeadAssignmentTask(lead,myName,{reassignExisting:true,quiet:true,verifyUpdate:true});
     if(result.created)created++;
+    if(result.updated){
+      moved++;
+      try{await logTaskActivity(result.taskId,'task_reassigned',`Assignee: ${result.previousAssignee||'Unassigned'} → ${myName} (matched to lead owner)`,lead.id);}
+      catch(e){console.error('Assignment task move log failed (move itself was saved):',e);}
+    }
+    if(!result.ok)console.error('Could not give assignment task to lead owner',{leadId:lead.id,error:result.error});
   }
   if(created)console.info(`Created ${created} missing assignment task(s) for ${myName}.`);
+  if(moved)console.info(`Moved ${moved} open assignment task(s) to ${myName} (lead owner).`);
 }
 
 async function quickReassignLead(leadId,newCounsellor,opts){
@@ -4777,9 +4884,7 @@ function chooseOpsView(view){
   // Team has its own Domestic/International operational view too. Re-render
   // immediately so switching the pill never leaves the previous team pole
   // on screen until the user navigates away and back.
-  if(document.getElementById('sc-team')?.classList.contains('active')){
-    renderTeam(teamList);
-  }
+  try{ renderTeam(teamList); }catch(e){}
   // Activity Monitor has its own separate Category filter — keep it in
   // sync too, in case the person is already sitting on that screen when
   // they toggle Domestic/International, rather than only updating it the
@@ -4789,6 +4894,8 @@ function chooseOpsView(view){
     renderActivityMonitor();
   }
   refreshProductivityScope();
+  // Home widgets (My Tasks, reminders, follow-ups) must follow the toggle too.
+  try{loadDashReminders();loadMyTasks();renderHomeDestinationCards();loadHomeFollowups();}catch(e){}
   try{
     try{renderEvents();renderEventsTicker();}catch(e){}
     if(document.getElementById('sc-resumes')?.classList.contains('active'))renderResumesAdmin();
@@ -4888,6 +4995,10 @@ function leadIsDomesticWorkstream(l){
 function syncLeadsView(){
   if(canSwitchOpsViewUser()&&superAdminOpsView){
     leads=allLeads.filter(l=>superAdminOpsView==='Domestic'?leadIsDomesticWorkstream(l):!leadIsDomesticWorkstream(l));
+  } else if(!canSwitchOpsViewUser()&&myTeamCategory==='International'&&['Admin','Manager','Director','Digital Marketing'].includes(myRole)){
+    // Domestic/International wall for country-scoped staff: an International
+    // manager / marketer in a country that also hosts Domestic work (UK) never sees Domestic leads.
+    leads=allLeads.filter(l=>!leadIsDomesticWorkstream(l));
   } else {
     leads=allLeads;
   }
@@ -4903,7 +5014,7 @@ function contactIsDomestic(mobile,leadId){
   return /^(\+44|0044|44)/.test(raw);
 }
 function contactInOpsView(mobile,leadId){
-  const view=canSwitchOpsViewUser()?superAdminOpsView:null;
+  const view=canSwitchOpsViewUser()?superAdminOpsView:((myTeamCategory==='Domestic'||myTeamCategory==='International')?myTeamCategory:null);
   if(!view)return true;
   const dom=contactIsDomestic(mobile,leadId);
   return view==='Domestic'?dom:!dom;
@@ -5208,6 +5319,7 @@ async function doLogout(){
   if(curId) broadcastStopEditing(curId);
   stopNotificationEngine();
   await sb.auth.signOut();
+  try{clearAccessAudit();}catch(_e){}
   leads=[];allLeads=[];coaching=[];currentUser=null;myOffice=null;isSuperAdmin=false;isViewOnly=false;isOwner=false;canSeeFinance=false;
   document.getElementById('auth-screen').classList.remove('hidden');
   document.getElementById('app').classList.remove('visible');
@@ -5413,9 +5525,13 @@ function executeCommandResult(r){
 
  
 sb.auth.getSession().then(({data:{session}})=>{
+  if(recoveryMode){showRecoveryView();return;}
   if(session&&!currentUser) onLoginGuarded(session.user);
+  else if(!session&&recoveryLinkError()){showForgotPasswordView();const fe=document.getElementById('forgot-err');if(fe)fe.textContent=recoveryLinkError();try{history.replaceState(null,'',location.pathname);}catch(_e){}}
 });
 sb.auth.onAuthStateChange((event,session)=>{
+  if(event==='PASSWORD_RECOVERY'){recoveryMode=true;showRecoveryView();return;}
+  if(recoveryMode)return; // never log in via the recovery link before a new password is set
   if(event==='SIGNED_IN'&&session&&!currentUser) onLoginGuarded(session.user);
   if(event==='SIGNED_OUT'){
     currentUser=null;leads=[];allLeads=[];coaching=[];
@@ -5447,18 +5563,13 @@ async function scopedLeadsQuery(){
   } else if(isSuperAdmin){
     // Super Admin minus Owner: India fully excluded, everywhere else open
     q=q.neq('country','India');
-  } else if(myRole==='Digital Marketing'){
-    // Digital Marketing works with aggregate marketing data, never
-    // individual lead records - deliberately scoped to nothing here
-    // rather than falling through to a broader default.
-    q=q.eq('id','00000000-0000-0000-0000-000000000000');
   } else if(myTeamCategory==='Agent'){
     // Agent: only leads explicitly, individually assigned to them by
     // Management — never country-scoped, never round-robin.
     q=q.eq('counsellor',myName);
   } else if(myTeamCategory==='Domestic'){
-    if(['Admin','Manager','Director'].includes(myRole)){
-      // Domestic Admin sees their whole Domestic team's assigned leads,
+    if(['Admin','Manager','Director','Digital Marketing'].includes(myRole)){
+      // Domestic Admin / Digital Marketing sees their whole Domestic team's assigned leads,
       // not just their own — but never the International side. Queried
       // fresh here rather than relying on teamList, since that may not
       // have finished loading yet (loadLeads runs in parallel with it).
@@ -5562,16 +5673,24 @@ async function loadLeads(){
   let allRows=[],from=0,keepGoing=true;
   while(keepGoing){
     const{data,error}=await q.range(from,from+PAGE_SIZE-1);
-    if(error){console.error('loadLeads page fetch failed:',error);break;}
+    if(error){
+      // Never replace the list with a partial (or empty) result: a failed
+      // page would otherwise look like a complete list with leads missing.
+      // Keep the last fully-loaded list and tell the user.
+      console.error('loadLeads page fetch failed at row '+from+':',error);
+      toast(`⚠️ Leads could not be fully loaded (${error.message||'request failed'}). ${allLeads.length?'Showing the last complete list':'The list may be empty'} — refresh the page to retry.`);
+      return false;
+    }
     if(data&&data.length){allRows=allRows.concat(data);}
     keepGoing=!!(data&&data.length===PAGE_SIZE);
     from+=PAGE_SIZE;
   }
   allLeads=allRows;syncLeadsView();
+  return true;
 }
 async function loadCoaching(){
   const{data,error}=await sb.from('coaching').select('*').order('created_at',{ascending:false});
-  if(!error&&data) coaching=data;
+  if(!error&&data) coaching=(isSuperAdmin&&!isOwner)?data.filter(c=>c.country!=='India'&&c.leads?.country!=='India'):data; // India invisible to non-owner super admins
 }
 let teamList=[];
 async function loadTeam(){
@@ -5686,9 +5805,9 @@ function nav(id,btn){
   // Digital Marketing role members only ever need their own dashboard and
   // the general Dashboard - a default-deny here is cleaner and safer than
   // individually blocking every other screen one at a time.
-  if(myRole==='Digital Marketing'&&!isSuperAdmin&&!['home','dashboard','digitalmarketing'].includes(id)){
+  if(myRole==='Digital Marketing'&&!isSuperAdmin&&!['home','dashboard','digitalmarketing','leads','followup'].includes(id)){
     nav('digitalmarketing',document.querySelector('.ni[data-nav="digitalmarketing"]'));
-    toast('Digital Marketing accounts only have access to the Digital Marketing dashboard.');
+    toast('Digital Marketing accounts can use the Digital Marketing dashboard, Dashboard, Leads and Follow-ups.');
     return;
   }
   const roleIsCounsellor=isRestrictedStaffRole();
@@ -5701,7 +5820,7 @@ function nav(id,btn){
   if(id==='team'&&roleIsCounsellor){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
   if(id==='queries'&&roleIsCounsellor){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
   if(id==='queries')setQuerySubtab('instagram');
-  if(id==='team')loadPasswordResetRequests();
+  if(id==='team'){ try{ if((teamList||[]).length)renderTeam(teamList); }catch(e){} loadPasswordResetRequests(); }
   // Productivity used to be Admin-tier only — now everyone needs in for
   // "My Daily Update", so the blanket block is gone. Call Recorder and
   // Activity Monitor stay restricted via initProductivity() below instead,
@@ -5737,18 +5856,18 @@ function navDateRange(from,to){
   },300);
 }
 function kpiNav(kind){
-  const todayStr=new Date().toISOString().substring(0,10);
+  const todayStr=localDateStr();
   switch(kind){
     case 'total': navFilter('ls-st',''); break;
     case 'enrolled': navFilter('ls-st','Enrolled'); break;
     case 'active': navFilter('ls-st',''); break; // spans multiple statuses — show the full list instead of picking one
     case 'month': {
       const now=new Date();
-      const firstOfMonth=new Date(now.getFullYear(),now.getMonth(),1).toISOString().substring(0,10);
+      const firstOfMonth=localDateStr(new Date(now.getFullYear(),now.getMonth(),1));
       navDateRange(firstOfMonth,todayStr);
       break;
     }
-    case 'week': navDateRange(new Date(Date.now()-7*86400000).toISOString().substring(0,10),todayStr); break;
+    case 'week': navDateRange(localDateStr(new Date(Date.now()-7*86400000)),todayStr); break;
     case 'today': navDateRange(todayStr,todayStr); break;
     case 'offer': navFilter('ls-st','Received Conditional'); break;
     case 'visa': navFilter('ls-st','Visa Received'); break;
@@ -5818,7 +5937,7 @@ function renderDashOpsWidgets(dashLeads){
   <div class="card" style="margin-bottom:18px"><details data-k="mm"${keepOpen.mm?' open':''} ontoggle="if(this.open)loadMorningOverdue()"><summary style="cursor:pointer;font-weight:600">🌅 Manager morning view — per counsellor</summary><div style="overflow-x:auto;margin-top:8px"><table style="width:100%;font-size:13px;border-collapse:collapse"><thead><tr style="text-align:left;color:var(--ink3)"><th style="padding:6px 8px">Counsellor</th><th>Active</th><th>Waiting</th><th>Untouched 7d</th><th>Overdue tasks</th><th>Updated %</th></tr></thead><tbody>${rows||'<tr><td colspan="6" style="padding:8px;color:var(--ink3)">No active leads</td></tr>'}</tbody></table></div></details></div>`;
 }
 async function loadMorningOverdue(){
-  const today=new Date().toISOString().substring(0,10);
+  const today=localDateStr();
   const{data}=await fetchAllPages(()=>sb.from('tasks').select('id,assigned_to').eq('status','Open').lt('due_date',today).order('id',{ascending:true}));
   const c={};(data||[]).forEach(t=>{c[t.assigned_to||'']=(c[t.assigned_to||'']||0)+1;});
   document.querySelectorAll('#dash-ops-widgets .ovd').forEach(td=>{const n=c[td.dataset.n]||0;td.textContent=n;td.style.color=n?'#C0392B':'inherit';});
@@ -5868,7 +5987,7 @@ function renderDash(){
  document.getElementById('k-mon').textContent=mon;   const week=dashLeads.filter(l=>{const d=new Date(l.created_at);return(Date.now()-d.getTime())<7*86400000;}).length;   const appsReached=dashLeads.filter(l=>reachedStage(l.status,'Application Submitted')).length;   const offersReached=dashLeads.filter(l=>reachedStage(l.status,'Received Conditional')).length;   const depositReached=dashLeads.filter(l=>reachedStage(l.status,'Deposit Paid')).length;   const visaGranted=c['Visa Received']||0;   const visaTotal=(c['Visa Received']||0)+(c['Visa Rejected']||0);   document.getElementById('k-offer').textContent=appsReached>0?Math.round(offersReached/appsReached*100)+'%':'—';   document.getElementById('k-visa').textContent=visaTotal>0?Math.round(visaGranted/visaTotal*100)+'%':'—';   document.getElementById('k-dep').textContent=offersReached>0?Math.round(depositReached/offersReached*100)+'%':'—';   document.getElementById('k-fee').textContent=c['Fees Paid']||0;   document.getElementById('k-week').textContent=week;   document.getElementById('k-drop').textContent=(c['Dropped']||0)+(c['Not Interested']||0);
 
   // ── Executive KPI row ──
-  const todayStr=new Date().toISOString().substring(0,10);
+  const todayStr=localDateStr();
   const leadsToday=dashLeads.filter(l=>(l.created_at||'').substring(0,10)===todayStr).length;
   document.getElementById('k-today').textContent=leadsToday;
 
@@ -5919,7 +6038,7 @@ function renderDash(){
   const al=document.getElementById('act-list');
   const dotC={"New Enquiry":"#1E40AF","Enrolled":"#065F46","Fees Paid":"#064E3B","Process Completed":"#1E3A5F","Not Interested":"#9F1239","Call by Mistake":"#64748B","Counselling Done":"#C05621","Contacted":"#854D0E","Defer":"#92400E","Dropped":"#475569"};
   al.innerHTML=dashLeads.slice(0,6).map(l=>
-    `<div class="aitem" onclick="openLeadDetail('${l.id}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><div class="adot" style="background:${dotC[l.status]||'#999'}"></div><div><div class="atext">${esc(l.name)} — ${l.status.toLowerCase()}</div><div class="atime">${ago(l.created_at)}${l.source?' · '+l.source:''}</div></div></div>`
+    `<div class="aitem" onclick="openLeadDetail('${l.id}')" style="cursor:pointer" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"><div class="adot" style="background:${dotC[l.status]||'#999'}"></div><div><div class="atext">${esc(l.name)} — ${esc(String(l.status||'').toLowerCase())}</div><div class="atime">${ago(l.created_at)}${l.source?' · '+esc(l.source):''}</div></div></div>`
   ).join('');
   renderCountryBreakdown();
   renderCounsellorRank();
@@ -6082,13 +6201,13 @@ function setSubteamPeriod(period,btn){
   } else if(period==='custom'){
     dateEl.style.display='none';
     rangeEl.style.display='flex';
-    const todayStr=new Date().toISOString().substring(0,10);
+    const todayStr=localDateStr();
     if(!document.getElementById('subteam-detail-from').value)document.getElementById('subteam-detail-from').value=todayStr;
     if(!document.getElementById('subteam-detail-to').value)document.getElementById('subteam-detail-to').value=todayStr;
   } else {
     dateEl.style.display='inline-block';
     rangeEl.style.display='none';
-    if(!dateEl.value)dateEl.value=new Date().toISOString().substring(0,10);
+    if(!dateEl.value)dateEl.value=localDateStr();
   }
   renderSubTeamDetail();
 }
@@ -6121,7 +6240,7 @@ function renderSubTeamDetail(){
       });
     }
   } else if(subteamPeriod!=='all'){
-    const dateVal=document.getElementById('subteam-detail-date').value||new Date().toISOString().substring(0,10);
+    const dateVal=document.getElementById('subteam-detail-date').value||localDateStr();
     const{start,end}=dateRangeFor(subteamPeriod,dateVal);
     scoped=scoped.filter(l=>{
       const ref=(l.assigned_at||l.created_at||'').substring(0,10);
@@ -6837,7 +6956,7 @@ async function saveScheduledMeeting(){
 async function loadMyMeetings(){
   const el=document.getElementById('my-meetings-list');
   if(!el)return;
-  const today=new Date().toISOString().substring(0,10);
+  const today=localDateStr();
   let q=sb.from('meetings').select('*,leads(name,id)').gte('meeting_date',today).order('meeting_date',{ascending:true}).order('meeting_time',{ascending:true}).limit(8);
   // Same scoping already used for Today's Priorities / Upcoming Follow-ups:
   // a restricted role (Counsellor etc.) sees only their own meetings;
@@ -6890,7 +7009,7 @@ async function logNoteText(leadId,text){
 
 function waFollowUpFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msgText=getContextualWhatsAppMessage(l);const msg=encodeURIComponent(msgText);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');logNoteText(curId,`WhatsApp message sent (${l.status}): "${msgText}"`);}
 // FS versions of doc/reminder/uni functions
-async function loadDocsFS(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-doc-list');if(!el)return;if(error||!data||!data.length){el.innerHTML=emptyState('📋','No checklist yet.');return;}await loadDocFilesFor(data.map(d=>d.id));el.innerHTML=data.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',true)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',true)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiryFS('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
+async function loadDocsFS(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});const el=document.getElementById('ld-doc-list');if(!el)return;if(error||!data||!data.length){el.innerHTML=emptyState('📋','No checklist yet.');return;}await loadDocFilesFor(data.map(d=>d.id));el.innerHTML=data.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',true)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',true)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiryFS('${d.id}','${escJs(d.expiry_date||'')}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
 function setDocExpiryFS(id,current){openQuickInput('Set expiry date','Expiry date','date',current,(val)=>{sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocsFS(curId);toast('Expiry date updated.');});});}
 
 // ── Document checklist file upload — supports multiple files per item ──
@@ -6900,6 +7019,32 @@ async function loadDocFilesFor(docIds){
   const{data,error}=await sb.from('document_files').select('*').in('document_id',docIds).order('created_at',{ascending:true});
   docFilesByDoc={};
   if(!error&&data) data.forEach(f=>{(docFilesByDoc[f.document_id]=docFilesByDoc[f.document_id]||[]).push(f);});
+}
+// Uploads one file to Storage and records its metadata row. Both steps are
+// checked: if the metadata insert fails, the object that was JUST uploaded
+// (a new, unique path) is removed so it is not left orphaned — existing files
+// are never touched. Returns {ok, stage, error, orphanPath}.
+async function uploadFileAndRecord(bucket,path,file,table,row){
+  const{error:upErr}=await sb.storage.from(bucket).upload(path,file);
+  if(upErr)return{ok:false,stage:'upload',error:upErr};
+  const{data:pub}=sb.storage.from(bucket).getPublicUrl(path);
+  const{error:dbErr}=await sb.from(table).insert({...row,attachment_url:pub?.publicUrl||null,attachment_filename:file.name});
+  if(!dbErr)return{ok:true};
+  console.error(`Metadata insert into ${table} failed after upload to ${bucket}/${path}:`,dbErr);
+  let orphanPath=null;
+  try{
+    const{error:rmErr}=await sb.storage.from(bucket).remove([path]);
+    if(rmErr){orphanPath=path;console.error(`Orphaned upload could not be removed: ${bucket}/${path}`,rmErr);}
+  }catch(e){orphanPath=path;console.error(`Orphaned upload could not be removed: ${bucket}/${path}`,e);}
+  return{ok:false,stage:'record',error:dbErr,orphanPath};
+}
+// One honest summary toast for a batch of uploads.
+function reportUploadBatch(results,noun){
+  const ok=results.filter(r=>r.ok).length, failed=results.filter(r=>!r.ok);
+  if(!failed.length){toast(`✅ ${ok} ${noun} uploaded!`);return;}
+  const first=failed[0];
+  const why=first.stage==='record'?'file stored but could not be saved to the record':'upload failed';
+  toast(`⚠️ ${ok} of ${results.length} ${noun} uploaded; ${failed.length} failed (${first.name}: ${why} — ${first.error?.message||'unknown error'}). Please retry the failed file(s).`);
 }
 let docUploadTargetId=null, docUploadIsFS=false;
 function triggerDocUpload(docId,isFS){
@@ -6911,16 +7056,15 @@ async function handleDocUploadFile(fileOrList){
   const files=fileOrList instanceof FileList?Array.from(fileOrList):[fileOrList];
   if(!files.length||!files[0]||!docUploadTargetId)return;
   toast(`Uploading ${files.length} file(s)…`);
+  const results=[];
   for(const file of files){
     const path=`${curId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
-    const{error:upErr}=await sb.storage.from('document-attachments').upload(path,file);
-    if(upErr){toast(`Upload failed for ${file.name}: `+upErr.message);continue;}
-    const{data:pub}=sb.storage.from('document-attachments').getPublicUrl(path);
-    await sb.from('document_files').insert({document_id:docUploadTargetId,attachment_url:pub?.publicUrl||null,attachment_filename:file.name});
+    const r=await uploadFileAndRecord('document-attachments',path,file,'document_files',{document_id:docUploadTargetId});
+    results.push({...r,name:file.name});
   }
   if(docUploadIsFS==='modal'){loadDocsModal(curId);}else if(docUploadIsFS){loadDocsFS(curId);}else{loadDocs(curId);}
   document.getElementById('doc-upload-input').value='';
-  toast('✅ File(s) uploaded!');
+  reportUploadBatch(results,'file(s)');
 }
 async function deleteDocFile(fileId,isFS){
   if(!confirm('Remove this file? You can upload a replacement right after.'))return;
@@ -7036,18 +7180,15 @@ async function uploadSopDocuments(isFS){
     university=prompt('Which university is this SOP for?','')||'General';
   }
   toast(`Uploading ${files.length} file(s)…`);
+  const results=[];
   for(const file of files){
     const path=`${curId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
-    const{error:upErr}=await sb.storage.from('sop-documents').upload(path,file);
-    if(upErr){toast(`Upload failed for ${file.name}: `+upErr.message);continue;}
-    const{data:pub}=sb.storage.from('sop-documents').getPublicUrl(path);
-    await sb.from('sop_documents').insert({
-      lead_id:curId,university,attachment_url:pub?.publicUrl||null,attachment_filename:file.name,uploaded_by:myName
-    });
+    const r=await uploadFileAndRecord('sop-documents',path,file,'sop_documents',{lead_id:curId,university,uploaded_by:myName});
+    results.push({...r,name:file.name});
   }
   fileInput.value='';
   loadSopDocuments(curId,isFS);
-  toast('✅ SOP document(s) uploaded!');
+  reportUploadBatch(results,'SOP document(s)');
 }
 async function deleteSopDocument(id,isFS){
   if(!confirm('Delete this SOP document?'))return;
@@ -7127,7 +7268,7 @@ async function loadTasksFS(leadId){
   if(!el)return;
   if(error||!data||!data.length){el.innerHTML=emptyState('✅','No tasks yet.');return;}
   el.innerHTML=data.map(t=>{
-    const overdue=t.status!=='Done'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
+    const overdue=t.status!=='Done'&&t.due_date&&t.due_date<localDateStr();
     return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${t.status==='Done'?';opacity:.5':''}">
       <div style="flex:1;cursor:pointer" onclick="openTaskDetail('${t.id}')">
         <div style="font-size:13px;font-weight:600${t.status==='Done'?';text-decoration:line-through':''}">${esc(t.title)}${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}</div>
@@ -7231,13 +7372,12 @@ async function saveUniversityApp(){
 
   // Multiple files allowed at creation too, same as adding more later.
   const files=document.getElementById('uni-file').files;
+  const results=[];
   if(newAppId&&files&&files.length){
     for(const file of files){
       const path=`${curId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
-      const{error:upErr}=await sb.storage.from('university-attachments').upload(path,file);
-      if(upErr){toast(`Upload failed for ${file.name}: `+upErr.message);continue;}
-      const{data:pub}=sb.storage.from('university-attachments').getPublicUrl(path);
-      await sb.from('university_application_files').insert({university_application_id:newAppId,attachment_url:pub?.publicUrl||null,attachment_filename:file.name});
+      const r=await uploadFileAndRecord('university-attachments',path,file,'university_application_files',{university_application_id:newAppId});
+      results.push({...r,name:file.name});
     }
   }
 
@@ -7245,7 +7385,8 @@ async function saveUniversityApp(){
   closeModal('modal-university');
   loadUniApps(curId);
   loadUniAppsFS(curId);
-  toast('University added!');
+  if(results.some(r=>!r.ok)){toast('University added, but some files did not attach.');reportUploadBatch(results,'file(s)');}
+  else toast('University added!');
 }
 async function deleteUniAppFS(id){if(!confirm('Remove this university?'))return;await sb.from('university_applications').delete().eq('id',id);loadUniAppsFS(curId);toast('Removed.');}
 
@@ -7267,16 +7408,15 @@ async function handleUniFileUpload(fileList){
   const files=Array.from(fileList||[]);
   if(!files.length||!uniFileUploadTargetId)return;
   toast(`Uploading ${files.length} file(s)…`);
+  const results=[];
   for(const file of files){
     const path=`${curId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
-    const{error:upErr}=await sb.storage.from('university-attachments').upload(path,file);
-    if(upErr){toast(`Upload failed for ${file.name}: `+upErr.message);continue;}
-    const{data:pub}=sb.storage.from('university-attachments').getPublicUrl(path);
-    await sb.from('university_application_files').insert({university_application_id:uniFileUploadTargetId,attachment_url:pub?.publicUrl||null,attachment_filename:file.name});
+    const r=await uploadFileAndRecord('university-attachments',path,file,'university_application_files',{university_application_id:uniFileUploadTargetId});
+    results.push({...r,name:file.name});
   }
   if(uniFileUploadIsFS){loadUniAppsFS(curId);}else{loadUniApps(curId);}
   document.getElementById('uni-file-upload-input').value='';
-  toast('✅ File(s) uploaded!');
+  reportUploadBatch(results,'file(s)');
 }
 async function deleteUniFile(fileId,isFS){
   if(!confirm('Remove this file?'))return;
@@ -7291,7 +7431,7 @@ function openReminderModal(){
   if(!curId){toast('Open a lead first.');return;}
   document.getElementById('rem-comments').value='';
   document.querySelector('input[name="rem-mode"][value="comment"]').checked=true;
-  document.getElementById('rem-date').value=new Date().toISOString().substring(0,10);
+  document.getElementById('rem-date').value=localDateStr();
   document.getElementById('rem-time').value='09:00';
   toggleReminderMode();
   document.getElementById('modal-reminder').classList.add('open');
@@ -7351,7 +7491,7 @@ function openTaskModal(){
 function getAssignableTaskRecipients(){
   if(isOwner||isSuperAdmin) return [...new Set((teamList||[]).filter(memberInOpsView).map(t=>t.full_name).filter(Boolean))].sort();
   if(myRole==='Counsellor') return myName?[myName]:[];
-  return [...new Set((teamList||[]).filter(t=>t.role==='Counsellor'&&t.country===myCountry).map(t=>t.full_name).filter(Boolean))].sort();
+  return [...new Set((teamList||[]).filter(t=>t.role==='Counsellor'&&t.country===myCountry&&effectiveTeamCategory(t)===(myTeamCategory==='Domestic'?'Domestic':'International')&&(!myOffice||!t.office||t.office===myOffice)).map(t=>t.full_name).filter(Boolean))].sort();
 }
 function openTaskModalStandalone(){
   taskModalStandalone=true;
@@ -7393,7 +7533,7 @@ function toggleTaskReminderFields(){
 async function saveTaskModal(){
   const title=document.getElementById('task-title').value.trim();
   if(!title){document.getElementById('task-title').focus();toast('Please enter a task title.');return;}
-  const dueDate=document.getElementById('task-due').value||null;
+  const dueDate=document.getElementById('task-due').value||((document.getElementById('task-set-reminder')?.checked&&document.getElementById('task-reminder-date')?.value)||null)||null;
   const priority=document.getElementById('task-priority')?.value||'Medium';
   const notes=document.getElementById('task-notes')?.value.trim()||null;
   const btn=document.getElementById('save-task-btn');
@@ -7538,7 +7678,7 @@ async function openTaskDetail(taskId){
   })();
   if(!allowed){toast('This task is outside what your account can access.');return;}
 
-  const overdue=t.status!=='Done'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
+  const overdue=t.status!=='Done'&&t.due_date&&t.due_date<localDateStr();
   document.getElementById('tdetail-title').textContent=t.title||'Task details';
   const statusLabel=taskStatusLabel(t.status);
   const statusTone=taskStatusTone(t.status);
@@ -7740,6 +7880,7 @@ function populateTaskDashboardFilters(scoped, staffByName){
   const counsellors=[...new Set((teamList||[])
     .filter(x=>x.role==='Counsellor')
     .filter(memberInOpsView)
+    .filter(x=>{ if(isSuperAdmin||isOwner)return true; const c=myTeamCategory==='Domestic'?'Domestic':'International'; if(effectiveTeamCategory(x)!==c)return false; if(['Admin','Manager','Director'].includes(myRole)&&myOffice&&x.office&&x.office!==myOffice)return false; return true; })
     .filter(x=>!countryForCounsellors || x.country===countryForCounsellors)
     .filter(x=>staffByName.has((x.full_name||'').trim()))
     .map(x=>(x.full_name||'').trim())
@@ -7776,7 +7917,7 @@ function switchTaskWorkstream(mode){
 let tdCharts={};
 function destroyTdChart(id){if(tdCharts[id]){tdCharts[id].destroy();delete tdCharts[id];}}
 function renderTaskDailySnapshot(scoped){
-  const today=new Date().toISOString().substring(0,10);
+  const today=localDateStr();
   const todaysTasks=scoped.filter(t=>t.due_date===today);
   const todaysDone=todaysTasks.filter(t=>t.status==='Done').length;
   const todaysOpen=todaysTasks.length-todaysDone;
@@ -7848,16 +7989,16 @@ function renderTaskDailySnapshot(scoped){
   let streak=0;
   for(let i=0;i<365;i++){
     const d=new Date();d.setDate(d.getDate()-i);
-    const dStr=d.toISOString().substring(0,10);
-    const hasCompletion=completedWithDates.some(t=>t.completed_at.substring(0,10)===dStr);
+    const dStr=localDateStr(d);
+    const hasCompletion=completedWithDates.some(t=>localDateStr(new Date(t.completed_at))===dStr);
     if(hasCompletion)streak++;
     else if(i>0)break; // allow today to be empty without breaking a streak that ran through yesterday
     else if(!hasCompletion)break;
   }
-  const sevenDaysAgo=new Date(Date.now()-7*86400000).toISOString().substring(0,10);
-  const weekCompleted=completedWithDates.filter(t=>t.completed_at.substring(0,10)>=sevenDaysAgo).length;
+  const sevenDaysAgo=localDateStr(new Date(Date.now()-7*86400000));
+  const weekCompleted=completedWithDates.filter(t=>localDateStr(new Date(t.completed_at))>=sevenDaysAgo).length;
   const onTimeEligible=completedWithDates.filter(t=>t.due_date);
-  const onTime=onTimeEligible.filter(t=>t.completed_at.substring(0,10)<=t.due_date).length;
+  const onTime=onTimeEligible.filter(t=>localDateStr(new Date(t.completed_at))<=t.due_date).length;
   const onTimePct=onTimeEligible.length?Math.round((onTime/onTimeEligible.length)*100):null;
   const momentumEl=document.getElementById('td-momentum');
   if(momentumEl){
@@ -7926,7 +8067,7 @@ async function renderTaskDashboard(){
     return 'International';
   };
   const isElevatedGlobal=isOwner || ((currentUser?.email||'').toLowerCase()==='pavitra@step4progress.com');
-  const isJisan=(currentUser?.email||'').toLowerCase()==='jisan@step4progress.co.uk';
+  const isJisan=(currentUser?.email||'').toLowerCase()==='jisan@step4progress.co.uk'||isViewOnly; // Simun: Jisan-style scope, read-only
   const isOwnCountryStaff=staff=>staff && myCountry && staff.country===myCountry;
   if(isElevatedGlobal && !superAdminOpsView){
     // Global view: Owner / Platform Administrator can see both operational poles.
@@ -7938,7 +8079,7 @@ async function renderTaskDashboard(){
     const nonIndia=scoped.filter(t=>t.leads?.country!=='India');
     scoped=superAdminOpsView?nonIndia.filter(t=>taskCategory(t)===superAdminOpsView):nonIndia;
   } else if(myRole==='Counsellor' || ['Application Team','Visa Team','SOP Team'].includes(myRole) || myTeamCategory==='Agent'){
-    scoped=scoped.filter(t=>(t.assigned_to||'').trim()===myName && (myTeamCategory!=='Domestic'||taskCategory(t)==='Domestic'));
+    scoped=scoped.filter(t=>normalizePersonName(t.assigned_to)===normalizePersonName(myName) && (myTeamCategory!=='Domestic'||taskCategory(t)==='Domestic'));
   } else if(['Admin','Manager','Director'].includes(myRole)){
     scoped=scoped.filter(t=>{
       const taskAssignee=(t.assigned_to||'').trim();
@@ -8013,16 +8154,17 @@ async function renderTaskDashboard(){
   }
   renderTaskDailySnapshot(scoped);
 
-  const today=new Date().toISOString().substring(0,10);
-  const weekAhead=new Date(Date.now()+7*86400000).toISOString().substring(0,10);
+  const today=localDateStr();
+  const weekAhead=localDateStr(new Date(Date.now()+7*86400000));
   const open=scoped.filter(t=>t.status!=='Done');
   const done=scoped.filter(t=>t.status==='Done');
   const groups={overdue:[],today:[],week:[],later:[]};
   open.forEach(t=>{
-    if(!t.due_date){groups.later.push(t);return;}
-    if(t.due_date<today)groups.overdue.push(t);
-    else if(t.due_date===today)groups.today.push(t);
-    else if(t.due_date<=weekAhead)groups.week.push(t);
+    const eff=t.due_date||(t._taskReminder&&!t._taskReminder.done&&t._taskReminder.reminder_date?String(t._taskReminder.reminder_date).substring(0,10):null);
+    if(!eff){groups.later.push(t);return;}
+    if(eff<today)groups.overdue.push(t);
+    else if(eff===today)groups.today.push(t);
+    else if(eff<=weekAhead)groups.week.push(t);
     else groups.later.push(t);
   });
 
@@ -8122,12 +8264,14 @@ function renderMyTasksPersonalTab(){
   const ld=d=>{const x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');};
   const today=ld(Date.now());
   const tomorrow=ld(Date.now()+86400000);
+  const dayAfter=ld(Date.now()+2*86400000);
+  const remD=t=>{const r=t._taskReminder;return (r&&!r.done&&r.reminder_date)?String(r.reminder_date).substring(0,10):null;};
   const open=myTasksPersonalData.filter(t=>t.status!=='Done');
   const done=myTasksPersonalData.filter(t=>t.status==='Done');
 
   // Today's plate = everything still open that is due today, overdue or undated
   // (unfinished work carries forward until it is done) + whatever was finished today.
-  const plateOpen=open.filter(t=>!t.due_date||t.due_date<=today);
+  const plateOpen=open.filter(t=>t.due_date?t.due_date<=today:(!remD(t)||remD(t)<=today));
   const doneToday=done.filter(t=>t.completed_at&&ld(t.completed_at)===today);
   const todaysAll=plateOpen.length+doneToday.length;
   const todaysDone=doneToday.length;
@@ -8158,8 +8302,9 @@ function renderMyTasksPersonalTab(){
   // still open that is overdue, so nothing disappears until it is completed.
   if(myTasksPersonalActiveTab==='all')list=open;
   else if(myTasksPersonalActiveTab==='today')list=plateOpen;
-  else if(myTasksPersonalActiveTab==='tomorrow')list=open.filter(t=>t.due_date&&t.due_date<=tomorrow);
-  else if(myTasksPersonalActiveTab==='pending')list=open.filter(t=>t.due_date&&t.due_date>tomorrow);
+  else if(myTasksPersonalActiveTab==='tomorrow')list=open.filter(t=>(t.due_date&&t.due_date<=tomorrow)||(remD(t)&&remD(t)<=tomorrow));
+  else if(myTasksPersonalActiveTab==='dayafter')list=open.filter(t=>t.due_date===dayAfter||remD(t)===dayAfter);
+  else if(myTasksPersonalActiveTab==='pending')list=open.filter(t=>(t.due_date&&t.due_date>tomorrow)||(!t.due_date&&remD(t)&&remD(t)>tomorrow)||(remD(t)&&remD(t)>tomorrow));
   else list=done;
 
   const el=document.getElementById('my-tasks-personal-list');
@@ -8233,11 +8378,15 @@ async function reassignTask(taskId,newAssignee){
   if(!canManageTaskClient(t)){toast('You do not have permission to reassign this task.');renderTaskDashboard();return;}
   const allowedRecipients=getAssignableTaskRecipients();
   if(newAssignee && !allowedRecipients.includes(newAssignee)){toast('That assignee is outside your task scope.');renderTaskDashboard();return;}
-  constoldAssignee=t.assigned_to||'Unassigned';
-  constnextAssignee=newAssignee||'Unassigned';
+  const oldAssignee=t.assigned_to||'Unassigned';
+  const nextAssignee=newAssignee||'Unassigned';
   const{error}=await sb.from('tasks').update({assigned_to:newAssignee||null}).eq('id',taskId);
   if(error){toast('Error reassigning: '+error.message);return;}
-  if(oldAssignee!==nextAssignee)await logTaskActivity(taskId,'task_reassigned',`Assignee: ${oldAssignee} → ${nextAssignee}`,t.lead_id);
+  // The reassignment is already saved at this point; a logging failure must
+  // not stop the success message or the refresh below.
+  try{
+    if(oldAssignee!==nextAssignee)await logTaskActivity(taskId,'task_reassigned',`Assignee: ${oldAssignee} → ${nextAssignee}`,t.lead_id);
+  }catch(e){console.error('Task reassignment activity log failed (reassignment itself was saved):',e);}
   toast(newAssignee?`Task reassigned to ${newAssignee}`:'Task unassigned');
   renderTaskDashboard();
   loadMyTasks();
@@ -8305,7 +8454,18 @@ async function updateStatus(){
           method:'POST',
           headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2cmVnbHFycmRud3R0amFzdndnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDM3NzEsImV4cCI6MjA5NTQxOTc3MX0.I_X-ljOPlLFYLeWz6hE15nL8z0MPqmsSdWcgwole8GE'},
           body:JSON.stringify({to:l.email,name:l.name,subject:subjects[status]||'Update from Step4Progress',message:msg})
-        }).then(()=>toast('✉️ Email sent to '+l.name)).catch(()=>toast('Email failed'));
+        }).then(async res=>{
+          // A resolved fetch only means the server answered — check the
+          // status (401/403/500 must not show "sent") and any error body.
+          let body=null;try{body=await res.json();}catch(e){}
+          if(!res.ok||(body&&body.error)){
+            const detail=(body&&(body.error?.message||body.error||body.message))||('HTTP '+res.status);
+            console.error('send-email failed:',res.status,body);
+            toast(`⚠️ Email to ${l.name} failed (${typeof detail==='string'?detail:'HTTP '+res.status}).`);
+            return;
+          }
+          toast('✉️ Email sent to '+l.name);
+        }).catch(e=>{console.error('send-email network error:',e);toast(`⚠️ Email to ${l.name} failed (network error — not sent).`);});
       }
     }
   }
@@ -8459,7 +8619,7 @@ function dupBadge(l){
   const others=g.filter(x=>x.id!==l.id);
   const split=new Set(g.filter(x=>x.counsellor).map(x=>x.counsellor)).size>1;
   const tip='Same number as: '+others.map(o=>`${o.lead_id||o.id.substring(0,8)} (${o.counsellor||'Unassigned'}, ${o.status})`).join('; ')+(split?' — assigned to different counsellors, please give them to one':'');
-  return `<span class="dup-badge${split?' dup-split':''}" title="${esc(tip)}" onclick="event.stopPropagation();showDuplicatesOf('${normalizePhone(l.mobile)}')">DUPLICATE ×${g.length}${split?' · different counsellors':''}</span>`;
+  return `<span class="dup-badge${split?' dup-split':''}" title="${esc(tip)}" onclick="event.stopPropagation();showDuplicatesOf('${escJs(normalizePhone(l.mobile))}')">DUPLICATE ×${g.length}${split?' · different counsellors':''}</span>`;
 }
 function showDuplicatesOf(key){dupOnly=true;dupFocus=key;renderLeads();}
 // Styled replacement for the old confirm()/alert() shown when saveLead()
@@ -8730,7 +8890,7 @@ function renderCoaching(){
   // KPI row — computed from the full scoped set, not the sub-tab
   // filter, so the numbers always reflect the whole picture regardless
   // of which sub-tab is currently open.
-  const today=new Date().toISOString().substring(0,10);
+  const today=localDateStr();
   const activeCount=scoped.filter(c=>(c.sessions_done||0)<(c.total_sessions||1)).length;
   const completedCount=scoped.filter(c=>(c.sessions_done||0)>=(c.total_sessions||1)&&c.total_sessions>0).length;
   const testsConducted=scoped.reduce((sum,c)=>sum+[c.mock_1_score,c.mock_2_score,c.mock_3_score].filter(Boolean).length,0);
@@ -9189,8 +9349,20 @@ function displayRoleFor(t){
 function canResetPasswordFor(t){
   if(!t||(currentUser&&t.id===currentUser.id))return false;
   if(isOwner)return true;                       // India / Pavitra: anyone
-  if(isViewOnly)return false;
-  if(isSuperAdmin)return !isProtectedOwnerRow(t); // Jisan: anyone except India's and Pavitra's accounts
+  const em=String(currentUser?.email||'').toLowerCase();
+  const tEm=String(t.email||'').toLowerCase();
+  if(isProtectedOwnerRow(t))return false;       // only India/Pavitra touch these
+  if(isSuperAdmin||em==='jisan@step4progress.co.uk')return true; // Jisan: anyone except India/Pavitra
+  if(em==='simun@step4progress.co.uk')return tEm!=='jisan@step4progress.co.uk'; // Simun: reset helper (otherwise view-only)
+  // Managers and Admins (incl. Anushree): people in their OWN office and team
+  // only, never another Manager/Admin/Director/Super Admin.
+  if(['Manager','Admin'].includes(myRole)){
+    const tRole=t.role||'Counsellor';
+    if(['Manager','Admin','Director','Super Admin'].includes(tRole))return false;
+    if(isSuperAdminRow(t))return false;
+    if(!myOffice||t.office!==myOffice)return false;
+    return effectiveTeamCategory(t)===(myTeamCategory==='Domestic'?'Domestic':'International');
+  }
   return false;
 }
 
@@ -9226,10 +9398,12 @@ function isIndiaTeamReadOnly(t){
 // this isn't just a front-end illusion.
 async function resetTeamMemberPassword(id,email,name){
   const target=(teamList||[]).find(x=>x.id===id);
-  if(!canResetPasswordFor(target)){toast('Only the Owner, Platform Administrator or a Super Admin can reset this password.');return;}
-  const newPass=prompt(`Set a NEW password for ${name} (${email}).\n\nMinimum 8 characters. Share it with them securely afterwards — this does not email them automatically.`);
+  if(!canResetPasswordFor(target)){toast('You are not allowed to reset this password. Managers and Admins can reset people in their own office and team only.');return;}
+  const _w=['blue','tiger','coffee','river','maple','solar','amber','delta','lotus','pearl','cedar','falcon'];
+  const _sug=_w[Math.floor(Math.random()*_w.length)]+'-'+_w[Math.floor(Math.random()*_w.length)]+'-'+(Math.floor(Math.random()*9000)+1000);
+  const newPass=prompt(`Set a NEW temporary password for ${name} (${email}).\n\nA suggestion is filled in — press OK to use it, or type your own (8 to 25 characters). Share it with them privately and ask them to change it after logging in. It is not emailed and not stored anywhere.`,_sug);
   if(newPass===null)return; // cancelled
-  if(newPass.trim().length<8){toast('Password must be at least 8 characters.');return;}
+  if(newPass.trim().length<8||newPass.trim().length>25){toast('Password must be 8 to 25 characters.');return;}
   try{
     const{data:sessionData}=await sb.auth.getSession();
     const token=sessionData?.session?.access_token;
@@ -9241,7 +9415,8 @@ async function resetTeamMemberPassword(id,email,name){
     });
     const out=await res.json().catch(()=>({}));
     if(!res.ok){toast('Error resetting password: '+(out.error||`HTTP ${res.status}`));return;}
-    toast(`Password updated for ${name}. Share the new password with them securely.`);
+    toast(`Password updated for ${name}.`);
+    try{prompt(`Temporary password for ${name} (copy it now — it will not be shown again):`,newPass.trim());}catch(_e){}
   }catch(err){
     toast('Error resetting password: '+String(err));
   }
@@ -9273,7 +9448,7 @@ function openUnavailabilityModal(teamId,name){
   if(isRestrictedStaffRole()){toast('Only Manager/Admin/Director/Super Admin can set this.');return;}
   unavailTargetId=teamId;
   document.getElementById('unavail-name').textContent=`Marking ${name} unavailable — round-robin will skip them for this date range.`;
-  document.getElementById('unavail-from').value=new Date().toISOString().substring(0,10);
+  document.getElementById('unavail-from').value=localDateStr();
   document.getElementById('unavail-to').value='';
   document.getElementById('unavail-reason').value='';
   document.getElementById('modal-unavailability').classList.add('open');
@@ -10375,7 +10550,7 @@ async function deleteCommission(id){if(!confirm('Delete this record?'))return;aw
 //   misleading to claim as historically accurate, so this report is honest
 //   about only showing today's snapshot, whichever day you're looking at.
 let rptCharts={};
-let rptState={period:'daily',date:new Date().toISOString().substring(0,10),country:'India'};
+let rptState={period:'daily',date:localDateStr(),country:'India'};
 
 function initReports(){
   const countrySel=document.getElementById('rpt-country');
@@ -10427,11 +10602,11 @@ function dateRangeFor(period,dateStr){
   if(period==='monthly'){
     const end=new Date(dateStr+'T00:00:00');
     const start=new Date(end.getTime()-29*86400000);
-    return {start:start.toISOString().substring(0,10),end:dateStr};
+    return {start:localDateStr(start),end:dateStr};
   }
   const end=new Date(dateStr+'T00:00:00');
   const start=new Date(end.getTime()-6*86400000);
-  return {start:start.toISOString().substring(0,10),end:dateStr};
+  return {start:localDateStr(start),end:dateStr};
 }
 function scopedLeadsFor(country){
   // Always start from the ops-view scoped set so Domestic tab = Domestic
@@ -10871,7 +11046,7 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
     return isDomestic?[...DEFAULT_DOCS,...DOMESTIC_EXTRA_DOCS]:DEFAULT_DOCS;
   }
   async function loadDocs(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data){await renderDocs(data);}else{await renderDocs([]);}}
-async function renderDocs(docs){const el=document.getElementById('d-doc-list');if(!el)return;if(!docs.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet. Click Init checklist to start.</div>';return;}await loadDocFilesFor(docs.map(d=>d.id));el.innerHTML=docs.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',false)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',false)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiry('${d.id}','${d.expiry_date||''}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
+async function renderDocs(docs){const el=document.getElementById('d-doc-list');if(!el)return;if(!docs.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet. Click Init checklist to start.</div>';return;}await loadDocFilesFor(docs.map(d=>d.id));el.innerHTML=docs.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',false)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',false)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiry('${d.id}','${escJs(d.expiry_date||'')}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
 function setDocExpiry(id,current){openQuickInput('Set expiry date','Expiry date','date',current,(val)=>{sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocs(curId);toast('Expiry date updated.');});});}
 async function initDocs(){
   if(!curId)return;
@@ -11132,7 +11307,7 @@ async function dmExportLeads(){
 }
 function initDigitalMarketing(){
   const _bk=document.getElementById('dm-bulk-card');if(_bk)_bk.style.display=(myRole==='Digital Marketing'||isSuperAdmin)?'flex':'none';
-  document.getElementById('dm-post-date').value=new Date().toISOString().substring(0,10);
+  document.getElementById('dm-post-date').value=localDateStr();
   const sel=document.getElementById('dm-country-select');
   const lockedLabel=document.getElementById('dm-country-locked');
   if(myRole==='Digital Marketing'&&!isSuperAdmin){
@@ -11472,7 +11647,7 @@ async function addMarketingPost(){
   if(!description){toast('Please describe the post first.');return;}
   const data={
     platform:document.getElementById('dm-post-platform').value,
-    post_date:document.getElementById('dm-post-date').value||new Date().toISOString().substring(0,10),
+    post_date:document.getElementById('dm-post-date').value||localDateStr(),
     description,
     reach:Number(document.getElementById('dm-post-reach').value)||0,
     engagement:Number(document.getElementById('dm-post-engagement').value)||0,
@@ -11499,7 +11674,7 @@ async function loadDailyBriefing(force){
   const textEl=document.getElementById('briefing-text');
   const iconEl=document.getElementById('briefing-refresh-icon');
   if(!textEl)return;
-  const todayStr=new Date().toISOString().substring(0,10);
+  const todayStr=localDateStr();
   const cacheKey='s4p_briefing_'+currentUser.id+'_'+todayStr;
 
   if(!force){
@@ -11582,7 +11757,7 @@ function renderTasks(list){
   const el=document.getElementById('d-task-list');
   if(!el)return;
   el.innerHTML=list.length?list.map(t=>{
-    const overdue=t.status!=='Done'&&t.due_date&&t.due_date<new Date().toISOString().substring(0,10);
+    const overdue=t.status!=='Done'&&t.due_date&&t.due_date<localDateStr();
     return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)${t.status==='Done'?';opacity:.5':''}">
       <div style="flex:1;cursor:pointer" onclick="openTaskDetail('${t.id}')">
         <div style="font-size:13px;font-weight:600${t.status==='Done'?';text-decoration:line-through':''}">${esc(t.title)}${t.source==='auto'?' <span class="pill" style="background:var(--gold-l);color:var(--gold);font-size:9px">AUTO</span>':''}</div>
@@ -11777,16 +11952,25 @@ function renderWeeklyWins(){
     <div style="font-size:11px;color:var(--ink3)">${t.label}</div>
   </div>`).join('');
 }
+// Local calendar date as YYYY-MM-DD. reminder_date is a date-only value the
+// user picked in their own time zone, so "today" must be the local date —
+// toISOString() gives the UTC date, which is a day behind in IST before 05:30.
+function localDateStr(d=new Date()){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 async function loadDashReminders(){
-  const today=new Date().toISOString().split('T')[0];
+  const today=localDateStr();
   // Include OVERDUE reminders (before today, still not done) — previously
   // the query was gte(today), which silently hid anything overdue. Now we
   // drop the date floor entirely and sort by date, so overdue items surface
   // at the top flagged red.
-  const{data,error}=await sb.from('reminders').select('*,leads(name)').eq('done',false).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true}).limit(10);
+  // Comment-only entries have no reminder_date; they are notes, not dated
+  // reminders, and previously rendered here as "Invalid Date".
+  const{data,error}=await sb.from('reminders').select('*,leads(name)').eq('done',false).not('reminder_date','is',null).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true}).limit(10);
   const el=document.getElementById('reminders-dash-list');
   if(!el)return;
-  if(error||!data||!data.length){el.innerHTML=emptyState('⏰','No upcoming reminders.');return;}
+  if(error){console.error('Dashboard reminders failed to load:',error);el.innerHTML=emptyState('⚠️','Reminders could not be loaded. Refresh to retry.');return;}
+  if(!data||!data.length){el.innerHTML=emptyState('⏰','No upcoming reminders.');return;}
   const todayStr=today;
   el.innerHTML=data.map(r=>{
     const isToday=r.reminder_date===todayStr;
@@ -11812,8 +11996,8 @@ async function loadDashReminders(){
 async function loadExpiryAlerts(){
   const el=document.getElementById('expiry-alerts-list');
   if(!el)return;
-  const warnDate=new Date(Date.now()+7*86400000).toISOString().substring(0,10);
-  const warnDateDocs=new Date(Date.now()+30*86400000).toISOString().substring(0,10);
+  const warnDate=localDateStr(new Date(Date.now()+7*86400000));
+  const warnDateDocs=localDateStr(new Date(Date.now()+30*86400000));
 
   const [offersRes,docsRes]=await Promise.all([
     sb.from('university_applications').select('*,leads(name)').not('offer_expiry_date','is',null).lte('offer_expiry_date',warnDate),
@@ -11830,7 +12014,7 @@ async function loadExpiryAlerts(){
     type:'Document expiry',icon:'📄',leadId:d.lead_id,leadName:d.leads?.name||'Unknown lead',label:`Document — ${d.doc_name}`,date:d.expiry_date
   }));
 
-  const all=[...visaAlerts,...offerAlerts,...docAlerts].sort((a,b)=>a.date.localeCompare(b.date));
+  const all=[...visaAlerts,...offerAlerts,...docAlerts].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
   if(!all.length){el.innerHTML=emptyState('✅','Nothing expiring in the next 7–30 days.');return;}
   el.innerHTML=all.map(a=>{
     const days=Math.ceil((new Date(a.date+'T00:00:00').getTime()-Date.now())/86400000);
@@ -11856,8 +12040,9 @@ async function loadMyTasks(){
   const{data,error}=await fetchAllPages(()=>sb.from('tasks').select('*,leads(name,country,office)').eq('status','Open').order('due_date',{ascending:true}).order('id',{ascending:true}));
   if(error){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load tasks — has the tasks table been created yet?</div>';return;}
   let scoped=data||[];
+  if(isSuperAdmin&&!isOwner)scoped=scoped.filter(t=>t.leads?.country!=='India'); // India invisible to Jisan/Simun
   if(myRole==='Counsellor'&&!isSuperAdmin){
-    scoped=scoped.filter(t=>t.assigned_to===myName);
+    scoped=scoped.filter(t=>String(t.assigned_to||'').trim().toLowerCase()===String(myName||'').trim().toLowerCase());
   } else if(isSuperAdmin&&superAdminOpsView){
     // Must respect the Domestic/International ops-view toggle the same
     // way the main Leads list does (by country — which office is
@@ -11866,7 +12051,8 @@ async function loadMyTasks(){
   } else if(!isSuperAdmin){
     if(['Admin','Manager','Director'].includes(myRole)){
       // Management: tasks held by people in their own office only.
-      scoped=scoped.filter(t=>{const a=teamRowByName(t.assigned_to);return a?(a.office===myOffice):(t.leads?.office===myOffice);});
+      const _myCat=myTeamCategory==='Domestic'?'Domestic':'International';
+      scoped=scoped.filter(t=>{const a=teamRowByName(t.assigned_to);if(a&&effectiveTeamCategory(a)!==_myCat)return false;return a?(a.office===myOffice):(t.leads?.office===myOffice);});
     } else {
       scoped=scoped.filter(t=>(t.assigned_to||'').trim()===myName);
     }
@@ -11877,8 +12063,8 @@ async function loadMyTasks(){
   // these are the items most likely to genuinely need attention. Today
   // and This Week are capped reasonably so the widget stays a quick
   // glance, not a full task manager.
-  const today=new Date().toISOString().substring(0,10);
-  const weekAhead=new Date(Date.now()+7*86400000).toISOString().substring(0,10);
+  const today=localDateStr();
+  const weekAhead=localDateStr(new Date(Date.now()+7*86400000));
   const groups={overdue:[],today:[],week:[],later:[]};
   scoped.forEach(t=>{
     if(!t.due_date){groups.later.push(t);return;}
@@ -12497,7 +12683,7 @@ async function placeRecordedCall(leadId,leadName){
 }
 function checkDailyFollowupPopup(){
   if(!currentUser)return;
-  const todayStr=new Date().toISOString().substring(0,10);
+  const todayStr=localDateStr();
   const shownKey='s4p_daily_shown_'+(currentUser.id||'')+'_'+todayStr;
   if(localStorage.getItem(shownKey))return; // already shown today
   const reminderTime=getDailyReminderTime();
@@ -12561,8 +12747,10 @@ function checkNoActivity(){const now=Date.now();const stale=leads.filter(l=>['Ne
 
 // ── COURSE FINDER ────────────────────────────────────────────────
 let cfUniversities = [];
+let cfLoadTried=false;
 async function loadUniversities(){
   if(cfUniversities.length) return;
+  cfLoadTried=true; // so an empty/failed load can't make searchCourses retry forever (froze the tab)
   const{data,error}=await sb.from('universities').select('*').order('name',{ascending:true});
   if(!error&&data) cfUniversities=data;
 }
@@ -12591,7 +12779,9 @@ function searchCourses(){
   const q=(document.getElementById('cf-search').value||'').toLowerCase();
   const tb=document.getElementById('cf-tbody');
   const countEl=document.getElementById('cf-count');
-  if(!cfUniversities.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink3)">Loading universities…</td></tr>';loadUniversities().then(searchCourses);return;}
+  if(!cfUniversities.length){
+    if(cfLoadTried){tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink3)">No universities available yet.</td></tr>';if(countEl)countEl.textContent='0 universities found';return;}
+    tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink3)">Loading universities…</td></tr>';loadUniversities().then(searchCourses);return;}
   let filtered=cfUniversities.filter(u=>{
     if(dest&&u.country!==dest)return false;
     if(nat&&!(u.eligible_nationalities||[]).includes(nat))return false;
@@ -12609,7 +12799,7 @@ function searchCourses(){
       <td style="font-size:12px">${esc(u.country)}</td>
       <td style="font-size:11px;color:var(--ink3)">${esc(nats||'—')}</td>
       <td><span class="pill" style="background:#DCFCE7;color:#166534">✅ Tie-up</span></td>
-      <td><button onclick="shortlistUniversity('${u.id}','${u.name.replace(/'/g,"\'")}','${u.country}')" style="font-size:12px;padding:4px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer">+ Shortlist</button></td>
+      <td><button onclick="shortlistUniversity('${escJs(u.id)}','${escJs(u.name)}','${escJs(u.country)}')" style="font-size:12px;padding:4px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer">+ Shortlist</button></td>
     </tr>`;
   }).join('');
   if(filtered.length>100) tb.innerHTML+=`<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--ink3);font-size:12px">Showing first 100 of ${filtered.length} — refine your filters to narrow results.</td></tr>`;
@@ -13036,7 +13226,7 @@ function renderCallLogs(){
   const statusColors={initiated:['var(--gold-l)','var(--gold)'],ringing:['var(--gold-l)','var(--gold)'],'in-progress':['var(--sage-l)','#0F6E56'],completed:['var(--sage-l)','#0F6E56'],'no-answer':['#FCEBEB','#A32D2D'],failed:['#FCEBEB','#A32D2D'],busy:['#FCEBEB','#A32D2D']};
   document.getElementById('cl-tbody').innerHTML=visibleLogs.map(c=>{
     const dt=c.call_date?new Date(c.call_date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
-    const rec=!canHear?'<span style="color:var(--ink3)">—</span>':c.recording_url?(`<button onclick="toggleCallRecordingPlayer('${c.id}')" style="background:none;border:1px solid var(--pine);color:var(--pine);border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer">▶ Play</button><div id="cl-rec-player-${c.id}" style="display:none;margin-top:6px"><audio controls preload="none" style="height:32px;max-width:220px"><source src="${c.recording_url}"></audio></div>`):c.auto_recorded?'<span style="color:var(--ink3);font-style:italic">Recording processing…</span>':'<span style="color:var(--ink3);font-style:italic">No recording</span>';
+    const rec=!canHear?'<span style="color:var(--ink3)">—</span>':c.recording_url?(`<button onclick="toggleCallRecordingPlayer('${c.id}')" style="background:none;border:1px solid var(--pine);color:var(--pine);border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer">▶ Play</button><div id="cl-rec-player-${c.id}" style="display:none;margin-top:6px"><audio controls preload="none" style="height:32px;max-width:220px"><source src="${esc(safeUrl(c.recording_url))}"></audio></div>`):c.auto_recorded?'<span style="color:var(--ink3);font-style:italic">Recording processing…</span>':'<span style="color:var(--ink3);font-style:italic">No recording</span>';
     const outcomeBadge=c.outcome
       ? `<span class="pill" style="background:var(--sky-l);color:var(--sky)">${esc(c.outcome)}</span>`
       : c.call_status
@@ -13061,7 +13251,7 @@ async function saveCallLog(){
   const lead=document.getElementById('cl-lead').value.trim();
   if(!lead){toast('Enter the lead name or mobile.');return;}
   const counsellor=document.getElementById('cl-counsellor').value.trim()||myName||'';
-  const call_date=document.getElementById('cl-date').value||new Date().toISOString().substring(0,10);
+  const call_date=document.getElementById('cl-date').value||localDateStr();
   const duration_mins=parseInt(document.getElementById('cl-duration').value)||null;
   const outcome=document.getElementById('cl-outcome').value;
   const notes=document.getElementById('cl-notes').value.trim();
@@ -13207,6 +13397,62 @@ async function deleteWhatsAppCall(id){
   renderWhatsAppCalls();
   toast('WhatsApp call log deleted.');
 }
+
+// ── Access & Password Activity (India, Pavitra, Jisan only) ──────────
+function canSeeAccessAudit(){
+  const e=String(currentUser?.email||'').toLowerCase();
+  return ['india@step4progress.com','pavitra@step4progress.com','jisan@step4progress.co.uk'].includes(e);
+}
+function clearAccessAudit(){['aa-summary','aa-invites-tbody','aa-resets-tbody'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML='';});}
+async function renderAccessAudit(){
+  const card=document.getElementById('am-access-audit-card');
+  if(!card)return;
+  card.style.display=canSeeAccessAudit()?'block':'none';
+  if(!canSeeAccessAudit()){clearAccessAudit();return;}
+  const fmt=d=>d?new Date(d).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
+  const invT=document.getElementById('aa-invites-tbody'),resT=document.getElementById('aa-resets-tbody'),sum=document.getElementById('aa-summary');
+  invT.innerHTML='<tr><td colspan="5" style="font-size:12px;color:var(--ink3)">Loading…</td></tr>';
+  resT.innerHTML='<tr><td colspan="5" style="font-size:12px;color:var(--ink3)">Loading…</td></tr>';
+  const[inv,res]=await Promise.all([
+    sb.rpc('get_invite_activity'),
+    sb.from('admin_audit_log').select('*').eq('action','password_reset').order('created_at',{ascending:false}).limit(300)
+  ]);
+  const chip=(label,val,col)=>`<span style="background:var(--paper2,#f4efe4);border:1px solid var(--line2);border-radius:999px;padding:4px 12px;font-size:12px"><b style="color:${col||'var(--pine)'}">${val}</b> ${esc(label)}</span>`;
+  let chips='';
+  if(inv.error){
+    invT.innerHTML=`<tr><td colspan="5" style="font-size:12px;color:#C0392B">Could not load invite activity: ${esc(inv.error.message)} — run crm_audit_log.sql in Supabase.</td></tr>`;
+  } else {
+    const rows=inv.data||[];
+    const by=k=>rows.filter(r=>r.status===k).length;
+    chips+=chip('invites created',rows.length)+chip('accepted',by('accepted'),'#12A56F')+chip('pending',by('pending'),'#B7791F')+chip('expired',by('expired'),'#C0392B');
+    invT.innerHTML=rows.length?rows.map(r=>{
+      const st=r.status==='accepted'?`<span style="color:#12A56F;font-weight:700">Accepted</span><div style="font-size:10.5px;color:var(--ink3)">${fmt(r.used_at)}</div>`
+        :r.status==='expired'?`<span style="color:#C0392B;font-weight:700">Expired</span><div style="font-size:10.5px;color:var(--ink3)">${fmt(r.expires_at)}</div>`
+        :`<span style="color:#B7791F;font-weight:700">Pending</span><div style="font-size:10.5px;color:var(--ink3)">expires ${fmt(r.expires_at)}</div>`;
+      return `<tr>
+        <td style="font-size:11px;color:var(--ink3);white-space:nowrap">${fmt(r.created_at)}</td>
+        <td style="font-size:12px">${esc(r.created_by_name||r.created_by_email||'Unknown')}<div style="font-size:10.5px;color:var(--ink3)">${esc(r.created_by_email||'')}</div></td>
+        <td style="font-size:12px">${esc(r.invitee_name||'—')}<div style="font-size:10.5px;color:var(--ink3)">${esc(r.invitee_email||'')}</div></td>
+        <td style="font-size:11.5px">${esc(r.role||'—')}<div style="font-size:10.5px;color:var(--ink3)">${esc([r.office,r.country,r.team_category].filter(Boolean).join(' · '))}</div></td>
+        <td style="font-size:12px">${st}</td></tr>`;}).join(''):'<tr><td colspan="5" style="font-size:12px;color:var(--ink3);font-style:italic">No invites created yet.</td></tr>';
+  }
+  if(res.error){
+    resT.innerHTML=`<tr><td colspan="5" style="font-size:12px;color:#C0392B">Could not load reset log: ${esc(res.error.message)} — run crm_audit_log.sql in Supabase.</td></tr>`;
+  } else {
+    const rows=res.data||[];
+    const by=k=>rows.filter(r=>r.status===k).length;
+    chips+=chip('resets total',rows.length)+chip('successful',by('success'),'#12A56F')+chip('denied',by('denied'),'#B7791F')+chip('errors',by('error'),'#C0392B');
+    resT.innerHTML=rows.length?rows.map(r=>{
+      const col=r.status==='success'?'#12A56F':r.status==='denied'?'#B7791F':'#C0392B';
+      return `<tr>
+        <td style="font-size:11px;color:var(--ink3);white-space:nowrap">${fmt(r.created_at)}</td>
+        <td style="font-size:12px">${esc(r.actor_name||r.actor_email||'Unknown')}<div style="font-size:10.5px;color:var(--ink3)">${esc(r.actor_email||'')}</div></td>
+        <td style="font-size:12px">${esc(r.target_name||r.target_email||'—')}<div style="font-size:10.5px;color:var(--ink3)">${esc(r.target_email||'')}</div></td>
+        <td style="font-size:12px;font-weight:700;color:${col}">${esc(r.status==='success'?'Success':r.status==='denied'?'Denied':'Error')}</td>
+        <td style="font-size:11px;color:var(--ink3)">${esc(r.detail||'')}</td></tr>`;}).join(''):'<tr><td colspan="5" style="font-size:12px;color:var(--ink3);font-style:italic">No password resets yet.</td></tr>';
+  }
+  sum.innerHTML=chips;
+}
 // ── Productivity: sub-tabs, My Daily Update, Activity Monitor ──────
 async function renderExportLog(){
   const tb=document.getElementById('export-log-tbody');
@@ -13228,7 +13474,7 @@ async function renderExportLog(){
 }
 function initProductivity(){
   const dateEl=document.getElementById('du-date');
-  if(dateEl&&!dateEl.value)dateEl.value=new Date().toISOString().substring(0,10);
+  if(dateEl&&!dateEl.value)dateEl.value=localDateStr();
 
   // Call Recorder and Activity Monitor are Admin-tier+ only; everyone
   // else only ever sees "My Daily Update", and lands there by default.
@@ -13267,6 +13513,7 @@ function setProdSubtab(sub){
     // Export history and new-device logins: Owner (India) and Platform Admin (Pavitra) only.
     ['am-export-log-card','am-known-devices-card'].forEach(id=>{const c=document.getElementById(id);if(c)c.style.display=isOwner?'':'none';});
     if(isOwner){renderExportLog();renderKnownDevices();}
+    renderAccessAudit();
   }
 }
 
@@ -13418,7 +13665,7 @@ async function saveLogWork(){
   if(!title){toast('Give the work a short name first.');document.getElementById('lw-title')?.focus();return;}
   if(!logWorkState.category){toast('Pick a work category.');return;}
   const btn=document.getElementById('lw-save-btn');btn.disabled=true;btn.textContent='Saving…';
-  const payload={user_id:currentUser?.id||null,user_name:myName||'',country:myCountry||null,team_category:myTeamCategory||null,work_date:new Date().toISOString().substring(0,10),category:logWorkState.category,title,description:(document.getElementById('lw-description')?.value||'').trim()||null,effort:logWorkState.effort||null,result:logWorkState.result||'Done',output_url:safeUrl(document.getElementById('lw-link')?.value||'')||null,mood:logWorkState.mood||null,note_type:logWorkState.noteType||null,note:(document.getElementById('lw-note')?.value||'').trim()||null};
+  const payload={user_id:currentUser?.id||null,user_name:myName||'',country:myCountry||null,team_category:myTeamCategory||null,work_date:localDateStr(),category:logWorkState.category,title,description:(document.getElementById('lw-description')?.value||'').trim()||null,effort:logWorkState.effort||null,result:logWorkState.result||'Done',output_url:safeUrl(document.getElementById('lw-link')?.value||'')||null,mood:logWorkState.mood||null,note_type:logWorkState.noteType||null,note:(document.getElementById('lw-note')?.value||'').trim()||null};
   const{error}=await sb.from('work_logs').insert(payload);
   btn.disabled=false;btn.innerHTML='<i class="ti ti-sparkles"></i> Log this';
   if(error){
@@ -13439,7 +13686,7 @@ async function submitDailyUpdate(){
     user_name:myName||'',
     role:myRole||'',
     office:myOffice||'',
-    work_date:dateEl.value||new Date().toISOString().substring(0,10),
+    work_date:dateEl.value||localDateStr(),
     content,
   });
   if(error){toast('Error saving update: '+error.message);return;}
@@ -13523,7 +13770,7 @@ async function renderActivityMonitor(){
   // Pull each shown member's most recent update + a 7-day update count in
   // one query rather than one call per row.
   const teamIds=members.map(m=>m.id).filter(Boolean);
-  const since=new Date(Date.now()-7*24*60*60*1000).toISOString().substring(0,10);
+  const since=localDateStr(new Date(Date.now()-7*24*60*60*1000));
   const{data:updates}=await sb.from('daily_updates').select('team_id,work_date,content').in('team_id',teamIds).gte('work_date',since).order('work_date',{ascending:false});
   const byMember={};
   (updates||[]).forEach(u=>{

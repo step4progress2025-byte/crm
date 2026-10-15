@@ -3630,6 +3630,9 @@ function isDomesticAdmin(){return myTeamCategory==='Domestic'&&(myRole==='Admin'
 // their own) is handled separately in loadLeads() only — it does not
 // extend to screen-level access, per "separate dashboards, can't see
 // others' work or performance."
+// Digital Marketing (non-super-admin): restricted like a counsellor for screens, but may select and edit leads in their own country/team.
+function isMarketingStaff(){return myRole==='Digital Marketing'&&!isSuperAdmin;}
+function canDeleteLeads(){return isSuperAdmin||['Admin','Manager','Director','Digital Marketing'].includes(myRole);}
 function isRestrictedStaffRole(){
   if(isSuperAdmin)return false;
   if(['Counsellor','Application Team','Visa Team','SOP Team','Digital Marketing'].includes(myRole))return true;
@@ -3956,7 +3959,7 @@ async function confirmMetaBulkUpload(){
 let mbuLastBatchId=null;
 let mbuLastFilename=null;
 async function deleteMbuBatch(batchId){
-  if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete a bulk upload.');return;}
+  if(!canDeleteLeads()){toast('Only Admins, Managers, Directors and Digital Marketing can delete a bulk upload.');return;}
   const{count}=await sb.from('leads').select('id',{count:'exact',head:true}).eq('upload_batch_id',batchId);
   if(!confirm(`Delete this upload? This removes all ${count??''} lead(s) from it. This cannot be undone.`))return;
   const{error}=await sb.from('leads').delete().eq('upload_batch_id',batchId);
@@ -4424,7 +4427,7 @@ function renderCounsellorCell(l){
     }
     return `<select onchange="quickReassignLead('${l.id}',this.value)" style="font-size:12px;padding:4px 6px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);max-width:150px">${options.join('')}</select>`;
   }
-  if(isRestrictedStaffRole()){
+  if(isRestrictedStaffRole()&&!isMarketingStaff()){
     return esc(l.counsellor||'—');
   }
   const pool=getOfficeAssignableStaff(l.office);
@@ -6501,7 +6504,7 @@ function renderLeads(){
   // tier only — Counsellors and Application/Visa/SOP Team never see the
   // checkbox column or the actions bar at all, not just a restricted version
   // of it.
-  const canBulkAct=!isRestrictedStaffRole();
+  const canBulkAct=!isRestrictedStaffRole()||isMarketingStaff();
   const bulkColHeader=document.getElementById('bulk-select-all');
   if(bulkColHeader) bulkColHeader.closest('th').style.display=canBulkAct?'':'none';
   if(!canBulkAct){
@@ -6797,7 +6800,7 @@ async function updateStatusFS(){
   loadActivityLogFS(curId);
 }
 function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';populateAgentDropdown();document.getElementById('f-agent').value=l.agent||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-type').value=l.ielts_type||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-finance-years').value=l.finance_years||'';document.getElementById('f-class-timing').value=l.class_timing||'';document.getElementById('f-student-id').value=l.student_id||'';document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range,l.budget_currency);syncBudgetRangeOptions(l.budget_range||'');document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
-async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;await logActivity(curId,'deleted',`Lead deleted: ${_l?.name||_l?.lead_id||curId}`);setSyncing();const{error,data}=await sb.from('leads').delete().eq('id',curId).select();if(error){setSyncErr();toast('Error deleting lead: '+error.message);return;}if(!data||!data.length){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
+async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!canDeleteLeads()){toast('Only Admins, Managers, Directors and Digital Marketing can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;await logActivity(curId,'deleted',`Lead deleted: ${_l?.name||_l?.lead_id||curId}`);setSyncing();const{error,data}=await sb.from('leads').delete().eq('id',curId).select();if(error){setSyncErr();toast('Error deleting lead: '+error.message);return;}if(!data||!data.length){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 // Generates a message genuinely suited to WHERE this lead actually is
 // in their journey, instead of the same generic "just checking in"
@@ -8474,7 +8477,7 @@ async function deleteLead(){
   if(!curId)return;
   const _l=leads.find(x=>x.id===curId);
   if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}
-  if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}
+  if(!canDeleteLeads()){toast('Only Admins, Managers, Directors and Digital Marketing can delete leads.');return;}
   if(!confirm('Delete this lead? This cannot be undone.'))return;
   await logActivity(curId,'deleted',`Lead deleted: ${_l?.name||_l?.lead_id||curId}`);
   setSyncing();
@@ -9998,7 +10001,9 @@ function getScopedCounsellorNames(){
         pool=pool.filter(memberInOpsView);
       }
     }
-    else if(myRole==='Admin'||myRole==='Manager'||myRole==='Director')pool=pool.filter(t=>t.country===myCountry);
+    else if(myRole==='Admin'||myRole==='Manager'||myRole==='Director'||myRole==='Digital Marketing'){
+      pool=pool.filter(t=>t.country===myCountry&&effectiveTeamCategory(t)===(myTeamCategory==='Domestic'?'Domestic':'International'));
+    }
   }
   if(canSwitchOpsViewUser()&&superAdminOpsView)pool=pool.filter(memberInOpsView); // applies to Owner / Platform Admin too
   return[...new Set(pool.map(t=>t.full_name))];
@@ -10351,7 +10356,7 @@ function exportSelectedLeads(){
 // every selected lead individually so a mixed selection (some India,
 // some not) can't be used to bypass the lock on just the India ones.
 async function bulkDeleteLeads(){
-  if(!isSuperAdmin&&myRole!=='Admin'&&myRole!=='Director'){toast('Only Admins can delete leads.');return;}
+  if(!canDeleteLeads()){toast('Only Admins, Managers, Directors and Digital Marketing can delete leads.');return;}
   const ids=new Set(getSelectedLeadIds());
   const selected=leads.filter(l=>ids.has(l.id));
   if(!selected.length){toast('No leads selected.');return;}

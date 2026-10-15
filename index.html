@@ -1787,7 +1787,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           </div>
           <div class="card" id="am-access-audit-card" style="margin-top:16px;display:none">
             <div class="card-h"><span class="card-t">🛡️ Access &amp; Password Activity</span><button class="btn" style="font-size:11px;padding:4px 10px" onclick="renderAccessAudit()">↻ Refresh</button></div>
-            <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">Who created each invite link and for whom, and every password reset attempt (success, denied or error). Passwords are never recorded. Visible to India, Pavitra and Jisan only.</p>
+            <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">Who created each invite link and for whom, and every password reset attempt (success, denied or error). Passwords are never recorded. Visible to India and Pavitra only.</p>
             <div id="aa-summary" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"></div>
             <div style="font-weight:700;font-size:13px;margin:8px 0">Invite links</div>
             <div class="tw"><table class="tbl">
@@ -5567,6 +5567,9 @@ async function scopedLeadsQuery(){
     // no restriction — sees everything, every country, including India
   } else if(isSuperAdmin){
     // Super Admin minus Owner: India fully excluded, everywhere else open
+    q=q.neq('country','India');
+  } else if(myCountry==='UK'&&myTeamCategory==='International'&&['Admin','Manager','Director'].includes(myRole)){
+    // UK International management: leads of every country except India (own country access included).
     q=q.neq('country','India');
   } else if(myTeamCategory==='Agent'){
     // Agent: only leads explicitly, individually assigned to them by
@@ -13133,6 +13136,14 @@ function teamRowByName(name){
   if(!n)return null;
   return (teamList||[]).find(t=>String(t.full_name||'').trim().toLowerCase()===n)||null;
 }
+// Call recordings: only India, Pavitra, Jisan, Simun (all super-admin tier) and Admins/Managers for calls handled in
+// their OWN office and country. Everyone else (counsellors, Directors, Digital Marketing, sub-teams) never gets the player.
+function canHearRecordings(c){
+  if(isOwner||isSuperAdmin)return true;
+  if(!['Admin','Manager'].includes(myRole))return false;
+  const m=teamRowByName(c?.counsellor||c?.counsellor_name||c?.caller_name||'');
+  return !!(m&&myOffice&&myCountry&&m.office===myOffice&&m.country===myCountry);
+}
 function memberInOpsView(t){
   if(!canSwitchOpsViewUser()||!superAdminOpsView)return true;
   const dom=effectiveTeamCategory(t)==='Domestic';
@@ -13228,13 +13239,12 @@ function renderCallLogs(){
   const visibleLogs=callLogs.filter(c=>callVisibleFor(c.counsellor));
   if(!visibleLogs.length){empty.style.display='flex';content.style.display='none';return;}
   empty.style.display='none';content.style.display='block';
-  const canDelete=isSuperAdmin||myRole==='Admin'||myRole==='Director';
-  const canHear=!isRestrictedStaffRole();
+  const canDelete=isSuperAdmin||myRole==='Admin'||myRole==='Manager'||myRole==='Director';
   document.getElementById('cl-count-text').textContent=visibleLogs.length+' call'+(visibleLogs.length!==1?'s':'')+' logged — click to '+(document.getElementById('cl-table-wrap').style.display==='none'?'show':'hide');
   const statusColors={initiated:['var(--gold-l)','var(--gold)'],ringing:['var(--gold-l)','var(--gold)'],'in-progress':['var(--sage-l)','#0F6E56'],completed:['var(--sage-l)','#0F6E56'],'no-answer':['#FCEBEB','#A32D2D'],failed:['#FCEBEB','#A32D2D'],busy:['#FCEBEB','#A32D2D']};
   document.getElementById('cl-tbody').innerHTML=visibleLogs.map(c=>{
     const dt=c.call_date?new Date(c.call_date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
-    const rec=!canHear?'<span style="color:var(--ink3)">—</span>':c.recording_url?(`<button onclick="toggleCallRecordingPlayer('${c.id}')" style="background:none;border:1px solid var(--pine);color:var(--pine);border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer">▶ Play</button><div id="cl-rec-player-${c.id}" style="display:none;margin-top:6px"><audio controls preload="none" style="height:32px;max-width:220px"><source src="${esc(safeUrl(c.recording_url))}"></audio></div>`):c.auto_recorded?'<span style="color:var(--ink3);font-style:italic">Recording processing…</span>':'<span style="color:var(--ink3);font-style:italic">No recording</span>';
+    const rec=!canHearRecordings(c)?'<span style="color:var(--ink3)">—</span>':c.recording_url?(`<button onclick="toggleCallRecordingPlayer('${c.id}')" style="background:none;border:1px solid var(--pine);color:var(--pine);border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer">▶ Play</button><div id="cl-rec-player-${c.id}" style="display:none;margin-top:6px"><audio controls preload="none" style="height:32px;max-width:220px"><source src="${esc(safeUrl(c.recording_url))}"></audio></div>`):c.auto_recorded?'<span style="color:var(--ink3);font-style:italic">Recording processing…</span>':'<span style="color:var(--ink3);font-style:italic">No recording</span>';
     const outcomeBadge=c.outcome
       ? `<span class="pill" style="background:var(--sky-l);color:var(--sky)">${esc(c.outcome)}</span>`
       : c.call_status
@@ -13363,7 +13373,7 @@ function renderWhatsAppCalls(){
     return true;
   });
 
-  const canDelete=isSuperAdmin||myRole==='Admin'||myRole==='Director';
+  const canDelete=isSuperAdmin||myRole==='Admin'||myRole==='Manager'||myRole==='Director';
   document.getElementById('wc-count').textContent=filteredCalls.length+' call'+(filteredCalls.length!==1?'s':'')+' logged'+(filteredCalls.length!==scopedWaCalls.length?' (of '+scopedWaCalls.length+' total)':'');
 
   const statusColors={ringing:['var(--gold-l)','var(--gold)'],answered:['var(--sage-l)','#0F6E56'],completed:['var(--sage-l)','#0F6E56'],missed:['#FCEBEB','#A32D2D'],failed:['#FCEBEB','#A32D2D']};
@@ -13371,7 +13381,7 @@ function renderWhatsAppCalls(){
   document.getElementById('wc-tbody').innerHTML=filteredCalls.map(function(c){
     const dt=c.started_at?new Date(c.started_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'-';
     const durationMins=c.duration_seconds?Math.round(c.duration_seconds/60):null;
-    const rec=isRestrictedStaffRole()?'<span style="color:var(--ink3)">—</span>':c.recording_url?('<button onclick="toggleWhatsAppRecordingPlayer(\''+c.id+'\')" style="background:none;border:1px solid var(--pine3);color:var(--pine3);border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer">▶ Play</button><div id="wc-rec-player-'+c.id+'" style="display:none;margin-top:6px"><audio controls preload="none" style="height:32px;max-width:220px"><source src="'+c.recording_url+'"></audio></div>'):'<span style="color:var(--ink3);font-style:italic">No recording</span>';
+    const rec=!canHearRecordings(c)?'<span style="color:var(--ink3)">—</span>':c.recording_url?('<button onclick="toggleWhatsAppRecordingPlayer(\''+c.id+'\')" style="background:none;border:1px solid var(--pine3);color:var(--pine3);border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600;cursor:pointer">▶ Play</button><div id="wc-rec-player-'+c.id+'" style="display:none;margin-top:6px"><audio controls preload="none" style="height:32px;max-width:220px"><source src="'+c.recording_url+'"></audio></div>'):'<span style="color:var(--ink3);font-style:italic">No recording</span>';
     const sc=statusColors[c.status]||['var(--sky-l)','var(--sky)'];
     const statusBadge='<span class="pill" style="background:'+sc[0]+';color:'+sc[1]+'">'+esc(c.status||'-')+'</span>';
     const leadName=(c.leads&&c.leads.name)?c.leads.name:'(unattached)';
@@ -13409,7 +13419,7 @@ async function deleteWhatsAppCall(id){
 // ── Access & Password Activity (India, Pavitra, Jisan only) ──────────
 function canSeeAccessAudit(){
   const e=String(currentUser?.email||'').toLowerCase();
-  return ['india@step4progress.com','pavitra@step4progress.com','jisan@step4progress.co.uk'].includes(e);
+  return ['india@step4progress.com','pavitra@step4progress.com'].includes(e);
 }
 function clearAccessAudit(){['aa-summary','aa-invites-tbody','aa-resets-tbody'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML='';});}
 async function renderAccessAudit(){

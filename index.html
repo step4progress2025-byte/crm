@@ -4508,7 +4508,7 @@ async function syncAssignedLeadTasksForCurrentUser(){
 async function quickReassignLead(leadId,newCounsellor,opts){
   const l=leads.find(x=>x.id===leadId);
   if(!l||l.counsellor===newCounsellor)return;
-  if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");renderLeads();return;}
+  if(isIndiaLeadReadOnly(l)){toast("This lead is view-only for your account (India, or outside your own country).");renderLeads();return;}
   // Same number on several leads = one person: steer them to ONE counsellor.
   if(newCounsellor&&!(opts&&opts.skipDup)){
     buildDupMap();
@@ -4581,7 +4581,7 @@ function renderSubTeamCell(l,field,roleName){
 async function quickReassignSubTeam(leadId,field,newValue){
   const l=leads.find(x=>x.id===leadId);
   if(!l)return;
-  if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");renderLeads();return;}
+  if(isIndiaLeadReadOnly(l)){toast("This lead is view-only for your account (India, or outside your own country).");renderLeads();return;}
   const labels={application_team:'Application Team',visa_team:'Visa Team',sop_team:'SOP Team'};
   const roleName=labels[field];
   const old=l[field];
@@ -4795,7 +4795,7 @@ const VIEW_ONLY_EMAILS=['simun@step4progress.co.uk'];
 let isViewOnly=false;
 const VIEWONLY_WRITE_OK=new Set(['direct_messages','channel_messages','announcement_replies','push_subscriptions','known_devices','export_log']);
 const VIEWONLY_TEAM_SELF_KEYS=['dashboard_prefs','sound_enabled','tour_completed','mobile'];
-const VIEWONLY_MSG='👁 View-only access — you can view everything but cannot change data.';
+const VIEWONLY_MSG='👁 View-only access — you can view everything, and edit leads in your own country only.';
 function viewOnlyBlockedResult(){
   const res={data:null,error:{message:'View-only access — you cannot change data.'},count:null,status:403};
   const chain=new Proxy(function(){},{get:(t,k)=>k==='then'?(ok)=>ok(res):chain,apply:()=>chain});
@@ -4810,7 +4810,9 @@ function installViewOnlyGuard(){
       if(['insert','update','upsert','delete'].includes(k)){
         return (...a)=>{
           const okTeam=(t==='team'&&k==='update'&&Object.keys(a[0]||{}).every(x=>VIEWONLY_TEAM_SELF_KEYS.includes(x)));
-          if(VIEWONLY_WRITE_OK.has(t)||okTeam)return tg[k](...a);
+          // Simun may edit LEADS (update only) in his own country; the database enforces the country (crm_simun_edit_own_country.sql).
+          const okLeadEdit=(t==='leads'&&k==='update')||(t==='activity_log'&&k==='insert');
+          if(VIEWONLY_WRITE_OK.has(t)||okTeam||okLeadEdit)return tg[k](...a);
           try{toast(VIEWONLY_MSG);}catch(e){}
           return viewOnlyBlockedResult();
         };
@@ -6363,7 +6365,7 @@ function setLeadsView(mode){
 async function updateLeadStatusDirect(leadId,newStatus){
   const l=leads.find(x=>x.id===leadId);
   if(!l)return;
-  if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");renderLeadsBoard();return;}
+  if(isIndiaLeadReadOnly(l)){toast("This lead is view-only for your account (India, or outside your own country).");renderLeadsBoard();return;}
   const oldStatus=l.status;
   if(oldStatus===newStatus)return;
   setSyncing();
@@ -6785,7 +6787,7 @@ function closeLeadDetail(){
 async function updateStatusFS(){
   if(!curId)return;
   const _l=leads.find(x=>x.id===curId);
-  if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");renderLeads();return;}
+  if(isIndiaLeadReadOnly(_l)){toast("This lead is view-only for your account (India, or outside your own country).");renderLeads();return;}
   const status=document.getElementById('ld-ssel').value;
   const l=leads.find(x=>x.id===curId);
   const oldStatus=l?.status;
@@ -6799,8 +6801,8 @@ async function updateStatusFS(){
   loadTasksFS(curId);
   loadActivityLogFS(curId);
 }
-function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';populateAgentDropdown();document.getElementById('f-agent').value=l.agent||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-type').value=l.ielts_type||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-finance-years').value=l.finance_years||'';document.getElementById('f-class-timing').value=l.class_timing||'';document.getElementById('f-student-id').value=l.student_id||'';document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range,l.budget_currency);syncBudgetRangeOptions(l.budget_range||'');document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
-async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}if(!canDeleteLeads()){toast('Only Admins, Managers, Directors and Digital Marketing can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;await logActivity(curId,'deleted',`Lead deleted: ${_l?.name||_l?.lead_id||curId}`);setSyncing();const{error,data}=await sb.from('leads').delete().eq('id',curId).select();if(error){setSyncErr();toast('Error deleting lead: '+error.message);return;}if(!data||!data.length){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
+function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("This lead is view-only for your account (India, or outside your own country).");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';populateAgentDropdown();document.getElementById('f-agent').value=l.agent||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-type').value=l.ielts_type||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-finance-years').value=l.finance_years||'';document.getElementById('f-class-timing').value=l.class_timing||'';document.getElementById('f-student-id').value=l.student_id||'';document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range,l.budget_currency);syncBudgetRangeOptions(l.budget_range||'');document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
+async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("This lead is view-only for your account (India, or outside your own country).");return;}if(!canDeleteLeads()){toast('Only Admins, Managers, Directors and Digital Marketing can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;await logActivity(curId,'deleted',`Lead deleted: ${_l?.name||_l?.lead_id||curId}`);setSyncing();const{error,data}=await sb.from('leads').delete().eq('id',curId).select();if(error){setSyncErr();toast('Error deleting lead: '+error.message);return;}if(!data||!data.length){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 // Generates a message genuinely suited to WHERE this lead actually is
 // in their journey, instead of the same generic "just checking in"
@@ -8476,7 +8478,7 @@ async function updateStatus(){
 async function deleteLead(){
   if(!curId)return;
   const _l=leads.find(x=>x.id===curId);
-  if(isIndiaLeadReadOnly(_l)){toast("India's leads are view-only for your account.");return;}
+  if(isIndiaLeadReadOnly(_l)){toast("This lead is view-only for your account (India, or outside your own country).");return;}
   if(!canDeleteLeads()){toast('Only Admins, Managers, Directors and Digital Marketing can delete leads.');return;}
   if(!confirm('Delete this lead? This cannot be undone.'))return;
   await logActivity(curId,'deleted',`Lead deleted: ${_l?.name||_l?.lead_id||curId}`);
@@ -8490,7 +8492,7 @@ async function deleteLead(){
 function editLead(){
   if(!curId)return;
   const l=leads.find(x=>x.id===curId);if(!l)return;
-  if(isIndiaLeadReadOnly(l)){toast("India's leads are view-only for your account.");return;}
+  if(isIndiaLeadReadOnly(l)){toast("This lead is view-only for your account (India, or outside your own country).");return;}
   editedFromView='side';
   editMode=true;
   document.getElementById('modal-title').textContent='Edit lead';
@@ -8687,7 +8689,7 @@ async function saveLead(){
   if(isIndiaLocked()){
     const existing=editMode&&curId?leads.find(x=>x.id===curId):null;
     if((existing&&existing.country==='India')||countryVal==='India'||countryVal==='Other'){
-      toast("India's leads are view-only for your account.");return;
+      toast("This lead is view-only for your account (India, or outside your own country).");return;
     }
   }
   const cityVal=document.getElementById('f-city').value.trim();
@@ -9381,6 +9383,7 @@ function isIndiaLocked(){
   return isSuperAdmin && !isOwner;
 }
 function isIndiaLeadReadOnly(lead){
+  if(isViewOnly&&lead&&lead.country&&myCountry&&lead.country!==myCountry)return true; // view-only account: edits limited to own country
   return isIndiaLocked() && (lead?.country==='India');
 }
 function isIndiaTeamReadOnly(t){

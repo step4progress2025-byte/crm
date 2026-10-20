@@ -529,9 +529,12 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <div id="auth-login-view">
         <div class="auth-title">Welcome back</div>
         <div class="auth-sub">Sign in to access your shared CRM workspace.</div>
-        <div class="auth-field"><label>Email address</label><input type="email" id="login-email" placeholder="you@step4progress.com" autocomplete="email"></div>
-        <div class="auth-field"><label>Password</label><input type="password" id="login-pass" placeholder="Your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
-        <button class="auth-btn" id="login-btn" onclick="doLogin()">Sign in →</button>
+        <form id="login-form" method="post" action="#" autocomplete="on" onsubmit="event.preventDefault();doLogin();return false;">
+        <div class="auth-field"><label>Email address</label><input type="email" id="login-email" name="username" placeholder="you@step4progress.com" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
+        <div class="auth-field"><label>Password</label><input type="password" id="login-pass" name="password" placeholder="Your password" autocomplete="current-password"></div>
+        <button class="auth-btn" id="login-btn" type="submit">Sign in →</button>
+        </form>
+        <div style="text-align:center;margin-top:8px;font-size:11.5px;color:rgba(255,255,255,.55)">Tip: when your browser asks, choose <strong>Save password</strong> so it fills this in next time on this device.</div>
         <div class="auth-err" id="login-err"></div>
         <div style="text-align:center;margin-top:12px"><span onclick="showForgotPasswordView()" style="color:rgba(255,255,255,.6);font-size:12.5px;cursor:pointer;text-decoration:underline">Forgot password?</span></div>
       </div>
@@ -1231,6 +1234,11 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 
       <!-- Team -->
       <section id="sc-team" class="screen">
+        <div id="orphan-logins-card" class="card" style="display:none;margin-bottom:16px">
+          <div class="card-h"><span class="card-t">🔓 Logins without a team profile</span></div>
+          <div style="font-size:12px;color:var(--ink3);margin-bottom:10px;line-height:1.5">These people can sign in but are not in the Team list, so they see nothing. Fill in their details and press <strong>Add to team</strong>. You can also set a new temporary password for them. Passwords can never be viewed.</div>
+          <div id="orphan-logins-list"></div>
+        </div>
         <div id="password-reset-requests-card" class="card" style="display:none;margin-bottom:16px">
           <div class="card-h"><span class="card-t">🔑 Pending password reset requests</span></div>
           <div id="password-reset-requests-list"></div>
@@ -2769,7 +2777,7 @@ What would you like help with today?</div>
       </div>
     </div>
     <div id="ld-response-stat-banner" style="background:var(--paper);color:var(--ink2);font-size:12px;padding:6px 32px;text-align:center;border-bottom:1px solid var(--line)"></div>
-    <div id="ld-viewonly-banner" style="display:none;background:var(--gold-l);color:var(--gold);font-size:12px;font-weight:600;padding:8px 32px;text-align:center">👁️ View-only — India's leads can be viewed but not edited from your account.</div>
+    <div id="ld-viewonly-banner" style="display:none !important;background:var(--gold-l);color:var(--gold);font-size:12px;font-weight:600;padding:8px 32px;text-align:center">👁️ View-only — India's leads can be viewed but not edited from your account.</div>
     <!-- Body: 3-column grid -->
     <div style="padding:28px 32px;flex:1;max-width:1400px;width:100%;margin:0 auto">
       <!-- Status update bar -->
@@ -3711,9 +3719,9 @@ function isDomesticAdmin(){return myTeamCategory==='Domestic'&&(myRole==='Admin'
 // others' work or performance."
 // Digital Marketing (non-super-admin): restricted like a counsellor for screens, but may select and edit leads in their own country/team.
 function isMarketingStaff(){return myRole==='Digital Marketing'&&!isSuperAdmin;}
-function isJisanOrSimun(){const e=String(currentUser?.email||'').trim().toLowerCase();return e==='jisan@step4progress.co.uk'||e==='simun@step4progress.co.uk'||isViewOnly;}
-// Jisan and Simun can view and edit but never delete. Everyone else keeps the previous rule.
-function canDeleteLeads(){return !isJisanOrSimun()&&(isSuperAdmin||['Admin','Manager','Director','Digital Marketing'].includes(myRole));}
+function isJisanOrSimun(){const e=String(currentUser?.email||'').trim().toLowerCase();return e==='jisan@step4progress.co.uk'||e==='simun@step4progress.co.uk';}
+// Jisan and Simun now have near-owner lead access: they can edit and delete leads of any office/country.
+function canDeleteLeads(){return isJisanOrSimun()||(isSuperAdmin||['Admin','Manager','Director','Digital Marketing'].includes(myRole));}
 function isRestrictedStaffRole(){
   if(isSuperAdmin)return false;
   if(['Counsellor','Application Team','Visa Team','SOP Team','Digital Marketing'].includes(myRole))return true;
@@ -4217,6 +4225,8 @@ async function doLogin(){
   btn.disabled=true;btn.textContent='Signing in…';err.textContent='';
   const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
   if(error){err.textContent=readableAuthError(error,'login');btn.disabled=false;btn.textContent='Sign in →';return;}
+  // Offer the browser's own password manager to remember it on this device (the CRM never stores the password itself).
+  try{if(window.PasswordCredential&&navigator.credentials&&navigator.credentials.store){await navigator.credentials.store(new PasswordCredential({id:email,password:pass,name:email}));}}catch(_e){}
   await onLogin(data.user);
 }
 
@@ -4686,7 +4696,7 @@ async function quickReassignSubTeam(leadId,field,newValue){
 let tlIds=[];
 function canTransferLead(l){
   if(!l||isIndiaLeadReadOnly(l)||myTeamCategory==='Agent')return false;
-  if(isOwner)return true;
+  if(isOwner||isJisanOrSimun())return true;
   // Your own leads (assigned to you) can always be moved on...
   if([l.counsellor,l.application_team,l.visa_team,l.sop_team].some(v=>v&&v===myName))return true;
   if(isRestrictedStaffRole()&&!isMarketingStaff())return false; // counsellors / sub-teams: only their own leads
@@ -5061,9 +5071,9 @@ function isLimitedInviter(){return !isSuperAdmin&&(USER_INVITER_EMAILS.includes(
 // into their OWN country only (the database enforces the same rules).
 function canInviteUsers(){return (isSuperAdmin&&!isViewOnly)||USER_INVITER_EMAILS.includes(String(currentUser?.email||'').toLowerCase())||isLimitedInviter();}
 const LIMITED_INVITE_ROLES=['Counsellor','Application Team','Visa Team','SOP Team','Digital Marketing'];
-const SUPER_ADMIN_EMAILS=['india@step4progress.com','jisan@step4progress.co.uk','pavitra@step4progress.com'];
+const SUPER_ADMIN_EMAILS=['india@step4progress.com','jisan@step4progress.co.uk','simun@step4progress.co.uk','pavitra@step4progress.com'];
 // VIEW-ONLY viewers: see everything a Super Admin (Jisan) sees — all teams/offices except India — but cannot change anything.
-const VIEW_ONLY_EMAILS=['simun@step4progress.co.uk'];
+const VIEW_ONLY_EMAILS=[]; // Simun now has Jisan-level (near-owner) access, so nobody is view-only any more
 let isViewOnly=false;
 const VIEWONLY_WRITE_OK=new Set(['direct_messages','channel_messages','announcement_replies','push_subscriptions','known_devices','export_log']);
 const VIEWONLY_TEAM_SELF_KEYS=['dashboard_prefs','sound_enabled','tour_completed','mobile'];
@@ -5831,6 +5841,16 @@ sb.auth.onAuthStateChange((event,session)=>{
 // needing separate access logic bolted onto each screen individually.
 // Builds the role-scoped leads query (who may see which leads). Shared by the full
 // load and by single-row refreshes triggered by realtime changes.
+// Case-insensitive exact name match (a lead saved as "SUNAINA" still belongs to "Sunaina"). ilike without wildcards.
+function nameMatch(q,col,name){const n=String(name||'__none__').trim().replace(/\\/g,'\\\\').replace(/%/g,'\\%').replace(/_/g,'\\_');return q.ilike(col,n);}
+// A lead saved as "SUNAINA " still belongs to "Sunaina": rewrite my own spellings to my exact profile name so every
+// later exact comparison (tasks, follow-ups, dashboards) lines up.
+function canonMine(rows){
+  const nm=v=>String(v||'').trim().replace(/\s+/g,' ').toLowerCase();
+  const me=nm(myName);if(!me)return rows;
+  (rows||[]).forEach(l=>{['counsellor','application_team','visa_team','sop_team'].forEach(f=>{if(l[f]&&l[f]!==myName&&nm(l[f])===me)l[f]=myName;});});
+  return rows;
+}
 async function scopedLeadsQuery(){
   let q=sb.from('leads').select('*').order('lead_id',{ascending:false});
   const subTeamFieldMap={'Application Team':'application_team','Visa Team':'visa_team','SOP Team':'sop_team'};
@@ -5838,11 +5858,11 @@ async function scopedLeadsQuery(){
   if(isOwner){
     // no restriction — sees everything, every country, including India
   } else if(isSuperAdmin){
-    // Super Admin minus Owner (Jisan, Simun): every country, India included (view); edits are limited by isIndiaLeadReadOnly.
+    // Jisan and Simun: every country, India included, full edit/delete.
   } else if(myTeamCategory==='Agent'){
     // Agent: only leads explicitly, individually assigned to them by
     // Management — never country-scoped, never round-robin.
-    q=q.eq('counsellor',myName);
+    q=nameMatch(q,'counsellor',myName);
   } else if(myTeamCategory==='Domestic'){
     if(['Admin','Manager','Director','Digital Marketing'].includes(myRole)){
       // Domestic Admin / Digital Marketing sees their whole Domestic team's assigned leads,
@@ -5854,7 +5874,7 @@ async function scopedLeadsQuery(){
       const _q=n=>'"'+String(n).replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"';
       q=q.or((domesticNames.length?'counsellor.in.('+domesticNames.map(_q).join(',')+'),':'')+'workstream.eq.Domestic');
     } else {
-      q=q.eq('counsellor',myName);
+      q=nameMatch(q,'counsellor',myName);
     }
   } else if(subTeamFieldMap[myRole]){
     // Application/Visa/SOP Team: their round-robin pool is deliberately
@@ -5864,13 +5884,13 @@ async function scopedLeadsQuery(){
     // lead they were legitimately assigned (via the global round-robin)
     // invisible to them just because it came from a different country —
     // that would break the whole point of pooling globally.
-    q=q.eq(subTeamFieldMap[myRole],myName);
+    q=nameMatch(q,subTeamFieldMap[myRole],myName);
   } else if(myRole==='Counsellor'){
     // Counsellor: ONLY leads personally, currently assigned to them —
     // no country fallback, no "or I created it" exception. If a lead
     // they created gets reassigned to someone else, it leaves their
     // view; that is the intended behaviour under this rule.
-    q=q.eq('counsellor',myName||'__none__');
+    q=nameMatch(q,'counsellor',myName);
   } else {
     // Admin/Manager/Director: exactly their own country.
     if(myCountry) q=q.eq('country',myCountry);
@@ -5908,7 +5928,7 @@ async function processLeadRefresh(){
     const {q}=await scopedLeadsQuery();
     const{data,error}=await q.in('id',ids);
     if(error)throw error;
-    rows=data||[];
+    rows=canonMine(data||[]);
   }catch(e){
     // Fall back to a full reload if the single-row fetch fails for any reason.
     await loadLeads();renderDash();renderLeads();renderFU();badges();return;
@@ -5961,23 +5981,67 @@ async function loadLeads(){
     keepGoing=!!(data&&data.length===PAGE_SIZE);
     from+=PAGE_SIZE;
   }
-  allLeads=allRows;syncLeadsView();
+  allLeads=canonMine(allRows);syncLeadsView();
   return true;
 }
 async function loadCoaching(){
   const{data,error}=await sb.from('coaching').select('*').order('created_at',{ascending:false});
-  if(!error&&data) coaching=(isSuperAdmin&&!isOwner)?data.filter(c=>c.country!=='India'&&c.leads?.country!=='India'):data; // India invisible to non-owner super admins
+  if(!error&&data) coaching=data;
 }
 let teamList=[];
+// Every login that exists in Supabase Auth but has no team row (only India, Pavitra, Jisan and Simun can list them).
+async function loadOrphanLogins(){
+  const card=document.getElementById('orphan-logins-card'),list=document.getElementById('orphan-logins-list');
+  if(!card||!list)return;
+  if(!(isOwner||isJisanOrSimun())){card.style.display='none';return;}
+  const{data,error}=await sb.rpc('list_auth_logins');
+  if(error){console.warn('list_auth_logins unavailable (run crm_jisan_simun_near_owner.sql):',error.message);card.style.display='none';return;}
+  const rows=(data||[]).filter(r=>!(teamList||[]).some(t=>t.id===r.id));
+  card.style.display=rows.length?'block':'none';
+  const opt=(a,sel)=>a.map(v=>`<option${v===sel?' selected':''}>${v}</option>`).join('');
+  list.innerHTML=rows.map(r=>`<div style="border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;margin-bottom:8px">
+    <div style="font-weight:700;font-size:13.5px">${esc(r.email)}</div>
+    <div style="font-size:11px;color:var(--ink3);margin-bottom:8px">Created ${r.created_at?new Date(r.created_at).toLocaleDateString('en-GB'):'—'} · Last sign-in ${r.last_sign_in_at?new Date(r.last_sign_in_at).toLocaleString('en-GB'):'never'}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+      <input id="ol-name-${r.id}" placeholder="Full name" value="${esc(String(r.email).split('@')[0])}" style="padding:5px 8px;font-size:12px;width:150px">
+      <select id="ol-role-${r.id}" style="font-size:12px;padding:5px">${opt(['Counsellor','Admin','Manager','Director','Application Team','Visa Team','SOP Team','Agent','Digital Marketing'],'Counsellor')}</select>
+      <select id="ol-country-${r.id}" style="font-size:12px;padding:5px">${opt(['India','UK','Pakistan','Bangladesh'],'India')}</select>
+      <select id="ol-cat-${r.id}" style="font-size:12px;padding:5px">${opt(['International','Domestic'],'International')}</select>
+      <button class="btn btn-p" style="font-size:12px;padding:5px 10px" onclick="addOrphanToTeam('${r.id}')">Add to team</button>
+      <button class="btn" style="font-size:12px;padding:5px 10px" onclick="resetOrphanPassword('${r.id}','${escJs(r.email)}')">🔑 New password</button>
+    </div></div>`).join('');
+}
+async function addOrphanToTeam(id){
+  const g=k=>document.getElementById('ol-'+k+'-'+id)?.value||'';
+  const name=g('name').trim(),country=g('country');
+  if(!name){toast('Enter a full name.');return;}
+  const office=country==='India'?'India HQ':country==='UK'?'UK HQ':country;
+  const{error}=await sb.rpc('admin_add_profile',{p_user:id,p_full_name:name,p_role:g('role'),p_country:country,p_office:office,p_team_category:g('cat')});
+  if(error){toast('Could not add: '+error.message);return;}
+  toast(name+' added to the team.');
+  await loadTeam();loadOrphanLogins();
+}
+async function resetOrphanPassword(id,email){
+  const _w=['blue','tiger','coffee','river','maple','solar','amber','delta','lotus','pearl','cedar','falcon'];
+  const sug=_w[Math.floor(Math.random()*12)]+'-'+_w[Math.floor(Math.random()*12)]+'-'+(Math.floor(Math.random()*9000)+1000);
+  const np=prompt(`Set a NEW temporary password for ${email} (8 to 25 characters). Share it privately; it is not stored.`,sug);
+  if(np===null)return;
+  if(np.trim().length<8||np.trim().length>25){toast('Password must be 8 to 25 characters.');return;}
+  try{
+    const{data:sd}=await sb.auth.getSession();const token=sd?.session?.access_token;
+    const res=await fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/admin-reset-password',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({userId:id,newPassword:np.trim()})});
+    const out=await res.json().catch(()=>({}));
+    if(!res.ok){toast('Error: '+(out.error||'HTTP '+res.status));return;}
+    toast('Password updated for '+email+'.');
+    try{prompt('Temporary password for '+email+' (copy it now):',np.trim());}catch(_e){}
+  }catch(e){toast('Error: '+String(e));}
+}
 async function loadTeam(){
   const tl=document.querySelector('#sc-team .loading');
   let q=sb.from('team').select('*');
   // Same "India fully invisible" rule as leads — a non-Owner Super Admin
   // never even loads India's team roster, not just a read-only view of it.
-  if(isSuperAdmin&&!isOwner){
-    q=q.neq('country','India');
-  }
-  const{data}=await q;
+  const{data}=await q; // Jisan/Simun now load the full roster (India included) so they can reset anyone's password; India's productivity data stays hidden by prodMemberVisible.
   // A Super Admin account is never a counsellor. If its role column still
   // says "Counsellor" (or is blank), treat it as "Super Admin" in memory so
   // every counsellor list, dropdown and round-robin pool drops it at once.
@@ -5990,6 +6054,7 @@ async function loadTeam(){
   syncLeadsView(); // classification depends on each counsellor's team
   if(tl) tl.style.display='none';
   renderTeam(data||[]);
+  loadOrphanLogins();
 }
 
 // ── NAV ──────────────────────────────────────────────────────────
@@ -7036,7 +7101,7 @@ function openLeadDetail(id){
     const ss=document.getElementById('ld-ssel'); if(ss)ss.disabled=ro;
     if(ro){
       const banner=document.getElementById('ld-viewonly-banner');
-      if(banner)banner.style.display='block';
+      if(banner){banner.style.display='none';}
     } else {
       const banner=document.getElementById('ld-viewonly-banner');
       if(banner)banner.style.display='none';
@@ -7898,7 +7963,7 @@ function canManageTaskClient(t){
   const leadCountry=(t?.leads?.country||'').trim();
   const email=(currentUser?.email||'').toLowerCase();
   if(isOwner||email==='pavitra@step4progress.com') return true;
-  if(email==='jisan@step4progress.co.uk') return leadCountry.toLowerCase()!=='india';
+  if(isJisanOrSimun()) return leadCountry.toLowerCase()===String(myCountry||'').toLowerCase();
   if(myRole==='Counsellor'||['Application Team','Visa Team','SOP Team'].includes(myRole)||myTeamCategory==='Agent') return assignee===myName;
   if(['Admin','Manager','Director'].includes(myRole)) return !!staff&&staff.country===myCountry&&effectiveTeamCategory(staff)===myTeamCategory;
   return assignee===myName;
@@ -8344,7 +8409,7 @@ async function renderTaskDashboard(){
     return 'International';
   };
   const isElevatedGlobal=isOwner || ((currentUser?.email||'').toLowerCase()==='pavitra@step4progress.com');
-  const isJisan=(currentUser?.email||'').toLowerCase()==='jisan@step4progress.co.uk'||isViewOnly; // Simun: Jisan-style scope, read-only
+  const isJisan=(currentUser?.email||'').toLowerCase()==='jisan@step4progress.co.uk'||(currentUser?.email||'').toLowerCase()==='simun@step4progress.co.uk'; // Jisan/Simun: own-country tasks only
   const isOwnCountryStaff=staff=>staff && myCountry && staff.country===myCountry;
   if(isElevatedGlobal && !superAdminOpsView){
     // Global view: Owner / Platform Administrator can see both operational poles.
@@ -8353,8 +8418,8 @@ async function renderTaskDashboard(){
     // This matters because UK can contain both local Domestic work and UK international study-abroad work.
     scoped=scoped.filter(t=>taskCategory(t)===superAdminOpsView);
   } else if(isJisan){
-    const nonIndia=scoped.filter(t=>t.leads?.country!=='India');
-    scoped=superAdminOpsView?nonIndia.filter(t=>taskCategory(t)===superAdminOpsView):nonIndia;
+    const ownC=scoped.filter(t=>t.leads?.country===myCountry);
+    scoped=superAdminOpsView?ownC.filter(t=>taskCategory(t)===superAdminOpsView):ownC;
   } else if(myRole==='Counsellor' || ['Application Team','Visa Team','SOP Team'].includes(myRole) || myTeamCategory==='Agent'){
     scoped=scoped.filter(t=>normalizePersonName(t.assigned_to)===normalizePersonName(myName) && (myTeamCategory!=='Domestic'||taskCategory(t)==='Domestic'));
   } else if(['Admin','Manager','Director'].includes(myRole)){
@@ -9629,8 +9694,7 @@ function canResetPasswordFor(t){
   const em=String(currentUser?.email||'').toLowerCase();
   const tEm=String(t.email||'').toLowerCase();
   if(isProtectedOwnerRow(t))return false;       // only India/Pavitra touch these
-  if(isSuperAdmin||em==='jisan@step4progress.co.uk')return true; // Jisan: anyone except India/Pavitra
-  if(em==='simun@step4progress.co.uk')return tEm!=='jisan@step4progress.co.uk'; // Simun: reset helper (otherwise view-only)
+  if(isSuperAdmin||isJisanOrSimun())return true; // Jisan and Simun: anyone except India/Pavitra (owner accounts stay protected)
   // Managers and Admins (incl. Anushree): people in their OWN office and team
   // only, never another Manager/Admin/Director/Super Admin.
   if(['Manager','Admin'].includes(myRole)){
@@ -9657,16 +9721,8 @@ function isIndiaLocked(){
 // Leads: Jisan and Simun now SEE India's leads (view-only for anything outside their own country), so the old lead-level India lock is off.
 function isIndiaLeadLock(){return false;}
 function isIndiaLeadReadOnly(lead){
-  const _em=String(currentUser?.email||'').trim().toLowerCase();
-  if(lead&&(isViewOnly||_em==='jisan@step4progress.co.uk')){
-    // Jisan and Simun see every country (India included). They may EDIT their own country only, never Domestic.
-    // They cannot delete anything, and can transfer only their own country's leads (see canTransferLead).
-    // They SEE every country (India included) but may EDIT only their own country's leads, never Domestic.
-    const own=myCountry||'UK';
-    if(lead.country&&lead.country!==own)return true;
-    if(leadIsDomesticWorkstream(lead))return true;
-    return false;
-  }
+  // Jisan and Simun can edit/delete/transfer leads of ANY office or country.
+  if(isJisanOrSimun())return false;
   return isIndiaLocked() && (lead?.country==='India');
 }
 function isIndiaTeamReadOnly(t){
@@ -13427,9 +13483,16 @@ function teamRowByName(name){
 // Call recordings: only India, Pavitra, Jisan, Simun (all super-admin tier) and Admins/Managers for calls handled in
 // their OWN office and country. Everyone else (counsellors, Directors, Digital Marketing, sub-teams) never gets the player.
 function canHearRecordings(c){
-  if(isOwner||isSuperAdmin)return true;
-  if(!['Admin','Manager'].includes(myRole))return false;
+  if(isOwner)return true;
   const m=teamRowByName(c?.counsellor||c?.counsellor_name||c?.caller_name||'');
+  // Jisan / Simun (super-admin tier): recordings of their OWN country only.
+  // If the caller's name does not match a team row, fall back to the country of the call's lead.
+  if(isSuperAdmin){
+    let cc=m?.country||c?.country||null;
+    if(!cc&&c?.lead_id){const ld=(allLeads||[]).find(x=>String(x.id)===String(c.lead_id));cc=ld?.country||null;}
+    return !!(cc&&myCountry&&cc===myCountry);
+  }
+  if(!['Admin','Manager'].includes(myRole))return false;
   return !!(m&&myOffice&&myCountry&&m.office===myOffice&&m.country===myCountry);
 }
 function memberInOpsView(t){
@@ -13437,7 +13500,7 @@ function memberInOpsView(t){
   const dom=effectiveTeamCategory(t)==='Domestic';
   return superAdminOpsView==='Domestic'?dom:!dom;
 }
-function prodSeesAllCountries(){return isSuperAdmin||myRole==='Director';}
+function prodSeesAllCountries(){return isOwner||myRole==='Director';} // Jisan/Simun see tasks & work done of their OWN country only
 function prodMemberVisible(t){
   if(!t)return false;
   if(isOwnerRowHiddenFromMe(t))return false;
@@ -13538,8 +13601,10 @@ function renderCallLogs(){
       : c.call_status
         ? `<span class="pill" style="background:${(statusColors[c.call_status]||['var(--sky-l)','var(--sky)'])[0]};color:${(statusColors[c.call_status]||['var(--sky-l)','var(--sky)'])[1]}">${esc(c.call_status)}</span>`
         : '—';
+    const _ld=c.lead_id?(allLeads||[]).find(x=>String(x.id)===String(c.lead_id)):null;
+    const _lbl=_ld&&_ld.name?(_ld.name+(c.lead_label&&c.lead_label!==_ld.name?' · '+c.lead_label:'')):(c.lead_label||'—');
     const leadCell=c.lead_id
-      ? `<span onclick="openLeadDetail('${c.lead_id}')" style="cursor:pointer;color:var(--pine);text-decoration:underline">${esc(c.lead_label||'—')}</span>`
+      ? `<span onclick="openLeadDetail('${c.lead_id}')" style="cursor:pointer;color:var(--pine);text-decoration:underline">${esc(_lbl)}</span>`
       : esc(c.lead_label||'—');
     return`<tr>
       <td style="font-weight:600">${c.auto_recorded?'<i class="ti ti-phone-outgoing" title="Auto-recorded via Twilio" style="color:var(--pine2);font-size:13px;margin-right:5px"></i>':''}${leadCell}</td>
@@ -13807,7 +13872,7 @@ function initProductivity(){
   const isAdminTier=!isRestrictedStaffRole();
   document.querySelectorAll('.prod-subtab[data-sub="calls"]').forEach(b=>b.style.display=isAdminTier?'':'none');
   const monitorTab=document.getElementById('prod-tab-monitor');
-  if(monitorTab)monitorTab.style.display=isAdminTier?'':'none';
+  if(monitorTab)monitorTab.style.display=(isAdminTier&&isOwner)?'':'none'; // Activity Monitor: India and Pavitra only
   const whatsappTab=document.getElementById('prod-tab-whatsapp');
   if(whatsappTab)whatsappTab.style.display=isAdminTier?'':'none';
 
@@ -13821,6 +13886,7 @@ function initProductivity(){
   loadMyDailyUpdates();
 }
 function setProdSubtab(sub){
+  if(sub==='monitor'&&!isOwner)sub=isRestrictedStaffRole()?'myupdate':'calls'; // Activity Monitor: India and Pavitra only
   ['calls','whatsapp','myupdate','monitor'].forEach(s=>{
     const panel=document.getElementById('prod-sub-'+s);
     if(panel)panel.style.display=s===sub?'block':'none';
@@ -14064,7 +14130,7 @@ async function renderActivityMonitor(){
   if(!listEl)return;
   const countrySel=document.getElementById('am-country');
   const teamSel=document.getElementById('am-team');
-  const seesAllCountries=isSuperAdmin||myRole==='Director';
+  const seesAllCountries=isOwner||myRole==='Director';
   const countryFilter=seesAllCountries?(countrySel?.value||'All'):myOffice;
   const teamFilter=teamSel?.value||'All';
 

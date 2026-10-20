@@ -1065,6 +1065,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <span id="random-select-wrap" style="display:flex;gap:8px">
               <input type="number" id="random-select-count" placeholder="e.g. 100" min="1" style="width:90px;font-size:12px;padding:5px 8px;border:1px solid var(--line2);border-radius:var(--r)">
               <button class="btn" onclick="selectRandomLeads()" style="font-size:12px;padding:5px 12px"><i class="ti ti-dice"></i>Select random</button>
+              <button class="btn btn-p" id="btn-transfer-selected" onclick="transferSelectedLeads()" title="Move the ticked / randomly selected leads to another country, office and counsellors" style="font-size:12px;padding:5px 12px"><i class="ti ti-arrows-exchange"></i>Transfer selected</button>
             </span>
             <button class="btn" id="dup-toggle" onclick="toggleDupOnly()" style="font-size:12px;padding:5px 12px"><i class="ti ti-copy"></i>Duplicates</button>
             <button class="btn" onclick="navFilter('ls-st','Dropped')" style="font-size:12px;padding:5px 12px;background:var(--rose-l,#FEE2E2);color:var(--rose,#991B1B);border-color:transparent"><i class="ti ti-trash-x"></i>Drop List</button>
@@ -4749,7 +4750,9 @@ function tlInit(){
   const go=document.getElementById('tl-go');
   if(!tlIds.length){sum.innerHTML='<span style="color:var(--ink3)">Search for a lead above, or tick leads in the Leads list and press Transfer.</span>';go.disabled=true;}
   else if(l){sum.innerHTML=`<b>${esc(l.name||'—')}</b> <span style="color:var(--ink3)">${esc(l.lead_id||'')}</span><br>Now: ${esc(l.country||'—')} · ${esc(l.office||'—')} · ${esc(l.counsellor||'Unassigned')} · ${leadIsDomesticWorkstream(l)?'Domestic':'International'}`;go.disabled=false;}
-  else {sum.innerHTML=`<b>${tlIds.length} leads</b> will move to the place you choose below.`;go.disabled=false;}
+  else {
+    const by={};tlIds.forEach(id=>{const x=leads.find(y=>String(y.id)===id);const c=x?.country||'—';by[c]=(by[c]||0)+1;});
+    sum.innerHTML=`<b>${tlIds.length} leads selected</b> <span style="color:var(--ink3)">(${Object.entries(by).map(([c,n])=>esc(c)+' '+n).join(' · ')})</span><br>They will all move to the country and office you choose below.`;go.disabled=false;}
   // optional sub-team hand-off (single lead only)
   const sub=document.getElementById('tl-subteams');
   if(l&&!isSubTeamRoleOnly()){
@@ -4785,15 +4788,17 @@ async function tlRefreshCounsellors(){
   }
   if(document.getElementById('tl-office').value!==office)return; // user already picked something else
   const pool=people.filter(t=>['Counsellor','Admin','Manager','Director'].includes(t.role)&&!isSuperAdminRow(t)&&((effectiveTeamCategory(t)==='Domestic')===(side==='Domestic'))&&!isUnavailableToday(t.id));
-  sel.innerHTML='<option value="">— Unassigned (the office will assign) —</option>'+pool.map(t=>`<option value="${esc(t.full_name)}">${esc(t.full_name)}${t.role!=='Counsellor'?' ('+esc(t.role)+')':''}</option>`).join('');
+  const rr=(tlIds.length>1&&pool.length>1)?`<option value="__rr__">↻ Share evenly between all ${pool.length} counsellors below</option>`:'';
+  sel.innerHTML='<option value="">— Unassigned (the office will assign) —</option>'+rr+pool.map(t=>`<option value="${esc(t.full_name)}">${esc(t.full_name)}${t.role!=='Counsellor'?' ('+esc(t.role)+')':''}</option>`).join('');
   if(pool.some(t=>t.full_name===keep))sel.value=keep;
+  else if(rr&&tlIds.length>1)sel.value='__rr__';
 }
 async function submitTransferLead(){
   if(!tlIds.length){toast('Pick a lead first.');return;}
   const country=document.getElementById('tl-country').value;
   const office=document.getElementById('tl-office').value;
   const team=document.getElementById('tl-team').value;
-  const counsellor=document.getElementById('tl-counsellor').value;
+  const counsellorSel=document.getElementById('tl-counsellor').value;
   if(!country||!office){toast('Choose a country and an office.');return;}
   const single=tlLead();
   let setSub=false;const subVals={application_team:null,visa_team:null,sop_team:null};
@@ -4803,45 +4808,65 @@ async function submitTransferLead(){
       if(v==='__keep')subVals[f]=single[f]||null;else{setSub=true;subVals[f]=v||null;}
     });
   }
-  const label=`${tlIds.length} lead${tlIds.length!==1?'s':''} → ${country} · ${office} · ${counsellor||'Unassigned'} (${team})`;
+  // Work out who gets which lead. "Share evenly" hands the leads round-robin to the counsellors listed in the dropdown.
+  let plan;
+  if(counsellorSel==='__rr__'){
+    const names=[...document.getElementById('tl-counsellor').options].map(o=>o.value).filter(v=>v&&v!=='__rr__');
+    if(!names.length){toast('No counsellors are available in that office for this team.');return;}
+    const groups={};
+    tlIds.forEach((id,i)=>{const n=names[i%names.length];(groups[n]=groups[n]||[]).push(id);});
+    plan=Object.entries(groups).map(([c,ids])=>({ids,counsellor:c}));
+  } else plan=[{ids:tlIds,counsellor:counsellorSel||''}];
+  const who=counsellorSel==='__rr__'?`shared evenly between ${plan.length} counsellors`:(counsellorSel||'Unassigned');
+  const label=`${tlIds.length} lead${tlIds.length!==1?'s':''} → ${country} · ${office} · ${who} (${team})`;
   if(!confirm(`Transfer ${label}?`))return;
   const btn=document.getElementById('tl-go');btn.disabled=true;setSyncing();
   const before=tlIds.map(id=>leads.find(x=>String(x.id)===id)).filter(Boolean).map(l=>({...l}));
-  let res;
-  try{
-    res=await sb.rpc('transfer_lead',{
-      p_lead_ids:tlIds,p_country:country,p_office:office,p_counsellor:counsellor||null,
-      p_workstream:tlCanCrossSide()?team:null,
-      p_application_team:subVals.application_team,p_visa_team:subVals.visa_team,p_sop_team:subVals.sop_team,p_set_subteams:setSub
-    });
-  }catch(e){res={error:{message:String(e&&e.message||e)}};}
+  const movedTo={};const skipped=[];let failMsg=null;
+  for(const part of plan){
+    let res;
+    try{
+      res=await sb.rpc('transfer_lead',{
+        p_lead_ids:part.ids,p_country:country,p_office:office,p_counsellor:part.counsellor||null,
+        p_workstream:tlCanCrossSide()?team:null,
+        p_application_team:subVals.application_team,p_visa_team:subVals.visa_team,p_sop_team:subVals.sop_team,p_set_subteams:setSub
+      });
+    }catch(e){res={error:{message:String(e&&e.message||e)}};}
+    if(res.error){failMsg=res.error.message||'';break;}
+    ((res.data&&res.data.moved)||[]).forEach(x=>{movedTo[String(x.id)]=part.counsellor||'';});
+    skipped.push(...((res.data&&res.data.skipped)||[]));
+  }
   btn.disabled=false;
-  if(res.error){
+  const movedIds=Object.keys(movedTo);
+  if(failMsg&&!movedIds.length){
     setSyncErr();
-    const m=res.error.message||'';
-    toast(/could not find the function|transfer_lead/i.test(m)&&/find|schema|exist/i.test(m)?'Transfer is not switched on yet — run crm_transfer_lead.sql in Supabase first.':'Transfer failed: '+m);
+    toast(/could not find the function|transfer_lead/i.test(failMsg)&&/find|schema|exist/i.test(failMsg)?'Transfer is not switched on yet — run crm_transfer_lead.sql in Supabase first.':'Transfer failed: '+failMsg);
     return;
   }
-  const movedIds=((res.data&&res.data.moved)||[]).map(x=>String(x.id));
-  const skipped=(res.data&&res.data.skipped)||[];
   setSynced();
   closeModal('modal-transfer-lead');
   if(curId&&movedIds.includes(String(curId))){try{closeLeadDetail();}catch(e){}try{closeDover(null);}catch(e){}}
   try{await loadLeads();}catch(e){console.error(e);}
-  // Give the new counsellor their follow-up task + a notification (non-blocking, same as a normal reassign).
+  // Give each new counsellor their follow-up task + a notification (non-blocking, same as a normal reassign).
+  const notified=new Set();
   for(const l of before){
-    if(!movedIds.includes(String(l.id))||!counsellor)continue;
+    const c=movedTo[String(l.id)];
+    if(!c)continue;
     try{
-      const r=await ensureLeadAssignmentTask({...l,country,office,counsellor},counsellor,{reassignExisting:true,quiet:true});
+      const r=await ensureLeadAssignmentTask({...l,country,office,counsellor:c},c,{reassignExisting:true,quiet:true});
       if(!r.ok)console.error('Transfer: follow-up task not updated',r.error);
     }catch(e){console.error('Transfer task error',e);}
-    const assignee=(teamList||[]).find(t=>t.full_name===counsellor);
-    if(assignee)try{sendPushToUser(assignee.id,'New lead assigned',`${l.name} has been transferred to you.`,'./index.html');}catch(e){}
+    if(!notified.has(c)){
+      notified.add(c);
+      const assignee=(teamList||[]).find(t=>t.full_name===c);
+      if(assignee)try{sendPushToUser(assignee.id,'New leads assigned',movedIds.length>1?'Leads have been transferred to you.':`${l.name} has been transferred to you.`,'./index.html');}catch(e){}
+    }
   }
   try{clearBulkSelection();}catch(e){}
   try{renderLeads();renderDash();badges();}catch(e){}
-  if(movedIds.length)toast(`Transferred ${movedIds.length} lead${movedIds.length!==1?'s':''} → ${country} · ${office} · ${counsellor||'Unassigned'}.`);
+  if(movedIds.length)toast(`Transferred ${movedIds.length} lead${movedIds.length!==1?'s':''} → ${country} · ${office} · ${who}.`);
   if(skipped.length)toast(`${skipped.length} not moved: ${skipped[0].reason}${skipped.length>1?' (+ more)':''}`);
+  if(failMsg)toast('Stopped part-way: '+failMsg);
 }
 function populateAgentDropdown(){
   const sel=document.getElementById('f-agent');
@@ -10187,6 +10212,11 @@ function populateExportCounsellorDropdown(){
 // ══ BULK ACTIONS on the Leads table ═══════════════════════════════
 // Select multiple rows, apply one action to all of them at once —
 // pure frontend + a single batch Supabase call, zero new infrastructure.
+function transferSelectedLeads(){
+  const ids=getSelectedLeadIds();
+  if(!ids.length){toast('First tick the leads, or type a number and press "Select random" — then press Transfer selected.');return;}
+  openTransferLead(ids);
+}
 function getSelectedLeadIds(){
   return Array.from(document.querySelectorAll('.bulk-lead-checkbox:checked')).map(cb=>cb.dataset.id);
 }

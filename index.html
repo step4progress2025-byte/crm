@@ -671,6 +671,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <div class="tb-right">
         <span class="online-count" id="online-count"><span class="online-dot-sm"></span><span id="online-num">1</span> online</span>
         <button class="btn btn-ai" onclick="nav('ai',document.querySelector('.ni[data-nav=&quot;ai&quot;]'))"><i class="ti ti-robot"></i>AI</button>
+        <button class="btn" id="btn-transfer-top" onclick="openTransferLead()" title="Move a lead to another country, office, counsellor or team"><i class="ti ti-arrows-exchange"></i>Transfer lead</button>
         <button class="btn btn-p" onclick="openAddLead()"><i class="ti ti-plus"></i>Add lead</button>
       </div>
     </header>
@@ -1052,6 +1053,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="btn" onclick="bulkChangePriority()" style="font-size:12px;padding:5px 10px">Apply priority</button>
             <select id="bulk-counsellor-select" style="font-size:12px;padding:5px 8px;border-radius:6px;border:none"></select>
             <button class="btn" onclick="bulkReassignCounsellor()" style="font-size:12px;padding:5px 10px">Reassign</button>
+            <button class="btn" onclick="openTransferLead(getSelectedLeadIds())" style="font-size:12px;padding:5px 10px"><i class="ti ti-arrows-exchange"></i>Transfer</button>
             <button class="btn" onclick="openBulkAssignWizard()" style="font-size:12px;padding:5px 10px;background:var(--gold);color:#fff;border:none"><i class="ti ti-users-group"></i>Assign Wizard →</button>
             <select id="bulk-source-select" style="font-size:12px;padding:5px 8px;border-radius:6px;border:none"><option value="">Choose source…</option><option>Meta Ads</option><option>Google Ads</option><option>Instagram</option><option>WhatsApp</option><option>Walk-in</option><option>Referral</option><option>Website</option><option>LinkedIn</option><option>YouTube</option><option>Event / Expo</option><option>Website Enquiry</option><option>Website Tools Enquiry</option><option>Meta Enquiry</option><option>Other</option></select>
             <button class="btn" onclick="bulkChangeSource()" style="font-size:12px;padding:5px 10px">Apply source</button>
@@ -1786,8 +1788,8 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             </div>
           </div>
           <div class="card" id="am-access-audit-card" style="margin-top:16px;display:none">
-            <div class="card-h"><span class="card-t">🛡️ Access &amp; Password Activity</span><button class="btn" style="font-size:11px;padding:4px 10px" onclick="renderAccessAudit()">↻ Refresh</button></div>
-            <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">Who created each invite link and for whom, and every password reset attempt (success, denied or error). Passwords are never recorded. Visible to India and Pavitra only.</p>
+            <div class="card-h"><span class="card-t">🛡️ Access, Password &amp; Transfer Activity</span><button class="btn" style="font-size:11px;padding:4px 10px" onclick="renderAccessAudit()">↻ Refresh</button></div>
+            <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">Who created each invite link and for whom, every password reset attempt (success, denied or error), and every lead transfer (who moved which lead, from where to where, and refused attempts). Passwords are never recorded. Visible to India and Pavitra only.</p>
             <div id="aa-summary" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"></div>
             <div style="font-weight:700;font-size:13px;margin:8px 0">Invite links</div>
             <div class="tw"><table class="tbl">
@@ -1798,6 +1800,11 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <div class="tw"><table class="tbl">
               <thead><tr><th>When</th><th>By</th><th>For</th><th>Result</th><th>Details</th></tr></thead>
               <tbody id="aa-resets-tbody"></tbody>
+            </table></div>
+            <div style="font-weight:700;font-size:13px;margin:16px 0 8px">Lead transfers</div>
+            <div class="tw"><table class="tbl">
+              <thead><tr><th>When</th><th>By</th><th>Lead</th><th>Result</th><th>Moved from → to</th></tr></thead>
+              <tbody id="aa-transfers-tbody"></tbody>
             </table></div>
           </div>
         </div>
@@ -2157,6 +2164,40 @@ What would you like help with today?</div>
      counsellor "Reassign" button in the bulk bar still works for fast
      cases; this is for when Round Robin or per-lead Custom assignment
      is actually needed. -->
+<div class="mover" id="modal-transfer-lead">
+  <div class="modal" style="width:560px;max-width:96vw;max-height:90vh;overflow-y:auto">
+    <div class="mhead"><span class="mtitle">🔀 Transfer lead</span><button class="mclose" onclick="closeModal('modal-transfer-lead')">×</button></div>
+    <div style="font-size:12.5px;color:var(--ink3);margin-bottom:14px">Move a lead to another country, office, counsellor or team. The move is saved in the lead's activity log.</div>
+    <div id="tl-pick" style="display:none;margin-bottom:14px">
+      <label style="font-size:12px;font-weight:600;color:var(--ink2)">Find the lead</label>
+      <input type="text" id="tl-search" placeholder="Type name, phone or lead ID…" oninput="tlSearch()" style="width:100%;margin:4px 0 6px">
+      <select id="tl-results" size="5" onchange="tlPickLead(this.value)" style="width:100%"></select>
+    </div>
+    <div id="tl-summary" style="background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;font-size:12.5px;margin-bottom:14px;line-height:1.6"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div><label style="font-size:12px;font-weight:600;color:var(--ink2)">Country</label>
+        <select id="tl-country" onchange="tlCountryChanged()" style="width:100%;margin-top:4px"><option value="India">India</option><option value="UK">UK</option><option value="Pakistan">Pakistan</option><option value="Bangladesh">Bangladesh</option></select></div>
+      <div><label style="font-size:12px;font-weight:600;color:var(--ink2)">Assigned to office</label>
+        <select id="tl-office" onchange="tlRefreshCounsellors()" style="width:100%;margin-top:4px"></select></div>
+      <div><label style="font-size:12px;font-weight:600;color:var(--ink2)">Team</label>
+        <select id="tl-team" onchange="tlRefreshCounsellors()" style="width:100%;margin-top:4px"></select></div>
+      <div><label style="font-size:12px;font-weight:600;color:var(--ink2)">Counsellor</label>
+        <select id="tl-counsellor" style="width:100%;margin-top:4px"></select></div>
+    </div>
+    <div id="tl-subteams" style="display:none;margin-top:14px">
+      <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:6px">Hand to Application / Visa / SOP team (optional)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <select id="tl-app" style="width:100%"></select><select id="tl-visa" style="width:100%"></select><select id="tl-sop" style="width:100%"></select>
+      </div>
+    </div>
+    <div id="tl-note" style="font-size:11.5px;color:var(--ink3);margin-top:12px"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px">
+      <button class="btn" onclick="closeModal('modal-transfer-lead')">Cancel</button>
+      <button class="btn btn-p" id="tl-go" onclick="submitTransferLead()"><i class="ti ti-arrows-exchange"></i>Transfer</button>
+    </div>
+  </div>
+</div>
+
 <div class="mover" id="modal-bulk-assign-wizard">
   <div class="modal" style="width:640px;max-height:88vh;overflow-y:auto">
     <div class="mhead"><span class="mtitle">🧑‍🤝‍🧑 Bulk Assign Leads</span><button class="mclose" onclick="closeModal('modal-bulk-assign-wizard')">×</button></div>
@@ -2722,6 +2763,7 @@ What would you like help with today?</div>
         <button class="btn" title="Sponsor/parent view link" onclick="generateSponsorLink()"><i class="ti ti-link"></i></button>
         <button class="btn" title="Schedule a meeting" onclick="openScheduleMeetingModal()"><i class="ti ti-calendar-plus"></i></button>
         <button class="btn" id="btn-edit-lead-fs" onclick="editLeadFS()"><i class="ti ti-edit"></i>Edit</button>
+        <button class="btn" id="btn-transfer-lead-fs" onclick="openTransferLead([curId])"><i class="ti ti-arrows-exchange"></i>Transfer</button>
         <button class="btn btn-del" id="btn-delete-lead-fs" onclick="deleteLeadFS()"><i class="ti ti-trash"></i>Delete</button>
       </div>
     </div>
@@ -2956,6 +2998,7 @@ What would you like help with today?</div>
       <button class="btn" title="Sponsor/parent view link" onclick="generateSponsorLink()"><i class="ti ti-link"></i></button>
       <button class="btn" title="Schedule a meeting" onclick="openScheduleMeetingModal()"><i class="ti ti-calendar-plus"></i></button>
       <button class="btn" onclick="editLead()"><i class="ti ti-edit"></i>Edit</button>
+      <button class="btn" id="btn-transfer-lead" title="Transfer lead" onclick="openTransferLead([curId])"><i class="ti ti-arrows-exchange"></i></button>
       <button class="btn btn-del" id="btn-delete-lead" onclick="deleteLead()"><i class="ti ti-trash"></i></button>
     </div>
   </div>
@@ -2975,6 +3018,41 @@ What would you like help with today?</div>
 const SUPABASE_URL = 'https://jvreglqrrdnwttjasvwg.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2cmVnbHFycmRud3R0amFzdndnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDM3NzEsImV4cCI6MjA5NTQxOTc3MX0.I_X-ljOPlLFYLeWz6hE15nL8z0MPqmsSdWcgwole8GE';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── Delete safety net ────────────────────────────────────────────────
+// Supabase answers "success" when a row-level-security rule silently blocks a delete: nothing is removed,
+// but the screen drops the row and it comes back on the next load. For single-row deletes (.eq('id',…))
+// we ask the database which rows were really removed; if none, the delete is reported as an ERROR so
+// the row stays on screen and the person is told why.
+(function(){
+  const origFrom=sb.from.bind(sb);
+  const wrapDel=(b,flag)=>new Proxy(b,{get(t,k){
+    if(k==='then'){
+      if(!flag.id)return t.then.bind(t);
+      return (res,rej)=>Promise.resolve(t.select()).then(r=>{
+        if(r&&!r.error&&Array.isArray(r.data)&&r.data.length===0){
+          return {data:null,count:0,status:403,error:{code:'DELETE_BLOCKED',message:'Nothing was deleted: you do not have permission to delete this (or it was already removed).'}};
+        }
+        return r;
+      }).then(res,rej);
+    }
+    const v=t[k];
+    if(typeof v!=='function')return v;
+    return (...a)=>{
+      if(k==='eq'&&a[0]==='id')flag.id=true;
+      const r=v.apply(t,a);
+      return (r&&typeof r.then==='function')?wrapDel(r,flag):r;
+    };
+  }});
+  sb.from=(table)=>{
+    const q=origFrom(table);
+    return new Proxy(q,{get(t,k){
+      const v=t[k];
+      if(k==='delete'&&typeof v==='function')return (...a)=>wrapDel(v.apply(t,a),{id:false});
+      return typeof v==='function'?v.bind(t):v;
+    }});
+  };
+})();
 // Public half of the VAPID keypair for push notifications — safe to be
 // public, it's how the browser verifies a push genuinely came from our
 // server. The private half lives only in the send-push Edge Function's
@@ -3632,7 +3710,9 @@ function isDomesticAdmin(){return myTeamCategory==='Domestic'&&(myRole==='Admin'
 // others' work or performance."
 // Digital Marketing (non-super-admin): restricted like a counsellor for screens, but may select and edit leads in their own country/team.
 function isMarketingStaff(){return myRole==='Digital Marketing'&&!isSuperAdmin;}
-function canDeleteLeads(){return isSuperAdmin||['Admin','Manager','Director','Digital Marketing'].includes(myRole);}
+function isJisanOrSimun(){const e=String(currentUser?.email||'').trim().toLowerCase();return e==='jisan@step4progress.co.uk'||e==='simun@step4progress.co.uk'||isViewOnly;}
+// Jisan and Simun can view and edit but never delete. Everyone else keeps the previous rule.
+function canDeleteLeads(){return !isJisanOrSimun()&&(isSuperAdmin||['Admin','Manager','Director','Digital Marketing'].includes(myRole));}
 function isRestrictedStaffRole(){
   if(isSuperAdmin)return false;
   if(['Counsellor','Application Team','Visa Team','SOP Team','Digital Marketing'].includes(myRole))return true;
@@ -4596,6 +4676,173 @@ async function quickReassignSubTeam(leadId,field,newValue){
   renderDash();
   renderLeads();
 }
+// ── TRANSFER LEAD ────────────────────────────────────────────────────
+// One dialog, reachable from the top bar (Home + Leads), the lead detail
+// views and the bulk bar. Anyone who can edit a lead can transfer it. The
+// move runs through the transfer_lead() database function
+// (crm_transfer_lead.sql), because a normal update cannot hand a row to
+// another country/counsellor once it no longer belongs to the sender.
+let tlIds=[];
+function canTransferLead(l){
+  if(!l||isIndiaLeadReadOnly(l)||myTeamCategory==='Agent')return false;
+  if(isOwner)return true;
+  // Your own leads (assigned to you) can always be moved on...
+  if([l.counsellor,l.application_team,l.visa_team,l.sop_team].some(v=>v&&v===myName))return true;
+  if(isRestrictedStaffRole()&&!isMarketingStaff())return false; // counsellors / sub-teams: only their own leads
+  // ...managers, admins and the others only move their OWN country's leads, never another country's.
+  const own=myCountry||(isJisanOrSimun()?'UK':null);
+  return !!own&&l.country===own;
+}
+function tlCanCrossSide(){return isOwner&&!isViewOnly;}
+function tlSides(){return tlCanCrossSide()?['International','Domestic']:[myTeamCategory==='Domestic'?'Domestic':'International'];}
+function tlCountries(){
+  return ['India','UK','Pakistan','Bangladesh'];
+}
+function openTransferLead(ids){
+  if(myTeamCategory==='Agent'){toast('Transfers are not available for Agent accounts.');return;}
+  let list=(Array.isArray(ids)?ids:(ids?[ids]:[])).filter(Boolean).map(String);
+  const okIds=list.filter(id=>canTransferLead(leads.find(x=>String(x.id)===id)));
+  if(list.length&&okIds.length<list.length)toast(`${list.length-okIds.length} lead(s) skipped — view-only for your account.`);
+  tlIds=okIds;
+  const pick=document.getElementById('tl-pick');
+  pick.style.display=tlIds.length?'none':'block';
+  document.getElementById('tl-search').value='';
+  document.getElementById('tl-results').innerHTML='';
+  tlInit();
+  document.getElementById('modal-transfer-lead').classList.add('open');
+  if(!tlIds.length)setTimeout(()=>{try{document.getElementById('tl-search').focus();}catch(e){}},50);
+}
+function tlLead(){return tlIds.length===1?leads.find(x=>String(x.id)===tlIds[0]):null;}
+function tlSearch(){
+  const q=document.getElementById('tl-search').value.trim().toLowerCase();
+  const digits=q.replace(/\D/g,'');
+  const sel=document.getElementById('tl-results');
+  if(!q){sel.innerHTML='';return;}
+  const hits=leads.filter(l=>canTransferLead(l)&&(
+    String(l.name||'').toLowerCase().includes(q)||String(l.lead_id||'').toLowerCase().includes(q)||
+    (digits.length>=3&&String(l.mobile||'').replace(/\D/g,'').includes(digits))
+  )).slice(0,30);
+  sel.innerHTML=hits.length?hits.map(l=>`<option value="${esc(String(l.id))}">${esc(l.name||'—')} · ${esc(l.lead_id||'')} · ${esc(l.country||'—')} / ${esc(l.counsellor||'Unassigned')}</option>`).join(''):'<option disabled>No matching lead you can transfer</option>';
+}
+function tlPickLead(id){
+  if(!id)return;
+  tlIds=[String(id)];
+  document.getElementById('tl-pick').style.display='none';
+  tlInit();
+}
+function tlInit(){
+  const l=tlLead();
+  const cSel=document.getElementById('tl-country');
+  const countries=tlCountries();
+  cSel.innerHTML=countries.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const sides=tlSides();
+  const tSel=document.getElementById('tl-team');
+  tSel.innerHTML=sides.map(x=>`<option value="${x}">${x}</option>`).join('');
+  if(l){
+    if(countries.includes(l.country))cSel.value=l.country;
+    const side=leadIsDomesticWorkstream(l)?'Domestic':'International';
+    if(sides.includes(side))tSel.value=side;
+  } else if(countries.includes(myCountry)){cSel.value=myCountry;}
+  tlCountryChanged(l);
+  // summary
+  const sum=document.getElementById('tl-summary');
+  const go=document.getElementById('tl-go');
+  if(!tlIds.length){sum.innerHTML='<span style="color:var(--ink3)">Search for a lead above, or tick leads in the Leads list and press Transfer.</span>';go.disabled=true;}
+  else if(l){sum.innerHTML=`<b>${esc(l.name||'—')}</b> <span style="color:var(--ink3)">${esc(l.lead_id||'')}</span><br>Now: ${esc(l.country||'—')} · ${esc(l.office||'—')} · ${esc(l.counsellor||'Unassigned')} · ${leadIsDomesticWorkstream(l)?'Domestic':'International'}`;go.disabled=false;}
+  else {sum.innerHTML=`<b>${tlIds.length} leads</b> will move to the place you choose below.`;go.disabled=false;}
+  // optional sub-team hand-off (single lead only)
+  const sub=document.getElementById('tl-subteams');
+  if(l&&!isSubTeamRoleOnly()){
+    sub.style.display='block';
+    [['tl-app','application_team','Application Team'],['tl-visa','visa_team','Visa Team'],['tl-sop','sop_team','SOP Team']].forEach(([id,f,role])=>{
+      const pool=getGlobalRolePool(role);
+      document.getElementById(id).innerHTML=`<option value="__keep">${role}: keep (${esc(l[f]||'none')})</option><option value="">${role}: unassign</option>`+pool.map(t=>`<option value="${esc(t.full_name)}">${esc(t.full_name)}</option>`).join('');
+    });
+  } else sub.style.display='none';
+  document.getElementById('tl-note').textContent=sides.length<2?`You can transfer to any country, office and counsellor on the ${sides[0]} team. Domestic and International stay separate (only India and Pavitra can move a lead between them).`:'';
+}
+function tlCountryChanged(l){
+  const c=document.getElementById('tl-country').value;
+  const oSel=document.getElementById('tl-office');
+  oSel.innerHTML=(OFFICE_MAP[c]||[]).map(o=>`<option value="${o}">${o}</option>`).join('');
+  if(l&&l.office&&(OFFICE_MAP[c]||[]).includes(l.office))oSel.value=l.office;
+  tlRefreshCounsellors();
+}
+const tlExtraTeam={};
+async function tlRefreshCounsellors(){
+  const office=document.getElementById('tl-office').value;
+  const side=document.getElementById('tl-team').value;
+  const sel=document.getElementById('tl-counsellor');
+  const keep=sel.value||(tlLead()?.counsellor||'');
+  // Some accounts (Jisan, Simun) never load India's team list, but may still transfer a lead to India:
+  // fetch just the names of that office's people on demand, for this dropdown only.
+  let people=(teamList||[]).filter(t=>t.office===office);
+  if(!people.length&&office){
+    if(!tlExtraTeam[office]){
+      try{const{data}=await sb.from('team').select('id,full_name,role,office,country,team_category,email').eq('office',office);tlExtraTeam[office]=data||[];}catch(e){tlExtraTeam[office]=[];}
+    }
+    people=tlExtraTeam[office];
+  }
+  if(document.getElementById('tl-office').value!==office)return; // user already picked something else
+  const pool=people.filter(t=>['Counsellor','Admin','Manager','Director'].includes(t.role)&&!isSuperAdminRow(t)&&((effectiveTeamCategory(t)==='Domestic')===(side==='Domestic'))&&!isUnavailableToday(t.id));
+  sel.innerHTML='<option value="">— Unassigned (the office will assign) —</option>'+pool.map(t=>`<option value="${esc(t.full_name)}">${esc(t.full_name)}${t.role!=='Counsellor'?' ('+esc(t.role)+')':''}</option>`).join('');
+  if(pool.some(t=>t.full_name===keep))sel.value=keep;
+}
+async function submitTransferLead(){
+  if(!tlIds.length){toast('Pick a lead first.');return;}
+  const country=document.getElementById('tl-country').value;
+  const office=document.getElementById('tl-office').value;
+  const team=document.getElementById('tl-team').value;
+  const counsellor=document.getElementById('tl-counsellor').value;
+  if(!country||!office){toast('Choose a country and an office.');return;}
+  const single=tlLead();
+  let setSub=false;const subVals={application_team:null,visa_team:null,sop_team:null};
+  if(single&&document.getElementById('tl-subteams').style.display!=='none'){
+    [['tl-app','application_team'],['tl-visa','visa_team'],['tl-sop','sop_team']].forEach(([id,f])=>{
+      const v=document.getElementById(id).value;
+      if(v==='__keep')subVals[f]=single[f]||null;else{setSub=true;subVals[f]=v||null;}
+    });
+  }
+  const label=`${tlIds.length} lead${tlIds.length!==1?'s':''} → ${country} · ${office} · ${counsellor||'Unassigned'} (${team})`;
+  if(!confirm(`Transfer ${label}?`))return;
+  const btn=document.getElementById('tl-go');btn.disabled=true;setSyncing();
+  const before=tlIds.map(id=>leads.find(x=>String(x.id)===id)).filter(Boolean).map(l=>({...l}));
+  let res;
+  try{
+    res=await sb.rpc('transfer_lead',{
+      p_lead_ids:tlIds,p_country:country,p_office:office,p_counsellor:counsellor||null,
+      p_workstream:tlCanCrossSide()?team:null,
+      p_application_team:subVals.application_team,p_visa_team:subVals.visa_team,p_sop_team:subVals.sop_team,p_set_subteams:setSub
+    });
+  }catch(e){res={error:{message:String(e&&e.message||e)}};}
+  btn.disabled=false;
+  if(res.error){
+    setSyncErr();
+    const m=res.error.message||'';
+    toast(/could not find the function|transfer_lead/i.test(m)&&/find|schema|exist/i.test(m)?'Transfer is not switched on yet — run crm_transfer_lead.sql in Supabase first.':'Transfer failed: '+m);
+    return;
+  }
+  const movedIds=((res.data&&res.data.moved)||[]).map(x=>String(x.id));
+  const skipped=(res.data&&res.data.skipped)||[];
+  setSynced();
+  closeModal('modal-transfer-lead');
+  if(curId&&movedIds.includes(String(curId))){try{closeLeadDetail();}catch(e){}try{closeDover(null);}catch(e){}}
+  try{await loadLeads();}catch(e){console.error(e);}
+  // Give the new counsellor their follow-up task + a notification (non-blocking, same as a normal reassign).
+  for(const l of before){
+    if(!movedIds.includes(String(l.id))||!counsellor)continue;
+    try{
+      const r=await ensureLeadAssignmentTask({...l,country,office,counsellor},counsellor,{reassignExisting:true,quiet:true});
+      if(!r.ok)console.error('Transfer: follow-up task not updated',r.error);
+    }catch(e){console.error('Transfer task error',e);}
+    const assignee=(teamList||[]).find(t=>t.full_name===counsellor);
+    if(assignee)try{sendPushToUser(assignee.id,'New lead assigned',`${l.name} has been transferred to you.`,'./index.html');}catch(e){}
+  }
+  try{clearBulkSelection();}catch(e){}
+  try{renderLeads();renderDash();badges();}catch(e){}
+  if(movedIds.length)toast(`Transferred ${movedIds.length} lead${movedIds.length!==1?'s':''} → ${country} · ${office} · ${counsellor||'Unassigned'}.`);
+  if(skipped.length)toast(`${skipped.length} not moved: ${skipped[0].reason}${skipped.length>1?' (+ more)':''}`);
+}
 function populateAgentDropdown(){
   const sel=document.getElementById('f-agent');
   if(!sel)return;
@@ -5058,7 +5305,7 @@ function opsViewScopedLeads(sourceLeads){
   if(isOwner){
     scoped=sourceLeads;
   } else if(isSuperAdmin){
-    scoped=sourceLeads.filter(l=>l.country!=='India');
+    scoped=sourceLeads;
   } else if(myRole==='Admin'||myRole==='Manager'||myRole==='Director'){
     scoped=sourceLeads.filter(l=>l.country===myCountry);
   } else if(myRole==='Counsellor'){
@@ -5566,11 +5813,7 @@ async function scopedLeadsQuery(){
   if(isOwner){
     // no restriction — sees everything, every country, including India
   } else if(isSuperAdmin){
-    // Super Admin minus Owner: India fully excluded, everywhere else open
-    q=q.neq('country','India');
-  } else if(myCountry==='UK'&&myTeamCategory==='International'&&['Admin','Manager','Director'].includes(myRole)){
-    // UK International management: leads of every country except India (own country access included).
-    q=q.neq('country','India');
+    // Super Admin minus Owner (Jisan, Simun): every country, India included (view); edits are limited by isIndiaLeadReadOnly.
   } else if(myTeamCategory==='Agent'){
     // Agent: only leads explicitly, individually assigned to them by
     // Management — never country-scoped, never round-robin.
@@ -6764,7 +7007,7 @@ function openLeadDetail(id){
   // too, and RLS enforces it server-side).
   {
     const ro=isIndiaLeadReadOnly(l);
-    ['btn-delete-lead','btn-delete-lead-fs','btn-edit-lead-fs'].forEach(bid=>{const b=document.getElementById(bid);if(b)b.style.display=ro?'none':'';});
+    ['btn-delete-lead','btn-delete-lead-fs','btn-edit-lead-fs','btn-transfer-lead','btn-transfer-lead-fs'].forEach(bid=>{const b=document.getElementById(bid);if(!b)return;const isDel=bid.startsWith('btn-delete');const isTr=bid.startsWith('btn-transfer');b.style.display=(ro||(isDel&&!canDeleteLeads())||(isTr&&!canTransferLead(l)))?'none':'';});
     const ss=document.getElementById('ld-ssel'); if(ss)ss.disabled=ro;
     if(ro){
       const banner=document.getElementById('ld-viewonly-banner');
@@ -7200,7 +7443,8 @@ async function uploadSopDocuments(isFS){
 }
 async function deleteSopDocument(id,isFS){
   if(!confirm('Delete this SOP document?'))return;
-  await sb.from('sop_documents').delete().eq('id',id);
+  const{error:_de}=await sb.from('sop_documents').delete().eq('id',id);
+  if(_de){toast('Could not delete: '+_de.message);return;}
   loadSopDocuments(curId,isFS);
   toast('Deleted.');
 }
@@ -7396,7 +7640,7 @@ async function saveUniversityApp(){
   if(results.some(r=>!r.ok)){toast('University added, but some files did not attach.');reportUploadBatch(results,'file(s)');}
   else toast('University added!');
 }
-async function deleteUniAppFS(id){if(!confirm('Remove this university?'))return;await sb.from('university_applications').delete().eq('id',id);loadUniAppsFS(curId);toast('Removed.');}
+async function deleteUniAppFS(id){if(!confirm('Remove this university?'))return;const{error:_de}=await sb.from('university_applications').delete().eq('id',id);if(_de){toast('Could not remove: '+_de.message);return;}loadUniAppsFS(curId);toast('Removed.');}
 
 // ── University Application files — supports multiple files per entry ──
 let uniFilesByApp={};
@@ -8689,7 +8933,7 @@ async function saveLead(){
   if(!countryVal){document.getElementById('f-country').focus();toast("Please select which office assistance is needed from — this is required and determines which branch handles the lead.");return;}
   // India view-only guard: a Super Admin can't edit an existing India
   // lead, nor create/move a lead INTO India. Owner is exempt.
-  if(isIndiaLocked()){
+  if(isIndiaLeadLock()){
     const existing=editMode&&curId?leads.find(x=>x.id===curId):null;
     if((existing&&existing.country==='India')||countryVal==='India'||countryVal==='Other'){
       toast("This lead is view-only for your account (India, or outside your own country).");return;
@@ -9385,8 +9629,19 @@ function canResetPasswordFor(t){
 function isIndiaLocked(){
   return isSuperAdmin && !isOwner;
 }
+// Leads: Jisan and Simun now SEE India's leads (view-only for anything outside their own country), so the old lead-level India lock is off.
+function isIndiaLeadLock(){return false;}
 function isIndiaLeadReadOnly(lead){
-  if(isViewOnly&&lead&&lead.country&&myCountry&&lead.country!==myCountry)return true; // view-only account: edits limited to own country
+  const _em=String(currentUser?.email||'').trim().toLowerCase();
+  if(lead&&(isViewOnly||_em==='jisan@step4progress.co.uk')){
+    // Jisan and Simun see every country (India included). They may EDIT their own country only, never Domestic.
+    // They cannot delete anything, and can transfer only their own country's leads (see canTransferLead).
+    // They SEE every country (India included) but may EDIT only their own country's leads, never Domestic.
+    const own=myCountry||'UK';
+    if(lead.country&&lead.country!==own)return true;
+    if(leadIsDomesticWorkstream(lead))return true;
+    return false;
+  }
   return isIndiaLocked() && (lead?.country==='India');
 }
 function isIndiaTeamReadOnly(t){
@@ -10052,7 +10307,7 @@ async function bulkReassignCounsellor(){
   // include, so an India-locked Super Admin's bulk action silently skips
   // them rather than reassigning India's leads.
   let workIds=ids;
-  if(isIndiaLocked()){
+  if(isIndiaLeadLock()){
     workIds=ids.filter(id=>{const l=leads.find(x=>x.id===id);return l&&l.country!=='India';});
     const skipped=ids.length-workIds.length;
     if(!workIds.length){toast("India's leads are view-only for your account — nothing to reassign.");return;}
@@ -10079,7 +10334,7 @@ function openBulkAssignWizard(){
   const ids=getSelectedLeadIds();
   if(!ids.length){toast('Select at least one lead first.');return;}
   // Same India-lock guard the quick Reassign already uses.
-  bawSelectedIds=isIndiaLocked()?ids.filter(id=>{const l=leads.find(x=>x.id===id);return l&&l.country!=='India';}):ids;
+  bawSelectedIds=isIndiaLeadLock()?ids.filter(id=>{const l=leads.find(x=>x.id===id);return l&&l.country!=='India';}):ids;
   if(!bawSelectedIds.length){toast("India's leads are view-only for your account — nothing to assign.");return;}
   bawMethod=null;bawStep=1;bawCustomAssignments={};
   document.getElementById('baw-lead-count').textContent=`${bawSelectedIds.length} lead${bawSelectedIds.length!==1?'s':''} selected`;
@@ -10336,7 +10591,7 @@ async function bulkChangeSource(){
   const source=document.getElementById('bulk-source-select').value;
   if(!source){toast('Pick a source first.');return;}
   let workIds=ids;
-  if(isIndiaLocked()){
+  if(isIndiaLeadLock()){
     workIds=ids.filter(id=>{const l=leads.find(x=>x.id===id);return l&&l.country!=='India';});
     const skipped=ids.length-workIds.length;
     if(!workIds.length){toast("India's leads are view-only for your account — nothing to update.");return;}
@@ -10548,7 +10803,7 @@ async function saveCommission(){
   closeModal('modal-commission');
   renderFinance();
 }
-async function deleteCommission(id){if(!confirm('Delete this record?'))return;await sb.from('commissions').delete().eq('id',id);toast('Record deleted.');renderFinance();}
+async function deleteCommission(id){if(!confirm('Delete this record?'))return;const{error:_de}=await sb.from('commissions').delete().eq('id',id);if(_de){toast('Could not delete: '+_de.message);return;}toast('Record deleted.');renderFinance();}
 
 // ══ REPORTS TAB ══════════════════════════════════════════════════
 // Two kinds of numbers appear in every report, and it matters which is which:
@@ -10868,7 +11123,7 @@ async function savePostAppField(field,value){
   logActivity(curId,'field_edit',`${labels[field]||field}: ${value||'cleared'}`);
   toast('Saved.');
 }
-function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){if(!confirm('Remove this university?'))return;await sb.from('university_applications').delete().eq('id',id);loadUniApps(curId);toast('Removed.');}
+function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){if(!confirm('Remove this university?'))return;const{error:_de}=await sb.from('university_applications').delete().eq('id',id);if(_de){toast('Could not remove: '+_de.message);return;}loadUniApps(curId);toast('Removed.');}
   function applyRoleUI(){
     // Use the real role variable, not the displayed label — the sidebar
     // label now shows "Owner"/"Super Admin" cleanly, which would otherwise
@@ -11675,7 +11930,8 @@ async function addMarketingPost(){
 }
 async function deleteMarketingPost(id){
   if(!confirm('Remove this logged post?'))return;
-  await sb.from('marketing_posts').delete().eq('id',id);
+  const{error:_de}=await sb.from('marketing_posts').delete().eq('id',id);
+  if(_de){toast('Could not remove: '+_de.message);return;}
   loadMarketingPosts();
   toast('Removed.');
 }
@@ -11807,7 +12063,8 @@ async function toggleReminder(id,checked){
 }
 async function deleteReminder(id){
   if(!confirm('Delete this reminder?'))return;
-  await sb.from('reminders').delete().eq('id',id);
+  const{error:_de}=await sb.from('reminders').delete().eq('id',id);
+  if(_de){toast('Could not delete the reminder: '+_de.message);return;}
   loadReminders(curId);
   loadDashReminders();
   toast('Reminder deleted.');
@@ -12253,9 +12510,10 @@ async function deleteAnnouncement(id){
   if(!confirm('Delete this announcement? Replies will be removed too.'))return;
   await sb.from('announcement_replies').delete().eq('announcement_id',id);
   const{error}=await sb.from('announcements').delete().eq('id',id);
-  if(error){toast('Error deleting: '+error.message);return;}
+  if(error){toast('Error deleting: '+error.message+(error.code==='DELETE_BLOCKED'?' Run crm_delete_fixes.sql in Supabase.':''));return;}
   allAnnouncements=allAnnouncements.filter(a=>a.id!==id);
   renderAnnouncementFeed();
+  loadAnnouncements(); // re-read from the database so only what really exists is shown
   toast('Announcement deleted.');
 }
 function closeAnnouncementComposer(){
@@ -13421,7 +13679,7 @@ function canSeeAccessAudit(){
   const e=String(currentUser?.email||'').toLowerCase();
   return ['india@step4progress.com','pavitra@step4progress.com'].includes(e);
 }
-function clearAccessAudit(){['aa-summary','aa-invites-tbody','aa-resets-tbody'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML='';});}
+function clearAccessAudit(){['aa-summary','aa-invites-tbody','aa-resets-tbody','aa-transfers-tbody'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML='';});}
 async function renderAccessAudit(){
   const card=document.getElementById('am-access-audit-card');
   if(!card)return;
@@ -13431,9 +13689,12 @@ async function renderAccessAudit(){
   const invT=document.getElementById('aa-invites-tbody'),resT=document.getElementById('aa-resets-tbody'),sum=document.getElementById('aa-summary');
   invT.innerHTML='<tr><td colspan="5" style="font-size:12px;color:var(--ink3)">Loading…</td></tr>';
   resT.innerHTML='<tr><td colspan="5" style="font-size:12px;color:var(--ink3)">Loading…</td></tr>';
-  const[inv,res]=await Promise.all([
+  const trT=document.getElementById('aa-transfers-tbody');
+  if(trT)trT.innerHTML='<tr><td colspan="5" style="font-size:12px;color:var(--ink3)">Loading…</td></tr>';
+  const[inv,res,trf]=await Promise.all([
     sb.rpc('get_invite_activity'),
-    sb.from('admin_audit_log').select('*').eq('action','password_reset').order('created_at',{ascending:false}).limit(300)
+    sb.from('admin_audit_log').select('*').eq('action','password_reset').order('created_at',{ascending:false}).limit(300),
+    sb.from('admin_audit_log').select('*').eq('action','lead_transfer').order('created_at',{ascending:false}).limit(300)
   ]);
   const chip=(label,val,col)=>`<span style="background:var(--paper2,#f4efe4);border:1px solid var(--line2);border-radius:999px;padding:4px 12px;font-size:12px"><b style="color:${col||'var(--pine)'}">${val}</b> ${esc(label)}</span>`;
   let chips='';
@@ -13468,6 +13729,23 @@ async function renderAccessAudit(){
         <td style="font-size:12px">${esc(r.target_name||r.target_email||'—')}<div style="font-size:10.5px;color:var(--ink3)">${esc(r.target_email||'')}</div></td>
         <td style="font-size:12px;font-weight:700;color:${col}">${esc(r.status==='success'?'Success':r.status==='denied'?'Denied':'Error')}</td>
         <td style="font-size:11px;color:var(--ink3)">${esc(r.detail||'')}</td></tr>`;}).join(''):'<tr><td colspan="5" style="font-size:12px;color:var(--ink3);font-style:italic">No password resets yet.</td></tr>';
+  }
+  if(trT){
+    if(trf.error){
+      trT.innerHTML=`<tr><td colspan="5" style="font-size:12px;color:#C0392B">Could not load transfer log: ${esc(trf.error.message)} — run crm_transfer_lead.sql in Supabase.</td></tr>`;
+    } else {
+      const rows=trf.data||[];
+      const by=k=>rows.filter(r=>r.status===k).length;
+      chips+=chip('transfers',by('success'),'#12A56F')+chip('refused transfers',by('denied'),'#B7791F');
+      trT.innerHTML=rows.length?rows.map(r=>{
+        const col=r.status==='success'?'#12A56F':'#B7791F';
+        return `<tr>
+        <td style="font-size:11px;color:var(--ink3);white-space:nowrap">${fmt(r.created_at)}</td>
+        <td style="font-size:12px">${esc(r.actor_name||r.actor_email||'Unknown')}<div style="font-size:10.5px;color:var(--ink3)">${esc(r.actor_email||'')}</div></td>
+        <td style="font-size:12px">${esc(r.target_name||'—')}</td>
+        <td style="font-size:12px;font-weight:700;color:${col}">${esc(r.status==='success'?'Moved':'Refused')}</td>
+        <td style="font-size:11px;color:var(--ink3)">${esc(r.detail||'')}</td></tr>`;}).join(''):'<tr><td colspan="5" style="font-size:12px;color:var(--ink3);font-style:italic">No lead transfers yet.</td></tr>';
+    }
   }
   sum.innerHTML=chips;
 }

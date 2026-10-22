@@ -2725,7 +2725,7 @@ What would you like help with today?</div>
       <div class="ff full"><label>Invite email <span style="color:var(--rose)">*</span></label><input id="inv-recipient-email" type="email" placeholder="person@step4progress.com"><div style="font-size:11px;color:var(--ink3);margin-top:3px">The invite is cryptographically bound to this email address.</div></div>
       <div class="ff full"><label>Name (optional, for your reference)</label><input id="inv-name" placeholder="e.g. Priya Sharma"></div>
       <div class="ff"><label>Role</label>
-        <select id="inv-role" onchange="syncInviteTeamCategory()"><option>Counsellor</option><option>Admin</option><option>Manager</option><option>Director</option><option>Application Team</option><option>Visa Team</option><option>SOP Team</option><option>Agent</option><option>Digital Marketing</option></select>
+        <select id="inv-role" onchange="syncInviteTeamCategory()"><option>Counsellor</option><option>Admin</option><option>Manager</option><option>Director</option><option>Application Team</option><option>Visa Team</option><option>SOP Team</option><option>Agent</option><option>Digital Marketing</option><option>HR</option></select>
       </div>
       <div class="ff" id="inv-teamcat-wrap"><label>Team category</label>
         <select id="inv-teamcat"><option value="International">International</option><option value="Domestic">Domestic (UK internal)</option></select>
@@ -3725,7 +3725,7 @@ function isJisanOrSimun(){const e=String(currentUser?.email||'').trim().toLowerC
 function canDeleteLeads(){return isJisanOrSimun()||(isSuperAdmin||['Admin','Manager','Director','Digital Marketing'].includes(myRole));}
 function isRestrictedStaffRole(){
   if(isSuperAdmin)return false;
-  if(['Counsellor','Application Team','Visa Team','SOP Team','Digital Marketing'].includes(myRole))return true;
+  if(['Counsellor','Application Team','Visa Team','SOP Team','Digital Marketing','HR'].includes(myRole))return true;
   // Domestic management (Admin/Manager/Director) remains a management tier.
   // Only a genuine Agent category is restricted here.
   if(myTeamCategory==='Agent')return true;
@@ -5877,6 +5877,8 @@ async function scopedLeadsQuery(){
     } else {
       q=nameMatch(q,'counsellor',myName);
     }
+  } else if(myRole==='HR'){
+    q=q.eq('id','00000000-0000-0000-0000-000000000000'); // HR sees no leads
   } else if(subTeamFieldMap[myRole]){
     // Application/Visa/SOP Team: their round-robin pool is deliberately
     // global, not country-scoped — so visibility has to match that. They
@@ -6005,7 +6007,7 @@ async function loadOrphanLogins(){
     <div style="font-size:11px;color:var(--ink3);margin-bottom:8px">Created ${r.created_at?new Date(r.created_at).toLocaleDateString('en-GB'):'—'} · Last sign-in ${r.last_sign_in_at?new Date(r.last_sign_in_at).toLocaleString('en-GB'):'never'}</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
       <input id="ol-name-${r.id}" placeholder="Full name" value="${esc(String(r.email).split('@')[0])}" style="padding:5px 8px;font-size:12px;width:150px">
-      <select id="ol-role-${r.id}" style="font-size:12px;padding:5px">${opt(['Counsellor','Admin','Manager','Director','Application Team','Visa Team','SOP Team','Agent','Digital Marketing'],'Counsellor')}</select>
+      <select id="ol-role-${r.id}" style="font-size:12px;padding:5px">${opt(['Counsellor','Admin','Manager','Director','Application Team','Visa Team','SOP Team','Agent','Digital Marketing','HR'],'Counsellor')}</select>
       <select id="ol-country-${r.id}" style="font-size:12px;padding:5px">${opt(['India','UK','Pakistan','Bangladesh'],'India')}</select>
       <select id="ol-cat-${r.id}" style="font-size:12px;padding:5px">${opt(['International','Domestic'],'International')}</select>
       <button class="btn btn-p" style="font-size:12px;padding:5px 10px" onclick="addOrphanToTeam('${r.id}')">Add to team</button>
@@ -6050,12 +6052,13 @@ async function loadTeam(){
   let q=sb.from('team').select('*');
   // Same "India fully invisible" rule as leads — a non-Owner Super Admin
   // never even loads India's team roster, not just a read-only view of it.
-  const{data}=await q; // Jisan/Simun now load the full roster (India included) so they can reset anyone's password; India's productivity data stays hidden by prodMemberVisible.
+  let{data}=await q; // Jisan/Simun now load the full roster (India included) so they can reset anyone's password; India's productivity data stays hidden by prodMemberVisible.
   // A Super Admin account is never a counsellor. If its role column still
   // says "Counsellor" (or is blank), treat it as "Super Admin" in memory so
   // every counsellor list, dropdown and round-robin pool drops it at once.
   // Their saved role in the database is not touched; Director/Admin etc.
   // are left exactly as they are.
+  if(myRole==='HR'&&myCountry)data=(data||[]).filter(t=>t.country===myCountry); // HR sees their own country's staff
   (data||[]).forEach(t=>{
     if(isSuperAdminRow(t)&&(!t.role||t.role==='Counsellor'))t.role='Super Admin';
   });
@@ -6167,7 +6170,7 @@ function nav(id,btn){
   // staff (blocked from Finance/Team/etc, same as Counsellors) but need
   // through to the one screen their whole role exists for.
   if(id==='digitalmarketing'&&roleIsCounsellor&&myRole!=='Digital Marketing'){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
-  if(id==='team'&&roleIsCounsellor){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
+  if(id==='team'&&roleIsCounsellor&&myRole!=='HR'){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
   if(id==='queries'&&roleIsCounsellor){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
   if(id==='queries')setQuerySubtab('instagram');
   if(id==='team'){ try{ if((teamList||[]).length)renderTeam(teamList); }catch(e){} loadPasswordResetRequests(); }
@@ -9799,7 +9802,7 @@ async function deleteTeamMember(id,name){
 // else's — matches "counsellors cannot enable/disable their own."
 let unavailTargetId=null;
 function openUnavailabilityModal(teamId,name){
-  if(isRestrictedStaffRole()){toast('Only Manager/Admin/Director/Super Admin can set this.');return;}
+  if(isRestrictedStaffRole()&&myRole!=='HR'){toast('Only Manager/Admin/Director/Super Admin can set this.');return;}
   unavailTargetId=teamId;
   document.getElementById('unavail-name').textContent=`Marking ${name} unavailable — round-robin will skip them for this date range.`;
   document.getElementById('unavail-from').value=localDateStr();
@@ -9961,7 +9964,7 @@ function renderTeam(team){
   const legend=document.getElementById('team-icon-legend');
   if(legend){
     const parts=[];
-    if(!isRestrictedStaffRole()) parts.push('📅 = mark unavailable');
+    if(!isRestrictedStaffRole()||myRole==='HR') parts.push('📅 = mark unavailable');
     if(isSuperAdmin) parts.push('🗑️ = remove from team');
     legend.textContent=parts.join(' · ');
   }
@@ -10021,7 +10024,7 @@ function renderTeam(team){
     const cards=members.length
       ? members.map(t=>{
           const unavail=currentUnavailability(t.id);
-          const canManage=!isRestrictedStaffRole();
+          const canManage=!isRestrictedStaffRole()||myRole==='HR';
           return `<div class="tcard" data-role="${esc(t.role||'Counsellor')}" style="${unavail?'opacity:.7':''}">
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0">
@@ -11266,12 +11269,16 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
         const el=document.getElementById(id);
         if(el)el.style.display='none';
       });
+      if(role==='HR'){ // HR: Team page only (no leads, finance or reports)
+        const t=document.getElementById('ni-team');if(t)t.style.display='';
+        ['leads','toolleads','followup','coaching','studentportal','resumes'].forEach(k=>{const b=document.querySelector('.ni[data-nav="'+k+'"]');if(b)b.style.display='none';});
+      }
       // Kept as a secondary safety net in case any restricted nav button
       // doesn't yet have a dedicated id.
       const restricted=['finance','team','reports','subteam-detail','digitalmarketing'];
       document.querySelectorAll('.ni').forEach(btn=>{
         const onclick=btn.getAttribute('onclick')||'';
-        restricted.forEach(r=>{if(onclick.includes("nav('"+r+"'"))btn.style.display='none';});
+        restricted.forEach(r=>{if(onclick.includes("nav('"+r+"'")&&!(role==='HR'&&r==='team'))btn.style.display='none';});
       });
     }
 

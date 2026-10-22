@@ -545,7 +545,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <button class="auth-btn" id="forgot-email-btn" onclick="submitEmailRecovery()">Email me a reset link →</button>
         <div class="auth-err" id="forgot-err"></div>
         <div class="auth-err" id="forgot-success" style="color:#4ADE80;display:none"></div>
-        <div style="text-align:center;margin-top:14px;font-size:12px;color:rgba(255,255,255,.5)">Email not arriving? <span onclick="submitPasswordResetRequest()" id="forgot-btn" style="color:rgba(255,255,255,.75);cursor:pointer;text-decoration:underline">Ask India or Pavitra to set a new password for you</span></div>
+        <div style="text-align:center;margin-top:14px;font-size:12px;color:rgba(255,255,255,.5)">Email not arriving? <span onclick="submitPasswordResetRequest()" id="forgot-btn" style="color:rgba(255,255,255,.75);cursor:pointer;text-decoration:underline">Ask your team lead to set a new password for you</span></div>
         <div style="text-align:center;margin-top:12px"><span onclick="showLoginView()" style="color:rgba(255,255,255,.6);font-size:12.5px;cursor:pointer;text-decoration:underline">← Back to sign in</span></div>
       </div>
       <div id="auth-recovery-view" style="display:none">
@@ -4132,7 +4132,7 @@ async function submitPasswordResetRequest(){
     });
     const data=await res.json();
     if(!res.ok){err.textContent=data.error||'Something went wrong — please try again.';btn.style.pointerEvents='';btn.textContent=_lbl;return;}
-    success.textContent='Request sent. India or Pavitra has been notified and will get in touch with your new password directly.';
+    success.textContent='Request sent. You will receive your new password directly.';
     success.style.display='block';
     document.getElementById('forgot-email').value='';
     btn.style.pointerEvents='';btn.textContent=_lbl;
@@ -4178,9 +4178,9 @@ async function submitEmailRecovery(){
     const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
     if(error){
       const st=error.status;const msg=String(error.message||'');
-      if(st===429||/rate limit|too many/i.test(msg))err.textContent='Too many reset emails requested. Please wait a few minutes, or ask India or Pavitra to set a new password for you.';
-      else if(/not authorized|not allowed/i.test(msg))err.textContent='The email service could not send to this address yet. Please use "Ask India or Pavitra" below.';
-      else err.textContent='Could not send the email: '+(msg||'unknown error')+'. You can use "Ask India or Pavitra" below.';
+      if(st===429||/rate limit|too many/i.test(msg))err.textContent='Too many reset emails requested. Please wait a few minutes, or ask your team lead to set a new password for you.';
+      else if(/not authorized|not allowed/i.test(msg))err.textContent='The email service could not send to this address yet. Please use "Ask your team lead" below.';
+      else err.textContent='Could not send the email: '+(msg||'unknown error')+'. You can use "Ask your team lead" below.';
     } else {
       // Same message whether or not the email exists, so this page never reveals who has an account.
       success.textContent='If that email has a CRM login, a reset link is on its way. Check your inbox and spam folder. The link works once and expires soon.';
@@ -4773,7 +4773,7 @@ function tlInit(){
       document.getElementById(id).innerHTML=`<option value="__keep">${role}: keep (${esc(l[f]||'none')})</option><option value="">${role}: unassign</option>`+pool.map(t=>`<option value="${esc(t.full_name)}">${esc(t.full_name)}</option>`).join('');
     });
   } else sub.style.display='none';
-  document.getElementById('tl-note').textContent=sides.length<2?`You can transfer to any country, office and counsellor on the ${sides[0]} team. Domestic and International stay separate (only India and Pavitra can move a lead between them).`:'';
+  document.getElementById('tl-note').textContent=sides.length<2?`You can transfer to any country, office and counsellor on the ${sides[0]} team.`:'';
 }
 function tlCountryChanged(l){
   const c=document.getElementById('tl-country').value;
@@ -5566,7 +5566,7 @@ async function loadPasswordResetRequests(){
       </div>
       ${(isOwner||(isSuperAdmin&&!isViewOnly))
         ?`<button class="btn btn-p" style="font-size:12px;padding:6px 14px" onclick="actionPasswordResetRequest('${r.id}','${escJs(r.team_email)}')">Set new password</button>`
-        :`<span style="font-size:11px;color:var(--ink3);max-width:170px;text-align:right">Waiting for India, Pavitra or Jisan to set the password</span>`}
+        :`<span style="font-size:11px;color:var(--ink3);max-width:170px;text-align:right">Request received</span>`}
     </div>
   `).join('');
 }
@@ -13086,6 +13086,8 @@ function checkDailyFollowupPopup(){
 function checkNoActivity(){const now=Date.now();const stale=leads.filter(l=>['New Enquiry','Contacted','Counselling Done'].includes(l.status)&&l.updated_at&&(now-new Date(l.updated_at).getTime())>2*86400000);const nb=document.getElementById('nb-fu');if(stale.length>0){nb.classList.add('hot');nb.textContent=stale.length;const existing=document.getElementById('stale-toast');if(!existing){const t=document.createElement('div');t.id='stale-toast';t.style.cssText='position:fixed;top:16px;right:24px;background:var(--ember);color:#fff;font-size:13px;padding:10px 18px;border-radius:var(--r);z-index:400;box-shadow:var(--shm);cursor:pointer';t.textContent=`⚠️ ${stale.length} lead${stale.length>1?'s':''} with no activity for 2+ days`;t.onclick=()=>{t.remove();nav('followup',document.querySelector('.ni[data-nav="followup"]'));};document.body.appendChild(t);setTimeout(()=>t?.remove(),8000);}}}
   function waFollowUp(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;const msgText=getContextualWhatsAppMessage(l);const msg=encodeURIComponent(msgText);window.open(`https://wa.me/${(l.mobile||'').replace(/\D/g,'')}?text=${msg}`,'_blank');logNoteText(curId,`WhatsApp message sent (${l.status}): "${msgText}"`);}
   function toast(m,type){
+  // Staff never see who can do what: any message that reveals a limitation or an owner-only feature becomes neutral.
+  try{if(!isOwner&&/india|pavitra|owner|platform admin|super admin|view-only|restricted|not allowed|not authori[sz]ed|you cannot|you can't|cannot |can't be|only (the )?(admin|manager|director|super|owner|assigned)|outside your|no access|permission|beyond your/i.test(String(m||''))){m="That action couldn't be completed.";type='info';}}catch(_e){}
   // Backward compatible with every existing toast('message') call in the
   // file — type is optional and auto-detected from the message content
   // if not given, so nothing else needs to change.

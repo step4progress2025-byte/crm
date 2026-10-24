@@ -4692,7 +4692,7 @@ async function quickReassignLead(leadId,newCounsellor,opts){
 function renderSubTeamCell(l,field,roleName){
   // Application/Visa/SOP Team members cannot touch this — only the
   // Counsellor handling the lead, or Management, can hand off to a team.
-  if(isSubTeamRoleOnly()){
+  if(myRole==='Agent'&&!isSuperAdmin){
     return esc(l[field]||'—');
   }
   const pool=getGlobalRolePool(roleName);
@@ -4719,9 +4719,13 @@ async function quickReassignSubTeam(leadId,field,newValue){
   const old=l[field];
   if(old===newValue){renderLeads();return;}
   setSyncing();
-  const{data:_ok,error}=await sb.from('leads').update({[field]:newValue||null}).eq('id',leadId).select('id');
+  // Anyone who can see the lead may assign it; the database function checks that and the team role.
+  let {error}=await sb.rpc('assign_lead_subteam',{p_lead_id:leadId,p_field:field,p_value:newValue||''});
+  if(error&&/assign_lead_subteam|schema cache|does not exist/i.test(error.message||'')){
+    const r=await sb.from('leads').update({[field]:newValue||null}).eq('id',leadId).select('id');
+    error=r.error||((!r.data||!r.data.length)?{message:'Could not save this assignment. Please refresh and try again.'}:null);
+  }
   if(error){setSyncErr();toast('Error reassigning: '+error.message);renderLeads();return;}
-  if(!_ok||!_ok.length){setSyncErr();toast('Could not save this assignment. Please refresh and try again.');renderLeads();return;}
   l[field]=newValue||null;
   setSynced();
   logActivity(leadId,'reassigned',`${roleName}: ${old||'Unassigned'} → ${newValue||'Unassigned'}`);

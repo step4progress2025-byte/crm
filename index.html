@@ -4811,7 +4811,7 @@ function tlInit(){
     sum.innerHTML=`<b>${tlIds.length} leads selected</b> <span style="color:var(--ink3)">(${Object.entries(by).map(([c,n])=>esc(c)+' '+n).join(' · ')})</span><br>They will all move to the country and office you choose below.`;go.disabled=false;}
   // optional sub-team hand-off (single lead only)
   const sub=document.getElementById('tl-subteams');
-  if(l&&!isSubTeamRoleOnly()){
+  if(l){
     sub.style.display='block';
     [['tl-app','application_team','Application Team'],['tl-visa','visa_team','Visa Team'],['tl-sop','sop_team','SOP Team']].forEach(([id,f,role])=>{
       const pool=getGlobalRolePool(role);
@@ -9257,9 +9257,24 @@ async function saveLead(){
         }
       });
     }
+    // Application / Visa / SOP hand-offs go through assign_lead_subteam so anyone who can see the lead can make them
+    // (sent AFTER the rest of the edit, because reassigning your own lead takes it out of your edit rights).
+    const _subChanges=[];
+    ['application_team','visa_team','sop_team'].forEach(f=>{
+      if(existing&&(existing[f]||'')!==(data[f]||'')){_subChanges.push([f,data[f]||'']);delete data[f];}
+    });
     let _upRows;({data:_upRows,error}=await sb.from('leads').update(data).eq('id',curId).select('id'));
     if(!error&&!(_upRows&&_upRows.length))error={message:'the change was not saved. Please refresh and try again.'};
     if(!error){const l=leads.find(x=>x.id===curId);if(l)Object.assign(l,data);}
+    if(!error)for(const [f,v] of _subChanges){
+      let r=await sb.rpc('assign_lead_subteam',{p_lead_id:curId,p_field:f,p_value:v});
+      if(r.error&&/assign_lead_subteam|schema cache|does not exist/i.test(r.error.message||'')){
+        const u=await sb.from('leads').update({[f]:v||null}).eq('id',curId).select('id');
+        r={error:u.error||((!u.data||!u.data.length)?{message:'not saved'}:null)};
+      }
+      if(r.error){error=r.error;break;}
+      const l=leads.find(x=>x.id===curId);if(l)l[f]=v||null;
+    }
     if(!error)toast('Lead updated.');
     if(!error&&data.next_followup)warnIfHoliday(data.next_followup,data.office);
   } else {

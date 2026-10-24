@@ -5601,6 +5601,7 @@ pruneIndiaFromCrmDropdowns();
     queueLeadRefresh(row.id,payload.eventType);
   }).subscribe();
 
+  startLiveSync();
   // Instant message tone: listen for direct messages addressed to me, rather
   // than waiting for the 60-second poll to notice them.
   sb.channel('dm-incoming-'+currentUser.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'direct_messages',filter:'recipient_id=eq.'+currentUser.id},(payload)=>{
@@ -6051,9 +6052,12 @@ async function processLeadRefresh(){
   const byId=new Map(rows.map(r=>[r.id,r]));
   const before=new Set(allLeads.map(l=>l.id));
   const newlyArrived=[];
+  const assignedToMe=[];
+  const _isMine=l=>!!myName&&[l.counsellor,l.application_team,l.visa_team,l.sop_team].some(v=>v&&String(v).trim().toLowerCase()===myName.trim().toLowerCase());
   ids.forEach(id=>{
     const r=byId.get(id);
     const idx=allLeads.findIndex(l=>l.id===id);
+    if(r&&!inserts.has(id)&&_isMine(r)&&(idx<0||!_isMine(allLeads[idx])))assignedToMe.push(r);
     if(r){
       if(idx>=0)allLeads[idx]=r;
       else{allLeads.unshift(r);if(inserts.has(id))newlyArrived.push(r);}
@@ -6068,9 +6072,54 @@ async function processLeadRefresh(){
     if(dup){playDuplicateLeadChime();toast('⚠️ Possible duplicate lead: '+(r.name||'Unnamed')+' — same mobile number as an existing lead');}
     else{playNewLeadChime();toast('📥 New lead: '+(r.name||'Unnamed'));}
   });
+  if(assignedToMe.length){
+    playNewLeadChime();
+    toast(assignedToMe.length===1?'📌 Lead assigned to you: '+(assignedToMe[0].name||'Unnamed'):'📌 '+assignedToMe.length+' leads assigned to you');
+  }
   syncLeadsView();
   renderDash();renderLeads();renderFU();badges();
   newlyArrived.forEach(r=>setTimeout(()=>{const el=document.querySelector(`[data-lead-id="${r.id}"]`);if(el)el.classList.add('new-lead-flash');},50));
+}
+// ── Live sync ─────────────────────────────────────────────────────────
+// Realtime can silently stop (sleeping laptop, network blip, table not published), which is why
+// people had to refresh. This polls for anything changed since the last check every 5 seconds,
+// and immediately when the tab becomes visible again, and plays the same sounds as realtime.
+let _liveSyncTimer=null,_leadCursor=null,_taskCursor=null,_liveBusy=false;
+function startLiveSync(){
+  if(_liveSyncTimer)clearInterval(_liveSyncTimer);
+  _leadCursor=new Date(Date.now()-120000).toISOString();_taskCursor=_leadCursor;
+  _liveSyncTimer=setInterval(liveSyncTick,5000);
+  if(!window._liveSyncHooked){
+    window._liveSyncHooked=true;
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)liveSyncTick();});
+    window.addEventListener('focus',()=>liveSyncTick());
+    window.addEventListener('online',()=>liveSyncTick());
+  }
+}
+async function liveSyncTick(){
+  if(!currentUser||_liveBusy||!_leadCursor)return;
+  _liveBusy=true;
+  try{
+    const {q}=await scopedLeadsQuery();
+    const{data,error}=await q.gt('updated_at',_leadCursor).order('updated_at',{ascending:true}).limit(300);
+    if(!error&&data&&data.length){
+      const known=new Set(allLeads.map(l=>l.id));
+      data.forEach(r=>queueLeadRefresh(r.id,(!known.has(r.id)&&r.created_at&&r.created_at>_leadCursor)?'INSERT':'UPDATE'));
+      _leadCursor=data[data.length-1].updated_at||_leadCursor;
+    }
+  }catch(e){}
+  try{
+    if(myName){
+      const{data,error}=await sb.from('tasks').select('id,title,created_at').eq('assigned_to',myName).eq('status','Open').gt('created_at',_taskCursor).order('created_at',{ascending:true}).limit(50);
+      if(!error&&data&&data.length){
+        _taskCursor=data[data.length-1].created_at||_taskCursor;
+        playNewLeadChime();
+        toast(data.length===1?'🗒️ New task: '+(data[0].title||'Untitled'):'🗒️ '+data.length+' new tasks assigned to you');
+        try{loadMyTasks();}catch(e){}
+      }
+    }
+  }catch(e){}
+  _liveBusy=false;
 }
 async function loadLeads(){
   const {q}=await scopedLeadsQuery();

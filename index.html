@@ -1931,7 +1931,7 @@ What would you like help with today?</div>
         </div>
       </div>
       <div class="ff"><label>Email</label><input type="email" id="f-email" placeholder="email@example.com"></div>
-      <div class="ff"><label>Country / City *</label><input id="f-city" placeholder="Chennai"></div>
+      <div class="ff"><label id="lbl-f-city">Country / City *</label><input id="f-city" placeholder="Chennai" autocomplete="off"><datalist id="uk-cities-dl"></datalist></div>
       <div class="ff"><label>Date of birth</label><input type="date" id="f-dob"></div>
       <div class="ff"><label>Qualification</label><input id="f-qual" placeholder="B.Tech CSE"></div>
       <div class="sdiv">Program details</div>
@@ -1944,7 +1944,7 @@ What would you like help with today?</div>
         </select>
         <input id="f-prog-other" placeholder="Specify program..." style="display:none;margin-top:6px;width:100%;padding:8px;border:1px solid var(--line);border-radius:var(--r);font-size:13px">
       </div>
-      <div class="ff"><label>Destination</label>
+      <div class="ff" id="ff-dest"><label>Destination</label>
         <select id="f-dest" onchange="toggleOther('f-dest','f-dest-other')">
           <option value="">Select destination country...</option>
           <option>UK</option><option>New Zealand</option><option>Australia</option><option>Canada</option>
@@ -1952,13 +1952,14 @@ What would you like help with today?</div>
           <option>UAE</option><option value="Other">Others</option>
         </select>
       </div>
+      <div class="ff" id="ff-pob" style="display:none"><label>Place of birth</label><input id="f-pob" list="pob-dl" placeholder="Choose or type a country" autocomplete="off"><datalist id="pob-dl"></datalist></div>
       <input id="f-dest-other" placeholder="Specify destination..." style="display:none;margin-top:6px;width:100%;padding:8px;border:1px solid var(--line);border-radius:var(--r);font-size:13px">
       <div class="sdiv">Pipeline</div>
       <div class="ff"><label>Lead source</label>
         <select id="f-src">
           <option>Meta Ads</option><option>Google Ads</option><option>Instagram</option><option>WhatsApp</option>
           <option>Walk-in</option><option>Referral</option><option>Website</option><option>LinkedIn</option>
-          <option>YouTube</option><option>Event / Expo</option><option>Website Enquiry</option><option>Website Tools Enquiry</option><option>Meta Enquiry</option><option>Other</option>
+          <option>YouTube</option><option>Event / Expo</option><option>Website Enquiry</option><option>Website Tools Enquiry</option><option>Meta Enquiry</option><option>TikTok</option><option>Other</option>
         </select>
       </div>
       <div class="ff"><label>Referring Agent</label>
@@ -1973,14 +1974,14 @@ What would you like help with today?</div>
       <div class="ff"><label>Priority</label>
         <select id="f-prio"><option>High</option><option selected>Medium</option><option>Low</option></select>
       </div>
-      <div class="ff"><label>Assistance needed from *</label>
+      <div class="ff" id="ff-country"><label>Assistance needed from *</label>
         <select id="f-country" onchange="syncLeadOffice();syncMobileCode();syncBudgetCurrency();populateCounsellorDropdown()">
           <option value="">Select assistance needed from...</option>
           <option value="India">India</option><option value="UK">UK</option><option value="Pakistan">Pakistan</option><option value="Bangladesh">Bangladesh</option>
           <option value="Other">Other (assigned to India — our base of operations)</option>
         </select>
       </div>
-      <div class="ff"><label>Nationality / where they're actually based</label>
+      <div class="ff" id="ff-nationality"><label>Nationality / where they're actually based</label>
         <select id="f-nationality">
           <option value="">Select nationality...</option>
           <option value="India">India</option><option value="UK">UK</option><option value="Pakistan">Pakistan</option><option value="Bangladesh">Bangladesh</option>
@@ -6133,7 +6134,7 @@ async function addOrphanToTeam(id){
   const{error}=await sb.rpc('admin_add_profile',{p_user:id,p_full_name:name,p_role:g('role'),p_country:country,p_office:office,p_team_category:g('cat')});
   if(error){toast('Could not add: '+error.message);return;}
   toast(name+' added to the team.');
-  await loadTeam();loadOrphanLogins();
+  await loadTeam();loadOrphanLogins();loadCustomCities();
 }
 async function removeOrphanLogin(id,email){
   if(!isOwner){toast('Only India and Pavitra can remove a login.');return;}
@@ -6961,7 +6962,7 @@ function rebuildLeadFilterOptions(scoped){
   // which the hard-coded dropdown was missing).
   const st=document.getElementById('ls-st');
   if(st){const cur=st.value;st.innerHTML='<option value="">All statuses</option>'+STATUSES.map(x=>`<option>${esc(x)}</option>`).join('');st.value=cur||'';}
-  const baseSources=['Meta Ads','Google Ads','Instagram','WhatsApp','Walk-in','Referral','Website','LinkedIn','YouTube','Event / Expo','Website Enquiry','Website Tools Enquiry','Meta Enquiry','Other'];
+  const baseSources=['Meta Ads','Google Ads','Instagram','WhatsApp','Walk-in','Referral','Website','LinkedIn','YouTube','Event / Expo','Website Enquiry','Website Tools Enquiry','Meta Enquiry','TikTok','Other'];
   fillSelectKeep(document.getElementById('ls-src'),'All sources',baseSources.concat(scoped.map(l=>l.source)));
   const baseDest=['UK','New Zealand','Australia','Canada','Europe','USA','Singapore','Malaysia','UAE','Other'];
   fillSelectKeep(document.getElementById('ls-de'),'All destinations',baseDest.concat(scoped.map(l=>l.destination)));
@@ -7267,7 +7268,7 @@ async function updateStatusFS(){
   loadTasksFS(curId);
   loadActivityLogFS(curId);
 }
-function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("This lead is view-only for your account (India, or outside your own country).");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';populateAgentDropdown();ensureAgentOption(l.agent);document.getElementById('f-agent').value=l.agent||'';_agentPrevValue=l.agent||'';window._agentManualNote=null;setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-type').value=l.ielts_type||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-finance-years').value=l.finance_years||'';document.getElementById('f-class-timing').value=l.class_timing||'';document.getElementById('f-student-id').value=l.student_id||'';document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range,l.budget_currency);syncBudgetRangeOptions(l.budget_range||'');document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';document.getElementById('modal-lead').classList.add('open');curId=l.id;refreshModalDocsVisibility();},100);}
+function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("This lead is view-only for your account (India, or outside your own country).");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';populateAgentDropdown();ensureAgentOption(l.agent);document.getElementById('f-agent').value=l.agent||'';_agentPrevValue=l.agent||'';window._agentManualNote=null;document.getElementById('f-pob').value=l.place_of_birth||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-type').value=l.ielts_type||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-finance-years').value=l.finance_years||'';document.getElementById('f-class-timing').value=l.class_timing||'';document.getElementById('f-student-id').value=l.student_id||'';document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range,l.budget_currency);syncBudgetRangeOptions(l.budget_range||'');document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';curId=l.id;applyDomesticLeadForm();document.getElementById('modal-lead').classList.add('open');refreshModalDocsVisibility();},100);}
 async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("This lead is view-only for your account (India, or outside your own country).");return;}if(!canDeleteLeads()){toast('Only Admins, Managers, Directors and Digital Marketing can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;await logActivity(curId,'deleted',`Lead deleted: ${_l?.name||_l?.lead_id||curId}`);setSyncing();const{error,data}=await sb.from('leads').delete().eq('id',curId).select();if(error){setSyncErr();toast('Error deleting lead: '+error.message);return;}if(!data||!data.length){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 // Generates a message genuinely suited to WHERE this lead actually is
@@ -8992,6 +8993,7 @@ function editLead(){
     populateAgentDropdown();
     ensureAgentOption(l.agent);
     document.getElementById('f-agent').value=l.agent||'';_agentPrevValue=l.agent||'';window._agentManualNote=null;
+    document.getElementById('f-pob').value=l.place_of_birth||'';
     setupAssignModeUI();
     // Editing an existing lead always starts in Manual mode with its current
     // counsellor shown — round robin should never silently re-roll an
@@ -9004,12 +9006,47 @@ function editLead(){
   document.getElementById('f-fu').value=l.next_followup||'';
   document.getElementById('f-visa-deadline').value=l.visa_deadline||'';
   document.getElementById('f-notes').value=l.notes||'';   document.getElementById('f-intake').value=l.intake_month||'';   document.getElementById('f-ielts-type').value=l.ielts_type||'';   document.getElementById('f-ielts-status').value=l.ielts_status||'';   document.getElementById('f-ielts-score').value=l.ielts_score||'';   document.getElementById('f-finance-years').value=l.finance_years||'';   document.getElementById('f-class-timing').value=l.class_timing||'';   document.getElementById('f-student-id').value=l.student_id||'';   document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range,l.budget_currency);syncBudgetRangeOptions(l.budget_range||'');   document.getElementById('f-english').value=l.english_status||'';   document.getElementById('f-walink').value=l.whatsapp_group_link||'';   document.getElementById('f-doclink').value=l.doc_folder_link||'';
+  applyDomesticLeadForm();
   document.getElementById('modal-lead').classList.add('open');
  document.getElementById('dover').classList.remove('open');
   document.getElementById('editing-notice').classList.remove('show');
 }
 
 // ── ADD/EDIT LEAD ─────────────────────────────────────────────────
+// Domestic UK (home recruitment) lead form: UK city list, Place of birth instead of Destination,
+// and no "Assistance needed from" / Nationality questions.
+const UK_CITIES=['London','Birmingham','Manchester','Leeds','Liverpool','Sheffield','Bristol','Newcastle upon Tyne','Nottingham','Leicester','Coventry','Bradford','Cardiff','Edinburgh','Glasgow','Belfast','Southampton','Portsmouth','Plymouth','Brighton','Reading','Derby','Wolverhampton','Stoke-on-Trent','Sunderland','Hull','Swansea','Aberdeen','Dundee','Oxford','Cambridge','York','Norwich','Exeter','Bath','Luton','Slough','Milton Keynes','Northampton','Peterborough','Ipswich','Bournemouth','Preston','Blackburn','Bolton','Huddersfield','Walsall','Dudley','Middlesbrough','Gloucester','Canterbury'];
+const POB_COUNTRIES=['United Kingdom','India','Pakistan','Bangladesh','Sri Lanka','Nepal','Nigeria','Ghana','Kenya','Zimbabwe','South Africa','Poland','Romania','Italy','Portugal','Spain','France','Germany','Ireland','Jamaica','Somalia','Egypt','Iran','Iraq','Afghanistan','China','Hong Kong','Philippines','Malaysia','Singapore','Canada','USA','Australia','New Zealand','UAE','Saudi Arabia','Turkey','Other'];
+let customUkCities=[];
+function fillCityList(){
+  const dl=document.getElementById('uk-cities-dl');if(!dl)return;
+  const all=[...new Set([...UK_CITIES,...customUkCities])].sort();
+  dl.innerHTML=all.map(c=>`<option value="${esc(c)}">`).join('');
+  const p=document.getElementById('pob-dl');if(p&&!p.children.length)p.innerHTML=POB_COUNTRIES.map(c=>`<option value="${esc(c)}">`).join('');
+}
+async function loadCustomCities(){
+  try{const{data,error}=await sb.from('custom_cities').select('city').eq('country','UK');if(!error&&data)customUkCities=data.map(r=>r.city).filter(Boolean);}catch(e){}
+  fillCityList();
+}
+function leadFormIsDomestic(){
+  if(editMode&&curId){const l=leads.find(x=>x.id===curId);return !!l&&leadIsDomesticWorkstream(l);}
+  if(canSwitchOpsViewUser())return superAdminOpsView==='Domestic';
+  return myTeamCategory==='Domestic';
+}
+function applyDomesticLeadForm(){
+  const dom=leadFormIsDomestic();
+  fillCityList();
+  const show=(id,on)=>{const e=document.getElementById(id);if(e)e.style.display=on?'':'none';};
+  show('ff-country',!dom);show('ff-nationality',!dom);show('ff-pob',dom);
+  const city=document.getElementById('f-city'),lbl=document.getElementById('lbl-f-city');
+  if(city){if(dom){city.setAttribute('list','uk-cities-dl');city.placeholder='Choose a UK city or type your own';}else{city.removeAttribute('list');city.placeholder='Chennai';}}
+  if(lbl)lbl.textContent=dom?'City *':'Country / City *';
+  if(dom){
+    const fc=document.getElementById('f-country'),fn=document.getElementById('f-nationality');
+    if(!fc.value){fc.value='UK';try{syncLeadOffice();syncMobileCode();syncBudgetCurrency();}catch(e){}}
+    if(!fn.value)fn.value='UK';
+  }
+}
 function openAddLead(){
   editMode=false;curId=null;
   pendingQueryConversionId=null; // reset here; convertQueryToLead() re-sets it right after calling this
@@ -9036,6 +9073,7 @@ function openAddLead(){
   document.getElementById('f-status').value='New Enquiry';
   document.getElementById('f-prio').value='Medium';
   document.getElementById('f-agent').value='';_agentPrevValue='';window._agentManualNote=null;
+  document.getElementById('f-pob').value='';
   populateCounsellorDropdown();
   populateAgentDropdown();
   populateSubTeamDropdowns();
@@ -9052,6 +9090,7 @@ function openAddLead(){
   } else {
     counselField.disabled=false;
   }
+  applyDomesticLeadForm();
   document.getElementById('modal-lead').classList.add('open');
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');if(id==='modal-lead'){editMode=false;curId=null;}}
@@ -9150,6 +9189,8 @@ async function saveLead(){
   if(!mobileNumEarlyCheck){document.getElementById('f-mobile').focus();toast('Please enter a mobile number — this is required.');return;}
   const mobileCodeEarlyCheck=document.getElementById('f-mobile-code').value;
   if(!mobileCodeEarlyCheck){toast('Please select the mobile number\'s country code — this is required.');return;}
+  const _domForm=leadFormIsDomestic();
+  if(_domForm){applyDomesticLeadForm();}
   const countryVal=document.getElementById('f-country').value;
   if(!countryVal){document.getElementById('f-country').focus();toast("Please select which office assistance is needed from — this is required and determines which branch handles the lead.");return;}
   // India view-only guard: a Super Admin can't edit an existing India
@@ -9161,7 +9202,11 @@ async function saveLead(){
     }
   }
   const cityVal=document.getElementById('f-city').value.trim();
-  if(!cityVal){document.getElementById('f-city').focus();toast('Please enter the country / city — this is required.');return;}
+  if(!cityVal){document.getElementById('f-city').focus();toast(_domForm?'Please choose or type the city — this is required.':'Please enter the country / city — this is required.');return;}
+  if(_domForm&&![...UK_CITIES,...customUkCities].some(x=>x.toLowerCase()===cityVal.toLowerCase())){
+    // a city typed by hand is kept for everyone's list (best effort — needs crm_domestic_uk_form.sql)
+    sb.from('custom_cities').insert({city:cityVal,country:'UK'}).then(()=>{customUkCities.push(cityVal);fillCityList();},()=>{});
+  }
   const dobVal=document.getElementById('f-dob').value;
   if(!dobVal){document.getElementById('f-dob').focus();toast('Please enter the date of birth — this is required.');return;}
   const destVal=document.getElementById('f-dest').value;
@@ -9208,6 +9253,7 @@ async function saveLead(){
     qualification:document.getElementById('f-qual').value,
     program:document.getElementById('f-prog').value,
     destination:document.getElementById('f-dest').value,
+    place_of_birth:_domForm?(document.getElementById('f-pob').value.trim()||null):undefined,
     source:document.getElementById('f-src').value,
     status:document.getElementById('f-status').value,
     priority:document.getElementById('f-prio').value,
@@ -9271,6 +9317,7 @@ async function saveLead(){
       if(existing&&(existing[f]||'')!==(data[f]||'')){_subChanges.push([f,data[f]||'']);delete data[f];}
     });
     let _upRows;({data:_upRows,error}=await sb.from('leads').update(data).eq('id',curId).select('id'));
+    if(error&&/place_of_birth/i.test(error.message||'')){delete data.place_of_birth;({data:_upRows,error}=await sb.from('leads').update(data).eq('id',curId).select('id'));if(!error)toast('Saved, but run crm_domestic_uk_form.sql so Place of birth is stored.');}
     if(!error&&!(_upRows&&_upRows.length))error={message:'the change was not saved. Please refresh and try again.'};
     if(!error){const l=leads.find(x=>x.id===curId);if(l)Object.assign(l,data);}
     if(!error)for(const [f,v] of _subChanges){
@@ -9306,6 +9353,7 @@ async function saveLead(){
     else if(myTeamCategory==='Domestic'||myTeamCategory==='International'){data.workstream=myTeamCategory;}
     if(data.counsellor)data.assigned_at=new Date().toISOString();
     let res=await sb.from('leads').insert([data]).select();
+    if(res.error&&/place_of_birth/i.test(res.error.message||'')){delete data.place_of_birth;res=await sb.from('leads').insert([data]).select();if(!res.error)toast('Saved, but run crm_domestic_uk_form.sql so Place of birth is stored.');}
     if(res.error&&/workstream/i.test(res.error.message||'')){
       // The workstream column hasn't been added yet (run crm_leads_workstream.sql) — save without it.
       const{workstream,...plain}=data;

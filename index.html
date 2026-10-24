@@ -3781,7 +3781,10 @@ function isSubTeamRoleOnly(){return['Application Team','Visa Team','SOP Team'].i
 // for round-robin — a Pakistan-based lead's Visa Team member can be
 // anyone with the "Visa Team" role anywhere, not just Pakistan staff.
 function getGlobalRolePool(roleName){
-  return (teamList||[]).filter(t=>t.role===roleName&&!isUnavailableToday(t.id)&&memberOnMySide(t));
+  // Application / Visa / SOP are shared processing teams: every counsellor (Domestic and International)
+  // can hand a lead to them, so these pools are not split by side.
+  const shared=['Application Team','Visa Team','SOP Team'].includes(roleName);
+  return (teamList||[]).filter(t=>t.role===roleName&&!isUnavailableToday(t.id)&&(shared||memberOnMySide(t)));
 }
 async function getNextForGlobalRole(roleName){
   const pool=getGlobalRolePool(roleName);
@@ -4716,8 +4719,9 @@ async function quickReassignSubTeam(leadId,field,newValue){
   const old=l[field];
   if(old===newValue){renderLeads();return;}
   setSyncing();
-  const{error}=await sb.from('leads').update({[field]:newValue||null}).eq('id',leadId);
+  const{data:_ok,error}=await sb.from('leads').update({[field]:newValue||null}).eq('id',leadId).select('id');
   if(error){setSyncErr();toast('Error reassigning: '+error.message);renderLeads();return;}
+  if(!_ok||!_ok.length){setSyncErr();toast('Could not save this assignment. Please refresh and try again.');renderLeads();return;}
   l[field]=newValue||null;
   setSynced();
   logActivity(leadId,'reassigned',`${roleName}: ${old||'Unassigned'} → ${newValue||'Unassigned'}`);

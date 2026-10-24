@@ -6174,6 +6174,13 @@ async function loadTeam(){
     if(isSuperAdminRow(t)&&(!t.role||t.role==='Counsellor'))t.role='Super Admin';
   });
   teamList=data||[];
+  // Application / Visa / SOP members are visible to everyone for hand-offs, even where row security hides other offices.
+  try{
+    const sm=await sb.rpc('list_subteam_members');
+    if(!sm.error&&Array.isArray(sm.data)){
+      sm.data.forEach(m=>{if(!teamList.some(x=>x.id===m.id))teamList.push(m);});
+    }
+  }catch(e){}
   syncLeadsView(); // classification depends on each counsellor's team
   if(tl) tl.style.display='none';
   renderTeam(data||[]);

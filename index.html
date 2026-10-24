@@ -3683,12 +3683,24 @@ function currentUnavailability(teamId){
   const today=localDateStr();
   return unavailabilityList.find(u=>u.team_id===teamId&&u.from_date<=today&&today<=u.to_date)||null;
 }
-function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===office&&(t.role||'Counsellor')==='Counsellor'&&!isUnavailableToday(t.id)&&memberInOpsView(t));}
+// Domestic / International wall for pick-lists: someone on one side is never offered a person from the other side.
+// (Owner / Platform Admin / Jisan follow their Domestic-International switch instead.)
+function memberOnMySide(t){
+  if(!t)return false;
+  if(canSwitchOpsViewUser())return memberInOpsView(t);
+  if(t.role==='Agent'||effectiveTeamCategory(t)==='Agent')return true;
+  if(myTeamCategory==='Domestic'||myTeamCategory==='International'){
+    const dom=effectiveTeamCategory(t)==='Domestic';
+    return myTeamCategory==='Domestic'?dom:!dom;
+  }
+  return true;
+}
+function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===office&&(t.role||'Counsellor')==='Counsellor'&&!isUnavailableToday(t.id)&&memberOnMySide(t));}
 // Round-robin specifically must never pick a Domestic-category counsellor
 // — Domestic leads are hand-assigned by Management only. This is a
 // separate, narrower pool from getOfficeCounsellors(), which Management
 // still needs to include Domestic staff in for manual picking.
-function getRoundRobinCounsellorPool(office){return getOfficeCounsellors(office).filter(t=>t.team_category!=='Domestic');}
+function getRoundRobinCounsellorPool(office){return getOfficeCounsellors(office).filter(t=>effectiveTeamCategory(t)!=='Domestic');}
 // Broader than getOfficeCounsellors() on purpose — some Admins/Managers/
 // Directors personally handle counselling work too, on top of their main
 // role, but the single-role data model only stores one role per person.
@@ -3698,7 +3710,7 @@ function getRoundRobinCounsellorPool(office){return getOfficeCounsellors(office)
 // like that is exactly the point.
 function getOfficeAssignableStaff(office){
   const managementRoles=['Admin','Manager','Director'];
-  return(teamList||[]).filter(t=>t.office===office&&(t.role==='Counsellor'||managementRoles.includes(t.role))&&!isUnavailableToday(t.id)&&memberInOpsView(t));
+  return(teamList||[]).filter(t=>t.office===office&&(t.role==='Counsellor'||managementRoles.includes(t.role))&&!isUnavailableToday(t.id)&&memberOnMySide(t));
 }
 // Application/Visa/SOP Team are operational staff, same restricted access
 // tier as Counsellor — not management. Used everywhere access is scoped.
@@ -3744,7 +3756,7 @@ function isSubTeamRoleOnly(){return['Application Team','Visa Team','SOP Team'].i
 // for round-robin — a Pakistan-based lead's Visa Team member can be
 // anyone with the "Visa Team" role anywhere, not just Pakistan staff.
 function getGlobalRolePool(roleName){
-  return (teamList||[]).filter(t=>t.role===roleName&&!isUnavailableToday(t.id)&&memberInOpsView(t));
+  return (teamList||[]).filter(t=>t.role===roleName&&!isUnavailableToday(t.id)&&memberOnMySide(t));
 }
 async function getNextForGlobalRole(roleName){
   const pool=getGlobalRolePool(roleName);
@@ -3762,7 +3774,7 @@ async function getNextCounsellorForOffice(office,ws){
   // Domestic/International wall: leads added from the Domestic side rotate only
   // through Domestic counsellors; everything else through the International pool.
   if(ws===undefined)ws=(canSwitchOpsViewUser()&&superAdminOpsView)?superAdminOpsView:(myTeamCategory==='Domestic'?'Domestic':null);
-  const pool=ws==='Domestic'?getOfficeCounsellors(office).filter(t=>t.team_category==='Domestic'):getRoundRobinCounsellorPool(office);
+  const pool=ws==='Domestic'?getOfficeCounsellors(office).filter(t=>effectiveTeamCategory(t)==='Domestic'):getRoundRobinCounsellorPool(office);
   if(!pool.length)return{name:'',country:'',office};
   const rrKey=ws==='Domestic'?office+'|Domestic':office;
   const idx=(rrStateByOffice[rrKey]||0)%pool.length;
@@ -4569,7 +4581,7 @@ async function syncAssignedLeadTasksForCurrentUser(){
   const assignedLeads=leads.filter(l=>(l.counsellor||'').trim()===myName);
   if(!assignedLeads.length)return;
   const leadIds=assignedLeads.map(l=>l.id);
-  const{data:existing,error}=await sb.from('tasks').select('id,lead_id,assigned_to,title,status').in('lead_id',leadIds).eq('status','Open');
+  const{data:existing,error}=await inChunks(leadIds,c=>sb.from('tasks').select('id,lead_id,assigned_to,title,status').in('lead_id',c).eq('status','Open'));
   if(error){console.error('Assigned-lead task sync lookup failed:',error);return;}
   const openByLead=new Map();
   (existing||[]).forEach(t=>{
@@ -5915,6 +5927,25 @@ async function fetchAllPages(makeQuery,maxRows=20000){
   }
   return{data:all,error:null};
 }
+// A long .in(...) list becomes a URL that is too long for the server (the call fails once a few hundred ids are
+// passed), so big id lists are sent in small batches and the results joined.
+async function inChunks(ids,run,size=80){
+  let all=[];
+  for(let i=0;i<ids.length;i+=size){
+    const r=await run(ids.slice(i,i+size));
+    if(r.error)return{data:null,error:r.error};
+    if(Array.isArray(r.data))all=all.concat(r.data);
+  }
+  return{data:all,error:null};
+}
+// Bulk update of leads by id, in batches. Asks the database which rows really changed, so a rule that
+// silently blocks some rows is reported instead of looking like success.
+async function bulkUpdateLeads(ids,patch){
+  const r=await inChunks(ids,c=>sb.from('leads').update(patch).in('id',c).select('id'));
+  if(r.error)return{error:r.error,doneIds:[]};
+  return{error:null,doneIds:(r.data||[]).map(x=>x.id)};
+}
+function reportPartialBulk(total,done){if(done<total)toast(`Only ${done} of ${total} lead(s) could be changed - the rest are not yours to change.`);}
 let _leadRefreshIds=new Set(), _leadRefreshInserts=new Set(), _leadRefreshTimer=null;
 function queueLeadRefresh(id,eventType){
   _leadRefreshIds.add(id);
@@ -5988,7 +6019,7 @@ async function loadLeads(){
   return true;
 }
 async function loadCoaching(){
-  const{data,error}=await sb.from('coaching').select('*').order('created_at',{ascending:false});
+  const{data,error}=await fetchAllPages(()=>sb.from('coaching').select('*').order('created_at',{ascending:false}).order('id',{ascending:false}));
   if(!error&&data) coaching=data;
 }
 let teamList=[];
@@ -7140,8 +7171,8 @@ async function updateStatusFS(){
   const l=leads.find(x=>x.id===curId);
   const oldStatus=l?.status;
   setSyncing();
-  const{error}=await sb.from('leads').update({status}).eq('id',curId);
-  if(error){setSyncErr();toast('Error updating status.');return;}
+  const{data:_stRows,error}=await sb.from('leads').update({status}).eq('id',curId).select('id');
+  if(error||!(_stRows&&_stRows.length)){setSyncErr();toast('Error updating status. Please refresh and try again.');return;}
   if(l)l.status=status;
   setSynced();renderLeads();renderDash();badges();toast('Status → '+status);
   if(l)autoCreateTaskForStatus(l,status);
@@ -8456,7 +8487,7 @@ async function renderTaskDashboard(){
   const scopedLeadIds=[...new Set(scoped.map(t=>t.lead_id).filter(Boolean))];
   let scopedTaskReminders=[];
   if(scopedLeadIds.length){
-    const rq=await sb.from('reminders').select('id,lead_id,reminder_date,reminder_time,notes,done').in('lead_id',scopedLeadIds).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true}).limit(1000);
+    const rq=await inChunks(scopedLeadIds,c=>sb.from('reminders').select('id,lead_id,reminder_date,reminder_time,notes,done').in('lead_id',c).order('reminder_date',{ascending:true}).order('reminder_time',{ascending:true}).limit(1000));
     if(!rq.error&&rq.data)scopedTaskReminders=rq.data;
   }
   scoped.forEach(t=>{t._taskReminder=taskReminderFor(t,scopedTaskReminders);});
@@ -8760,8 +8791,8 @@ async function updateStatus(){
   const l=leads.find(x=>x.id===curId);
   const oldStatus=l?.status;
   setSyncing();
-  const{error}=await sb.from('leads').update({status}).eq('id',curId);
-  if(error){setSyncErr();toast('Error updating status.');return;}
+  const{data:_stRows,error}=await sb.from('leads').update({status}).eq('id',curId).select('id');
+  if(error||!(_stRows&&_stRows.length)){setSyncErr();toast('Error updating status. Please refresh and try again.');return;}
   if(l)l.status=status;
   setSynced();renderLeads();renderDash();badges();setTimeout(checkNoActivity,2000);applyRoleUI();toast('Status → '+status);
   if(l)autoCreateTaskForStatus(l,status);
@@ -9145,9 +9176,10 @@ async function saveLead(){
         }
       });
     }
-    ({error}=await sb.from('leads').update(data).eq('id',curId));
+    let _upRows;({data:_upRows,error}=await sb.from('leads').update(data).eq('id',curId).select('id'));
+    if(!error&&!(_upRows&&_upRows.length))error={message:'the change was not saved. Please refresh and try again.'};
     if(!error){const l=leads.find(x=>x.id===curId);if(l)Object.assign(l,data);}
-    toast('Lead updated.');
+    if(!error)toast('Lead updated.');
     if(!error&&data.next_followup)warnIfHoliday(data.next_followup,data.office);
   } else {
     // auto lead ID
@@ -9160,15 +9192,9 @@ async function saveLead(){
       const _own=existingOwnerForNumber(data.mobile,null);if(_own){data.counsellor=_own;}else{
         // Creating from the Domestic / International tab: only that team's counsellors
         // may receive the lead, so it is classified correctly and stays on that side.
-        const viewPool=(canSwitchOpsViewUser()&&superAdminOpsView)?getOfficeCounsellors(data.office).filter(t=>superAdminOpsView==='Domestic'?effectiveTeamCategory(t)==='Domestic':effectiveTeamCategory(t)!=='Domestic'):null;
-        if(viewPool&&viewPool.length){
-          const key='view:'+superAdminOpsView+':'+data.office;
-          const idx=(rrStateByOffice[key]||0)%viewPool.length;
-          rrStateByOffice[key]=idx+1;
-          data.counsellor=viewPool[idx].full_name;
-        } else {
-          const rr=await getNextCounsellorForOffice(data.office);data.counsellor=rr.name;
-        }
+        // One saved rotation per side (Domestic / International), shared with Import and Meta upload,
+        // so leads spread evenly and the rotation survives a page reload.
+        const rr=await getNextCounsellorForOffice(data.office);data.counsellor=rr.name;
       }
     }
     // Stamp the side the lead was added from. It then stays on that side even with
@@ -10377,11 +10403,11 @@ async function bulkChangeStatus(){
   if(!ids.length)return;
   const status=document.getElementById('bulk-status-select').value;
   if(!confirm(`Set status to "${status}" for ${ids.length} lead(s)?`))return;
-  const{error}=await sb.from('leads').update({status}).in('id',ids);
+  const{error,doneIds}=await bulkUpdateLeads(ids,{status});
   if(error){toast('Error: '+error.message);return;}
-  ids.forEach(id=>{const l=leads.find(x=>x.id===id);if(l)l.status=status;});
-  ids.forEach(id=>logActivity(id,'field_edit',`Status (bulk): → ${status}`));
-  toast(`Updated status for ${ids.length} lead(s).`);
+  doneIds.forEach(id=>{const l=leads.find(x=>x.id===id);if(l)l.status=status;});
+  doneIds.forEach(id=>logActivity(id,'field_edit',`Status (bulk): → ${status}`));
+  if(doneIds.length<ids.length)reportPartialBulk(ids.length,doneIds.length);else toast(`Updated status for ${ids.length} lead(s).`);
   clearBulkSelection();renderLeads();renderDash();badges();
 }
 async function bulkChangePriority(){
@@ -10389,11 +10415,11 @@ async function bulkChangePriority(){
   if(!ids.length)return;
   const priority=document.getElementById('bulk-priority-select').value;
   if(!confirm(`Set priority to "${priority}" for ${ids.length} lead(s)?`))return;
-  const{error}=await sb.from('leads').update({priority}).in('id',ids);
+  const{error,doneIds}=await bulkUpdateLeads(ids,{priority});
   if(error){toast('Error: '+error.message);return;}
-  ids.forEach(id=>{const l=leads.find(x=>x.id===id);if(l)l.priority=priority;});
-  ids.forEach(id=>logActivity(id,'field_edit',`Priority (bulk): → ${priority}`));
-  toast(`Updated priority for ${ids.length} lead(s).`);
+  doneIds.forEach(id=>{const l=leads.find(x=>x.id===id);if(l)l.priority=priority;});
+  doneIds.forEach(id=>logActivity(id,'field_edit',`Priority (bulk): → ${priority}`));
+  if(doneIds.length<ids.length)reportPartialBulk(ids.length,doneIds.length);else toast(`Updated priority for ${ids.length} lead(s).`);
   clearBulkSelection();renderLeads();renderDash();
 }
 async function bulkReassignCounsellor(){
@@ -10412,8 +10438,10 @@ async function bulkReassignCounsellor(){
     if(skipped>0)toast(`${skipped} India lead(s) skipped — view-only for your account.`);
   }
   if(!confirm(`Reassign ${workIds.length} lead(s) to ${counsellor}?`))return;
-  const{error}=await sb.from('leads').update({counsellor,assigned_at:new Date().toISOString()}).in('id',workIds);
+  const{error,doneIds}=await bulkUpdateLeads(workIds,{counsellor,assigned_at:new Date().toISOString()});
   if(error){toast('Error: '+error.message);return;}
+  if(doneIds.length<workIds.length)reportPartialBulk(workIds.length,doneIds.length);
+  workIds=doneIds;
   workIds.forEach(id=>{const l=leads.find(x=>x.id===id);if(l){l.counsellor=counsellor;l.assigned_at=new Date().toISOString();}});
   for(const id of workIds){
     const l=leads.find(x=>x.id===id);
@@ -10696,8 +10724,10 @@ async function bulkChangeSource(){
     if(skipped>0)toast(`${skipped} India lead(s) skipped — view-only for your account.`);
   }
   if(!confirm(`Set source to "${source}" for ${workIds.length} lead(s)?`))return;
-  const{error}=await sb.from('leads').update({source}).in('id',workIds);
+  const{error,doneIds}=await bulkUpdateLeads(workIds,{source});
   if(error){toast('Error: '+error.message);return;}
+  if(doneIds.length<workIds.length)reportPartialBulk(workIds.length,doneIds.length);
+  workIds=doneIds;
   workIds.forEach(id=>{const l=leads.find(x=>x.id===id);if(l)l.source=source;});
   workIds.forEach(id=>logActivity(id,'field_edit',`Source (bulk): → ${source}`));
   toast(`Source set to "${source}" for ${workIds.length} lead(s).`);
@@ -10795,8 +10825,7 @@ function aiAboutLead(){
 
 let commissions=[];
 async function loadCommissions(){
-  let q=sb.from('commissions').select('*,leads(name,office,country)').order('created_at',{ascending:false});
-  const{data,error}=await q;
+  const{data,error}=await fetchAllPages(()=>sb.from('commissions').select('*,leads(name,office,country)').order('created_at',{ascending:false}).order('id',{ascending:false}));
   if(!error&&data){
     // Office-scope client-side via the joined lead, since commissions has no
     // direct office column of its own. Non-Super-Admins see only their own
@@ -11158,12 +11187,13 @@ async function loadGlobalActivityLog(scopedLeads,start,end){
   const leadIds=scopedLeads.map(l=>l.id);
   if(!leadIds.length){el.innerHTML=emptyState('📭','No leads in this scope.');return;}
   const leadNameById={};scopedLeads.forEach(l=>{leadNameById[l.id]=l.name;});
-  const{data,error}=await sb.from('activity_log').select('*')
-    .in('lead_id',leadIds)
+  let{data,error}=await inChunks(leadIds,c=>sb.from('activity_log').select('*')
+    .in('lead_id',c)
     .gte('created_at',start+'T00:00:00')
     .lte('created_at',end+'T23:59:59')
     .order('created_at',{ascending:false})
-    .limit(200);
+    .limit(200));
+  if(!error&&data){data.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));data=data.slice(0,200);}
   if(error){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load activity log — has activity_log been created in Supabase yet?</div>';return;}
   if(!data||!data.length){el.innerHTML=emptyState('🕐','No activity recorded in this period yet.');return;}
   const icons={created:'✨',imported:'📥',status_change:'🔄',reassigned:'👤',field_edit:'✏️',viewed:'👁️'};
@@ -13571,7 +13601,7 @@ function refreshProductivityScope(){
   setProdSubtab(cur);
 }
 async function loadCallLogs(){
-  const{data,error}=await sb.from('call_logs').select('*').order('call_date',{ascending:false});
+  const{data,error}=await fetchAllPages(()=>sb.from('call_logs').select('*').order('call_date',{ascending:false}).order('id',{ascending:false}));
   if(!error&&data) callLogs=data;
   else if(error) callLogs=[];
 }
@@ -13686,7 +13716,7 @@ async function saveCallLog(){
 // syntax rather than needing a separate lookup.
 let whatsappCalls=[];
 async function loadWhatsAppCalls(){
-  const res=await sb.from('whatsapp_calls').select('*, leads(name,mobile)').order('started_at',{ascending:false});
+  const res=await fetchAllPages(()=>sb.from('whatsapp_calls').select('*, leads(name,mobile)').order('started_at',{ascending:false}).order('id',{ascending:false}));
   const data=res.data, error=res.error;
   if(!error&&data) whatsappCalls=data;
   else if(error) whatsappCalls=[];
@@ -14041,7 +14071,6 @@ async function markPendingQueryConverted(newLeadId){
 }
 async function dismissQuery(queryId){
   const isSpam=confirm('Is this spam? Click OK for Spam, Cancel to mark as Not Relevant instead.');
-  const reason=prompt('Optional note (kept for the record, not shown publicly):')||'';
   const{error}=await sb.from('website_enquiries').update({
     status:isSpam?'Spam':'Not Relevant',updated_at:new Date().toISOString()
   }).eq('id',queryId);

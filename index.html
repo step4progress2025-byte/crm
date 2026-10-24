@@ -1252,7 +1252,16 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           <div id="team-icon-legend" style="font-size:11px;color:var(--ink3);margin-bottom:10px"></div>
           <div id="team-grid"></div>
         </div>
-        <button class="btn btn-p" id="create-user-btn" onclick="openCreateUser()" style="display:none;margin-top:12px;font-size:12px;padding:5px 10px"><i class="ti ti-user-plus"></i>Create user</button>
+        <div id="team-add-bar" style="display:none;margin-top:12px;gap:6px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-p" id="create-user-btn" onclick="openCreateUser()" style="font-size:12px;padding:5px 10px"><i class="ti ti-user-plus"></i>Create user</button>
+          <span style="font-size:11px;color:var(--ink3);margin:0 2px 0 6px">Quick add:</span>
+          <button class="btn" onclick="openCreateUser('Application Team')" style="font-size:12px;padding:5px 10px">+ Application</button>
+          <button class="btn" onclick="openCreateUser('Visa Team')" style="font-size:12px;padding:5px 10px">+ Visa</button>
+          <button class="btn" onclick="openCreateUser('SOP Team')" style="font-size:12px;padding:5px 10px">+ SOP</button>
+          <button class="btn" onclick="openCreateUser('Digital Marketing')" style="font-size:12px;padding:5px 10px">+ Digital Marketing</button>
+          <button class="btn" onclick="openCreateUser('HR')" style="font-size:12px;padding:5px 10px">+ HR</button>
+          <button class="btn" onclick="openCreateUser('Agent')" style="font-size:12px;padding:5px 10px">+ Agent</button>
+        </div>
       </section>
 
       <!-- Events --><section id="sc-events" class="screen"><div class="card" style="margin-bottom:20px"><div class="card-h"><span class="card-t">Events calendar</span><button class="btn btn-p" onclick="openAddEvent()"><i class="ti ti-plus"></i>Add event</button></div><div id="events-calendar"></div></div><div class="card"><div class="card-h"><span class="card-t">Upcoming this month</span></div><div id="events-list"></div></div></section> <!-- Import -->
@@ -1953,7 +1962,7 @@ What would you like help with today?</div>
         </select>
       </div>
       <div class="ff"><label>Referring Agent</label>
-        <select id="f-agent"><option value="">No agent</option></select>
+        <select id="f-agent" onchange="onAgentSelectChange(this)"><option value="">No agent</option><option value="__manual__">Agent (type name)…</option></select>
       </div>
       <div class="ff"><label>Status</label>
         <select id="f-status">
@@ -2596,6 +2605,20 @@ What would you like help with today?</div>
      mobile number already brought in by a different agent — Anushree's
      explicit rule: this one is never allowed to proceed, only "view existing"
      or "OK" are offered). -->
+<!-- Agent typed by hand (lead form: Referring Agent -> "Agent (type name)…") -->
+<div class="mover" id="modal-agent-manual" style="z-index:260">
+  <div class="modal" style="width:440px">
+    <div class="mhead"><span class="mtitle">Agent details</span><button class="mclose" onclick="cancelAgentManual()">×</button></div>
+    <div class="fg">
+      <div class="ff full"><label>Agent name <span style="color:var(--rose)">*</span></label><input id="agent-manual-name" placeholder="Type the agent's name" maxlength="120"></div>
+      <div class="ff full"><label>Notes</label><textarea id="agent-manual-notes" rows="4" placeholder="Add notes about this agent or referral (optional)" style="width:100%"></textarea></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn" onclick="cancelAgentManual()">Cancel</button>
+      <button class="btn btn-p" onclick="saveAgentManual()"><i class="ti ti-check"></i>Save agent</button>
+    </div>
+  </div>
+</div>
 <div class="mover" id="modal-dup-lead">
   <div class="modal" style="width:480px">
     <div class="mhead"><span class="mtitle" id="dup-lead-title">Possible duplicate</span><button class="mclose" onclick="resolveDupLeadModal('cancel')">×</button></div>
@@ -3638,7 +3661,7 @@ function contactIcons(mobile,email,opts){
 function ago(ts){if(!ts)return'';const d=Date.now()-new Date(ts).getTime();if(d<3600000)return Math.round(d/60000)+'m ago';if(d<86400000)return Math.round(d/3600000)+'h ago';return Math.round(d/86400000)+'d ago';}
 
 // ── State ────────────────────────────────────────────────────────
-let leads=[], allLeads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[], editedFromView=null; function openCreateUser(){
+let leads=[], allLeads=[], coaching=[], currentUser=null, curId=null, editMode=false, importRows=[], editedFromView=null; function openCreateUser(presetRole){
   // Only the Super Admin can add team members / send invites.
   if(!canInviteUsers()){toast('Only the Owner, Super Admin or an authorised user can add team members.');return;}
   document.getElementById('inv-name').value='';
@@ -3652,6 +3675,8 @@ let leads=[], allLeads=[], coaching=[], currentUser=null, curId=null, editMode=f
   syncInviteOffice();
   if(isLimitedInviter()&&myOffice){const _o=document.getElementById('inv-office');if(Array.from(_o.options).some(o=>o.value===myOffice))_o.value=myOffice;}
   document.getElementById('invite-link-box').style.display='none';
+  if(presetRole){const _r=document.getElementById('inv-role');if(Array.from(_r.options).some(o=>o.value===presetRole&&!o.disabled))_r.value=presetRole;}
+  syncInviteTeamCategory();
   document.getElementById('modal-invite').classList.add('open');
 }
 // Round-robin state now lives in Supabase (table: round_robin_state), NOT
@@ -4896,9 +4921,50 @@ function populateAgentDropdown(){
   if(!sel)return;
   const current=sel.value;
   const agents=(teamList||[]).filter(t=>t.role==='Agent');
-  sel.innerHTML='<option value="">No agent</option>'+
+  sel.innerHTML='<option value="">No agent</option><option value="__manual__">Agent (type name)…</option>'+
     agents.map(a=>`<option value="${esc(a.full_name)}">${esc(a.full_name)}${a.university_name?' ('+esc(a.university_name)+')':''}</option>`).join('');
-  if(current)sel.value=current;
+  if(current&&current!=='__manual__'){ensureAgentOption(current);sel.value=current;}
+}
+// An agent typed by hand (not a registered Agent login) is kept as its own option so it shows and saves normally.
+function ensureAgentOption(name){
+  const sel=document.getElementById('f-agent');
+  if(!sel||!name||name==='__manual__')return;
+  if(!Array.from(sel.options).some(o=>o.value===name)){
+    const o=document.createElement('option');o.value=name;o.textContent=name+' (typed)';sel.appendChild(o);
+  }
+}
+let _agentPrevValue='';
+window._agentManualNote=null;
+function onAgentSelectChange(sel){
+  if(sel.value==='__manual__'){
+    document.getElementById('agent-manual-name').value='';
+    document.getElementById('agent-manual-notes').value='';
+    document.getElementById('modal-agent-manual').classList.add('open');
+    setTimeout(()=>document.getElementById('agent-manual-name').focus(),50);
+  } else { _agentPrevValue=sel.value; }
+}
+function cancelAgentManual(){
+  document.getElementById('modal-agent-manual').classList.remove('open');
+  const sel=document.getElementById('f-agent');
+  if(sel.value==='__manual__')sel.value=_agentPrevValue||'';
+}
+function saveAgentManual(){
+  const name=document.getElementById('agent-manual-name').value.trim();
+  const note=document.getElementById('agent-manual-notes').value.trim();
+  if(!name){document.getElementById('agent-manual-name').focus();toast('Please type the agent\'s name.');return;}
+  ensureAgentOption(name);
+  const sel=document.getElementById('f-agent');sel.value=name;_agentPrevValue=name;
+  window._agentManualNote=note?{name,text:note}:null;
+  document.getElementById('modal-agent-manual').classList.remove('open');
+}
+// Lead notes with the agent's note added once (no new database column needed).
+function notesWithAgentNote(){
+  const base=document.getElementById('f-notes').value;
+  const n=window._agentManualNote;
+  if(n&&n.text&&document.getElementById('f-agent').value===n.name){
+    return (base?base+'\n':'')+'Agent note ('+n.name+'): '+n.text;
+  }
+  return base;
 }
 function populateCounsellorDropdown(){
   const office=document.getElementById('f-office').value;
@@ -4953,12 +5019,16 @@ async function generateInviteLink(){
   const name=document.getElementById('inv-name').value.trim();
   let teamCategory=role==='Agent'?'Agent':(document.getElementById('inv-teamcat')?.value||'International');
   if(isLimitedInviter()){
-    if(!LIMITED_INVITE_ROLES.includes(role)){toast('You can invite Counsellor, Application, Visa, SOP or Digital Marketing staff.');return;}
-    if(isDomesticOnlyInviter())teamCategory='Domestic';
+    if(!LIMITED_INVITE_ROLES.includes(role)){toast('You can add Counsellor, Application, Visa, SOP, Digital Marketing, HR staff or Agents.');return;}
+    if(role==='Agent')teamCategory='Agent';
+    else if(isDomesticOnlyInviter())teamCategory='Domestic';
     else{
       if(country!==myCountry){toast('You can only invite people into your own country.');return;}
       teamCategory='International';
     }
+  } else if(isDirectorInviter()){
+    if(isDomesticOnlyInviter())teamCategory='Domestic';
+    else if(role!=='Agent')teamCategory='International';
   }
   if(!recipientEmail){toast('Enter the recipient email first.');document.getElementById('inv-recipient-email').focus();return;}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)){toast('Enter a valid recipient email.');document.getElementById('inv-recipient-email').focus();return;}
@@ -5079,11 +5149,13 @@ async function acceptPendingTeamInviteIfNeeded(){
 // Can create users / invite links WITHOUT being a full super admin.
 const USER_INVITER_EMAILS=['a.jena@step4progress.co.uk']; // Domestic-only inviter (not a full admin)
 function isDomesticOnlyInviter(){return !isSuperAdmin&&(USER_INVITER_EMAILS.includes(String(currentUser?.email||'').toLowerCase())||(myTeamCategory==='Domestic'&&['Admin','Manager','Director'].includes(myRole)));}
-function isLimitedInviter(){return !isSuperAdmin&&(USER_INVITER_EMAILS.includes(String(currentUser?.email||'').toLowerCase())||['Admin','Manager','Director'].includes(myRole));}
+// Directors may add any role (management included); Admins / Managers only non-management staff.
+function isDirectorInviter(){return !isSuperAdmin&&myRole==='Director'&&!USER_INVITER_EMAILS.includes(String(currentUser?.email||'').toLowerCase());}
+function isLimitedInviter(){return !isSuperAdmin&&!isDirectorInviter()&&(USER_INVITER_EMAILS.includes(String(currentUser?.email||'').toLowerCase())||['Admin','Manager','Director'].includes(myRole));}
 // Super Admins + Anushree: unrestricted. Admins/Managers/Directors: may invite non-management staff
 // into their OWN country only (the database enforces the same rules).
-function canInviteUsers(){return (isSuperAdmin&&!isViewOnly)||USER_INVITER_EMAILS.includes(String(currentUser?.email||'').toLowerCase())||isLimitedInviter();}
-const LIMITED_INVITE_ROLES=['Counsellor','Application Team','Visa Team','SOP Team','Digital Marketing'];
+function canInviteUsers(){return (isSuperAdmin&&!isViewOnly)||USER_INVITER_EMAILS.includes(String(currentUser?.email||'').toLowerCase())||isDirectorInviter()||isLimitedInviter();}
+const LIMITED_INVITE_ROLES=['Counsellor','Application Team','Visa Team','SOP Team','Digital Marketing','HR','Agent'];
 const SUPER_ADMIN_EMAILS=['india@step4progress.com','jisan@step4progress.co.uk','simun@step4progress.co.uk','pavitra@step4progress.com'];
 // VIEW-ONLY viewers: see everything a Super Admin (Jisan) sees — all teams/offices except India — but cannot change anything.
 const VIEW_ONLY_EMAILS=[]; // Simun now has Jisan-level (near-owner) access, so nobody is view-only any more
@@ -8903,7 +8975,8 @@ function editLead(){
     cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);
     cf.value=l.counsellor||'';
     populateAgentDropdown();
-    document.getElementById('f-agent').value=l.agent||'';
+    ensureAgentOption(l.agent);
+    document.getElementById('f-agent').value=l.agent||'';_agentPrevValue=l.agent||'';window._agentManualNote=null;
     setupAssignModeUI();
     // Editing an existing lead always starts in Manual mode with its current
     // counsellor shown — round robin should never silently re-roll an
@@ -8947,7 +9020,7 @@ function openAddLead(){
   if(canSwitchOpsViewUser()&&superAdminOpsView==='Domestic'){try{syncMobileCode();syncBudgetCurrency();}catch(e){}}
   document.getElementById('f-status').value='New Enquiry';
   document.getElementById('f-prio').value='Medium';
-  document.getElementById('f-agent').value='';
+  document.getElementById('f-agent').value='';_agentPrevValue='';window._agentManualNote=null;
   populateCounsellorDropdown();
   populateAgentDropdown();
   populateSubTeamDropdowns();
@@ -9136,7 +9209,7 @@ async function saveLead(){
     nationality:document.getElementById('f-nationality').value||null,
     next_followup:document.getElementById('f-fu').value||null,
     visa_deadline:document.getElementById('f-visa-deadline').value||null,
-    notes:document.getElementById('f-notes').value,     intake_month:document.getElementById('f-intake').value,     ielts_type:document.getElementById('f-ielts-type').value,     ielts_status:document.getElementById('f-ielts-status').value,     ielts_score:document.getElementById('f-ielts-score').value,     finance_years:document.getElementById('f-finance-years').value||null,     class_timing:document.getElementById('f-class-timing').value,     student_id:document.getElementById('f-student-id').value,     budget_range:document.getElementById('f-budget').value,     budget_currency:document.getElementById('f-budget-currency').value,     english_status:document.getElementById('f-english').value,     whatsapp_group_link:document.getElementById('f-walink').value,     doc_folder_link:document.getElementById('f-doclink').value,
+    notes:notesWithAgentNote(),     intake_month:document.getElementById('f-intake').value,     ielts_type:document.getElementById('f-ielts-type').value,     ielts_status:document.getElementById('f-ielts-status').value,     ielts_score:document.getElementById('f-ielts-score').value,     finance_years:document.getElementById('f-finance-years').value||null,     class_timing:document.getElementById('f-class-timing').value,     student_id:document.getElementById('f-student-id').value,     budget_range:document.getElementById('f-budget').value,     budget_currency:document.getElementById('f-budget-currency').value,     english_status:document.getElementById('f-english').value,     whatsapp_group_link:document.getElementById('f-walink').value,     doc_folder_link:document.getElementById('f-doclink').value,
     added_by:currentUser?.id
   };
   // No auto round-robin for Application/Visa/SOP — manual hand-off only,
@@ -10974,7 +11047,7 @@ function initReports(){
   }
   const agentSel=document.getElementById('rpt-agent');
   if(agentSel){
-    const agents=[...new Set((teamList||[]).filter(t=>t.role==='Agent'&&memberInOpsView(t)).map(t=>t.full_name).filter(Boolean))].sort();
+    const agents=[...new Set([...(teamList||[]).filter(t=>t.role==='Agent'&&memberInOpsView(t)).map(t=>t.full_name),...(leads||[]).map(l=>l.agent)].filter(Boolean))].sort();
     agentSel.innerHTML='<option value="All">All agents</option>'+agents.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
   }
   const uniSel=document.getElementById('rpt-university');
@@ -11268,7 +11341,7 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
 
     // "Add team member" — Super Admin only, god access.
     const cu=document.getElementById('create-user-btn');
-    if(cu) cu.style.display=canInviteUsers()?'inline-flex':'none';
+    const _tab=document.getElementById('team-add-bar');if(_tab)_tab.style.display=canInviteUsers()?'flex':'none';
 
     // Student Portal tab — Owner/Platform Administrator/Super Admin tier
     // only (isSuperAdmin already covers all three, since it's the same

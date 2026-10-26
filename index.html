@@ -3046,6 +3046,19 @@ What would you like help with today?</div>
     <span onclick="toggleNotifPanel()" style="font-size:18px;line-height:1;cursor:pointer;color:var(--ink3)">×</span>
   </div>
   <div id="notif-list" style="overflow-y:auto;flex:1"></div>
+  <div style="border-top:1px solid var(--line);font-size:11px;color:var(--ink2)">
+    <div onclick="toggleNotifPrefs()" style="padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-settings" style="font-size:13px"></i> My notification settings <span id="notif-prefs-caret" style="margin-left:auto">▸</span></div>
+    <div id="notif-prefs" style="display:none;padding:2px 12px 9px;line-height:2">
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-weight:600"><input type="checkbox" id="np-enabled" onchange="saveNotifPrefs()"> Lead notifications on</label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="np-sound" onchange="saveNotifPrefs()"> Play a sound</label>
+      <div style="color:var(--ink3);margin-top:2px">Tell me about:</div>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="np-k-assigned" onchange="saveNotifPrefs()"> A lead sent to me</label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="np-k-new" onchange="saveNotifPrefs()"> New leads</label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="np-k-update" onchange="saveNotifPrefs()"> Edits to a lead</label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="np-k-sop" onchange="saveNotifPrefs()"> SOP uploads</label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="np-k-documents" onchange="saveNotifPrefs()"> Document uploads</label>
+    </div>
+  </div>
   <div style="padding:7px 12px;border-top:1px solid var(--line);font-size:11px;color:var(--ink3)">
     <span id="push-state-text"></span> <span onclick="togglePushSubscription()" style="color:var(--pine);cursor:pointer;text-decoration:underline">Desktop alerts on/off</span>
   </div>
@@ -6083,7 +6096,7 @@ async function processLeadRefresh(){
     if(dup){playDuplicateLeadChime();toast('⚠️ Possible duplicate lead: '+(r.name||'Unnamed')+' — same mobile number as an existing lead');}
     else{playNewLeadChime();toast('📥 New lead: '+(r.name||'Unnamed'));}
   });
-  if(assignedToMe.length){
+  if(assignedToMe.length&&!window._notifOk){ // once the notification bell is set up it announces assignments itself
     playNewLeadChime();
     toast(assignedToMe.length===1?'📌 Lead assigned to you: '+(assignedToMe[0].name||'Unnamed'):'📌 '+assignedToMe.length+' leads assigned to you');
   }
@@ -6093,6 +6106,38 @@ async function processLeadRefresh(){
 }
 // ── Notification bell (unread count, list, sound) ────────────────────
 let notifItems=[],_notifCursor=null,_notifChannel=null;
+let notifPrefs={enabled:true,sound:true,kinds:{}};
+const NOTIF_KINDS=['assigned','new','update','sop','documents'];
+function fillNotifPrefsUI(){
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.checked=!!v;};
+  set('np-enabled',notifPrefs.enabled);set('np-sound',notifPrefs.sound);
+  NOTIF_KINDS.forEach(k=>set('np-k-'+k,notifPrefs.kinds[k]!==false));
+  NOTIF_KINDS.forEach(k=>{const e=document.getElementById('np-k-'+k);if(e)e.disabled=!notifPrefs.enabled;});
+  const s=document.getElementById('np-sound');if(s)s.disabled=!notifPrefs.enabled;
+}
+function toggleNotifPrefs(){
+  const d=document.getElementById('notif-prefs'),c=document.getElementById('notif-prefs-caret');if(!d)return;
+  const open=d.style.display==='none';d.style.display=open?'block':'none';if(c)c.textContent=open?'▾':'▸';
+  if(open)fillNotifPrefsUI();
+}
+async function loadNotifPrefs(){
+  try{
+    const{data,error}=await sb.from('lead_notif_prefs').select('*').eq('user_id',currentUser.id).maybeSingle();
+    if(!error&&data)notifPrefs={enabled:data.enabled!==false,sound:data.sound!==false,kinds:data.kinds||{}};
+  }catch(e){}
+  fillNotifPrefsUI();
+}
+async function saveNotifPrefs(){
+  const g=id=>{const e=document.getElementById(id);return e?e.checked:true;};
+  notifPrefs.enabled=g('np-enabled');notifPrefs.sound=g('np-sound');
+  NOTIF_KINDS.forEach(k=>{notifPrefs.kinds[k]=g('np-k-'+k);});
+  fillNotifPrefsUI();
+  try{
+    const{error}=await sb.from('lead_notif_prefs').upsert({user_id:currentUser.id,enabled:notifPrefs.enabled,sound:notifPrefs.sound,kinds:notifPrefs.kinds,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    if(error)toast('Could not save your settings: '+error.message);
+    else toast(notifPrefs.enabled?'Notification settings saved.':'Lead notifications turned off.');
+  }catch(e){}
+}
 function notifAgo(iso){
   const s=Math.max(0,(Date.now()-new Date(iso).getTime())/1000);
   if(s<60)return 'just now';if(s<3600)return Math.floor(s/60)+' min ago';
@@ -6152,15 +6197,17 @@ function addNotifRows(rows,announce){
   fresh.forEach(r=>{if(!_notifCursor||new Date(r.created_at)>new Date(_notifCursor))_notifCursor=r.created_at;});
   updateNotifBadge();
   const p=document.getElementById('notif-panel');if(p&&p.style.display==='flex')renderNotifPanel();
-  if(announce&&fresh.length){
-    playNewLeadChime();
+  if(announce&&fresh.length&&notifPrefs.enabled){
+    if(notifPrefs.sound)playNewLeadChime();
     toast(fresh.length===1?(({assigned:'📌 ',new:'📥 ',sop:'✍️ ',documents:'📎 '})[fresh[0].kind]||'🔔 ')+fresh[0].title:'🔔 '+fresh.length+' new notifications');
   }
 }
 async function startNotifications(){
   notifItems=[];_notifCursor=new Date().toISOString();updateNotifBadge();
+  await loadNotifPrefs();
   try{
     const{data,error}=await sb.from('lead_notifications').select('*').order('created_at',{ascending:false}).limit(60);
+    window._notifOk=!error;
     if(!error&&data){addNotifRows(data,false);if(data.length)_notifCursor=data[0].created_at;else _notifCursor=new Date().toISOString();}
   }catch(e){}
   try{if(_notifChannel)sb.removeChannel(_notifChannel);}catch(e){}

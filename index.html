@@ -3038,7 +3038,18 @@ What would you like help with today?</div>
   </div>
 </div>
 
-<div id="events-widget" style="position:fixed;top:calc(50% - 60px);right:72px;width:260px;background:var(--pine);border-radius:12px;padding:12px 14px;z-index:400;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.2)"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"> <span style="color:#fff;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Upcoming events</span> <span onclick="document.getElementById('events-widget').style.display='none'" style="color:rgba(255,255,255,0.6);cursor:pointer;font-size:18px;line-height:1">&times;</span> </div> <div id="events-ticker" style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.6"></div> </div> <div id="dm-bell" onclick="openDmInbox()" style="position:fixed;top:calc(50% + 60px);right:18px;width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-message-circle-2" style="color:#fff;font-size:20px"></i> <span id="dm-badge" style="position:absolute;top:-2px;right:-2px;background:var(--rose);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="push-bell" onclick="togglePushSubscription()" title="Click to enable notifications" style="position:fixed;top:calc(50% + 120px);right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2);opacity:.55"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> </div>
+<div id="events-widget" style="position:fixed;top:calc(50% - 60px);right:72px;width:260px;background:var(--pine);border-radius:12px;padding:12px 14px;z-index:400;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.2)"> <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"> <span style="color:#fff;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.05em">Upcoming events</span> <span onclick="document.getElementById('events-widget').style.display='none'" style="color:rgba(255,255,255,0.6);cursor:pointer;font-size:18px;line-height:1">&times;</span> </div> <div id="events-ticker" style="color:rgba(255,255,255,0.9);font-size:13px;line-height:1.6"></div> </div> <div id="dm-bell" onclick="openDmInbox()" style="position:fixed;top:calc(50% + 60px);right:18px;width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-message-circle-2" style="color:#fff;font-size:20px"></i> <span id="dm-badge" style="position:absolute;top:-2px;right:-2px;background:var(--rose);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="push-bell" onclick="toggleNotifPanel()" title="Notifications" style="position:fixed;top:calc(50% + 120px);right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-bell" style="color:#fff;font-size:20px"></i> <span id="notif-badge" style="position:absolute;top:-4px;right:-4px;background:#e0245e;color:#fff;border-radius:10px;min-width:18px;height:18px;padding:0 5px;font-size:11px;font-weight:700;display:none;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--paper)"></span> </div>
+<div id="notif-panel" style="display:none;position:fixed;right:72px;bottom:70px;width:340px;max-width:calc(100vw - 90px);max-height:min(70vh,520px);background:var(--paper);border:1px solid var(--line2);border-radius:12px;box-shadow:0 10px 34px rgba(0,0,0,.28);z-index:402;flex-direction:column;overflow:hidden">
+  <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)">
+    <b style="font-size:13px;flex:1">Notifications</b>
+    <span onclick="markAllNotifsRead()" style="font-size:11px;color:var(--pine);cursor:pointer;text-decoration:underline">Mark all read</span>
+    <span onclick="toggleNotifPanel()" style="font-size:18px;line-height:1;cursor:pointer;color:var(--ink3)">×</span>
+  </div>
+  <div id="notif-list" style="overflow-y:auto;flex:1"></div>
+  <div style="padding:7px 12px;border-top:1px solid var(--line);font-size:11px;color:var(--ink3)">
+    <span id="push-state-text"></span> <span onclick="togglePushSubscription()" style="color:var(--pine);cursor:pointer;text-decoration:underline">Desktop alerts on/off</span>
+  </div>
+</div>
 <div id="events-bell" onclick="toggleEventsWidget()" style="position:fixed;top:calc(50% - 60px);right:18px;width:44px;height:44px;border-radius:50%;background:var(--pine);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-calendar-event" style="color:#fff;font-size:20px"></i> <span id="events-badge" style="position:absolute;top:-2px;right:-2px;background:#F1239;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="ann-bell" onclick="openAnnouncements()" style="position:fixed;top:calc(50% + 0px);right:18px;width:44px;height:44px;border-radius:50%;background:var(--ember);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:401;box-shadow:0 2px 12px rgba(0,0,0,0.2)"> <i class="ti ti-speakerphone" style="color:#fff;font-size:19px"></i> <span id="ann-badge" style="position:absolute;top:-2px;right:-2px;background:var(--rose);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center"></span> </div> <div id="super-admin-notif-list" style="position:fixed;bottom:24px;left:18px;z-index:500;display:flex;flex-direction:column-reverse;gap:8px;max-width:320px"></div>
 <div id="urgent-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,20,20,.6);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
   <div id="urgent-popup-card" style="background:#fff;border-radius:18px;padding:0;max-width:460px;width:92%;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden"></div>
@@ -3411,8 +3422,7 @@ async function togglePushSubscription(){
 function updatePushBellUI(subscribed){
   const el=document.getElementById('push-bell');
   if(!el)return;
-  el.title=subscribed?'Notifications on — click to turn off':'Click to enable notifications';
-  el.style.opacity=subscribed?'1':'.55';
+  const st=document.getElementById('push-state-text');if(st)st.textContent=subscribed?'Desktop alerts: on.':'Desktop alerts: off.';
 }
 // Sends a push to one team member by their team_members id, via the
 // send-push Edge Function (this is the only piece that can hold the
@@ -5602,6 +5612,7 @@ pruneIndiaFromCrmDropdowns();
   }).subscribe();
 
   startLiveSync();
+  startNotifications();
   // Instant message tone: listen for direct messages addressed to me, rather
   // than waiting for the 60-second poll to notice them.
   sb.channel('dm-incoming-'+currentUser.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'direct_messages',filter:'recipient_id=eq.'+currentUser.id},(payload)=>{
@@ -6080,6 +6091,90 @@ async function processLeadRefresh(){
   renderDash();renderLeads();renderFU();badges();
   newlyArrived.forEach(r=>setTimeout(()=>{const el=document.querySelector(`[data-lead-id="${r.id}"]`);if(el)el.classList.add('new-lead-flash');},50));
 }
+// ── Notification bell (unread count, list, sound) ────────────────────
+let notifItems=[],_notifCursor=null,_notifChannel=null;
+function notifAgo(iso){
+  const s=Math.max(0,(Date.now()-new Date(iso).getTime())/1000);
+  if(s<60)return 'just now';if(s<3600)return Math.floor(s/60)+' min ago';
+  if(s<86400)return Math.floor(s/3600)+' h ago';return Math.floor(s/86400)+' d ago';
+}
+function updateNotifBadge(){
+  const n=notifItems.filter(x=>!x.read_at).length;
+  const b=document.getElementById('notif-badge');
+  if(b){b.textContent=n>99?'99+':String(n);b.style.display=n?'flex':'none';}
+  try{document.title=(n?'('+(n>99?'99+':n)+') ':'')+document.title.replace(/^\(\d+\+?\)\s*/,'');}catch(e){}
+}
+function renderNotifPanel(){
+  const el=document.getElementById('notif-list');if(!el)return;
+  if(!notifItems.length){el.innerHTML='<div style="padding:26px 14px;text-align:center;font-size:12px;color:var(--ink3)">No notifications yet.</div>';return;}
+  const icon={assigned:'📌',new:'📥',sop:'✍️',documents:'📎',update:'✏️'};
+  el.innerHTML=notifItems.map(n=>`<div onclick="openNotif(${n.id})" style="display:flex;gap:9px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;background:${n.read_at?'transparent':'rgba(224,36,94,.07)'}">
+    <div style="font-size:16px;line-height:1.3">${icon[n.kind]||'🔔'}</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;font-weight:${n.read_at?500:700};color:var(--ink)">${esc(n.title)}</div>
+      ${n.body?`<div style="font-size:11px;color:var(--ink2);margin-top:2px">${esc(n.body)}</div>`:''}
+      <div style="font-size:10px;color:var(--ink3);margin-top:3px">${n.actor_name?esc(n.actor_name)+' · ':''}${notifAgo(n.created_at)}</div>
+    </div>
+    ${n.read_at?'':'<span style="width:8px;height:8px;border-radius:50%;background:#e0245e;margin-top:5px;flex-shrink:0"></span>'}
+  </div>`).join('');
+}
+function toggleNotifPanel(){
+  const p=document.getElementById('notif-panel');if(!p)return;
+  const open=p.style.display!=='flex';
+  p.style.display=open?'flex':'none';
+  if(open){renderNotifPanel();isPushSubscribed().then(updatePushBellUI).catch(()=>{});}
+}
+async function markNotifRead(id){
+  const n=notifItems.find(x=>x.id===id);if(!n||n.read_at)return;
+  n.read_at=new Date().toISOString();updateNotifBadge();
+  try{await sb.from('lead_notifications').update({read_at:n.read_at}).eq('id',id);}catch(e){}
+}
+async function markAllNotifsRead(){
+  const ids=notifItems.filter(x=>!x.read_at).map(x=>x.id);if(!ids.length)return;
+  const now=new Date().toISOString();notifItems.forEach(x=>{if(!x.read_at)x.read_at=now;});
+  updateNotifBadge();renderNotifPanel();
+  try{await sb.from('lead_notifications').update({read_at:now}).in('id',ids);}catch(e){}
+}
+function openNotif(id){
+  const n=notifItems.find(x=>x.id===id);if(!n)return;
+  markNotifRead(id);renderNotifPanel();
+  if(n.lead_id){
+    const p=document.getElementById('notif-panel');if(p)p.style.display='none';
+    if(leads.some(l=>l.id===n.lead_id)||allLeads.some(l=>l.id===n.lead_id))openLeadDetail(n.lead_id);
+    else toast('This lead is not in your list right now.');
+  }
+}
+function addNotifRows(rows,announce){
+  const fresh=[];
+  rows.forEach(r=>{if(!notifItems.some(x=>x.id===r.id)){notifItems.push(r);fresh.push(r);}});
+  notifItems.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  notifItems=notifItems.slice(0,100);
+  fresh.forEach(r=>{if(!_notifCursor||new Date(r.created_at)>new Date(_notifCursor))_notifCursor=r.created_at;});
+  updateNotifBadge();
+  const p=document.getElementById('notif-panel');if(p&&p.style.display==='flex')renderNotifPanel();
+  if(announce&&fresh.length){
+    playNewLeadChime();
+    toast(fresh.length===1?(({assigned:'📌 ',new:'📥 ',sop:'✍️ ',documents:'📎 '})[fresh[0].kind]||'🔔 ')+fresh[0].title:'🔔 '+fresh.length+' new notifications');
+  }
+}
+async function startNotifications(){
+  notifItems=[];_notifCursor=new Date().toISOString();updateNotifBadge();
+  try{
+    const{data,error}=await sb.from('lead_notifications').select('*').order('created_at',{ascending:false}).limit(60);
+    if(!error&&data){addNotifRows(data,false);if(data.length)_notifCursor=data[0].created_at;else _notifCursor=new Date().toISOString();}
+  }catch(e){}
+  try{if(_notifChannel)sb.removeChannel(_notifChannel);}catch(e){}
+  try{
+    _notifChannel=sb.channel('lead-notifs-'+currentUser.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'lead_notifications',filter:'user_id=eq.'+currentUser.id},(p)=>{if(p.new)addNotifRows([p.new],true);}).subscribe();
+  }catch(e){}
+}
+async function pollNotifications(){
+  if(!currentUser||!_notifCursor)return;
+  try{
+    const{data,error}=await sb.from('lead_notifications').select('*').gt('created_at',_notifCursor).order('created_at',{ascending:true}).limit(50);
+    if(!error&&data&&data.length)addNotifRows(data,true);
+  }catch(e){}
+}
 // ── Live sync ─────────────────────────────────────────────────────────
 // Realtime can silently stop (sleeping laptop, network blip, table not published), which is why
 // people had to refresh. This polls for anything changed since the last check every 5 seconds,
@@ -6099,6 +6194,7 @@ function startLiveSync(){
 async function liveSyncTick(){
   if(!currentUser||_liveBusy||!_leadCursor)return;
   _liveBusy=true;
+  pollNotifications();
   try{
     const {q}=await scopedLeadsQuery();
     const{data,error}=await q.gt('updated_at',_leadCursor).order('updated_at',{ascending:true}).limit(300);
@@ -11678,7 +11774,7 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
       </tr>`;
     }).join('')}</tbody></table>`;
   }
-  const DEFAULT_DOCS=['Academic Certificate','Academic Transcript','English Test Certificate/ MOI','Passport','CV','LOR','Gap Justification','SOP','Photo','Bank Statement'];
+  const DEFAULT_DOCS=['Academic Certificate','Academic Transcript','English Test Certificate/ MOI','Passport','CV','LOR','Gap Justification','Photo','Bank Statement'];
   // Domestic (UK) leads get these four in addition to the standard list
   // above — genuinely UK-specific document types that don't apply to an
   // International application, so they're additive, not a replacement.
@@ -11692,7 +11788,7 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
     return isDomestic?[...DEFAULT_DOCS,...DOMESTIC_EXTRA_DOCS]:DEFAULT_DOCS;
   }
   async function loadDocs(leadId){const{data,error}=await sb.from('documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});if(!error&&data){await renderDocs(data);}else{await renderDocs([]);}}
-async function renderDocs(docs){const el=document.getElementById('d-doc-list');if(!el)return;if(!docs.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet. Click Init checklist to start.</div>';return;}await loadDocFilesFor(docs.map(d=>d.id));el.innerHTML=docs.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',false)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',false)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiry('${d.id}','${escJs(d.expiry_date||'')}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
+async function renderDocs(docs){docs=(docs||[]).filter(d=>d.doc_name!=='SOP'); /* SOPs have their own section now */const el=document.getElementById('d-doc-list');if(!el)return;if(!docs.length){el.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:6px 0">No checklist yet. Click Init checklist to start.</div>';return;}await loadDocFilesFor(docs.map(d=>d.id));el.innerHTML=docs.map(d=>{const myFiles=docFilesByDoc[d.id]||[];const filesHtml=myFiles.map(f=>`<div style="font-size:11px;margin-top:1px;display:flex;align-items:center;gap:6px"><a href="${f.attachment_url}" target="_blank" style="color:var(--pine);text-decoration:underline"><i class="ti ti-paperclip"></i> ${esc(f.attachment_filename||'File')}</a><span onclick="event.stopPropagation();deleteDocFile('${f.id}',false)" title="Remove file" style="color:var(--rose);cursor:pointer;font-weight:600">×</span></div>`).join('');return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${d.status==='Done'?'checked':''} onchange="toggleDoc('${d.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pine)"><div style="flex:1"><span style="font-size:13px;${d.status==='Done'?'text-decoration:line-through;color:var(--ink3)':''}">${esc(d.doc_name)}</span>${d.expiry_date?`<div style="font-size:11px;margin-top:1px">Expires: ${formatExpiryDisplay(d.expiry_date,30)}</div>`:''}${filesHtml}</div><button onclick="triggerDocUpload('${d.id}',false)" title="Upload file(s)" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-upload"></i></button><button onclick="setDocExpiry('${d.id}','${escJs(d.expiry_date||'')}')" title="Set expiry date" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:0 4px"><i class="ti ti-calendar-due"></i></button><span class="pill" style="background:${d.status==='Done'?'#DCFCE7':'#FEF9C3'};color:${d.status==='Done'?'#166534':'#854D0E'}">${d.status}</span></div>`;}).join('');}
 function setDocExpiry(id,current){openQuickInput('Set expiry date','Expiry date','date',current,(val)=>{sb.from('documents').update({expiry_date:val||null}).eq('id',id).then(({error})=>{if(error){toast('Error: '+error.message);return;}loadDocs(curId);toast('Expiry date updated.');});});}
 async function initDocs(){
   if(!curId)return;
@@ -14775,7 +14871,7 @@ function broadcastStopEditing(leadId) {
           setInterval(() => reg.update(), 60 * 60 * 1000);
           reg.pushManager.getSubscription().then((sub) => {
             const bell = document.getElementById('push-bell');
-            if (bell) { bell.title = sub ? 'Notifications on — click to turn off' : 'Click to enable notifications'; bell.style.opacity = sub ? '1' : '.55'; }
+            updatePushBellUI(!!sub);
           });
           reg.addEventListener('updatefound', () => {
             const newSW = reg.installing;

@@ -9086,7 +9086,8 @@ function applyDomesticLeadForm(){
   const dom=leadFormIsDomestic();
   fillCityList();
   const show=(id,on)=>{const e=document.getElementById(id);if(e)e.style.display=on?'':'none';};
-  show('ff-country',!dom);show('ff-nationality',!dom);show('ff-pob',dom);
+  show('ff-country',!dom);show('ff-nationality',!dom);show('ff-dest',!dom);show('ff-pob',dom);
+  if(dom){const o=document.getElementById('f-dest-other');if(o)o.style.display='none';}
   const city=document.getElementById('f-city'),lbl=document.getElementById('lbl-f-city');
   if(city){if(dom){city.setAttribute('list','uk-cities-dl');city.placeholder='Choose a UK city or type your own';}else{city.removeAttribute('list');city.placeholder='Chennai';}}
   if(lbl)lbl.textContent=dom?'City *':'Country / City *';
@@ -9094,6 +9095,7 @@ function applyDomesticLeadForm(){
     const fc=document.getElementById('f-country'),fn=document.getElementById('f-nationality');
     if(!fc.value){fc.value='UK';try{syncLeadOffice();syncMobileCode();syncBudgetCurrency();}catch(e){}}
     if(!fn.value)fn.value='UK';
+    const fd=document.getElementById('f-dest');if(!fd.value)fd.value='UK'; // home recruitment: no destination question, stored as UK
   }
 }
 function openAddLead(){
@@ -9259,7 +9261,7 @@ async function saveLead(){
   const dobVal=document.getElementById('f-dob').value;
   if(!dobVal){document.getElementById('f-dob').focus();toast('Please enter the date of birth — this is required.');return;}
   const destVal=document.getElementById('f-dest').value;
-  if(!destVal){document.getElementById('f-dest').focus();toast('Please select a destination country — this is required.');return;}
+  if(!destVal&&!_domForm){document.getElementById('f-dest').focus();toast('Please select a destination country — this is required.');return;}
   // Only check for duplicates when creating a brand new lead — not on every
   // edit of an existing one, since that would just flag the lead against itself.
   if(!(editMode&&curId)){

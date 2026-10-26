@@ -6585,8 +6585,20 @@ let currentSubTeamView=null;
 // the SOP Team's "Completed" tile on its dashboard subpage.
 let sopUploadedLeadIds=new Set();
 async function loadSopUploadedLeadIds(){
-  const{data,error}=await sb.from('sop_documents').select('lead_id');
-  if(!error&&data) sopUploadedLeadIds=new Set(data.map(r=>r.lead_id));
+  const{data,error}=await fetchAllPages(()=>sb.from('sop_documents').select('lead_id,university').order('id',{ascending:true}));
+  if(error||!data)return;
+  // A lead counts as "SOP done" only when EVERY university linked on it has its own SOP.
+  // A lead with no university links yet counts as done once it has any SOP file.
+  let links=[];
+  try{const r=await fetchAllPages(()=>sb.from('university_links').select('lead_id,university_name').order('id',{ascending:true}));if(!r.error&&r.data)links=r.data;}catch(e){}
+  const norm=s=>String(s||'').trim().toLowerCase();
+  const sopsBy={};data.forEach(r=>{(sopsBy[r.lead_id]=sopsBy[r.lead_id]||new Set()).add(norm(r.university));});
+  const linksBy={};links.forEach(r=>{(linksBy[r.lead_id]=linksBy[r.lead_id]||new Set()).add(norm(r.university_name));});
+  sopUploadedLeadIds=new Set(Object.keys(sopsBy).filter(id=>{
+    const need=linksBy[id];
+    if(!need||!need.size)return true;
+    return [...need].every(u=>sopsBy[id].has(u));
+  }));
 }
 // General document uploads (any document type, not just SOP) — used to
 // redefine Active Pipeline: a lead only counts as genuinely "active" if
@@ -7674,7 +7686,8 @@ async function loadSopDocuments(leadId,isFS){
   // Populate the university picker from this lead's own University
   // Applications, so an SOP can be tagged to the exact one it's for.
   const{data:uniApps}=await sb.from('university_applications').select('university').eq('lead_id',leadId);
-  const uniNames=[...new Set((uniApps||[]).map(u=>u.university).filter(Boolean))];
+  const{data:uniLinkRows}=await sb.from('university_links').select('university_name').eq('lead_id',leadId);
+  const uniNames=[...new Set([...(uniApps||[]).map(u=>u.university),...(uniLinkRows||[]).map(u=>u.university_name)].filter(Boolean))];
   if(uniSelectEl){
     uniSelectEl.innerHTML=(uniNames.length?uniNames.map(n=>`<option>${esc(n)}</option>`).join(''):'')+'<option value="__other__">Other / type below…</option>';
   }
@@ -7708,14 +7721,14 @@ async function uploadSopDocuments(isFS){
     results.push({...r,name:file.name});
   }
   fileInput.value='';
-  loadSopDocuments(curId,isFS);
+  loadSopDocuments(curId,isFS);loadUniversityLinks(curId,isFS);try{loadSopUploadedLeadIds();}catch(e){}
   reportUploadBatch(results,'SOP document(s)');
 }
 async function deleteSopDocument(id,isFS){
   if(!confirm('Delete this SOP document?'))return;
   const{error:_de}=await sb.from('sop_documents').delete().eq('id',id);
   if(_de){toast('Could not delete: '+_de.message);return;}
-  loadSopDocuments(curId,isFS);
+  loadSopDocuments(curId,isFS);loadUniversityLinks(curId,isFS);try{loadSopUploadedLeadIds();}catch(e){}
   toast('Deleted.');
 }
 
@@ -7728,14 +7741,47 @@ async function loadUniversityLinks(leadId,isFS){
   if(!listEl)return;
   const{data,error}=await sb.from('university_links').select('*').eq('lead_id',leadId).order('created_at',{ascending:true});
   if(error){listEl.innerHTML='<div style="font-size:12px;color:var(--ink3);font-style:italic">Could not load — has university_links been created in Supabase yet?</div>';return;}
+  const{data:sops}=await sb.from('sop_documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:false});
+  const norm=s=>String(s||'').trim().toLowerCase();
+  const sopFor=name=>(sops||[]).filter(s=>norm(s.university)===norm(name));
   if(!data||!data.length){listEl.innerHTML=emptyState('🔗','No universities linked yet.');return;}
-  listEl.innerHTML=data.map(u=>`<div style="padding:6px 0;border-bottom:1px solid var(--line)">
+  const used=new Set();
+  const rows=data.map(u=>{
+    const mine=sopFor(u.university_name);mine.forEach(s=>used.add(s.id));
+    const sopHtml=mine.length
+      ?mine.map(s=>`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px"><a href="${esc(s.attachment_url)}" target="_blank" style="font-size:11px;color:var(--pine);text-decoration:underline;display:inline-flex;align-items:center;gap:3px"><i class="ti ti-file-text" style="font-size:12px"></i>${esc(s.attachment_filename||'SOP file')}</a><span onclick="deleteSopDocument('${s.id}',${isFS})" title="Remove this SOP" style="color:var(--ink3);cursor:pointer">×</span></span>`).join('')
+      :'<span style="font-size:11px;color:var(--rose);font-weight:600">No SOP yet</span>';
+    return `<div style="padding:7px 0;border-bottom:1px solid var(--line)">
     <div style="display:flex;align-items:center;gap:8px">
       <a href="${esc(u.url)}" target="_blank" style="flex:1;font-size:12px;color:var(--pine);text-decoration:underline;display:flex;align-items:center;gap:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><i class="ti ti-external-link" style="font-size:13px;flex-shrink:0"></i>${esc(u.university_name||'Open link')}</a>
       <span onclick="deleteUniversityLink('${u.id}',${isFS})" title="Remove" style="color:var(--rose);cursor:pointer;font-weight:600;flex-shrink:0">×</span>
     </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;font-size:11px">
+      <span style="color:var(--ink3);font-weight:600">SOP:</span>${sopHtml}
+      <label style="margin-left:auto;font-size:11px;color:var(--pine);cursor:pointer;border:1px solid var(--line2);border-radius:var(--r);padding:2px 8px;white-space:nowrap"><i class="ti ti-upload" style="font-size:12px"></i> ${mine.length?'Add another':'Upload SOP'}<input type="file" multiple style="display:none" onchange="uploadSopForUniversity(this,${JSON.stringify(u.university_name||'').replace(/"/g,'&quot;')},${isFS})"></label>
+    </div>
     <div id="uni-link-note-view-${u.id}" onclick="editUniversityLinkNote('${u.id}')" style="font-size:11px;color:${u.notes?'var(--ink2)':'var(--ink3)'};margin-top:3px;cursor:pointer;white-space:pre-wrap;${u.notes?'':'font-style:italic'}">${esc(u.notes||'+ Add note')}</div>
-  </div>`).join('');
+  </div>`;}).join('');
+  const orphan=(sops||[]).filter(s=>!used.has(s.id));
+  const orphanHtml=orphan.length?`<div style="padding:7px 0;font-size:11px;color:var(--ink3)"><b>Other SOP files</b> (not matching a university above): ${orphan.map(s=>`<a href="${esc(s.attachment_url)}" target="_blank" style="color:var(--pine);text-decoration:underline;margin-right:8px">${esc((s.university||'General')+' — '+(s.attachment_filename||'file'))}</a>`).join('')}</div>`:'';
+  listEl.innerHTML=rows+orphanHtml;
+}
+async function uploadSopForUniversity(input,university,isFS){
+  if(!curId){toast('Open a lead first.');return;}
+  const files=input.files;
+  if(!files||!files.length)return;
+  toast(`Uploading ${files.length} SOP file(s) for ${university}…`);
+  const results=[];
+  for(const file of files){
+    const path=`${curId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const r=await uploadFileAndRecord('sop-documents',path,file,'sop_documents',{lead_id:curId,university,uploaded_by:myName});
+    results.push({...r,name:file.name});
+  }
+  input.value='';
+  loadUniversityLinks(curId,isFS);
+  try{loadSopDocuments(curId,isFS);}catch(e){}
+  try{loadSopUploadedLeadIds();}catch(e){}
+  reportUploadBatch(results,'SOP document(s)');
 }
 async function editUniversityLinkNote(id){
   const viewEl=document.getElementById('uni-link-note-view-'+id);

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Applications Tracker · Step4Progress</title>
+<meta name="theme-color" content="#1C3F6E">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#1C1712;--ink2:#3A3229;--ink3:#7A7168;--cream:#F6F3EC;--paper:#FFFDF9;--line:#E6DDCC;--line2:#D9CCAF;--pine:#1C3F6E;--pine2:#132B4D;--accent:#E08429;--rose:#8C3F3A;--sage:#357A2D;--gold:#A8721F;--font-h:'Cormorant Garamond',Georgia,serif;--font-b:'Lora',Georgia,serif}
+body{background:var(--cream);color:var(--ink);font-family:var(--font-b);font-size:14px}
+body.embed .top{display:none}
+.top{background:var(--pine);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:12px}
+.top h1{font-family:var(--font-h);font-size:24px;font-weight:600;flex:1}
+.top button{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4)}
+.wrap{max-width:1250px;margin:0 auto;padding:16px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+input,select,textarea{font-family:var(--font-b);font-size:13px;padding:8px 10px;border:1px solid var(--line2);border-radius:4px;background:var(--paper);color:var(--ink);max-width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid rgba(28,63,110,.25);border-color:var(--pine)}
+button{font-family:var(--font-b);font-size:13px;padding:8px 14px;border-radius:4px;border:1px solid var(--line2);background:var(--paper);color:var(--pine);cursor:pointer}
+button.p{background:var(--pine);color:#fff;border-color:var(--pine)}
+button:hover{filter:brightness(.97)}
+button.x{color:var(--rose);padding:4px 9px}
+.spacer{flex:1}
+.stu{background:var(--paper);border:1px solid var(--line);border-radius:8px;margin-bottom:10px;box-shadow:0 1px 3px rgba(28,23,18,.06)}
+.sh{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;user-select:none;flex-wrap:wrap}
+.caret{color:var(--ink3);font-size:12px;transition:transform .15s;display:inline-block}
+.stu.open .caret{transform:rotate(90deg)}
+.sname{font-family:var(--font-h);font-size:20px;font-weight:600;color:var(--pine)}
+.sname a{color:var(--pine);text-decoration:underline}
+.sname .nolink{color:var(--ink)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:11px;padding:2px 9px;border-radius:99px;background:#E8EEF6;color:var(--pine);font-weight:600}
+.chip.kc{background:#E8EEF6}.chip.gp{background:#F7ECD6;color:var(--gold)}.chip.s4p{background:#E5EEE2;color:var(--sage)}
+.sb{display:none;border-top:1px solid var(--line);padding:10px 14px 14px;overflow-x:auto}
+.stu.open .sb{display:block}
+table{width:100%;border-collapse:collapse;min-width:980px}
+th{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);text-align:left;padding:6px 6px;border-bottom:1px solid var(--line2)}
+td{padding:6px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+td input,td select,td textarea{width:100%}
+td textarea{min-height:34px;resize:vertical}
+.find{font-size:11px;padding:3px 8px;margin-top:4px}
+.empty{padding:40px;text-align:center;color:var(--ink3)}
+.mover{display:none;position:fixed;inset:0;background:rgba(28,23,18,.5);z-index:50;align-items:center;justify-content:center;padding:16px}
+.mover.open{display:flex}
+.modal{background:var(--paper);border-radius:10px;padding:20px 22px;width:460px;max-width:100%;max-height:90vh;overflow:auto}
+.modal h2{font-family:var(--font-h);font-size:22px;color:var(--pine);margin-bottom:12px}
+.modal label{display:block;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin:10px 0 4px}
+.modal input{width:100%}
+.res{border:1px solid var(--line);border-radius:4px;margin-top:4px;max-height:170px;overflow:auto}
+.res div{padding:7px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--line)}
+.res div:hover{background:#E8EEF6}
+.mf{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--pine2);color:#fff;padding:10px 16px;border-radius:6px;font-size:13px;display:none;z-index:99;max-width:90vw}
+#login{max-width:340px;margin:70px auto;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:24px}
+#login h2{font-family:var(--font-h);color:var(--pine);margin-bottom:14px}
+#login input{width:100%;margin-bottom:10px}
+#report{background:#FFF7E8;border:1px solid var(--line2);border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:12px;display:none;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<div class="top"><h1>📋 Applications Tracker</h1><span id="who" style="font-size:12px;opacity:.8"></span><button onclick="signOut()">Sign out</button></div>
+
+<div id="login" style="display:none">
+  <h2>Sign in</h2>
+  <input id="l-email" type="email" placeholder="Email" autocomplete="username">
+  <input id="l-pass" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')signIn()">
+  <button class="p" style="width:100%" onclick="signIn()">Sign in</button>
+  <div id="l-msg" style="color:var(--rose);font-size:12px;margin-top:10px"></div>
+</div>
+
+<div class="wrap" id="app" style="display:none">
+  <div id="report"></div>
+  <div class="bar">
+    <input id="f-q" placeholder="Search student, university or course…" style="min-width:240px" oninput="render()">
+    <select id="f-portal" onchange="render()"><option value="">All portals</option><option>KC</option><option>GP</option><option>S4P</option></select>
+    <select id="f-status" onchange="render()"><option value="">All statuses</option></select>
+    <span class="spacer"></span>
+    <button onclick="openStudentModal()" class="p">+ Add student</button>
+    <button onclick="exportXlsx()">⬇ Export</button>
+    <button onclick="document.getElementById('imp').click()">⬆ Import</button>
+    <button onclick="downloadTemplate()" title="Blank Excel template with the right columns">Template</button>
+    <input type="file" id="imp" accept=".xlsx,.xls,.csv" style="display:none" onchange="importFile(this)">
+  </div>
+  <div id="count" style="font-size:12px;color:var(--ink3);margin-bottom:8px"></div>
+  <div id="list"></div>
+</div>
+
+<div class="mover" id="m-stu">
+  <div class="modal">
+    <h2 id="ms-title">Add student</h2>
+    <label>Student name <span style="text-transform:none;letter-spacing:0">(type to find a CRM lead, or type any name)</span></label>
+    <input id="ms-name" autocomplete="off" oninput="searchLeads()" placeholder="Student name">
+    <div class="res" id="ms-res" style="display:none"></div>
+    <label>Google Drive folder link</label>
+    <input id="ms-drive" placeholder="https://drive.google.com/…">
+    <div class="mf"><button onclick="closeModal()">Cancel</button><button class="p" onclick="saveStudent()">Save</button></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<datalist id="dl-uni"></datalist>
+<datalist id="dl-course"></datalist>
+
+<script>
+var SUPABASE_URL='https://jvreglqrrdnwttjasvwg.supabase.co';
+var SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2cmVnbHFycmRud3R0amFzdndnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDM3NzEsImV4cCI6MjA5NTQxOTc3MX0.I_X-ljOPlLFYLeWz6hE15nL8z0MPqmsSdWcgwole8GE';
+var ALLOWED=['india@step4progress.com','pavitra@step4progress.com'];
+var PORTALS=['KC','GP','S4P'];
+var STATUSES=['University Shortlist','Documents Pending','Application Submitted','Received Conditional','Received Unconditional','Deposit Paid','Interview Passed','Interview Failed','CAS Applied','CAS Received','Visa Application Submitted','Visa Interview','Visa Received','Visa Rejected','Enrolled','Defer','Dropped'];
+var COURSEFINDER='https://app.coursefinder.ai/search-program';
+var sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+var me=null,myName='',students=[],apps=[],openIds={},editingId=null,pickLead=null;
+if(/[?&]embed=1/.test(location.search))document.body.classList.add('embed');
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function safeUrl(u){try{var x=new URL(String(u||'').trim());return x.protocol==='https:'||x.protocol==='http:'?x.href:'';}catch(e){return '';}}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(toast._t);toast._t=setTimeout(function(){t.style.display='none';},3500);}
+
+async function init(){
+  var r=await sb.auth.getSession();
+  var s=r.data&&r.data.session;
+  if(!s){showLogin();return;}
+  me=s.user;
+  if(ALLOWED.indexOf(String(me.email||'').toLowerCase())<0){showLogin('Please sign in with an authorised account.');await sb.auth.signOut();return;}
+  myName=(me.email||'').split('@')[0];
+  document.getElementById('who').textContent=me.email;
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  var fs=document.getElementById('f-status');
+  fs.innerHTML='<option value="">All statuses</option>'+STATUSES.map(function(x){return '<option>'+esc(x)+'</option>';}).join('');
+  await load();
+}
+function showLogin(msg){document.getElementById('app').style.display='none';document.getElementById('login').style.display='block';document.getElementById('l-msg').textContent=msg||'';}
+async function signIn(){
+  var e=document.getElementById('l-email').value.trim(),p=document.getElementById('l-pass').value;
+  var r=await sb.auth.signInWithPassword({email:e,password:p});
+  if(r.error){document.getElementById('l-msg').textContent='Sign-in failed. Check your email and password.';return;}
+  init();
+}
+async function signOut(){await sb.auth.signOut();location.reload();}
+
+async function pageAll(table,order){
+  var out=[],from=0,size=1000;
+  for(;;){
+    var r=await sb.from(table).select('*').order(order,{ascending:true}).range(from,from+size-1);
+    if(r.error){toast('Could not load '+table+': '+r.error.message+' — has crm_app_tracker.sql been run?');return out;}
+    out=out.concat(r.data||[]);
+    if(!r.data||r.data.length<size)break;
+    from+=size;
+  }
+  return out;
+}
+async function load(){
+  students=await pageAll('tracker_students','created_at');
+  apps=await pageAll('tracker_applications','created_at');
+  fillSuggestions();
+  render();
+}
+function fillSuggestions(){
+  function uniq(k){var m={};apps.forEach(function(a){var v=(a[k]||'').trim();if(v)m[v]=1;});return Object.keys(m).sort();}
+  document.getElementById('dl-uni').innerHTML=uniq('university').map(function(v){return '<option value="'+esc(v)+'">';}).join('');
+  document.getElementById('dl-course').innerHTML=uniq('course').map(function(v){return '<option value="'+esc(v)+'">';}).join('');
+}
+
+function matchApp(a,q,portal,status){
+  if(portal&&a.portal!==portal)return false;
+  if(status&&a.status!==status)return false;
+  if(q){var h=((a.university||'')+' '+(a.course||'')).toLowerCase();if(h.indexOf(q)<0)return false;}
+  return true;
+}
+function view(){
+  var q=document.getElementById('f-q').value.trim().toLowerCase();
+  var portal=document.getElementById('f-portal').value,status=document.getElementById('f-status').value;
+  var out=[];
+  students.forEach(function(s){
+    var mine=apps.filter(function(a){return a.student_id===s.id;});
+    var nameHit=q&&(s.name||'').toLowerCase().indexOf(q)>=0;
+    var shown=mine.filter(function(a){return matchApp(a,nameHit?'':q,portal,status);});
+    var pass;
+    if(!q&&!portal&&!status)pass=true;
+    else if(q&&nameHit&&!portal&&!status)pass=true;
+    else pass=shown.length>0||(nameHit&&!portal&&!status);
+    if(pass)out.push({s:s,all:mine,shown:(nameHit&&!portal&&!status)?mine:shown});
+  });
+  return out;
+}
+function render(){
+  var v=view();
+  document.getElementById('count').textContent=v.length+' student'+(v.length===1?'':'s')+' · '+v.reduce(function(n,x){return n+x.shown.length;},0)+' application(s) shown';
+  var el=document.getElementById('list');
+  if(!v.length){el.innerHTML='<div class="empty">'+(students.length?'No matches.':'No students yet. Click “+ Add student” to start.')+'</div>';return;}
+  el.innerHTML=v.map(function(x){
+    var s=x.s,open=!!openIds[s.id],link=safeUrl(s.drive_url);
+    var counts=PORTALS.map(function(p){var n=x.all.filter(function(a){return a.portal===p;}).length;return n?'<span class="chip '+p.toLowerCase()+'">'+p+' '+n+'</span>':'';}).join('');
+    var nm=link?'<a href="'+esc(link)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Open documents folder">'+esc(s.name)+' ↗</a>':'<span class="nolink" title="No folder link yet">'+esc(s.name)+'</span>';
+    return '<div class="stu'+(open?' open':'')+'" id="stu-'+s.id+'">'
+      +'<div class="sh" onclick="toggle(\''+s.id+'\')"><span class="caret">▶</span><span class="sname">'+nm+'</span><span class="chips">'+(counts||'<span class="chip" style="background:#eee;color:#888">No applications</span>')+'</span><span class="spacer"></span>'
+      +'<button onclick="event.stopPropagation();openStudentModal(\''+s.id+'\')">Edit</button><button class="x" onclick="event.stopPropagation();delStudent(\''+s.id+'\')" title="Delete student">×</button></div>'
+      +'<div class="sb">'+(open?body(x):'')+'</div></div>';
+  }).join('');
+}
+function body(x){
+  var s=x.s;
+  var rows=x.shown.map(function(a){
+    return '<tr>'
+     +'<td style="width:80px"><select onchange="upd(\''+a.id+'\',\'portal\',this.value)">'+PORTALS.map(function(p){return '<option'+(a.portal===p?' selected':'')+'>'+p+'</option>';}).join('')+'</select></td>'
+     +'<td style="width:190px"><input list="dl-uni" value="'+esc(a.university)+'" placeholder="University" onchange="upd(\''+a.id+'\',\'university\',this.value)"></td>'
+     +'<td style="width:230px"><input list="dl-course" value="'+esc(a.course)+'" placeholder="Type the course name" onchange="upd(\''+a.id+'\',\'course\',this.value)"><br><button class="find" onclick="window.open(\''+COURSEFINDER+'\',\'_blank\')">Find course ↗</button></td>'
+     +'<td style="width:190px"><select onchange="upd(\''+a.id+'\',\'status\',this.value)">'+STATUSES.map(function(t){return '<option'+(a.status===t?' selected':'')+'>'+esc(t)+'</option>';}).join('')+'</select></td>'
+     +'<td><textarea placeholder="Notes" onchange="upd(\''+a.id+'\',\'notes\',this.value)">'+esc(a.notes)+'</textarea></td>'
+     +'<td><textarea placeholder="Remarks" onchange="upd(\''+a.id+'\',\'remarks\',this.value)">'+esc(a.remarks)+'</textarea></td>'
+     +'<td style="width:36px"><button class="x" onclick="delApp(\''+a.id+'\')" title="Delete this application">×</button></td></tr>';
+  }).join('');
+  return '<table><thead><tr><th>Portal</th><th>University</th><th>Course</th><th>Status</th><th>Notes</th><th>Remarks</th><th></th></tr></thead><tbody>'
+    +(rows||'<tr><td colspan="7" class="empty" style="padding:16px">No applications yet.</td></tr>')+'</tbody></table>'
+    +'<div style="margin-top:10px"><button class="p" onclick="addApp(\''+s.id+'\')">+ Add application</button></div>';
+}
+function toggle(id){openIds[id]=!openIds[id];render();}
+
+async function upd(id,field,val){
+  var a=apps.find(function(x){return x.id===id;});if(!a)return;
+  var patch={updated_by:myName,updated_at:new Date().toISOString()};patch[field]=(typeof val==='string')?val.trim():val;
+  var r=await sb.from('tracker_applications').update(patch).eq('id',id).select('id');
+  if(r.error||!r.data||!r.data.length){toast('Could not save: '+((r.error&&r.error.message)||'not saved'));return;}
+  Object.assign(a,patch);
+  if(field==='university'||field==='course')fillSuggestions();
+  if(field==='portal'||field==='status')render();
+  toast('Saved');
+}
+async function addApp(studentId){
+  var last=apps.filter(function(a){return a.student_id===studentId;}).slice(-1)[0];
+  var row={student_id:studentId,portal:last?last.portal:'KC',university:last?last.university:'',course:'',status:'University Shortlist',updated_by:myName};
+  var r=await sb.from('tracker_applications').insert(row).select().single();
+  if(r.error){toast('Could not add: '+r.error.message);return;}
+  apps.push(r.data);openIds[studentId]=true;render();
+}
+async function delApp(id){
+  if(!confirm('Delete this application?'))return;
+  var r=await sb.from('tracker_applications').delete().eq('id',id);
+  if(r.error){toast('Could not delete: '+r.error.message);return;}
+  apps=apps.filter(function(a){return a.id!==id;});render();
+}
+async function delStudent(id){
+  var s=students.find(function(x){return x.id===id;});
+  if(!confirm('Delete '+(s?s.name:'this student')+' and all their applications?'))return;
+  var r=await sb.from('tracker_students').delete().eq('id',id);
+  if(r.error){toast('Could not delete: '+r.error.message);return;}
+  students=students.filter(function(x){return x.id!==id;});apps=apps.filter(function(a){return a.student_id!==id;});render();
+}
+
+/* ---- student modal ---- */
+function openStudentModal(id){
+  editingId=id||null;pickLead=null;
+  var s=id?students.find(function(x){return x.id===id;}):null;
+  document.getElementById('ms-title').textContent=s?'Edit student':'Add student';
+  document.getElementById('ms-name').value=s?s.name:'';
+  document.getElementById('ms-drive').value=s?(s.drive_url||''):'';
+  document.getElementById('ms-res').style.display='none';
+  document.getElementById('m-stu').classList.add('open');
+  setTimeout(function(){document.getElementById('ms-name').focus();},50);
+}
+function closeModal(){document.getElementById('m-stu').classList.remove('open');}
+var _ls=null;
+function searchLeads(){
+  clearTimeout(_ls);
+  var q=document.getElementById('ms-name').value.trim();
+  pickLead=null;
+  var box=document.getElementById('ms-res');
+  if(q.length<2){box.style.display='none';return;}
+  _ls=setTimeout(async function(){
+    var r=await sb.from('leads').select('id,lead_id,name,mobile,doc_folder_link').ilike('name','%'+q.replace(/[%_]/g,'')+'%').limit(8);
+    if(r.error||!r.data||!r.data.length){box.style.display='none';return;}
+    box.innerHTML=r.data.map(function(l,i){return '<div data-i="'+i+'">'+esc(l.name)+' <span style="color:#999">· '+esc(l.lead_id||'')+' · '+esc(l.mobile||'')+'</span></div>';}).join('');
+    box.style.display='block';
+    Array.prototype.forEach.call(box.children,function(d){d.onclick=function(){
+      var l=r.data[+d.getAttribute('data-i')];pickLead=l;
+      document.getElementById('ms-name').value=l.name;
+      if(l.doc_folder_link&&!document.getElementById('ms-drive').value)document.getElementById('ms-drive').value=l.doc_folder_link;
+      box.style.display='none';};});
+  },250);
+}
+async function saveStudent(){
+  var name=document.getElementById('ms-name').value.trim();
+  var drive=document.getElementById('ms-drive').value.trim();
+  if(!name){toast('Please enter the student name.');return;}
+  if(drive&&!safeUrl(drive)){toast('The folder link must start with https://');return;}
+  var row={name:name,drive_url:drive||null};
+  if(editingId){
+    var r=await sb.from('tracker_students').update(row).eq('id',editingId).select().single();
+    if(r.error){toast('Could not save: '+r.error.message);return;}
+    Object.assign(students.find(function(x){return x.id===editingId;}),r.data);
+  }else{
+    if(pickLead)row.lead_id=pickLead.id;
+    row.created_by=myName;
+    var r2=await sb.from('tracker_students').insert(row).select().single();
+    if(r2.error){toast('Could not add: '+r2.error.message+' — has crm_app_tracker.sql been run?');return;}
+    students.push(r2.data);openIds[r2.data.id]=true;
+  }
+  closeModal();render();
+}
+
+/* ---- export / import ---- */
+var COLS=['Student','Drive Link','Portal','University','Course','Status','Notes','Remarks','Updated'];
+function exportXlsx(){
+  var rows=[];
+  view().forEach(function(x){
+    var list=x.shown.length?x.shown:[null];
+    list.forEach(function(a){rows.push([x.s.name,x.s.drive_url||'',a?a.portal:'',a?a.university||'':'',a?a.course||'':'',a?a.status:'',a?a.notes||'':'',a?a.remarks||'':'',a?(a.updated_at||'').slice(0,10):'']);});
+  });
+  var ws=XLSX.utils.aoa_to_sheet([COLS].concat(rows));
+  ws['!cols']=[{wch:26},{wch:40},{wch:8},{wch:30},{wch:36},{wch:26},{wch:36},{wch:36},{wch:12}];
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Applications');
+  XLSX.writeFile(wb,'applications-tracker-'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+function downloadTemplate(){
+  var ws=XLSX.utils.aoa_to_sheet([COLS.slice(0,8),['Example Student','https://drive.google.com/…','KC','University of Leeds','MSc Data Science','University Shortlist','','']]);
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Applications');
+  XLSX.writeFile(wb,'applications-tracker-template.xlsx');
+}
+function normKey(k){return String(k||'').toLowerCase().replace(/[^a-z]/g,'');}
+async function importFile(input){
+  var f=input.files[0];if(!f)return;
+  var rep=document.getElementById('report');
+  try{
+    var buf=await f.arrayBuffer();
+    var wb=XLSX.read(buf,{type:'array'});
+    var raw=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+    var syn={student:'name',studentname:'name',name:'name',drivelink:'drive',drive:'drive',folder:'drive',folderlink:'drive',link:'drive',portal:'portal',university:'uni',uni:'uni',course:'course',status:'status',notes:'notes',note:'notes',remarks:'remarks',remark:'remarks'};
+    var rows=raw.map(function(r){var o={};Object.keys(r).forEach(function(k){var m=syn[normKey(k)];if(m)o[m]=String(r[k]).trim();});return o;}).filter(function(o){return o.name;});
+    var skipped=[],newApps=[],made=0,byName={};
+    students.forEach(function(s){byName[s.name.trim().toLowerCase()]=s;});
+    for(var i=0;i<rows.length;i++){
+      var o=rows[i],key=o.name.toLowerCase(),line=i+2;
+      var s=byName[key];
+      var drive=o.drive&&safeUrl(o.drive)?o.drive:'';
+      if(!s){
+        var r=await sb.from('tracker_students').insert({name:o.name,drive_url:drive||null,created_by:myName}).select().single();
+        if(r.error){skipped.push('Row '+line+' ('+o.name+'): '+r.error.message);continue;}
+        s=r.data;students.push(s);byName[key]=s;made++;
+      }else if(drive&&!s.drive_url){
+        var u=await sb.from('tracker_students').update({drive_url:drive}).eq('id',s.id).select().single();
+        if(!u.error)Object.assign(s,u.data);
+      }
+      if(!o.portal&&!o.uni&&!o.course&&!o.status)continue; // student-only row
+      var portal=(o.portal||'').toUpperCase().replace(/\s/g,'');
+      if(PORTALS.indexOf(portal)<0){skipped.push('Row '+line+' ('+o.name+'): portal “'+(o.portal||'')+'” is not KC, GP or S4P');continue;}
+      var st=STATUSES.find(function(x){return x.toLowerCase()===(o.status||'').toLowerCase();});
+      if(o.status&&!st){skipped.push('Row '+line+' ('+o.name+'): status “'+o.status+'” is not in the list');continue;}
+      newApps.push({student_id:s.id,portal:portal,university:o.uni||'',course:o.course||'',status:st||'University Shortlist',notes:o.notes||'',remarks:o.remarks||'',updated_by:myName});
+    }
+    var added=0;
+    for(var j=0;j<newApps.length;j+=200){
+      var chunk=newApps.slice(j,j+200);
+      var ins=await sb.from('tracker_applications').insert(chunk).select();
+      if(ins.error){skipped.push('A batch of '+chunk.length+' applications failed: '+ins.error.message);}
+      else{apps=apps.concat(ins.data);added+=ins.data.length;}
+    }
+    rep.style.display='block';
+    rep.textContent='Import finished: '+made+' new student(s), '+added+' application(s) added.'+(skipped.length?'\n\nSkipped ('+skipped.length+'):\n'+skipped.slice(0,40).join('\n'):'');
+    fillSuggestions();render();
+  }catch(e){toast('Could not read that file: '+e.message);}
+  input.value='';
+}
+init();
+</script>
+</body>
+</html>

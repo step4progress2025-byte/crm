@@ -267,6 +267,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .fbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
 .fbar input,.fbar select{font-size:13px;padding:8px 12px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);box-shadow:var(--sh)}
 .fbar input{flex:1;min-width:180px}
+.fbar input[type=hidden]{display:none}.msf{position:relative}.msf-b{font-size:13px;padding:8px 12px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b);cursor:pointer;min-width:150px;max-width:260px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.msf-b.on{border-color:var(--pine);background:#E8EEF6;font-weight:600}.msf-p{position:absolute;top:calc(100% + 4px);left:0;z-index:60;background:var(--paper);border:1px solid var(--line2);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.18);padding:6px;width:250px;max-height:340px;overflow:auto}.msf-p label{display:flex;gap:8px;align-items:center;padding:6px 8px;font-size:13px;cursor:pointer;border-radius:5px}.msf-p label:hover{background:#F1ECE0}.msf-p input{flex:none;min-width:0;width:auto;padding:0;border:0;box-shadow:none;margin:0}.msf-p .msf-h{display:flex;justify-content:space-between;padding:4px 8px 6px;font-size:11px;color:var(--ink3);border-bottom:1px solid var(--line);margin-bottom:4px;position:sticky;top:-6px;background:var(--paper)}.msf-p .msf-h a{color:var(--pine);cursor:pointer;text-decoration:underline}
 .fbar input:focus,.fbar select:focus{outline:none;border-color:var(--pine3);box-shadow:0 0 0 3px rgba(45,158,127,.12)}
 .clabel{font-size:12px;color:var(--ink3);margin-bottom:10px}
 
@@ -1030,11 +1031,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div id="leads-content" style="display:none">
           <div class="fbar">
             <input type="text" id="ls-q" placeholder="Search name, phone, program, notes, destination, status…" oninput="renderLeads()">
-            <select id="ls-st" onchange="renderLeads()">
-              <option value="">All statuses</option>
-              <option>New Enquiry</option><option>Contacted</option><option>Not Interested</option><option>Follow Up</option><option>Interested</option><option>University Shortlist</option><option>Documents Pending</option><option>Application Submitted</option><option>Received Conditional</option><option>Received Unconditional</option><option>Deposit Paid</option><option>Interview Passed</option><option>Interview Failed</option><option>CAS Applied</option><option>CAS Received</option><option>Visa Application Submitted</option><option>Visa Interview</option><option>Visa Received</option><option>Visa Rejected</option><option>Defer</option><option>Enrolled</option>
-              <option>Pending</option><option>Ongoing</option><option>Callback Later</option><option>Counselling Done</option><option>Fees Paid</option><option>Conditional Cleared</option><option>Onboarded Student</option><option>Commission Received</option><option>Process Completed</option><option>Dropped</option>
-            </select>
+            <div class="msf" id="ls-st-wrap"><button type="button" class="msf-b" id="ls-st-btn" onclick="toggleStPanel(event)">All statuses ▾</button><div class="msf-p" id="ls-st-panel" style="display:none" onclick="event.stopPropagation()"></div><input type="hidden" id="ls-st" value=""></div>
             <select id="ls-pr" onchange="renderLeads()">
               <option value="">All priorities</option><option>High</option><option>Medium</option><option>Low</option>
             </select>
@@ -7171,12 +7168,34 @@ function fillSelectKeep(sel,placeholder,values,isCount){
   sel.innerHTML=`<option value="">${placeholder}</option>`+uniq.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
   sel.value=cur||'';
 }
+function stSelected(){const el=document.getElementById('ls-st');return el&&el.value?el.value.split('|').filter(Boolean):[];}
+function syncStFilter(){
+  const panel=document.getElementById('ls-st-panel'),btn=document.getElementById('ls-st-btn');
+  if(!panel||!btn)return;
+  const sel=stSelected();
+  const sig=STATUSES.join('|');
+  if(panel.dataset.sig!==sig){
+    panel.dataset.sig=sig;
+    panel.innerHTML='<div class="msf-h"><span>Tick one or more</span><a onclick="clearStFilter()">Clear</a></div>'+STATUSES.map(x=>`<label><input type="checkbox" value="${esc(x)}" onchange="onStTick()"> ${esc(x)}</label>`).join('');
+  }
+  panel.querySelectorAll('input[type=checkbox]').forEach(c=>{c.checked=sel.includes(c.value);});
+  btn.textContent=(sel.length===0?'All statuses':sel.length===1?sel[0]:sel.length+' statuses')+' ▾';
+  btn.classList.toggle('on',sel.length>0);
+  btn.title=sel.join(', ');
+}
+function onStTick(){
+  const vals=Array.from(document.querySelectorAll('#ls-st-panel input:checked')).map(c=>c.value);
+  document.getElementById('ls-st').value=vals.join('|');
+  renderLeads();
+}
+function clearStFilter(){document.getElementById('ls-st').value='';renderLeads();}
+function toggleStPanel(ev){ev.stopPropagation();const p=document.getElementById('ls-st-panel');p.style.display=p.style.display==='none'?'block':'none';}
+document.addEventListener('click',()=>{const p=document.getElementById('ls-st-panel');if(p)p.style.display='none';});
 function rebuildLeadFilterOptions(scoped){
   fillSelectKeep(document.getElementById('ls-counsel'),'All counsellors',scoped.map(l=>l.counsellor));
   // Statuses: always the full list from STATUSES (adds e.g. "Call by Mistake"
   // which the hard-coded dropdown was missing).
-  const st=document.getElementById('ls-st');
-  if(st){const cur=st.value;st.innerHTML='<option value="">All statuses</option>'+STATUSES.map(x=>`<option>${esc(x)}</option>`).join('');st.value=cur||'';}
+  syncStFilter();
   const baseSources=['Meta Ads','Google Ads','Instagram','WhatsApp','Walk-in','Referral','Website','LinkedIn','YouTube','Event / Expo','Website Enquiry','Website Tools Enquiry','Meta Enquiry','TikTok','Other'];
   fillSelectKeep(document.getElementById('ls-src'),'All sources',baseSources.concat(scoped.map(l=>l.source)));
   const baseDest=['UK','New Zealand','Australia','Canada','Europe','USA','Singapore','Malaysia','UAE','Other'];
@@ -7209,7 +7228,7 @@ function renderLeads(){
   // other side's counsellors/sources/destinations behind.
   rebuildLeadFilterOptions(scopedLeads);
   const q=(document.getElementById('ls-q').value||'').toLowerCase();
-  const sf=document.getElementById('ls-st').value;
+  const sfA=stSelected();
   const pf=document.getElementById('ls-pr').value;
   const df=document.getElementById('ls-de').value;
   const cf=document.getElementById('ls-country').value;
@@ -7218,7 +7237,7 @@ function renderLeads(){
   const from=document.getElementById('ls-from').value;
   const to=document.getElementById('ls-to').value;
   const assignF=document.getElementById('ls-assign').value;
-  const f=scopedLeads.filter(l=>(!dupOnly||(dupGroup(l)&&(!dupFocus||normalizePhone(l.mobile)===dupFocus)))&&(!sf||l.status===sf)&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!srcf||l.source===srcf)&&(!counsel||l.counsellor===counsel)&&(!from||(l.created_at||'').substring(0,10)>=from)&&(!to||(l.created_at||'').substring(0,10)<=to)&&(!assignF||(assignF==='assigned'?!!l.counsellor:!l.counsellor))&&smartLeadMatch(l,q));
+  const f=scopedLeads.filter(l=>(!dupOnly||(dupGroup(l)&&(!dupFocus||normalizePhone(l.mobile)===dupFocus)))&&(!sfA.length||sfA.includes(l.status))&&(!pf||l.priority===pf)&&(!df||l.destination===df)&&(!cf||l.country===cf)&&(!srcf||l.source===srcf)&&(!counsel||l.counsellor===counsel)&&(!from||(l.created_at||'').substring(0,10)>=from)&&(!to||(l.created_at||'').substring(0,10)<=to)&&(!assignF||(assignF==='assigned'?!!l.counsellor:!l.counsellor))&&smartLeadMatch(l,q));
   // Shared with the Kanban board view below, so it shows exactly the leads
   // the current filters/search/scope would show in the table — same data,
   // two presentations, never out of sync.
@@ -10207,6 +10226,58 @@ async function resetTeamMemberPassword(id,email,name){
   }
 }
 
+const ALL_ROLE_CHOICES=['Counsellor','Application Team','Visa Team','SOP Team','Digital Marketing','HR','Agent','Manager','Admin','Director'];
+function roleChoicesForMe(){
+  const em=String(currentUser?.email||'').toLowerCase();
+  if(isViewOnly)return [];
+  if(isSuperAdmin||isDirectorInviter())return ALL_ROLE_CHOICES;
+  if(['Admin','Manager','HR'].includes(myRole)||em==='a.jena@step4progress.co.uk')return LIMITED_INVITE_ROLES;
+  return [];
+}
+function canChangeRoleOf(t){
+  if(!t||isViewOnly)return false;
+  if(currentUser&&t.id===currentUser.id)return false;
+  if(isProtectedOwnerRow(t)||isSuperAdminRow(t)||isIndiaTeamReadOnly(t))return false;
+  const choices=roleChoicesForMe();
+  if(!choices.length)return false;
+  if(isSuperAdmin)return true;
+  if(isDirectorInviter()){return myTeamCategory!=='Domestic'||t.team_category==='Domestic';}
+  // Admin / Manager / HR (and Anushree): only non-management staff on their own side
+  if(!LIMITED_INVITE_ROLES.includes(t.role||'Counsellor'))return false;
+  if(myTeamCategory==='Domestic'||String(currentUser?.email||'').toLowerCase()==='a.jena@step4progress.co.uk')return t.team_category==='Domestic';
+  return t.country===myCountry&&t.team_category!=='Domestic';
+}
+function roleEditBtn(t){
+  return canChangeRoleOf(t)?`<button onclick="openChangeRole('${t.id}')" title="Change title" style="background:none;border:none;color:var(--pine2);cursor:pointer;font-size:14px;padding:4px;flex-shrink:0">✏️</button>`:'';
+}
+function openChangeRole(id){
+  const t=teamList.find(x=>x.id===id);if(!t||!canChangeRoleOf(t)){toast('You cannot change this title.');return;}
+  let m=document.getElementById('modal-change-role');
+  if(!m){m=document.createElement('div');m.className='mover';m.id='modal-change-role';document.body.appendChild(m);}
+  const cur=t.role||'Counsellor';
+  const opts=roleChoicesForMe().slice();if(!opts.includes(cur))opts.unshift(cur);
+  m.innerHTML=`<div class="modal" style="width:420px"><div class="mhead"><span class="mtitle">Change title</span><button class="mclose" onclick="closeModal('modal-change-role')">×</button></div>
+    <div style="padding:16px 20px"><div style="font-size:14px;font-weight:600">${esc(t.full_name||t.email)}</div><div style="font-size:12px;color:var(--ink3);margin-bottom:12px">${esc(t.email||'')} · currently <b>${esc(cur)}</b></div>
+    <label style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)">New title</label>
+    <select id="cr-role" style="width:100%;margin-top:4px;padding:9px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px">${opts.map(r=>`<option${r===cur?' selected':''}>${esc(r)}</option>`).join('')}</select>
+    <div style="font-size:11px;color:var(--ink3);margin-top:8px">Their login, password and leads stay exactly as they are. Only the title and what it gives access to change.</div></div>
+    <div class="mfoot"><button class="btn" onclick="closeModal('modal-change-role')">Cancel</button><button class="btn btn-p" id="cr-save" onclick="saveChangeRole('${t.id}')">Save</button></div></div>`;
+  m.classList.add('open');
+}
+async function saveChangeRole(id){
+  const t=teamList.find(x=>x.id===id);if(!t)return;
+  const role=document.getElementById('cr-role').value;
+  if(role===(t.role||'Counsellor')){closeModal('modal-change-role');return;}
+  const btn=document.getElementById('cr-save');btn.disabled=true;
+  const{data,error}=await sb.rpc('change_team_role',{p_member:id,p_role:role});
+  btn.disabled=false;
+  if(error){toast('Could not change title: '+error.message);return;}
+  const row=Array.isArray(data)?data[0]:data;
+  t.role=role;if(row&&row.team_category)t.team_category=row.team_category;
+  closeModal('modal-change-role');
+  renderTeam(teamList);
+  toast((t.full_name||t.email)+' is now '+role+'.');
+}
 async function deleteTeamMember(id,name){
   if(!isSuperAdmin){toast('Only the Super Admin can remove team members.');return;}
   const target=teamList.find(t=>t.id===id);
@@ -10302,7 +10373,7 @@ function renderManagementAndOperationsTeams(team){
         <div class="tcard-av">${ini(t.full_name||t.email)}</div>
         <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(displayRoleFor(t))} · ${esc(t.country||t.office||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
         ${keyBtn(t,15)}
-        ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+        ${roleEditBtn(t)}${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
       </div>`).join(''):emptyState('🏛️','No Management Team members yet.')}</div>
   </div>`;
 
@@ -10322,7 +10393,7 @@ function renderManagementAndOperationsTeams(team){
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${keyBtn(t,14)}
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          ${roleEditBtn(t)}${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('👥','No one assigned to this team yet.')}
     </div>`;
   }).join('');
@@ -10342,7 +10413,7 @@ function renderManagementAndOperationsTeams(team){
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">${esc(displayRoleFor(t))} · UK Domestic</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${keyBtn(t,15)}
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          ${roleEditBtn(t)}${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`;
       // Operations, split the SAME way International's is — separate
       // Application/Visa/SOP columns — instead of one flat lumped-together
@@ -10376,7 +10447,7 @@ function renderManagementAndOperationsTeams(team){
           <div class="tcard-av">${ini(t.full_name||t.email)}</div>
           <div style="flex:1;min-width:0"><div class="tcard-name" title="${esc(t.full_name||'—')}" style="cursor:${(isSuperAdmin||isOwner||['Admin','Manager','Director'].includes(myRole))?'pointer':'default'}" onclick="event.stopPropagation();openTeamMemberProfile('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')">${esc(t.full_name||'—')}</div><div class="tcard-role">Agent${t.university_name?' · 🎓 '+esc(t.university_name):''}</div><div class="tcard-email" title="${esc(t.email||'')}">${esc(t.email||'')}</div></div>
           ${keyBtn(t,15)}
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          ${roleEditBtn(t)}${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Remove" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`).join(''):emptyState('🤝','No agents yet.')}</div>
     </div>`;
   }
@@ -10463,7 +10534,7 @@ function renderTeam(team){
           </div>
           ${canManage?`<button onclick="openUnavailabilityModal('${t.id}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Mark unavailable" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-calendar-off"></i></button>`:''}
           ${canResetPasswordFor(t)?`<button onclick="resetTeamMemberPassword('${t.id}','${escJs(t.email||'')}','${escJs((t.full_name||t.email||'').replace(/'/g,"\'"))}')" title="Reset password" style="background:none;border:none;color:var(--pine2);cursor:pointer;font-size:15px;padding:4px;flex-shrink:0"><i class="ti ti-key"></i></button>`:''}
-          ${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${escJs(t.full_name||t.email||'').replace(/'/g,"\'")}')" title="Remove team member" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
+          ${roleEditBtn(t)}${(isSuperAdmin&&!isProtectedOwnerRow(t)&&!isIndiaTeamReadOnly(t))?`<button onclick="deleteTeamMember('${t.id}','${escJs(t.full_name||t.email||'').replace(/'/g,"\'")}')" title="Remove team member" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0"><i class="ti ti-trash"></i></button>`:''}
         </div>`;
         }).join('')
       : emptyState('👥','No members yet — share an invite link to add counsellors to this office.');
@@ -10676,7 +10747,7 @@ function exportFiltered(){
 }
 function exportCurrentView(){
   const q=(document.getElementById('ls-q').value||'').toLowerCase();
-  const sf=document.getElementById('ls-st').value;
+  const sfA=stSelected();
   const pf=document.getElementById('ls-pr').value;
   const df=document.getElementById('ls-de').value;
   const cf=document.getElementById('ls-country').value;
@@ -10684,7 +10755,7 @@ function exportCurrentView(){
   const from=document.getElementById('ls-from').value;
   const to=document.getElementById('ls-to').value;
   const filtered=leads.filter(l=>{
-    if(sf&&l.status!==sf)return false;
+    if(sfA.length&&!sfA.includes(l.status))return false;
     if(pf&&l.priority!==pf)return false;
     if(df&&l.destination!==df)return false;
     if(cf&&l.country!==cf)return false;

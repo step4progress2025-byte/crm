@@ -6507,7 +6507,7 @@ function nav(id,btn){
   if(id==='coursefinder')initCourseFinder();
   if(id==='scholarships')initScholarships();
   if(id==='resources')loadResourcesAdmin();
-  if(id==='apptracker'){const f=document.getElementById('apptracker-frame');if(f&&!f.getAttribute('src'))f.setAttribute('src',f.getAttribute('data-src'));}
+  if(id==='apptracker'){const f=document.getElementById('apptracker-frame');if(f&&!f.getAttribute('src'))f.setAttribute('src',f.getAttribute('data-src')+'&v='+Date.now());}
   if(id==='resumes'){loadResumes().then(renderResumesAdmin);}
   if(id==='finance')renderFinance();
   if(id==='digitalmarketing')initDigitalMarketing();

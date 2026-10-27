@@ -11684,7 +11684,7 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
     const finNav=document.getElementById('ni-finance');
     if(finNav) finNav.style.display=canSeeFinance?'flex':'none';
     const atNav=document.getElementById('ni-apptracker');
-    if(atNav) atNav.style.display=(isOwner&&['india@step4progress.com','pavitra@step4progress.com'].includes(String((currentUser&&currentUser.email)||'').toLowerCase()))?'flex':'none';
+    if(atNav) atNav.style.display=(isOwner&&['india@step4progress.com'].includes(String((currentUser&&currentUser.email)||'').toLowerCase()))?'flex':'none';
 
     if(isAdminLike){
       ['ls-src','ls-from','ls-to'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='block';el.style.minWidth='140px';}});

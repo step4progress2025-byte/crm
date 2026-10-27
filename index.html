@@ -6504,6 +6504,7 @@ function nav(id,btn){
   if(id==='coursefinder')initCourseFinder();
   if(id==='scholarships')initScholarships();
   if(id==='resources')loadResourcesAdmin();
+  if(id==='apptracker'&&!TRACKER_EMAILS.includes(String((currentUser&&currentUser.email)||'').toLowerCase())){nav('home',document.querySelector('.ni[data-nav="home"]'));return;}
   if(id==='apptracker'){const f=document.getElementById('apptracker-frame');if(f&&!f.getAttribute('src'))f.setAttribute('src',f.getAttribute('data-src')+'&v='+Date.now());}
   if(id==='resumes'){loadResumes().then(renderResumesAdmin);}
   if(id==='finance')renderFinance();
@@ -7168,6 +7169,7 @@ function fillSelectKeep(sel,placeholder,values,isCount){
   sel.innerHTML=`<option value="">${placeholder}</option>`+uniq.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
   sel.value=cur||'';
 }
+const TRACKER_EMAILS=['india@step4progress.com','pavitra@step4progress.com'];
 function stSelected(){const el=document.getElementById('ls-st');return el&&el.value?el.value.split('|').filter(Boolean):[];}
 function syncStFilter(){
   const panel=document.getElementById('ls-st-panel'),btn=document.getElementById('ls-st-btn');
@@ -11755,7 +11757,7 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
     const finNav=document.getElementById('ni-finance');
     if(finNav) finNav.style.display=canSeeFinance?'flex':'none';
     const atNav=document.getElementById('ni-apptracker');
-    if(atNav) atNav.style.display=(isOwner&&['india@step4progress.com'].includes(String((currentUser&&currentUser.email)||'').toLowerCase()))?'flex':'none';
+    if(atNav) atNav.style.display=(isOwner&&TRACKER_EMAILS.includes(String((currentUser&&currentUser.email)||'').toLowerCase()))?'flex':'none';
 
     if(isAdminLike){
       ['ls-src','ls-from','ls-to'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='block';el.style.minWidth='140px';}});

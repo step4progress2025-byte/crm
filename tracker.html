@@ -62,7 +62,7 @@ td textarea{min-height:34px;resize:vertical}
 </style>
 </head>
 <body>
-<div class="top"><h1>📋 Applications Tracker</h1><span id="who" style="font-size:12px;opacity:.8"></span><button onclick="signOut()">Sign out</button></div>
+<div class="top"><h1>📋 Applications Tracker <small style="font-size:11px;opacity:.7;font-weight:400">v4 · phone, email, officer</small></h1><span id="who" style="font-size:12px;opacity:.8"></span><button onclick="signOut()">Sign out</button></div>
 
 <div id="login" style="display:none">
   <h2>Sign in</h2>
@@ -73,6 +73,7 @@ td textarea{min-height:34px;resize:vertical}
 </div>
 
 <div class="wrap" id="app" style="display:none">
+  <div id="vtag" style="display:none"></div>
   <div id="report"></div>
   <div class="bar">
     <input id="f-q" placeholder="Search student, phone, email, university or course…" style="min-width:240px" oninput="render()">

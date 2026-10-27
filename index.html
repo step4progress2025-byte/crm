@@ -248,6 +248,11 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 #leads-top-scroll::-webkit-scrollbar-thumb{background:var(--pine3);border-radius:99px;border:3px solid var(--cream)}
 #leads-top-scroll::-webkit-scrollbar-thumb:hover{background:var(--pine)}
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
+/* Home page sections: closed by default, click the header to open */
+#sc-home .card.hc-closed>:not(.card-h){display:none !important}
+#sc-home .card>.card-h{cursor:pointer;user-select:none}
+#sc-home .card>.card-h .hc-caret{margin-left:auto;font-size:12px;color:var(--ink3);transition:transform .15s;display:inline-block}
+#sc-home .card:not(.hc-closed)>.card-h .hc-caret{transform:rotate(90deg)}
 .tbl th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--cream);white-space:nowrap}
 .tbl td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle;color:var(--ink)}
 .tbl tr:last-child td{border-bottom:none}
@@ -640,7 +645,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <button class="ni" id="ni-team" data-nav="team" onclick="nav('team',this)"><i class="ti ti-id-badge" style="color:var(--violet)"></i>Team</button>
       <button class="ni" data-nav="teamchat" onclick="nav('teamchat',this)"><i class="ti ti-brand-slack" style="color:var(--sky)"></i>Team Chat<span class="nbadge" id="nb-teamchat" style="display:none">0</span></button>
       <button class="ni" data-nav="events" onclick="nav('events',this)"><i class="ti ti-calendar-event" style="color:var(--gold)"></i>Events</button><button class="ni" data-nav="studentportal" id="ni-studentportal" onclick="nav('studentportal',this)" style="display:none"><i class="ti ti-school" style="color:var(--gold)"></i>Student Portal</button><button class="ni" data-nav="import" onclick="nav('import',this)"><i class="ti ti-file-import" style="color:var(--teal)"></i>Import data</button>
-      <button class="ni" data-nav="finance" id="ni-finance" style="display:none" onclick="nav('finance',this)"><i class="ti ti-cash" style="color:var(--sage)"></i>Finance</button>       <button class="ni" data-nav="digitalmarketing" id="ni-digitalmarketing" style="display:none" onclick="nav('digitalmarketing',this)"><i class="ti ti-speakerphone" style="color:var(--rose)"></i>Digital Marketing</button>       <button class="ni" data-nav="reports" id="ni-reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic" style="color:var(--sky)"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard" style="color:var(--violet)"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset" style="color:var(--pine3)"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search" style="color:var(--teal)"></i>Course Finder</button>      <button class="ni" data-nav="scholarships" onclick="nav('scholarships',this)"><i class="ti ti-award" style="color:var(--gold)"></i>Scholarship Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books" style="color:var(--gold)"></i>Resource Library</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv" style="color:var(--sky)"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot" style="color:var(--violet)"></i>AI Counsellor</button>
+      <button class="ni" data-nav="finance" id="ni-finance" style="display:none" onclick="nav('finance',this)"><i class="ti ti-cash" style="color:var(--sage)"></i>Finance</button>       <button class="ni" data-nav="digitalmarketing" id="ni-digitalmarketing" style="display:none" onclick="nav('digitalmarketing',this)"><i class="ti ti-speakerphone" style="color:var(--rose)"></i>Digital Marketing</button>       <button class="ni" data-nav="reports" id="ni-reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic" style="color:var(--sky)"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard" style="color:var(--violet)"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset" style="color:var(--pine3)"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search" style="color:var(--teal)"></i>Course Finder</button>      <button class="ni" data-nav="scholarships" onclick="nav('scholarships',this)"><i class="ti ti-award" style="color:var(--gold)"></i>Scholarship Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books" style="color:var(--gold)"></i>Resource Library</button>       <button class="ni" data-nav="apptracker" id="ni-apptracker" style="display:none" onclick="nav('apptracker',this)"><i class="ti ti-list-check" style="color:var(--pine3)"></i>Applications Tracker</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv" style="color:var(--sky)"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot" style="color:var(--violet)"></i>AI Counsellor</button>
     </div>
     <div class="sb-foot">
       <div class="sb-user">
@@ -685,7 +690,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
            from the Dashboard (same element IDs, so the existing
            loadDashReminders()/loadMyTasks() functions work completely
            unchanged — just pointed at a new location). -->
-      <section id="sc-home" class="screen active">
+      <section id="sc-home" class="screen active" data-hc="1">
         <div id="home-greeting" style="font-family:var(--font-h);font-size:26px;font-weight:600;color:var(--ink);margin-bottom:4px"></div>
         <div style="font-size:13px;color:var(--ink3);margin-bottom:20px" id="home-date"></div>
 
@@ -1625,6 +1630,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       </section>
 
     <!-- Resource Library -->
+      <section id="sc-apptracker" class="screen">
+        <div class="card" style="margin-bottom:10px"><div class="card-h"><span class="card-t">📋 Applications Tracker — KC · GP · S4P</span><a href="tracker.html" target="_blank" rel="noopener" class="btn btn-sm" style="text-decoration:none">Open in new tab ↗</a></div></div>
+        <iframe id="apptracker-frame" title="Applications tracker" style="width:100%;height:calc(100vh - 170px);min-height:520px;border:1px solid var(--line);border-radius:8px;background:#fff" data-src="tracker.html?embed=1"></iframe>
+      </section>
       <section id="sc-resources" class="screen">
         <div class="card" style="margin-bottom:16px">
           <div class="card-h">
@@ -1633,6 +1642,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
           </div>
           <p style="font-size:13px;color:var(--ink3);margin-bottom:0;line-height:1.6">Upload the final PDF for each guide below. Once uploaded, it goes live instantly on the public resource page — students unlock it after submitting their details.</p>
         </div>
+        <div style="margin-bottom:12px"><button class="btn btn-p" style="font-size:12px;padding:6px 14px" onclick="addCustomResource()"><i class="ti ti-plus"></i>Add resource</button></div>
         <div id="resources-list" style="display:grid;gap:12px"></div>
       </section>
 
@@ -6434,7 +6444,7 @@ function nav(id,btn){
     sbEl.classList.remove('mobile-open');
     document.getElementById('mobile-sidebar-overlay')?.classList.remove('open');
   }
-  const T={home:'Home',dashboard:'Dashboard',taskdashboard:'Task Dashboard',queries:'Queries',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digitalmarketing:'Digital Marketing',reports:'Reports',coursefinder:'Course & University Finder',scholarships:'Scholarship Finder',resources:'Resource Library',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail',studentportal:'Student Portal',teamchat:'Team Chat'};
+  const T={home:'Home',dashboard:'Dashboard',taskdashboard:'Task Dashboard',queries:'Queries',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digitalmarketing:'Digital Marketing',reports:'Reports',coursefinder:'Course & University Finder',scholarships:'Scholarship Finder',resources:'Resource Library',apptracker:'Applications Tracker',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail',studentportal:'Student Portal',teamchat:'Team Chat'};
   document.getElementById('topbar-title').textContent=T[id]||id;
   { const _c=document.querySelector('.content'); if(_c){ _c.scrollTop=0; _c.focus({preventScroll:true}); } }
   // Persistent Home button — visible on every screen except the
@@ -6497,6 +6507,7 @@ function nav(id,btn){
   if(id==='coursefinder')initCourseFinder();
   if(id==='scholarships')initScholarships();
   if(id==='resources')loadResourcesAdmin();
+  if(id==='apptracker'){const f=document.getElementById('apptracker-frame');if(f&&!f.getAttribute('src'))f.setAttribute('src',f.getAttribute('data-src'));}
   if(id==='resumes'){loadResumes().then(renderResumesAdmin);}
   if(id==='finance')renderFinance();
   if(id==='digitalmarketing')initDigitalMarketing();
@@ -11672,6 +11683,8 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
     // myRole==='Admin' adds the Admin tier on top of that.
     const finNav=document.getElementById('ni-finance');
     if(finNav) finNav.style.display=canSeeFinance?'flex':'none';
+    const atNav=document.getElementById('ni-apptracker');
+    if(atNav) atNav.style.display=(isOwner&&['india@step4progress.com','pavitra@step4progress.com'].includes(String((currentUser&&currentUser.email)||'').toLowerCase()))?'flex':'none';
 
     if(isAdminLike){
       ['ls-src','ls-from','ls-to'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='block';el.style.minWidth='140px';}});
@@ -13795,6 +13808,22 @@ function buildScholarshipVerifyLog(){
       <td>Checked ${esc(s.source_checked||'')}${s.source_status!=='verified'?' — confirm before quoting':''}</td>
     </tr>`).join('');
 }
+// ── Home page: every section starts closed; click its header to open ──
+function initHomeCollapse(){
+  document.querySelectorAll('#sc-home .card').forEach(card=>{
+    const h=card.querySelector(':scope>.card-h');if(!h||card.dataset.hcDone)return;
+    card.dataset.hcDone='1';
+    card.classList.add('hc-closed');
+    const caret=document.createElement('span');caret.className='hc-caret';caret.textContent='▶';
+    h.appendChild(caret);
+    h.addEventListener('click',e=>{
+      if(e.target.closest('[onclick]')&&e.target.closest('[onclick]')!==h)return; // links inside the header keep working
+      card.classList.toggle('hc-closed');
+    });
+  });
+}
+document.addEventListener('DOMContentLoaded',initHomeCollapse);
+if(document.readyState!=='loading')initHomeCollapse();
 // ── RESOURCE LIBRARY ADMIN ────────────────────────────────────
 const RESOURCE_DEFS = [
   { key:'starter-kit', icon:'🎓', title:'The Study Abroad Starter Kit' },
@@ -13814,7 +13843,9 @@ async function loadResourcesAdmin(){
 function renderResourcesAdmin(){
   const el = document.getElementById('resources-list');
   if(!el) return;
-  el.innerHTML = RESOURCE_DEFS.map(def => {
+  const customDefs = resourceRows.filter(r => r.key && !RESOURCE_DEFS.some(d => d.key === r.key) && r.title)
+    .map(r => ({ key:r.key, icon:r.icon||'📄', title:r.title, custom:true }));
+  el.innerHTML = RESOURCE_DEFS.concat(customDefs).map(def => {
     const row = resourceRows.find(r => r.key === def.key) || {};
     const hasFile = !!row.file_url;
     return `
@@ -13832,9 +13863,28 @@ function renderResourcesAdmin(){
         <button class="btn btn-p" style="font-size:12px;padding:7px 14px" onclick="document.getElementById('file-${def.key}').click()">
           <i class="ti ti-upload"></i>${hasFile ? 'Replace PDF' : 'Upload PDF'}
         </button>
+        ${def.custom?`<button class="btn" style="font-size:12px;padding:7px 10px;color:var(--rose)" title="Remove this resource" onclick="deleteCustomResource('${def.key}')">×</button>`:''}
       </div>
     `;
   }).join('');
+}
+function addCustomResource(){
+  openQuickInput('Add a resource','Resource title (e.g. IELTS Speaking Cheat Sheet)','text','',async(val)=>{
+    const title=(val||'').trim();
+    if(!title){toast('Please type a title.');return;}
+    const key='custom-'+title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)+'-'+Date.now().toString(36);
+    const { error } = await sb.from('resources').insert({ key, title, icon:'📄' });
+    if(error){toast('Could not add: '+error.message+(/title|icon|column/i.test(error.message||'')?' — run crm_resources_custom.sql first.':''));return;}
+    toast('Resource added — now upload its PDF.');
+    loadResourcesAdmin();
+  });
+}
+async function deleteCustomResource(key){
+  if(!confirm('Remove this resource from the library?'))return;
+  const { error } = await sb.from('resources').delete().eq('key', key);
+  if(error){toast('Could not remove: '+error.message);return;}
+  toast('Removed.');
+  loadResourcesAdmin();
 }
 async function uploadResourcePDF(key, input){
   const file = input.files[0];

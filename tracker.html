@@ -46,14 +46,14 @@ td textarea{min-height:34px;resize:vertical}
 .empty{padding:40px;text-align:center;color:var(--ink3)}
 .mover{display:none;position:fixed;inset:0;background:rgba(28,23,18,.5);z-index:50;align-items:center;justify-content:center;padding:16px}
 .mover.open{display:flex}
-.modal{background:var(--paper);border-radius:10px;padding:20px 22px;width:460px;max-width:100%;max-height:90vh;overflow:auto}
+.modal{background:var(--paper);border-radius:10px;padding:20px 22px;width:640px;max-width:100%;max-height:90vh;overflow:auto}
 .modal h2{font-family:var(--font-h);font-size:22px;color:var(--pine);margin-bottom:12px}
 .modal label{display:block;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin:10px 0 4px}
 .modal input{width:100%}
 .res{border:1px solid var(--line);border-radius:4px;margin-top:4px;max-height:170px;overflow:auto}
 .res div{padding:7px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--line)}
 .res div:hover{background:#E8EEF6}
-.mf{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.ab{border:1px solid var(--line2);border-radius:8px;padding:10px 12px;margin-top:10px;background:#FBF8F1}.ab h3{font-size:12px;color:var(--pine);display:flex;align-items:center;margin-bottom:2px}.ab h3 span{flex:1}.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.g2 label{margin-top:6px}@media(max-width:560px){.g2{grid-template-columns:1fr}}.mf{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--pine2);color:#fff;padding:10px 16px;border-radius:6px;font-size:13px;display:none;z-index:99;max-width:90vw}
 #login{max-width:340px;margin:70px auto;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:24px}
 #login h2{font-family:var(--font-h);color:var(--pine);margin-bottom:14px}
@@ -97,6 +97,8 @@ td textarea{min-height:34px;resize:vertical}
     <div class="res" id="ms-res" style="display:none"></div>
     <label>Google Drive folder link</label>
     <input id="ms-drive" placeholder="https://drive.google.com/…">
+    <div id="ms-apps"></div>
+    <div id="ms-addwrap" style="margin-top:10px"><button onclick="addBlock()">+ Add another application</button></div>
     <div class="mf"><button onclick="closeModal()">Cancel</button><button class="p" onclick="saveStudent()">Save</button></div>
   </div>
 </div>
@@ -108,7 +110,7 @@ td textarea{min-height:34px;resize:vertical}
 <script>
 var SUPABASE_URL='https://jvreglqrrdnwttjasvwg.supabase.co';
 var SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2cmVnbHFycmRud3R0amFzdndnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDM3NzEsImV4cCI6MjA5NTQxOTc3MX0.I_X-ljOPlLFYLeWz6hE15nL8z0MPqmsSdWcgwole8GE';
-var ALLOWED=['india@step4progress.com','pavitra@step4progress.com'];
+var ALLOWED=['india@step4progress.com'];
 var PORTALS=['KC','GP','S4P'];
 var STATUSES=['University Shortlist','Documents Pending','Application Submitted','Received Conditional','Received Unconditional','Deposit Paid','Interview Passed','Interview Failed','CAS Applied','CAS Received','Visa Application Submitted','Visa Interview','Visa Received','Visa Rejected','Enrolled','Defer','Dropped'];
 var COURSEFINDER='https://app.coursefinder.ai/search-program';
@@ -208,8 +210,8 @@ function body(x){
   var rows=x.shown.map(function(a){
     return '<tr>'
      +'<td style="width:80px"><select onchange="upd(\''+a.id+'\',\'portal\',this.value)">'+PORTALS.map(function(p){return '<option'+(a.portal===p?' selected':'')+'>'+p+'</option>';}).join('')+'</select></td>'
-     +'<td style="width:190px"><input list="dl-uni" value="'+esc(a.university)+'" placeholder="University" onchange="upd(\''+a.id+'\',\'university\',this.value)"></td>'
-     +'<td style="width:230px"><input list="dl-course" value="'+esc(a.course)+'" placeholder="Type the course name" onchange="upd(\''+a.id+'\',\'course\',this.value)"><br><button class="find" onclick="window.open(\''+COURSEFINDER+'\',\'_blank\')">Find course ↗</button></td>'
+     +'<td style="width:200px"><input list="dl-uni" value="'+esc(a.university)+'" placeholder="University" onchange="upd(\''+a.id+'\',\'university\',this.value)">'+lk(a.id,'university_url',a.university_url,'University link')+'</td>'
+     +'<td style="width:230px"><input list="dl-course" value="'+esc(a.course)+'" placeholder="Type the course name" onchange="upd(\''+a.id+'\',\'course\',this.value)">'+lk(a.id,'course_url',a.course_url,'Course link')+'<button class="find" onclick="window.open(\''+COURSEFINDER+'\',\'_blank\')">Find course ↗</button></td>'
      +'<td style="width:190px"><select onchange="upd(\''+a.id+'\',\'status\',this.value)">'+STATUSES.map(function(t){return '<option'+(a.status===t?' selected':'')+'>'+esc(t)+'</option>';}).join('')+'</select></td>'
      +'<td><textarea placeholder="Notes" onchange="upd(\''+a.id+'\',\'notes\',this.value)">'+esc(a.notes)+'</textarea></td>'
      +'<td><textarea placeholder="Remarks" onchange="upd(\''+a.id+'\',\'remarks\',this.value)">'+esc(a.remarks)+'</textarea></td>'
@@ -219,10 +221,12 @@ function body(x){
     +(rows||'<tr><td colspan="7" class="empty" style="padding:16px">No applications yet.</td></tr>')+'</tbody></table>'
     +'<div style="margin-top:10px"><button class="p" onclick="addApp(\''+s.id+'\')">+ Add application</button></div>';
 }
+function lk(id,f,v,ph){var u=safeUrl(v);return '<div style="display:flex;gap:4px;align-items:center;margin-top:4px"><input value="'+esc(v)+'" placeholder="'+ph+'" style="font-size:12px;padding:5px 8px" onchange="upd(\''+id+'\',\''+f+'\',this.value)">'+(u?'<a href="'+esc(u)+'" target="_blank" rel="noopener" title="Open link">↗</a>':'')+'</div>';}
 function toggle(id){openIds[id]=!openIds[id];render();}
 
 async function upd(id,field,val){
   var a=apps.find(function(x){return x.id===id;});if(!a)return;
+  if((field==='university_url'||field==='course_url')&&val&&!safeUrl(val)){toast('The link must start with https://');render();return;}
   var patch={updated_by:myName,updated_at:new Date().toISOString()};patch[field]=(typeof val==='string')?val.trim():val;
   var r=await sb.from('tracker_applications').update(patch).eq('id',id).select('id');
   if(r.error||!r.data||!r.data.length){toast('Could not save: '+((r.error&&r.error.message)||'not saved'));return;}
@@ -260,6 +264,9 @@ function openStudentModal(id){
   document.getElementById('ms-name').value=s?s.name:'';
   document.getElementById('ms-drive').value=s?(s.drive_url||''):'';
   document.getElementById('ms-res').style.display='none';
+  document.getElementById('ms-apps').innerHTML='';
+  document.getElementById('ms-addwrap').style.display=s?'none':'block';
+  if(!s)addBlock();
   document.getElementById('m-stu').classList.add('open');
   setTimeout(function(){document.getElementById('ms-name').focus();},50);
 }
@@ -283,6 +290,31 @@ function searchLeads(){
       box.style.display='none';};});
   },250);
 }
+function addBlock(){
+  var box=document.getElementById('ms-apps'),n=box.children.length+1;
+  var d=document.createElement('div');d.className='ab';
+  d.innerHTML='<h3><span>Application '+n+'</span>'+(n>1?'<button class="x" onclick="this.closest(\'.ab\').remove();renumber()">× Remove</button>':'')+'</h3>'
+   +'<div class="g2"><div><label>Portal</label><select class="b-portal" style="width:100%">'+PORTALS.map(function(p){return '<option>'+p+'</option>';}).join('')+'</select></div>'
+   +'<div><label>Status</label><select class="b-status" style="width:100%">'+STATUSES.map(function(t){return '<option>'+esc(t)+'</option>';}).join('')+'</select></div>'
+   +'<div><label>University name</label><input class="b-uni" list="dl-uni" placeholder="University name"></div>'
+   +'<div><label>University link</label><input class="b-uniurl" placeholder="https://…"></div>'
+   +'<div><label>Course name</label><input class="b-course" list="dl-course" placeholder="Course name"></div>'
+   +'<div><label>Course link</label><input class="b-courseurl" placeholder="https://…"></div></div>'
+   +'<div style="margin-top:6px"><button class="find" onclick="window.open(\''+COURSEFINDER+'\',\'_blank\')">Find course ↗</button></div>';
+  box.appendChild(d);
+}
+function renumber(){Array.prototype.forEach.call(document.getElementById('ms-apps').children,function(d,i){d.querySelector('h3 span').textContent='Application '+(i+1);});}
+function readBlocks(){
+  var out=[],bad=null;
+  Array.prototype.forEach.call(document.querySelectorAll('#ms-apps .ab'),function(d){
+    var g=function(c){return d.querySelector(c).value.trim();};
+    var o={portal:g('.b-portal'),status:g('.b-status'),university:g('.b-uni'),university_url:g('.b-uniurl'),course:g('.b-course'),course_url:g('.b-courseurl')};
+    if(o.university_url&&!safeUrl(o.university_url))bad='The university link must start with https://';
+    if(o.course_url&&!safeUrl(o.course_url))bad='The course link must start with https://';
+    if(o.university||o.course||o.university_url||o.course_url)out.push(o);
+  });
+  return {apps:out,bad:bad};
+}
 async function saveStudent(){
   var name=document.getElementById('ms-name').value.trim();
   var drive=document.getElementById('ms-drive').value.trim();
@@ -294,30 +326,38 @@ async function saveStudent(){
     if(r.error){toast('Could not save: '+r.error.message);return;}
     Object.assign(students.find(function(x){return x.id===editingId;}),r.data);
   }else{
+    var rb=readBlocks();
+    if(rb.bad){toast(rb.bad);return;}
     if(pickLead)row.lead_id=pickLead.id;
     row.created_by=myName;
     var r2=await sb.from('tracker_students').insert(row).select().single();
     if(r2.error){toast('Could not add: '+r2.error.message+' — has crm_app_tracker.sql been run?');return;}
     students.push(r2.data);openIds[r2.data.id]=true;
+    if(rb.apps.length){
+      var ins=await sb.from('tracker_applications').insert(rb.apps.map(function(a){a.student_id=r2.data.id;a.updated_by=myName;a.university_url=a.university_url||null;a.course_url=a.course_url||null;return a;})).select();
+      if(ins.error){toast('Student saved, but applications failed: '+ins.error.message+' — has the latest crm_app_tracker.sql been run?');}
+      else apps=apps.concat(ins.data);
+    }
+    fillSuggestions();
   }
   closeModal();render();
 }
 
 /* ---- export / import ---- */
-var COLS=['Student','Drive Link','Portal','University','Course','Status','Notes','Remarks','Updated'];
+var COLS=['Student','Drive Link','Portal','University','University Link','Course','Course Link','Status','Notes','Remarks','Updated'];
 function exportXlsx(){
   var rows=[];
   view().forEach(function(x){
     var list=x.shown.length?x.shown:[null];
-    list.forEach(function(a){rows.push([x.s.name,x.s.drive_url||'',a?a.portal:'',a?a.university||'':'',a?a.course||'':'',a?a.status:'',a?a.notes||'':'',a?a.remarks||'':'',a?(a.updated_at||'').slice(0,10):'']);});
+    list.forEach(function(a){rows.push([x.s.name,x.s.drive_url||'',a?a.portal:'',a?a.university||'':'',a?a.university_url||'':'',a?a.course||'':'',a?a.course_url||'':'',a?a.status:'',a?a.notes||'':'',a?a.remarks||'':'',a?(a.updated_at||'').slice(0,10):'']);});
   });
   var ws=XLSX.utils.aoa_to_sheet([COLS].concat(rows));
-  ws['!cols']=[{wch:26},{wch:40},{wch:8},{wch:30},{wch:36},{wch:26},{wch:36},{wch:36},{wch:12}];
+  ws['!cols']=[{wch:26},{wch:40},{wch:8},{wch:30},{wch:30},{wch:36},{wch:30},{wch:26},{wch:36},{wch:36},{wch:12}];
   var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Applications');
   XLSX.writeFile(wb,'applications-tracker-'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 function downloadTemplate(){
-  var ws=XLSX.utils.aoa_to_sheet([COLS.slice(0,8),['Example Student','https://drive.google.com/…','KC','University of Leeds','MSc Data Science','University Shortlist','','']]);
+  var ws=XLSX.utils.aoa_to_sheet([COLS.slice(0,10),['Example Student','https://drive.google.com/…','KC','University of Leeds','https://…','MSc Data Science','https://…','University Shortlist','','']]);
   var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Applications');
   XLSX.writeFile(wb,'applications-tracker-template.xlsx');
 }
@@ -329,7 +369,7 @@ async function importFile(input){
     var buf=await f.arrayBuffer();
     var wb=XLSX.read(buf,{type:'array'});
     var raw=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
-    var syn={student:'name',studentname:'name',name:'name',drivelink:'drive',drive:'drive',folder:'drive',folderlink:'drive',link:'drive',portal:'portal',university:'uni',uni:'uni',course:'course',status:'status',notes:'notes',note:'notes',remarks:'remarks',remark:'remarks'};
+    var syn={student:'name',studentname:'name',name:'name',drivelink:'drive',drive:'drive',folder:'drive',folderlink:'drive',link:'drive',portal:'portal',university:'uni',uni:'uni',universitylink:'uniurl',courselink:'courseurl',course:'course',status:'status',notes:'notes',note:'notes',remarks:'remarks',remark:'remarks'};
     var rows=raw.map(function(r){var o={};Object.keys(r).forEach(function(k){var m=syn[normKey(k)];if(m)o[m]=String(r[k]).trim();});return o;}).filter(function(o){return o.name;});
     var skipped=[],newApps=[],made=0,byName={};
     students.forEach(function(s){byName[s.name.trim().toLowerCase()]=s;});
@@ -350,7 +390,7 @@ async function importFile(input){
       if(PORTALS.indexOf(portal)<0){skipped.push('Row '+line+' ('+o.name+'): portal “'+(o.portal||'')+'” is not KC, GP or S4P');continue;}
       var st=STATUSES.find(function(x){return x.toLowerCase()===(o.status||'').toLowerCase();});
       if(o.status&&!st){skipped.push('Row '+line+' ('+o.name+'): status “'+o.status+'” is not in the list');continue;}
-      newApps.push({student_id:s.id,portal:portal,university:o.uni||'',course:o.course||'',status:st||'University Shortlist',notes:o.notes||'',remarks:o.remarks||'',updated_by:myName});
+      newApps.push({student_id:s.id,portal:portal,university:o.uni||'',university_url:safeUrl(o.uniurl)||null,course:o.course||'',course_url:safeUrl(o.courseurl)||null,status:st||'University Shortlist',notes:o.notes||'',remarks:o.remarks||'',updated_by:myName});
     }
     var added=0;
     for(var j=0;j<newApps.length;j+=200){

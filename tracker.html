@@ -46,14 +46,14 @@ td textarea{min-height:34px;resize:vertical}
 .empty{padding:40px;text-align:center;color:var(--ink3)}
 .mover{display:none;position:fixed;inset:0;background:rgba(28,23,18,.5);z-index:50;align-items:center;justify-content:center;padding:16px}
 .mover.open{display:flex}
-.modal{background:var(--paper);border-radius:10px;padding:20px 22px;width:640px;max-width:100%;max-height:90vh;overflow:auto}
+.modal{background:var(--paper);border-radius:10px;padding:20px 22px;width:1180px;max-width:100%;max-height:90vh;overflow:auto}
 .modal h2{font-family:var(--font-h);font-size:22px;color:var(--pine);margin-bottom:12px}
 .modal label{display:block;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin:10px 0 4px}
 .modal input{width:100%}
 .res{border:1px solid var(--line);border-radius:4px;margin-top:4px;max-height:170px;overflow:auto}
 .res div{padding:7px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--line)}
 .res div:hover{background:#E8EEF6}
-.ab{border:1px solid var(--line2);border-radius:8px;padding:10px 12px;margin-top:10px;background:#FBF8F1}.ab h3{font-size:12px;color:var(--pine);display:flex;align-items:center;margin-bottom:2px}.ab h3 span{flex:1}.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.g2 label{margin-top:6px}@media(max-width:560px){.g2{grid-template-columns:1fr}}.mf{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.ahead,.ab{display:grid;grid-template-columns:84px 1.2fr 1fr 1.2fr 1fr 170px 30px;gap:6px;align-items:center}.ahead{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-top:14px;padding:0 0 4px;border-bottom:1px solid var(--line2)}.ab{margin-top:6px}.ab input,.ab select{width:100%;padding:7px 8px}.arow{overflow-x:auto}.arow>div{min-width:900px}@media(max-width:900px){.modal{padding:14px}}.mf{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--pine2);color:#fff;padding:10px 16px;border-radius:6px;font-size:13px;display:none;z-index:99;max-width:90vw}
 #login{max-width:340px;margin:70px auto;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:24px}
 #login h2{font-family:var(--font-h);color:var(--pine);margin-bottom:14px}
@@ -97,8 +97,8 @@ td textarea{min-height:34px;resize:vertical}
     <div class="res" id="ms-res" style="display:none"></div>
     <label>Google Drive folder link</label>
     <input id="ms-drive" placeholder="https://drive.google.com/…">
-    <div id="ms-apps"></div>
-    <div id="ms-addwrap" style="margin-top:10px"><button onclick="addBlock()">+ Add another application</button></div>
+    <div class="arow"><div><div class="ahead"><span>Portal</span><span>University name</span><span>University link</span><span>Course name</span><span>Course link</span><span>Status</span><span></span></div><div id="ms-apps"></div></div></div>
+    <div id="ms-addwrap" style="margin-top:10px;display:flex;gap:8px"><button onclick="addBlock()">+ Add another application</button><button onclick="window.open('https://app.coursefinder.ai/search-program','_blank')">Find course ↗</button></div>
     <div class="mf"><button onclick="closeModal()">Cancel</button><button class="p" onclick="saveStudent()">Save</button></div>
   </div>
 </div>
@@ -291,19 +291,20 @@ function searchLeads(){
   },250);
 }
 function addBlock(){
-  var box=document.getElementById('ms-apps'),n=box.children.length+1;
+  var box=document.getElementById('ms-apps');
   var d=document.createElement('div');d.className='ab';
-  d.innerHTML='<h3><span>Application '+n+'</span>'+(n>1?'<button class="x" onclick="this.closest(\'.ab\').remove();renumber()">× Remove</button>':'')+'</h3>'
-   +'<div class="g2"><div><label>Portal</label><select class="b-portal" style="width:100%">'+PORTALS.map(function(p){return '<option>'+p+'</option>';}).join('')+'</select></div>'
-   +'<div><label>Status</label><select class="b-status" style="width:100%">'+STATUSES.map(function(t){return '<option>'+esc(t)+'</option>';}).join('')+'</select></div>'
-   +'<div><label>University name</label><input class="b-uni" list="dl-uni" placeholder="University name"></div>'
-   +'<div><label>University link</label><input class="b-uniurl" placeholder="https://…"></div>'
-   +'<div><label>Course name</label><input class="b-course" list="dl-course" placeholder="Course name"></div>'
-   +'<div><label>Course link</label><input class="b-courseurl" placeholder="https://…"></div></div>'
-   +'<div style="margin-top:6px"><button class="find" onclick="window.open(\''+COURSEFINDER+'\',\'_blank\')">Find course ↗</button></div>';
+  d.innerHTML='<select class="b-portal">'+PORTALS.map(function(p){return '<option>'+p+'</option>';}).join('')+'</select>'
+   +'<input class="b-uni" list="dl-uni" placeholder="University name">'
+   +'<input class="b-uniurl" placeholder="https://…">'
+   +'<input class="b-course" list="dl-course" placeholder="Course name">'
+   +'<input class="b-courseurl" placeholder="https://…">'
+   +'<select class="b-status">'+STATUSES.map(function(t){return '<option>'+esc(t)+'</option>';}).join('')+'</select>'
+   +'<button class="x" title="Remove" onclick="this.closest(\'.ab\').remove()">×</button>';
   box.appendChild(d);
+  var prev=box.children.length>1?box.children[box.children.length-2]:null;
+  if(prev){d.querySelector('.b-portal').value=prev.querySelector('.b-portal').value;}
 }
-function renumber(){Array.prototype.forEach.call(document.getElementById('ms-apps').children,function(d,i){d.querySelector('h3 span').textContent='Application '+(i+1);});}
+function renumber(){}
 function readBlocks(){
   var out=[],bad=null;
   Array.prototype.forEach.call(document.querySelectorAll('#ms-apps .ab'),function(d){

@@ -4,24 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Free Study Abroad Resources — Step4Progress India</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#1C3F6E">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --navy:#0D2137;
-  --navy2:#16304D;
-  --gold:#B8924A;
-  --gold-l:#E8C96A;
-  --cream:#FAF7F1;
-  --paper:#FFFFFF;
-  --ink:#1C1917;
-  --ink2:#44403C;
-  --ink3:#78716C;
-  --line:#E7E2D8;
-  --sage:#5C7A63;
-  --sage-l:#E8EFE9;
-  --font-h:'Fraunces',Georgia,serif;
-  --font-b:'Inter',system-ui,sans-serif;
+  /* same palette and fonts as the Step4Progress CRM */
+  --navy:#1C3F6E;
+  --navy2:#132B4D;
+  --gold:#A8721F;
+  --gold-l:#D7B16B;
+  --accent:#E08429;
+  --cream:#F6F3EC;
+  --paper:#FFFDF9;
+  --ink:#1C1712;
+  --ink2:#3A3229;
+  --ink3:#7A7168;
+  --line:#E6DDCC;
+  --sage:#357A2D;
+  --sage-l:#E5EEE2;
+  --font-h:'Cormorant Garamond',Georgia,serif;
+  --font-b:'Lora',Georgia,serif;
 }
 html{scroll-behavior:smooth}
 body{font-family:var(--font-b);background:var(--cream);color:var(--ink);line-height:1.6}
@@ -30,7 +33,7 @@ body{font-family:var(--font-b);background:var(--cream);color:var(--ink);line-hei
 .topbar{background:var(--navy);padding:16px 0;position:sticky;top:0;z-index:50;border-bottom:1px solid rgba(255,255,255,.08)}
 .topbar-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between}
 .brand{display:flex;align-items:center;gap:10px}
-.brand-mark{width:34px;height:34px;background:linear-gradient(135deg,var(--gold),var(--gold-l));border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-weight:600;font-size:15px;color:var(--navy)}
+.brand-mark{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--gold-l));border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-weight:600;font-size:15px;color:var(--navy)}
 .brand-name{font-family:var(--font-h);font-size:16px;font-weight:500;color:#fff;letter-spacing:-.01em}
 .brand-name em{font-style:italic;color:var(--gold-l)}
 .topbar-tag{font-size:11px;color:rgba(255,255,255,.45);letter-spacing:.06em;text-transform:uppercase;display:none}
@@ -39,12 +42,12 @@ body{font-family:var(--font-b);background:var(--cream);color:var(--ink);line-hei
 /* ── HERO ── */
 .hero{background:var(--navy);padding:64px 24px 88px;position:relative;overflow:hidden}
 .hero::before{content:'';position:absolute;inset:0;background:
-  radial-gradient(ellipse 600px 400px at 15% 20%,rgba(184,146,74,.14) 0%,transparent 60%),
-  radial-gradient(ellipse 500px 500px at 85% 80%,rgba(184,146,74,.08) 0%,transparent 55%);
+  radial-gradient(ellipse 600px 400px at 15% 20%,rgba(215,177,107,.16) 0%,transparent 60%),
+  radial-gradient(ellipse 500px 500px at 85% 80%,rgba(215,177,107,.09) 0%,transparent 55%);
   pointer-events:none}
 .hero-inner{max-width:760px;margin:0 auto;text-align:center;position:relative;z-index:1}
 .hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-l);margin-bottom:22px;padding:7px 16px;border:1px solid rgba(232,201,106,.3);border-radius:99px}
-.hero h1{font-family:var(--font-h);font-size:clamp(32px,5.5vw,54px);font-weight:500;color:#fff;line-height:1.1;letter-spacing:-.02em;margin-bottom:20px}
+.hero h1{font-family:var(--font-h);font-size:clamp(34px,5.8vw,58px);font-weight:500;color:#fff;line-height:1.1;letter-spacing:-.02em;margin-bottom:20px}
 .hero h1 em{font-style:italic;font-weight:300;color:var(--gold-l)}
 .hero p{font-size:17px;color:rgba(255,255,255,.6);max-width:520px;margin:0 auto 8px;line-height:1.65}
 .hero-count{font-size:13px;color:rgba(255,255,255,.4);margin-top:24px;letter-spacing:.02em}
@@ -57,12 +60,12 @@ body{font-family:var(--font-b);background:var(--cream);color:var(--ink);line-hei
 @media(max-width:860px){.rgrid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.rgrid{grid-template-columns:1fr}}
 
-.rcard{background:var(--paper);border-radius:16px;padding:28px 24px;box-shadow:0 2px 8px rgba(13,33,55,.06),0 12px 32px rgba(13,33,55,.08);border:1px solid var(--line);display:flex;flex-direction:column;transition:transform .25s ease,box-shadow .25s ease;cursor:pointer;position:relative;overflow:hidden}
-.rcard:hover{transform:translateY(-4px);box-shadow:0 4px 16px rgba(13,33,55,.1),0 20px 44px rgba(13,33,55,.14)}
-.rcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--gold-l));opacity:0;transition:opacity .25s}
+.rcard{background:var(--paper);border-radius:16px;padding:28px 24px;box-shadow:0 2px 8px rgba(28,63,110,.06),0 12px 32px rgba(28,63,110,.08);border:1px solid var(--line);display:flex;flex-direction:column;transition:transform .25s ease,box-shadow .25s ease;cursor:pointer;position:relative;overflow:hidden}
+.rcard:hover{transform:translateY(-4px);box-shadow:0 4px 16px rgba(28,63,110,.1),0 20px 44px rgba(28,63,110,.14)}
+.rcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--gold-l));opacity:0;transition:opacity .25s}
 .rcard:hover::before{opacity:1}
 .rcard-icon{font-size:30px;margin-bottom:16px;display:block}
-.rcard-value{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--gold);background:rgba(184,146,74,.1);padding:4px 10px;border-radius:99px;margin-bottom:12px;align-self:flex-start}
+.rcard-value{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--gold);background:rgba(168,114,31,.1);padding:4px 10px;border-radius:99px;margin-bottom:12px;align-self:flex-start}
 .rcard h3{font-family:var(--font-h);font-size:19px;font-weight:500;color:var(--navy);margin-bottom:8px;letter-spacing:-.01em;line-height:1.25}
 .rcard p{font-size:13px;color:var(--ink3);line-height:1.55;margin-bottom:20px;flex:1}
 .rcard-btn{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;color:var(--navy);padding-top:16px;border-top:1px solid var(--line)}
@@ -80,7 +83,7 @@ body{font-family:var(--font-b);background:var(--cream);color:var(--ink);line-hei
 .footer a{color:var(--navy);text-decoration:none;font-weight:600}
 
 /* ── MODAL (lead capture before download) ── */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(13,33,55,.55);backdrop-filter:blur(3px);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(28,63,110,.55);backdrop-filter:blur(3px);z-index:100;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.open{display:flex}
 .modal{background:var(--paper);border-radius:20px;max-width:440px;width:100%;padding:36px 32px;position:relative;box-shadow:0 24px 64px rgba(0,0,0,.25);animation:modalIn .3s ease}
 @keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
@@ -92,7 +95,7 @@ body{font-family:var(--font-b);background:var(--cream);color:var(--ink);line-hei
 .field{margin-bottom:14px}
 .field label{display:block;font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
 .field input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;font-family:var(--font-b);color:var(--ink);background:var(--cream);outline:none;transition:border .15s,box-shadow .15s}
-.field input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(13,33,55,.08);background:var(--paper)}
+.field input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(28,63,110,.08);background:var(--paper)}
 .field input::placeholder{color:#B8B2A6}
 .err-msg{font-size:11px;color:#B91C1C;margin-top:4px;display:none}
 .field.invalid input{border-color:#B91C1C}
@@ -126,7 +129,7 @@ body{font-family:var(--font-b);background:var(--cream);color:var(--ink);line-hei
   <div class="hero-inner">
     <div class="hero-eyebrow">📚 Free Resource Library</div>
     <h1>Everything you need to <em>study abroad</em>, in one place.</h1>
-    <p>Seven premium guides, researched from official university and government sources — built by our counsellors, given to you free.</p>
+    <p>Premium guides, researched from official university and government sources — built by our counsellors, given to you free.</p>
     <div class="hero-count"><b>7</b> guides &nbsp;·&nbsp; <b>100%</b> free &nbsp;·&nbsp; sourced from official channels</div>
   </div>
 </div>
@@ -209,20 +212,39 @@ const RESOURCES = [
 ];
 
 let currentResource = null;
+function esc(x){return String(x==null?'':x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+// Extra resources added by the team in the CRM (Resource Library -> Add resource) that already have a PDF.
+async function loadCustomResources(){
+  try{
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/resources?select=key,title,icon,file_url&file_url=not.is.null&key=like.custom-*&order=created_at.asc`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    if(!r.ok) return;
+    const rows = await r.json();
+    rows.forEach(x => {
+      if(!x.title || RESOURCES.some(y => y.key === x.key)) return;
+      RESOURCES.push({ key:x.key, icon:x.icon||'📄', badge:'Free', title:x.title, desc:'Free guide from our counsellors.', custom:true });
+    });
+    renderGrid();
+  }catch(e){}
+}
 
 function renderGrid(){
   const grid = document.getElementById('resource-grid');
+  const cnt = document.querySelector('.hero-count b');
+  if(cnt) cnt.textContent = RESOURCES.length;
   grid.innerHTML = RESOURCES.map(r => `
-    <div class="rcard" onclick="openModal('${r.key}')">
-      <span class="rcard-icon">${r.icon}</span>
-      <span class="rcard-value">${r.badge}</span>
-      <h3>${r.title}</h3>
-      <p>${r.desc}</p>
+    <div class="rcard" onclick="openModal('${esc(r.key)}')">
+      <span class="rcard-icon">${esc(r.icon)}</span>
+      <span class="rcard-value">${esc(r.badge)}</span>
+      <h3>${r.custom ? esc(r.title) : r.title}</h3>
+      <p>${r.custom ? esc(r.desc) : r.desc}</p>
       <div class="rcard-btn"><span>Get free access</span><span class="arrow">→</span></div>
     </div>
   `).join('');
 }
 renderGrid();
+loadCustomResources();
 
 function openModal(key){
   currentResource = RESOURCES.find(r => r.key === key);

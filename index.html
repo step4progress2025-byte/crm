@@ -656,6 +656,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <button class="sb-logout" id="notif-toggle-btn" onclick="toggleGlobalNotifications()" style="display:none"></button>
       <button class="sb-logout" onclick="setDailyReminderTime()"><i class="ti ti-clock" style="font-size:15px"></i>Set daily reminder time</button>
       <button class="sb-logout" onclick="setMyMobileNumber()"><i class="ti ti-device-mobile" style="font-size:15px"></i>My phone number for calls</button>
+      <button class="sb-logout" onclick="openRecentlyDeleted()"><i class="ti ti-arrow-back-up" style="font-size:15px"></i>Recently deleted</button>
       <button class="sb-logout" id="dark-mode-toggle-btn" onclick="toggleDarkMode()"><i class="ti ti-moon" style="font-size:15px"></i>Dark mode</button>
       <button class="sb-logout" onclick="doLogout()"><i class="ti ti-logout" style="font-size:15px"></i>Sign out</button>
     </div>
@@ -2338,6 +2339,9 @@ What would you like help with today?</div>
         <div class="ff"><label>Assign leads to</label>
           <select id="bal-assign-mode"><option value="unassigned">Leave unassigned</option><option value="roundrobin">Auto-assign (Round Robin)</option></select>
         </div>
+        <div class="ff"><label>City for all leads <span style="font-weight:400;color:var(--ink3)">(optional)</span></label>
+          <input id="bal-city" type="text" placeholder="e.g. Chennai — used for leads with no city in the file" autocomplete="off">
+        </div>
         <div class="ff full"><label><input type="checkbox" id="bal-notify" style="width:auto;margin-right:6px">Notify assigned counsellors</label></div>
       </div>
     </div>
@@ -2434,6 +2438,7 @@ What would you like help with today?</div>
           </table>
         </div>
         <div id="mbu-unknown-warning" style="display:none;font-size:12px;color:var(--gold);margin-top:10px;background:var(--gold-l);padding:10px 12px;border-radius:var(--r)"></div>
+        <div style="margin-top:14px"><label style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);display:block;margin-bottom:4px">City for leads without one <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="mbu-default-city" type="text" placeholder="e.g. Chennai" autocomplete="off" style="width:100%;max-width:320px"></div>
         <button class="btn btn-p" onclick="confirmMetaBulkUpload()" style="margin-top:14px" id="mbu-confirm-btn"><i class="ti ti-upload"></i>Upload these leads</button>
       </div>
 
@@ -3082,7 +3087,194 @@ What would you like help with today?</div>
 // ── SUPABASE INIT ────────────────────────────────────────────────
 const SUPABASE_URL = 'https://jvreglqrrdnwttjasvwg.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2cmVnbHFycmRud3R0amFzdndnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NDM3NzEsImV4cCI6MjA5NTQxOTc3MX0.I_X-ljOPlLFYLeWz6hE15nL8z0MPqmsSdWcgwole8GE';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = wrapSbForUndo(supabase.createClient(SUPABASE_URL, SUPABASE_KEY));
+// ── UNDO FOR DELETES ─────────────────────────────────────────────
+// Every delete on these tables first saves a copy (and, for a lead, its documents, SOP files,
+// university links, tasks and activity) to deleted_items. "Undo" and "Recently deleted"
+// restore it through the restore_deleted_item database function.
+const UNDO_TABLES={
+  leads:{one:'lead',many:'leads'},tasks:{one:'task',many:'tasks'},reminders:{one:'reminder',many:'reminders',silent:true},
+  university_applications:{one:'university',many:'universities'},university_links:{one:'university link',many:'university links'},
+  university_application_files:{one:'SOP file',many:'SOP files'},team:{one:'team member',many:'team members'},
+  sop_documents:{one:'SOP document',many:'SOP documents'},resume_submissions:{one:'resume',many:'resumes'},
+  resources:{one:'resource',many:'resources',pk:'key'},marketing_posts:{one:'marketing post',many:'marketing posts'},
+  events:{one:'event',many:'events'},document_files:{one:'file',many:'files'},commissions:{one:'commission',many:'commissions'},
+  call_logs:{one:'call log',many:'call logs'},whatsapp_calls:{one:'call',many:'calls'},announcements:{one:'announcement',many:'announcements'},
+  announcement_replies:{one:'reply',many:'replies',silent:true},staff_unavailability:{one:'unavailability',many:'unavailability records'},
+  meta_bulk_uploads:{one:'upload record',many:'upload records',silent:true}
+};
+const UNDO_LEAD_CHILDREN=[
+  {t:'documents',by:'lead_id'},{t:'document_files',by:'document_id',via:'documents'},
+  {t:'university_links',by:'lead_id'},{t:'university_applications',by:'lead_id'},
+  {t:'university_application_files',by:'university_application_id',via:'university_applications'},
+  {t:'sop_documents',by:'lead_id'},{t:'tasks',by:'lead_id'},{t:'reminders',by:'lead_id'},{t:'activity_log',by:'lead_id'}
+];
+const _UNDO_FILTERS=new Set(['eq','neq','gt','gte','lt','lte','like','ilike','is','in','contains','containedBy','overlaps','match','or','not','filter','textSearch']);
+function wrapSbForUndo(raw){
+  // Other parts of the app replace sb.from / sb.rpc with guarded versions; keep those overrides on the wrapper
+  // (not on the raw client) so they still call this wrapper's original and never loop.
+  const over={};
+  return new Proxy(raw,{set(t,p,v){over[p]=v;return true;},get(t,p){
+    if(Object.prototype.hasOwnProperty.call(over,p))return over[p];
+    if(p==='from')return table=>{
+      const q=t.from(table);
+      if(!UNDO_TABLES[table])return q;
+      return new Proxy(q,{get(qt,qp){
+        if(qp==='delete')return ()=>undoDeleteBuilder(t,table);
+        const v=Reflect.get(qt,qp);return typeof v==='function'?v.bind(qt):v;
+      }});
+    };
+    const v=Reflect.get(t,p);return typeof v==='function'?v.bind(t):v;
+  }});
+}
+function undoDeleteBuilder(raw,table){
+  const ops=[];let promise=null;
+  const run=()=>promise||(promise=undoRunDelete(raw,table,ops));
+  const proxy=new Proxy({},{get(_,p){
+    if(p==='then')return (a,b)=>run().then(a,b);
+    if(p==='catch')return b=>run().catch(b);
+    if(p==='finally')return f=>run().finally(f);
+    if(typeof p==='symbol')return undefined;
+    return (...args)=>{ops.push([p,args]);return proxy;};
+  }});
+  return proxy;
+}
+async function undoRunDelete(raw,table,ops){
+  const cfg=UNDO_TABLES[table],pk=cfg.pk||'id';
+  let pre=[],children=[];
+  try{
+    if(ops.some(o=>_UNDO_FILTERS.has(o[0]))){
+      for(let from=0;;from+=1000){
+        let q=raw.from(table).select('*');
+        ops.forEach(([m,a])=>{if(_UNDO_FILTERS.has(m))q=q[m](...a);});
+        const{data,error}=await q.order(pk,{ascending:true}).range(from,from+999);
+        if(error||!data)break;
+        pre=pre.concat(data);
+        if(data.length<1000||pre.length>=10000)break;
+      }
+      if(table==='leads'&&pre.length)children=await undoCollectLeadChildren(raw,pre.map(r=>r.id));
+    }
+  }catch(e){console.warn('Undo snapshot failed',e);}
+  let dq=raw.from(table).delete();
+  ops.forEach(([m,a])=>{dq=dq[m](...a);});
+  const res=await dq;
+  if(!res.error&&pre.length){try{await undoArchive(raw,table,pk,cfg,pre,children);}catch(e){console.warn('Undo archive failed',e);}}
+  return res;
+}
+async function undoCollectLeadChildren(raw,leadIds){
+  const out=[],got={};
+  for(const c of UNDO_LEAD_CHILDREN){
+    let keys=leadIds;
+    if(c.via){keys=(got[c.via]||[]).map(r=>r.id);}
+    if(!keys.length){got[c.t]=[];continue;}
+    let rows=[];
+    try{
+      for(let i=0;i<keys.length;i+=100){
+        const{data,error}=await raw.from(c.t).select('*').in(c.by,keys.slice(i,i+100));
+        if(error)throw error;
+        rows=rows.concat(data||[]);
+      }
+    }catch(e){rows=[];}
+    got[c.t]=rows;
+    if(rows.length)out.push({table:c.t,rows});
+  }
+  return out;
+}
+const _UNDO_NAME_COLS=['name','full_name','title','university_name','university','filename','label','key','event_name'];
+async function undoArchive(raw,table,pk,cfg,pre,children){
+  const ids=pre.map(r=>r[pk]),still=new Set();
+  for(let i=0;i<ids.length;i+=100){
+    const{data}=await raw.from(table).select(pk).in(pk,ids.slice(i,i+100));
+    (data||[]).forEach(r=>still.add(r[pk]));
+  }
+  const gone=pre.filter(r=>!still.has(r[pk]));
+  if(!gone.length)return;
+  let label;
+  if(gone.length===1){
+    const r=gone[0],col=_UNDO_NAME_COLS.find(c=>r[c]);
+    label=cfg.one.charAt(0).toUpperCase()+cfg.one.slice(1)+(col?': '+String(r[col]).slice(0,60):'');
+  }else label=gone.length+' '+cfg.many;
+  const{data,error}=await raw.from('deleted_items').insert({table_name:table,label,row_count:gone.length,row_data:gone,children:children.length?children:null,deleted_by:currentUser?.id,deleted_by_email:currentUser?.email||null}).select('id').single();
+  if(error||!data){console.warn('Could not save the deleted copy',error);return;}
+  undoNotify(data.id,label,gone.length,cfg);
+}
+let _undoPending={ids:[],n:0,label:'',show:false,t:null};
+function undoNotify(id,label,n,cfg){
+  const p=_undoPending;
+  p.ids.push(id);
+  if(!cfg.silent){p.n+=n;p.label=p.show?'':label;p.show=true;p.many=cfg.many;}
+  clearTimeout(p.t);
+  p.t=setTimeout(()=>{
+    const ids=p.ids.slice(),show=p.show,msg=p.n===1&&p.label?'Deleted '+p.label.charAt(0).toLowerCase()+p.label.slice(1):'Deleted '+p.n+' '+(p.many||'items');
+    _undoPending={ids:[],n:0,label:'',show:false,t:null};
+    if(show)showUndoToast(msg,()=>undoRestoreIds(ids));
+  },700);
+}
+function showUndoToast(msg,onUndo,ms){
+  let container=document.getElementById('toast-container');
+  if(!container){container=document.createElement('div');container.id='toast-container';container.style.cssText='position:fixed;bottom:24px;right:24px;z-index:400;display:flex;flex-direction:column;gap:8px;align-items:flex-end';document.body.appendChild(container);}
+  const t=document.createElement('div');
+  t.className='toast-item';
+  t.style.cssText='background:var(--paper);color:var(--ink);font-size:13px;padding:12px 16px;border-radius:var(--rl);box-shadow:var(--shm);border-left:3px solid var(--pine);display:flex;gap:12px;align-items:center;max-width:420px';
+  t.innerHTML='<span>'+esc(msg)+'</span><button style="background:var(--pine);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">Undo</button>';
+  container.appendChild(t);
+  const close=()=>{t.style.animation='toastOut .25s ease forwards';setTimeout(()=>t.remove(),250);};
+  const timer=setTimeout(close,ms||10000);
+  t.querySelector('button').onclick=async()=>{
+    clearTimeout(timer);const b=t.querySelector('button');b.disabled=true;b.textContent='Restoring…';
+    try{await onUndo();t.querySelector('span').textContent='Restored ✓';b.remove();setTimeout(close,1800);}
+    catch(e){t.querySelector('span').textContent='Could not undo: '+(e&&e.message||e);b.remove();setTimeout(close,5000);}
+  };
+}
+async function undoRestoreIds(ids){
+  for(let i=ids.length-1;i>=0;i--){
+    const{error}=await sb.rpc('restore_deleted_item',{p_id:ids[i]});
+    if(error)throw error;
+  }
+  await undoRefreshViews();
+}
+async function undoRefreshViews(){
+  for(const f of ['loadLeads','loadTeam','loadEvents','loadAnnouncements','loadCommissions','loadMarketingPosts','loadResourcesAdmin']){
+    try{if(typeof window[f]==='function')await window[f]();}catch(e){}
+  }
+  try{renderLeads();renderDash();badges();}catch(e){}
+  try{if(curId){loadSopDocuments(curId,false);loadUniversityLinks(curId,false);loadTasks(curId);}}catch(e){}
+}
+async function undoUploadBatch(batchId){
+  const{error}=await sb.from('leads').delete().eq('upload_batch_id',batchId);
+  if(error)throw error;
+  await sb.from('meta_bulk_uploads').delete().eq('id',batchId);
+  await undoRefreshViews();
+}
+async function openRecentlyDeleted(){
+  let m=document.getElementById('modal-recently-deleted');
+  if(!m){m=document.createElement('div');m.className='mover';m.id='modal-recently-deleted';document.body.appendChild(m);}
+  m.innerHTML='<div class="modal" style="width:640px;max-height:88vh;overflow:auto"><div class="mhead"><span class="mtitle">↩ Recently deleted</span><button class="mclose" onclick="closeModal(\'modal-recently-deleted\')">×</button></div><div id="rd-body" style="padding:14px 20px 20px;font-size:13px">Loading…</div></div>';
+  m.classList.add('open');
+  const since=new Date(Date.now()-30*864e5).toISOString();
+  const{data,error}=await sb.from('deleted_items').select('id,table_name,label,row_count,deleted_at,deleted_by_email').is('restored_at',null).gte('deleted_at',since).order('deleted_at',{ascending:false}).limit(300);
+  const body=document.getElementById('rd-body');
+  if(error){body.textContent='Could not load: '+error.message;return;}
+  if(!data||!data.length){body.innerHTML='<div style="color:var(--ink3);font-style:italic;padding:18px 0">Nothing deleted in the last 30 days.</div>';return;}
+  const groups=[];
+  data.forEach(r=>{
+    const g=groups[groups.length-1];
+    if(g&&g.by===r.deleted_by_email&&(new Date(g.last)-new Date(r.deleted_at))<=3000){g.items.push(r);g.last=r.deleted_at;}
+    else groups.push({by:r.deleted_by_email,first:r.deleted_at,last:r.deleted_at,items:[r]});
+  });
+  window._rdGroups=groups;
+  body.innerHTML='<div style="color:var(--ink3);font-size:12px;margin-bottom:10px">Kept for 30 days. Restoring puts the item back exactly as it was.</div>'+groups.map((g,i)=>{
+    const main=g.items.filter(x=>!(UNDO_TABLES[x.table_name]||{}).silent);
+    const label=(main.length?main:g.items).map(x=>x.label).slice(0,3).join(' · ')+((main.length?main:g.items).length>3?' …':'');
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)"><div style="flex:1;min-width:0"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(label)+'</div><div style="font-size:11px;color:var(--ink3)">'+new Date(g.first).toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})+(isOwner&&g.by?' · '+esc(g.by.split('@')[0]):'')+'</div></div><button class="btn" style="font-size:12px;padding:5px 12px" onclick="restoreDeletedGroup('+i+',this)">Restore</button></div>';
+  }).join('');
+}
+async function restoreDeletedGroup(i,btn){
+  const g=(window._rdGroups||[])[i];if(!g)return;
+  btn.disabled=true;btn.textContent='Restoring…';
+  try{await undoRestoreIds(g.items.slice().reverse().map(x=>x.id));toast('Restored.');openRecentlyDeleted();}
+  catch(e){btn.disabled=false;btn.textContent='Restore';toast('Could not restore: '+(e&&e.message||e));}
+}
 
 // ── Delete safety net ────────────────────────────────────────────────
 // Supabase answers "success" when a row-level-security rule silently blocks a delete: nothing is removed,
@@ -4069,7 +4261,7 @@ async function confirmMetaBulkUpload(){
       name:l.name||'Meta Lead',
       mobile:l.mobile,
       email:l.email||null,
-      city:l.city||null,
+      city:l.city||((document.getElementById('mbu-default-city')||{}).value||'').trim()||null,
       country:l.country,
       office,
       counsellor:picked.name||null,
@@ -10682,6 +10874,8 @@ async function doImport(){
     return;
   }
   const _ws=(canSwitchOpsViewUser()&&superAdminOpsView)?superAdminOpsView:((myTeamCategory==='Domestic'||myTeamCategory==='International')?myTeamCategory:null);
+  const impBatchId=crypto.randomUUID();
+  toInsert.forEach(r=>{r.upload_batch_id=impBatchId;});
   let{error,data}=await sb.from('leads').insert(_ws?toInsert.map(r=>({...r,workstream:_ws})):toInsert).select();
   if(error&&_ws&&/workstream/i.test(error.message||'')){({error,data}=await sb.from('leads').insert(toInsert).select());}
   btn.disabled=false;
@@ -10695,6 +10889,8 @@ async function doImport(){
   renderLeads();renderDash();badges();setTimeout(checkNoActivity,2000);setTimeout(checkNoActivity,2000);applyRoleUI();
   const skipMsg=(skippedExisting+skippedInBatch)>0?` (${skippedExisting} already existed, ${skippedInBatch} repeated in file — skipped)`:'';
   toast(toInsert.length+' leads imported to shared database!'+skipMsg);
+  try{await sb.from('meta_bulk_uploads').insert({id:impBatchId,filename:'Import data (CSV)',lead_count:toInsert.length,uploaded_by:currentUser?.id});}catch(e){}
+  showUndoToast(`Imported ${toInsert.length} lead(s)`,()=>undoUploadBatch(impBatchId),15000);
 }
 
 function buildCSV(rows){
@@ -11050,9 +11246,10 @@ async function bawCommit(){
 const BAL_CRM_FIELDS=[
   {key:'',label:"Don't import"},
   {key:'name',label:'Name'},{key:'mobile',label:'Mobile'},{key:'email',label:'Email'},
-  {key:'program',label:'Program'},{key:'destination',label:'Destination'},
+  {key:'program',label:'Program'},{key:'destination',label:'Destination'},{key:'city',label:'City'},
   {key:'country',label:'Nationality / Origin Country'},{key:'source',label:'Source'},{key:'notes',label:'Notes'},
 ];
+let balFileName='';
 let balHeaders=[];
 let balRows=[];
 let balMapping={};
@@ -11062,6 +11259,7 @@ function openBulkAddLeadsWizard(){
   try{renderSampleBoxes();}catch(e){}
   if(!(myRole==='Digital Marketing'&&!isSuperAdmin)){const _bc=document.getElementById('bal-country');if(_bc)_bc.disabled=false;}
   balHeaders=[];balRows=[];balMapping={};balStep=1;balPreviewData=[];
+  try{const _bc=document.getElementById('bal-city');if(_bc)_bc.value='';}catch(e){}
   document.getElementById('bal-file-info').style.display='none';
   document.getElementById('bal-next-btn').disabled=true;
   balShowStep(1);
@@ -11074,6 +11272,7 @@ function balHandleFile(file){
   reader.onload=e=>{
     const rows=parseCSV(e.target.result);
     if(rows.length<2){toast('No data rows found in this file.');return;}
+    balFileName=file.name;
     balHeaders=rows[0].map(h=>h.trim());
     balRows=rows.slice(1);
     document.getElementById('bal-file-info').style.display='block';
@@ -11123,6 +11322,7 @@ function balPopulateStep2(){
     for(const[field,words]of Object.entries(guesses)){
       if(words.some(w=>hLower.includes(w))){guessed=field;break;}
     }
+    if(!guessed&&/(^|[\s_-])(city|town)($|[\s_-])/.test(hLower))guessed='city';
     balMapping[i]=guessed;
     return `<div style="display:flex;align-items:center;gap:12px"><span style="flex:1;font-size:13px;font-weight:600">${esc(h)}</span><span style="color:var(--ink3)">→</span><select style="width:220px" onchange="balMapping[${i}]=this.value">${BAL_CRM_FIELDS.map(f=>`<option value="${f.key}" ${f.key===guessed?'selected':''}>${f.label}</option>`).join('')}</select></div>`;
   }).join('');
@@ -11156,6 +11356,8 @@ async function balCommit(){
   const dupMode=document.getElementById('bal-dup-mode').value;
   const forcedCountry=(myRole==='Digital Marketing'&&!isSuperAdmin&&myCountry)?myCountry:document.getElementById('bal-country').value;
   const assignMode=document.getElementById('bal-assign-mode').value;
+  const defaultCity=(document.getElementById('bal-city')?.value||'').trim();
+  const balBatchId=crypto.randomUUID();
   let toImport=balPreviewData.filter(r=>r._valid);
   if(dupMode==='skip')toImport=toImport.filter(r=>!r._duplicate);
   let imported=0,failed=0;
@@ -11170,7 +11372,7 @@ async function balCommit(){
     }
     const _row={
       name:r.name,mobile:r.mobile,email:r.email||null,program:r.program||null,
-      destination:r.destination||null,country,office,source:r.source||'Bulk Import',
+      destination:r.destination||null,city:r.city||defaultCity||null,upload_batch_id:balBatchId,country,office,source:r.source||'Bulk Import',
       notes:r.notes||null,status:'New Enquiry',priority:'Medium',counsellor,
       created_at:new Date().toISOString(),
     };
@@ -11180,7 +11382,9 @@ async function balCommit(){
     if(error)failed++;
     if(!error){imported++;if(inserted?.[0]?.id)await logActivity(inserted[0].id,'created',`Bulk imported lead — assigned to ${counsellor||'Unassigned'}`);}
   }
+  if(imported>0){try{await sb.from('meta_bulk_uploads').insert({id:balBatchId,filename:(typeof balFileName!=='undefined'&&balFileName)||'Bulk Add Leads',lead_count:imported,uploaded_by:currentUser?.id});}catch(e){}}
   toast(`Imported ${imported} lead(s).`+(failed?` ${failed} failed — check the file and try those again.`:''));
+  if(imported>0)showUndoToast(`Imported ${imported} lead(s)`,()=>undoUploadBatch(balBatchId),15000);
   btn.disabled=false;
   closeModal('modal-bal-wizard');
   loadLeads().then(()=>{renderLeads();renderDash();badges();});

@@ -120,6 +120,31 @@ if(/[?&]embed=1/.test(location.search))document.body.classList.add('embed');
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function safeUrl(u){try{var x=new URL(String(u||'').trim());return x.protocol==='https:'||x.protocol==='http:'?x.href:'';}catch(e){return '';}}
+async function archiveDelete(table,label,rows,children){
+  try{
+    var r=await sb.from('deleted_items').insert({table_name:table,label:label,row_count:rows.length,row_data:rows,children:children&&children.length?children:null,deleted_by:me.id,deleted_by_email:me.email}).select('id').single();
+    if(r.error||!r.data)return null;
+    return r.data.id;
+  }catch(e){return null;}
+}
+function undoToast(msg,archiveId){
+  var t=document.getElementById('toast');
+  t.innerHTML='';
+  var sp=document.createElement('span');sp.textContent=msg+' ';t.appendChild(sp);
+  if(archiveId){
+    var b=document.createElement('button');b.textContent='Undo';b.style.cssText='margin-left:10px;background:#fff;color:#1C3F6E;border:none;border-radius:4px;padding:3px 12px;font-weight:600;cursor:pointer';
+    b.onclick=async function(){
+      b.disabled=true;b.textContent='Restoring…';
+      var r=await sb.rpc('restore_deleted_item',{p_id:archiveId});
+      if(r.error){sp.textContent='Could not undo: '+r.error.message;b.remove();return;}
+      sp.textContent='Restored ✓';b.remove();
+      await load();
+      clearTimeout(toast._t);toast._t=setTimeout(function(){t.style.display='none';},2500);
+    };
+    t.appendChild(b);
+  }
+  t.style.display='block';clearTimeout(toast._t);toast._t=setTimeout(function(){t.style.display='none';},10000);
+}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(toast._t);toast._t=setTimeout(function(){t.style.display='none';},3500);}
 
 async function init(){
@@ -250,14 +275,20 @@ async function delApp(id){
   if(!confirm('Delete this application?'))return;
   var r=await sb.from('tracker_applications').delete().eq('id',id);
   if(r.error){toast('Could not delete: '+r.error.message);return;}
+  var gone=apps.find(function(a){return a.id===id;});
   apps=apps.filter(function(a){return a.id!==id;});render();
+  var aid=gone?await archiveDelete('tracker_applications','Application: '+(gone.university||gone.course||''),[gone]):null;
+  undoToast('Application deleted.',aid);
 }
 async function delStudent(id){
   var s=students.find(function(x){return x.id===id;});
   if(!confirm('Delete '+(s?s.name:'this student')+' and all their applications?'))return;
   var r=await sb.from('tracker_students').delete().eq('id',id);
   if(r.error){toast('Could not delete: '+r.error.message);return;}
+  var theirs=apps.filter(function(a){return a.student_id===id;});
   students=students.filter(function(x){return x.id!==id;});apps=apps.filter(function(a){return a.student_id!==id;});render();
+  var sid=s?await archiveDelete('tracker_students','Student: '+s.name,[s],theirs.length?[{table:'tracker_applications',rows:theirs}]:[]):null;
+  undoToast((s?s.name:'Student')+' deleted.',sid);
 }
 
 /* ---- student modal ---- */

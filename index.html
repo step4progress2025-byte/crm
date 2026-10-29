@@ -6531,7 +6531,7 @@ async function removeOrphanLogin(id,email){
   if(!isOwner){toast('Only India and Pavitra can remove a login.');return;}
   if(!confirm('Permanently remove the login '+email+'? They will no longer be able to sign in. This cannot be undone.'))return;
   const{error}=await sb.rpc('admin_remove_login',{p_user:id});
-  if(error){toast('Could not remove: '+error.message);return;}
+  if(error){alert('Could not remove '+email+':\n\n'+error.message+(/function|schema cache|does not exist/i.test(error.message)?'\n\nRun crm_remove_login.sql once in Supabase SQL Editor.':''));return;}
   toast(email+' removed.');
   loadOrphanLogins();
 }

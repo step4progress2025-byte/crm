@@ -2457,6 +2457,24 @@ What would you like help with today?</div>
   </div>
 </div>
 
+<div class="mover" id="modal-offer">
+  <div class="modal" style="width:460px">
+    <div class="mhead"><span class="mtitle">Upload offer letter</span><button class="mclose" onclick="closeModal('modal-offer')">×</button></div>
+    <div class="fg">
+      <div class="ff full"><label>University *</label>
+        <select id="offer-uni" onchange="document.getElementById('offer-uni-other').style.display=this.value==='__other__'?'block':'none'"></select>
+        <input id="offer-uni-other" placeholder="Type university name" style="display:none;margin-top:6px">
+      </div>
+      <div class="ff full"><label>Offer letter file(s) * (multiple allowed)</label><input type="file" id="offer-files" multiple></div>
+      <div id="offer-modal-note" style="font-size:12px;color:var(--ink3);grid-column:1/-1">Shows in the lead's Offer Letters list straight away. Use this for offer letters only — keep portal screenshots in the university application.</div>
+    </div>
+    <div class="mfoot">
+      <button class="btn" onclick="closeModal('modal-offer')">Cancel</button>
+      <button class="btn btn-p" id="offer-save-btn" onclick="uploadOfferLetters()"><i class="ti ti-upload"></i>Upload</button>
+    </div>
+  </div>
+</div>
+
 <div class="mover" id="modal-university">
   <div class="modal" style="width:460px">
     <div class="mhead"><span class="mtitle">Add university</span><button class="mclose" onclick="closeModal('modal-university')">×</button></div>
@@ -2925,11 +2943,7 @@ What would you like help with today?</div>
           <div class="card" style="margin-top:0">
             <div class="card-h"><span class="card-t">📨 Offer letters</span></div>
             <div id="ld-offer-list" style="margin-bottom:10px"></div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap">
-              <select id="ld-offer-university" style="font-size:12px;padding:6px 8px;border:1px solid var(--line2);border-radius:var(--r);flex:1;min-width:140px"></select>
-              <input type="file" id="ld-offer-files" multiple style="font-size:11px;flex:1;min-width:140px">
-              <button onclick="uploadOfferLetters(true)" style="font-size:12px;padding:6px 12px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;white-space:nowrap"><i class="ti ti-upload"></i> Upload</button>
-            </div>
+            <button onclick="openOfferModal(true)" style="font-size:12px;padding:5px 10px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-upload" style="font-size:13px"></i> Upload offer letter</button>
           </div>
           <div class="card" style="margin-top:0">
             <div class="card-h"><span class="card-t">🏛️ University overview (SOP + Offer letter)</span></div>
@@ -3045,11 +3059,7 @@ What would you like help with today?</div>
           </div>
           <div class="dsec">Offer Letters</div>
           <div id="d-offer-list" style="margin-bottom:8px"></div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
-            <select id="d-offer-university" style="font-size:12px;padding:6px 8px;border:1px solid var(--line2);border-radius:var(--r);flex:1;min-width:110px"></select>
-            <input type="file" id="d-offer-files" multiple style="font-size:11px;flex:1;min-width:110px">
-            <button onclick="uploadOfferLetters(false)" style="font-size:12px;padding:6px 12px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;white-space:nowrap"><i class="ti ti-upload"></i> Upload</button>
-          </div>
+          <div style="margin-bottom:16px"><button onclick="openOfferModal(false)" style="font-size:12px;padding:6px 12px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-upload"></i> Upload offer letter</button></div>
           <div class="dsec">University overview (SOP + Offer letter)</div>
           <div id="d-uni-overview" style="margin-bottom:16px"></div>
           <div class="dsec">Activity</div>
@@ -8213,7 +8223,6 @@ async function deleteSopDocument(id,isFS){
 // Stored in the existing 'sop-documents' bucket under offer/<lead>/…, table offer_letters (SQL 0027).
 async function loadOfferLetters(leadId,isFS){
   const listEl=document.getElementById(isFS?'ld-offer-list':'d-offer-list');
-  const uniSelectEl=document.getElementById(isFS?'ld-offer-university':'d-offer-university');
   if(!listEl)return;
   const[{data:uniApps},{data:uniLinkRows},{data:sops},offRes]=await Promise.all([
     sb.from('university_applications').select('university').eq('lead_id',leadId),
@@ -8222,11 +8231,7 @@ async function loadOfferLetters(leadId,isFS){
     sb.from('offer_letters').select('*').eq('lead_id',leadId).order('created_at',{ascending:false})]);
   const _seen=new Set();
   const uniNames=[...(uniApps||[]).map(u=>u.university),...(uniLinkRows||[]).map(u=>u.university_name)].filter(Boolean).map(n=>String(n).trim()).filter(n=>{const k=n.toLowerCase();if(_seen.has(k))return false;_seen.add(k);return true;});
-  if(uniSelectEl){
-    const keep=uniSelectEl.value;
-    uniSelectEl.innerHTML=uniNames.map(n=>`<option>${esc(n)}</option>`).join('')+'<option value="__other__">Other / type below…</option>';
-    if(keep&&[...uniSelectEl.options].some(o=>o.value===keep))uniSelectEl.value=keep;
-  }
+  window._offerUniNames=uniNames;
   if(offRes.error){
     listEl.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load — run SQL 0027 (offer_letters) in Supabase first.</div>';
     renderUniOverview(leadId,isFS,uniNames,sops||[],[]);return;
@@ -8257,19 +8262,30 @@ function renderUniOverview(leadId,isFS,uniNames,sops,offers){
     return `<div style="padding:8px 0;border-bottom:1px solid var(--line)">
       <div style="font-size:12px;font-weight:700;margin-bottom:4px">${esc(n)}</div>
       <div style="display:flex;gap:6px;align-items:baseline;font-size:11px;margin-bottom:2px"><span style="width:78px;color:var(--ink3);font-weight:600">SOP</span>${ss.length?pill(true,'Done')+' '+links(ss):pill(false,'Pending')}</div>
-      <div style="display:flex;gap:6px;align-items:baseline;font-size:11px"><span style="width:78px;color:var(--ink3);font-weight:600">Offer letter</span>${oo.length?pill(true,'Received')+' '+links(oo):pill(false,'Not yet')}</div>
+      <div style="display:flex;gap:6px;align-items:baseline;font-size:11px;flex-wrap:wrap"><span style="width:78px;color:var(--ink3);font-weight:600">Offer letter</span>${oo.length?pill(true,'Received')+' '+links(oo):pill(false,'Not yet')}<a href="#" onclick="event.preventDefault();openOfferModal(${isFS},${JSON.stringify(n).replace(/"/g,'&quot;')})" style="margin-left:auto;color:var(--pine);text-decoration:underline">+ Upload</a></div>
     </div>`;}).join('');
 }
-async function uploadOfferLetters(isFS){
+function openOfferModal(isFS,presetUni){
   if(!curId){toast('Open a lead first.');return;}
-  const uniSelect=document.getElementById(isFS?'ld-offer-university':'d-offer-university');
-  const fileInput=document.getElementById(isFS?'ld-offer-files':'d-offer-files');
+  window._offerIsFS=!!isFS;
+  const names=window._offerUniNames||[];
+  const sel=document.getElementById('offer-uni');
+  sel.innerHTML='<option value="">Select university…</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')+'<option value="__other__">Other — not listed</option>';
+  sel.value=(presetUni&&names.includes(presetUni))?presetUni:(names.length===1?names[0]:'');
+  const oth=document.getElementById('offer-uni-other');oth.value='';oth.style.display='none';
+  document.getElementById('offer-files').value='';
+  document.getElementById('modal-offer').classList.add('open');
+}
+async function uploadOfferLetters(){
+  if(!curId){toast('Open a lead first.');return;}
+  const isFS=!!window._offerIsFS;
+  const fileInput=document.getElementById('offer-files');
   const files=fileInput.files;
+  let university=document.getElementById('offer-uni').value;
+  if(university==='__other__')university=document.getElementById('offer-uni-other').value.trim();
+  if(!university){toast('Choose the university first.');return;}
   if(!files||!files.length){toast('Choose at least one file first.');return;}
-  let university=uniSelect.value;
-  if(university==='__other__'||!university){
-    university=(prompt('Which university is this offer letter for?','')||'').trim()||'General';
-  }
+  const btn=document.getElementById('offer-save-btn');btn.disabled=true;
   toast(`Uploading ${files.length} offer letter file(s)…`);
   const results=[];
   for(const file of files){
@@ -8277,7 +8293,9 @@ async function uploadOfferLetters(isFS){
     const r=await uploadFileAndRecord('sop-documents',path,file,'offer_letters',{lead_id:curId,university,uploaded_by:myName});
     results.push({...r,name:file.name});
   }
+  btn.disabled=false;
   fileInput.value='';
+  if(results.some(r=>r.ok))closeModal('modal-offer');
   loadOfferLetters(curId,isFS);
   reportUploadBatch(results,'offer letter(s)');
 }

@@ -238,6 +238,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .baw-method-card:hover{border-color:var(--pine4)}
 .baw-method-card.selected{border-color:var(--pine);background:var(--cream)}
 .tw{overflow-x:auto;border-radius:var(--rl);border:1px solid var(--line);background:var(--paper);box-shadow:var(--sh)}
+#leads-table-wrap{will-change:scroll-position}
 .tw::-webkit-scrollbar{height:20px}
 .tw::-webkit-scrollbar-track{background:var(--cream);border-radius:0 0 var(--rl) var(--rl)}
 .tw::-webkit-scrollbar-thumb{background:var(--pine3);border-radius:99px;border:3px solid var(--cream)}
@@ -256,7 +257,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 .tbl th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--cream);white-space:nowrap}
 .tbl td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle;color:var(--ink)}
 .tbl tr:last-child td{border-bottom:none}
-.tbl tbody tr{cursor:pointer;transition:background .1s}
+.tbl tbody tr{cursor:pointer}
 .tbl tbody tr:hover td{background:#F0FDF4}
 .av{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
 .nc{display:flex;align-items:center;gap:10px}
@@ -1087,10 +1088,10 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
             <button class="btn" onclick="saveCurrentView()" style="font-size:12px;padding:5px 12px"><i class="ti ti-device-floppy"></i>Save view</button>
             <button class="btn" onclick="deleteSavedView()" style="font-size:12px;padding:5px 12px"><i class="ti ti-trash"></i></button>
           </div>
-          <div id="leads-top-scroll" style="overflow-x:auto;overflow-y:hidden;height:16px;margin-bottom:2px" onscroll="document.getElementById('leads-table-wrap').scrollLeft=this.scrollLeft">
+          <div id="leads-top-scroll" style="overflow-x:auto;overflow-y:hidden;height:16px;margin-bottom:2px" onscroll="syncLeadsHScroll(this)">
             <div id="leads-top-scroll-inner" style="height:1px"></div>
           </div>
-          <div class="tw" id="leads-table-wrap" onscroll="document.getElementById('leads-top-scroll').scrollLeft=this.scrollLeft">
+          <div class="tw" id="leads-table-wrap" onscroll="syncLeadsHScroll(this)">
             <table class="tbl">
               <thead><tr>
                 <th style="width:36px"><input type="checkbox" id="bulk-select-all" onchange="toggleSelectAllLeads(this.checked)" style="cursor:pointer"></th>
@@ -7457,6 +7458,20 @@ function rebuildLeadFilterOptions(scoped){
   const baseDest=['UK','New Zealand','Australia','Canada','Europe','USA','Singapore','Malaysia','UAE','Other'];
   fillSelectKeep(document.getElementById('ls-de'),'All destinations',baseDest.concat(scoped.map(l=>l.destination)));
 }
+// Two scrollbars (top + bottom) mirror each other. The old version set each from the
+// other on every scroll event, so they fought and the bar jerked. Now only the one
+// you're dragging drives the other, once per frame.
+var _hsLock=false;
+function syncLeadsHScroll(src){
+  if(_hsLock)return;
+  const top=document.getElementById('leads-top-scroll'),wrap=document.getElementById('leads-table-wrap');
+  if(!top||!wrap)return;
+  const dst=src===top?wrap:top;
+  if(Math.abs(dst.scrollLeft-src.scrollLeft)<1)return;
+  _hsLock=true;dst.scrollLeft=src.scrollLeft;
+  requestAnimationFrame(()=>{_hsLock=false;});
+}
+var LEAD_CHUNK=150;
 function renderLeads(){
   try{syncBulkSelFromDom();}catch(e){}
   try{_renderLeadsCore();}finally{try{restoreBulkAfterRender();}catch(e){}}
@@ -7516,7 +7531,12 @@ function _renderLeadsCore(){
   // cause of the browser's "Page Unresponsive" warning once the leads
   // list gets into the hundreds of rows, especially since this re-runs
   // on every realtime lead update.
-  tb.innerHTML=f.map((l,i)=>{
+  // PERFORMANCE: only the first chunk of rows goes into the page; more are added
+  // automatically as you scroll down. Thousands of rows at once made scrolling
+  // (esp. dragging the scrollbar) lag. Selection / filters still cover ALL matching leads.
+  const _sig=[q,sfA.join('|'),pf,df,cf,srcf,counsel,from,to,assignF,dupOnly,dupFocus,leadsViewMode].join('\u0001');
+  if(_sig!==window._leadRenderSig){window._leadRenderSig=_sig;window._leadRenderLimit=LEAD_CHUNK;}
+  const rowHtml=(l,i)=>{
     const[abg,atx]=AVC[i%AVC.length];
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
     const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
@@ -7539,7 +7559,28 @@ function _renderLeadsCore(){
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'visa_team','Visa Team')}</td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'sop_team','SOP Team')}</td>
     </tr>`;
-  }).join('');
+  };
+  const _lim=Math.max(window._leadRenderLimit||LEAD_CHUNK,LEAD_CHUNK);
+  let _shown=Math.min(_lim,f.length);
+  tb.innerHTML=f.slice(0,_shown).map(rowHtml).join('');
+  const _moreRow=()=>`<tr id="lead-more-row"><td colspan="16" style="text-align:center;padding:14px;font-size:12px;color:var(--ink3);cursor:default">Showing ${_shown} of ${f.length} — scroll down for more, or <a href="#" onclick="event.preventDefault();window._leadLoadMore&&window._leadLoadMore()" style="color:var(--pine)">load more now</a></td></tr>`;
+  if(window._leadMoreObs){try{window._leadMoreObs.disconnect();}catch(e){}window._leadMoreObs=null;}
+  function watchMore(){
+    const el=document.getElementById('lead-more-row');
+    if(!el||!('IntersectionObserver' in window))return;
+    window._leadMoreObs=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){window._leadMoreObs.disconnect();window._leadLoadMore();}},{rootMargin:'600px'});
+    window._leadMoreObs.observe(el);
+  }
+  window._leadLoadMore=function(){
+    if(_shown>=f.length)return;
+    const old=document.getElementById('lead-more-row');if(old)old.remove();
+    const end=Math.min(_shown+LEAD_CHUNK,f.length);
+    tb.insertAdjacentHTML('beforeend',f.slice(_shown,end).map((l,k)=>rowHtml(l,_shown+k)).join(''));
+    _shown=end;window._leadRenderLimit=_shown;
+    try{restoreBulkAfterRender();}catch(e){}
+    if(_shown<f.length){tb.insertAdjacentHTML('beforeend',_moreRow());watchMore();}
+  };
+  if(_shown<f.length){tb.insertAdjacentHTML('beforeend',_moreRow());watchMore();}
   // Keep the top scrollbar's width matched to the real table, so dragging
   // it near the top of the screen scrolls exactly as far as the real one —
   // no need to scroll all the way down to reach a scrollbar at all.
@@ -11135,20 +11176,24 @@ function transferSelectedLeads(){
 // that rebuilds the table — e.g. when another admin edits a lead — can no
 // longer wipe a selection in progress. Rows are re-ticked from the Set on render.
 var bulkSel=new Set();
+function _filteredIdSet(){return new Set((currentFilteredLeads||[]).map(l=>String(l.id)));}
 function getSelectedLeadIds(){
-  return Array.from(document.querySelectorAll('.bulk-lead-checkbox:checked')).map(cb=>cb.dataset.id);
+  const ok=_filteredIdSet();
+  return [...bulkSel].filter(id=>ok.has(id));
 }
+// Only rendered rows have checkboxes; update the Set for those and leave the rest alone.
 function syncBulkSelFromDom(){
-  const boxes=document.querySelectorAll('.bulk-lead-checkbox');
-  if(!boxes.length)return;
-  bulkSel=new Set(Array.from(boxes).filter(cb=>cb.checked).map(cb=>cb.dataset.id));
+  document.querySelectorAll('.bulk-lead-checkbox').forEach(cb=>{
+    if(cb.checked)bulkSel.add(cb.dataset.id);else bulkSel.delete(cb.dataset.id);
+  });
 }
 // Called after every table re-render: drop ids no longer shown, refresh the bar.
 function restoreBulkAfterRender(){
   const boxes=document.querySelectorAll('.bulk-lead-checkbox');
   if(!document.getElementById('bulk-actions-bar'))return;
-  const shown=new Set(Array.from(boxes).map(cb=>cb.dataset.id));
-  bulkSel=new Set([...bulkSel].filter(id=>shown.has(id)));
+  const ok=_filteredIdSet();
+  bulkSel=new Set([...bulkSel].filter(id=>ok.has(id)));
+  boxes.forEach(cb=>{cb.checked=bulkSel.has(cb.dataset.id);});
   onBulkCheckboxChange();
 }
 // Randomly selects N leads from whatever's currently visible in the
@@ -11162,21 +11207,17 @@ function selectRandomLeads(){
   const n=parseInt(countInput.value,10);
   if(!n||n<1){toast('Enter how many leads to randomly select.');countInput.focus();return;}
 
-  const allCheckboxes=Array.from(document.querySelectorAll('.bulk-lead-checkbox'));
-  if(!allCheckboxes.length){toast('No leads currently visible to select from.');return;}
-
-  // Uncheck everything first, so this always produces a clean, exact
-  // selection rather than adding on top of whatever was already checked.
-  allCheckboxes.forEach(cb=>cb.checked=false);
-
-  const pool=[...allCheckboxes];
+  const pool=(currentFilteredLeads||[]).map(l=>String(l.id));
+  if(!pool.length){toast('No leads currently visible to select from.');return;}
+  bulkSel=new Set();
   // Fisher-Yates shuffle
   for(let i=pool.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1));
     [pool[i],pool[j]]=[pool[j],pool[i]];
   }
   const actualCount=Math.min(n,pool.length);
-  pool.slice(0,actualCount).forEach(cb=>cb.checked=true);
+  pool.slice(0,actualCount).forEach(id=>bulkSel.add(id));
+  document.querySelectorAll('.bulk-lead-checkbox').forEach(cb=>{cb.checked=bulkSel.has(cb.dataset.id);});
 
   onBulkCheckboxChange();
   if(actualCount<n){
@@ -11186,6 +11227,7 @@ function selectRandomLeads(){
   }
 }
 function toggleSelectAllLeads(checked){
+  bulkSel=checked?new Set((currentFilteredLeads||[]).map(l=>String(l.id))):new Set();
   document.querySelectorAll('.bulk-lead-checkbox').forEach(cb=>cb.checked=checked);
   onBulkCheckboxChange();
 }
@@ -11198,8 +11240,7 @@ function onBulkCheckboxChange(){
   bar.style.display='flex';
   label.textContent=`${ids.length} lead${ids.length!==1?'s':''} selected`;
   // Keep the "select all" header checkbox in sync if every visible row is checked.
-  const all=document.querySelectorAll('.bulk-lead-checkbox');
-  const allChecked=all.length>0&&Array.from(all).every(cb=>cb.checked);
+  const allChecked=ids.length>0&&ids.length>=(currentFilteredLeads||[]).length;
   document.getElementById('bulk-select-all').checked=allChecked;
   // Populate the status/counsellor pickers fresh each time, in case the team changed.
   const statusSel=document.getElementById('bulk-status-select');

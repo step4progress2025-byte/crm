@@ -654,6 +654,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
         <div><div class="sb-uname" id="sb-uname">—</div><div class="sb-urole" id="sb-urole">—</div></div>
       </div>
       <button class="sb-logout" id="notif-toggle-btn" onclick="toggleGlobalNotifications()" style="display:none"></button>
+      <button class="sb-logout" onclick="openMyNotifSettings()"><i class="ti ti-bell-cog" style="font-size:15px"></i>My notifications</button>
       <button class="sb-logout" onclick="setDailyReminderTime()"><i class="ti ti-clock" style="font-size:15px"></i>Set daily reminder time</button>
       <button class="sb-logout" onclick="setMyMobileNumber()"><i class="ti ti-device-mobile" style="font-size:15px"></i>My phone number for calls</button>
       <button class="sb-logout" onclick="openRecentlyDeleted()"><i class="ti ti-arrow-back-up" style="font-size:15px"></i>Recently deleted</button>
@@ -2921,6 +2922,19 @@ What would you like help with today?</div>
             </div>
           </div>
           <div class="card" style="margin-top:0">
+            <div class="card-h"><span class="card-t">📨 Offer letters</span></div>
+            <div id="ld-offer-list" style="margin-bottom:10px"></div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <select id="ld-offer-university" style="font-size:12px;padding:6px 8px;border:1px solid var(--line2);border-radius:var(--r);flex:1;min-width:140px"></select>
+              <input type="file" id="ld-offer-files" multiple style="font-size:11px;flex:1;min-width:140px">
+              <button onclick="uploadOfferLetters(true)" style="font-size:12px;padding:6px 12px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;white-space:nowrap"><i class="ti ti-upload"></i> Upload</button>
+            </div>
+          </div>
+          <div class="card" style="margin-top:0">
+            <div class="card-h"><span class="card-t">🏛️ University overview (SOP + Offer letter)</span></div>
+            <div id="ld-uni-overview"></div>
+          </div>
+          <div class="card" style="margin-top:0">
             <div class="card-h"><span class="card-t">🕐 Activity</span></div>
             <div id="ld-activity-stat" style="font-size:12px;color:var(--ink3);margin-bottom:10px"></div>
             <button onclick="openActivityLogModal()" style="font-size:12px;padding:6px 12px;background:var(--paper);color:var(--pine);border:1px solid var(--line2);border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-history" style="font-size:13px"></i>View full activity log</button>
@@ -3028,6 +3042,15 @@ What would you like help with today?</div>
             <input type="file" id="d-sop-files" multiple style="font-size:11px;flex:1;min-width:110px">
             <button onclick="uploadSopDocuments(false)" style="font-size:12px;padding:6px 12px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;white-space:nowrap"><i class="ti ti-upload"></i> Upload</button>
           </div>
+          <div class="dsec">Offer Letters</div>
+          <div id="d-offer-list" style="margin-bottom:8px"></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+            <select id="d-offer-university" style="font-size:12px;padding:6px 8px;border:1px solid var(--line2);border-radius:var(--r);flex:1;min-width:110px"></select>
+            <input type="file" id="d-offer-files" multiple style="font-size:11px;flex:1;min-width:110px">
+            <button onclick="uploadOfferLetters(false)" style="font-size:12px;padding:6px 12px;background:var(--pine);color:#fff;border:none;border-radius:var(--r);cursor:pointer;white-space:nowrap"><i class="ti ti-upload"></i> Upload</button>
+          </div>
+          <div class="dsec">University overview (SOP + Offer letter)</div>
+          <div id="d-uni-overview" style="margin-bottom:16px"></div>
           <div class="dsec">Activity</div>
           <div id="d-activity-stat" style="font-size:12px;color:var(--ink3);margin-bottom:8px"></div>
           <button onclick="openActivityLogModal()" style="font-size:12px;padding:6px 12px;background:var(--paper);color:var(--pine);border:1px solid var(--line2);border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px"><i class="ti ti-history" style="font-size:13px"></i>View full activity log</button>
@@ -3061,6 +3084,15 @@ What would you like help with today?</div>
   <div style="border-top:1px solid var(--line);font-size:11px;color:var(--ink2)">
     <div onclick="toggleNotifPrefs()" style="padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="ti ti-settings" style="font-size:13px"></i> My notification settings <span id="notif-prefs-caret" style="margin-left:auto">▸</span></div>
     <div id="notif-prefs" style="display:none;padding:2px 12px 9px;line-height:2">
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-weight:700;color:#B3261E"><input type="checkbox" id="np-mute" onchange="saveNotifPrefs()"> Pause ALL my notifications</label>
+      <div id="np-state" style="font-size:11px;color:var(--ink3)"></div>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;flex-wrap:wrap"><input type="checkbox" id="np-quiet-on" onchange="saveNotifPrefs()"> Quiet hours <input type="time" id="np-quiet-from" onchange="saveNotifPrefs()" style="font-size:11px"> to <input type="time" id="np-quiet-to" onchange="saveNotifPrefs()" style="font-size:11px"></label>
+      <div style="color:var(--ink3);margin-top:4px">Pop-ups and reminders:</div>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="np-p-followup" onchange="saveNotifPrefs()"> Daily follow-up reminder</label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="np-p-events" onchange="saveNotifPrefs()"> Event reminders</label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="np-p-tasks" onchange="saveNotifPrefs()"> New task alerts</label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="np-p-messages" onchange="saveNotifPrefs()"> Message sounds</label>
+      <div style="color:var(--ink3);margin-top:4px">Lead alerts:</div>
       <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-weight:600"><input type="checkbox" id="np-enabled" onchange="saveNotifPrefs()"> Lead notifications on</label>
       <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="np-sound" onchange="saveNotifPrefs()"> Play a sound</label>
       <div style="color:var(--ink3);margin-top:2px">Tell me about:</div>
@@ -5804,6 +5836,7 @@ pruneIndiaFromCrmDropdowns();
   renderWeeklyWins();
   renderSavedViewsDropdown();
   await loadNotificationSettings();
+  try{ await loadNotifPrefs(); }catch(e){}
   checkUnreadDmCount();
   startNotificationEngine();
   // realtime subscription — payload.eventType distinguishes INSERT
@@ -6292,10 +6325,11 @@ async function processLeadRefresh(){
   newlyArrived.forEach(r=>{
     const nm=(r.mobile||'').replace(/[\s\-()]/g,'');
     const dup=nm&&allLeads.some(l=>l.id!==r.id&&(l.mobile||'').replace(/[\s\-()]/g,'')===nm);
+    if(!leadAlertOn('new'))return;
     if(dup){playDuplicateLeadChime();toast('⚠️ Possible duplicate lead: '+(r.name||'Unnamed')+' — same mobile number as an existing lead');}
     else{playNewLeadChime();toast('📥 New lead: '+(r.name||'Unnamed'));}
   });
-  if(assignedToMe.length&&!window._notifOk){ // once the notification bell is set up it announces assignments itself
+  if(assignedToMe.length&&!window._notifOk&&leadAlertOn('assigned')){ // once the notification bell is set up it announces assignments itself
     playNewLeadChime();
     toast(assignedToMe.length===1?'📌 Lead assigned to you: '+(assignedToMe[0].name||'Unnamed'):'📌 '+assignedToMe.length+' leads assigned to you');
   }
@@ -6307,12 +6341,35 @@ async function processLeadRefresh(){
 let notifItems=[],_notifCursor=null,_notifChannel=null;
 let notifPrefs={enabled:true,sound:true,kinds:{}};
 const NOTIF_KINDS=['assigned','new','update','sop','documents'];
+// ── Personal mute / quiet hours / per-type pop-ups (stored inside lead_notif_prefs.kinds, no new table) ──
+const NOTIF_POPUPS=['followup','events','tasks','messages'];
+function notifQuiet(){
+  const q=(notifPrefs.kinds||{})._quiet; if(!q||!q.on)return false;
+  const n=new Date(), t=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+  const a=q.from||'20:00', b=q.to||'08:00';
+  return a<=b?(t>=a&&t<b):(t>=a||t<b);
+}
+function notifMuted(){ return (notifPrefs.kinds||{})._mute===true||notifQuiet(); }
+function popupAllowed(k){ if(notifMuted())return false; return (notifPrefs.kinds||{})['p_'+k]!==false; }
+function leadAlertOn(kind){ if(notifMuted()||notifPrefs.enabled===false)return false; return (notifPrefs.kinds||{})[kind]!==false; }
+function openMyNotifSettings(){
+  const p=document.getElementById('notif-panel'); if(p&&p.style.display!=='flex')toggleNotifPanel();
+  const d=document.getElementById('notif-prefs'); if(d&&d.style.display==='none')toggleNotifPrefs();
+}
 function fillNotifPrefsUI(){
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.checked=!!v;};
   set('np-enabled',notifPrefs.enabled);set('np-sound',notifPrefs.sound);
   NOTIF_KINDS.forEach(k=>set('np-k-'+k,notifPrefs.kinds[k]!==false));
   NOTIF_KINDS.forEach(k=>{const e=document.getElementById('np-k-'+k);if(e)e.disabled=!notifPrefs.enabled;});
   const s=document.getElementById('np-sound');if(s)s.disabled=!notifPrefs.enabled;
+  const K=notifPrefs.kinds||{}, q=K._quiet||{};
+  set('np-mute',K._mute===true);
+  NOTIF_POPUPS.forEach(k=>set('np-p-'+k,K['p_'+k]!==false));
+  set('np-quiet-on',!!q.on);
+  const f=document.getElementById('np-quiet-from'),t=document.getElementById('np-quiet-to');
+  if(f)f.value=q.from||'20:00'; if(t)t.value=q.to||'08:00';
+  const st=document.getElementById('np-state');
+  if(st)st.textContent=K._mute===true?'All your alerts are paused.':notifQuiet()?'Quiet hours are active right now.':'';
 }
 function toggleNotifPrefs(){
   const d=document.getElementById('notif-prefs'),c=document.getElementById('notif-prefs-caret');if(!d)return;
@@ -6330,11 +6387,16 @@ async function saveNotifPrefs(){
   const g=id=>{const e=document.getElementById(id);return e?e.checked:true;};
   notifPrefs.enabled=g('np-enabled');notifPrefs.sound=g('np-sound');
   NOTIF_KINDS.forEach(k=>{notifPrefs.kinds[k]=g('np-k-'+k);});
+  if(!notifPrefs.kinds)notifPrefs.kinds={};
+  notifPrefs.kinds._mute=document.getElementById('np-mute')?document.getElementById('np-mute').checked:false;
+  NOTIF_POPUPS.forEach(k=>{notifPrefs.kinds['p_'+k]=g('np-p-'+k);});
+  notifPrefs.kinds._quiet={on:document.getElementById('np-quiet-on')?document.getElementById('np-quiet-on').checked:false,
+    from:(document.getElementById('np-quiet-from')||{}).value||'20:00',to:(document.getElementById('np-quiet-to')||{}).value||'08:00'};
   fillNotifPrefsUI();
   try{
     const{error}=await sb.from('lead_notif_prefs').upsert({user_id:currentUser.id,enabled:notifPrefs.enabled,sound:notifPrefs.sound,kinds:notifPrefs.kinds,updated_at:new Date().toISOString()},{onConflict:'user_id'});
     if(error)toast('Could not save your settings: '+error.message);
-    else toast(notifPrefs.enabled?'Notification settings saved.':'Lead notifications turned off.');
+    else toast(notifPrefs.kinds._mute?'All your notifications are paused.':notifPrefs.enabled?'Notification settings saved.':'Lead notifications turned off.');
   }catch(e){}
 }
 function notifAgo(iso){
@@ -6396,7 +6458,7 @@ function addNotifRows(rows,announce){
   fresh.forEach(r=>{if(!_notifCursor||new Date(r.created_at)>new Date(_notifCursor))_notifCursor=r.created_at;});
   updateNotifBadge();
   const p=document.getElementById('notif-panel');if(p&&p.style.display==='flex')renderNotifPanel();
-  if(announce&&fresh.length&&notifPrefs.enabled){
+  if(announce&&fresh.length&&notifPrefs.enabled&&!notifMuted()){
     if(notifPrefs.sound)playNewLeadChime();
     toast(fresh.length===1?(({assigned:'📌 ',new:'📥 ',sop:'✍️ ',documents:'📎 '})[fresh[0].kind]||'🔔 ')+fresh[0].title:'🔔 '+fresh.length+' new notifications');
   }
@@ -6455,8 +6517,8 @@ async function liveSyncTick(){
       const{data,error}=await sb.from('tasks').select('id,title,created_at').eq('assigned_to',myName).eq('status','Open').gt('created_at',_taskCursor).order('created_at',{ascending:true}).limit(50);
       if(!error&&data&&data.length){
         _taskCursor=data[data.length-1].created_at||_taskCursor;
-        playNewLeadChime();
-        toast(data.length===1?'🗒️ New task: '+(data[0].title||'Untitled'):'🗒️ '+data.length+' new tasks assigned to you');
+        if(popupAllowed('tasks')){ playNewLeadChime();
+        toast(data.length===1?'🗒️ New task: '+(data[0].title||'Untitled'):'🗒️ '+data.length+' new tasks assigned to you'); }
         try{loadMyTasks();}catch(e){}
       }
     }
@@ -7396,6 +7458,10 @@ function rebuildLeadFilterOptions(scoped){
   fillSelectKeep(document.getElementById('ls-de'),'All destinations',baseDest.concat(scoped.map(l=>l.destination)));
 }
 function renderLeads(){
+  try{syncBulkSelFromDom();}catch(e){}
+  try{_renderLeadsCore();}finally{try{restoreBulkAfterRender();}catch(e){}}
+}
+function _renderLeadsCore(){
   document.getElementById('leads-loading').style.display='none';
   // Bulk actions (select, reassign, status/priority change) are Management
   // tier only — Counsellors and Application/Visa/SOP Team never see the
@@ -7456,7 +7522,7 @@ function renderLeads(){
     const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
     const capturedStr=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
     return `<tr data-lead-id="${l.id}" onclick="openLeadDetail('${l.id}')">
-      ${canBulkAct?`<td onclick="event.stopPropagation()"><input type="checkbox" class="bulk-lead-checkbox" data-id="${l.id}" onchange="onBulkCheckboxChange()" style="cursor:pointer"></td>`:''}
+      ${canBulkAct?`<td onclick="event.stopPropagation()"><input type="checkbox" class="bulk-lead-checkbox" data-id="${l.id}" ${bulkSel.has(String(l.id))?'checked':''} onchange="onBulkCheckboxChange()" style="cursor:pointer"></td>`:''}
       <td style="font-size:12px;color:var(--ink3);font-weight:600">${i+1}</td>
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
       <td><div class="nc"><div class="av" style="background:${abg};color:${atx}">${ini(l.name)}</div><div><div class="ln">${esc(l.name)}${dupBadge(l)}</div><div class="lc">${esc(l.city||'—')}</div></div></div></td>
@@ -8046,6 +8112,9 @@ function refreshModalDocsVisibility(){
 
 // ── SOP Documents — multiple files per lead, each tagged to a university ──
 async function loadSopDocuments(leadId,isFS){
+  try{await _loadSopDocumentsCore(leadId,isFS);}finally{try{loadOfferLetters(leadId,isFS);}catch(e){}}
+}
+async function _loadSopDocumentsCore(leadId,isFS){
   const listEl=document.getElementById(isFS?'ld-sop-list':'d-sop-list');
   const uniSelectEl=document.getElementById(isFS?'ld-sop-university':'d-sop-university');
   if(!listEl)return;
@@ -8096,6 +8165,86 @@ async function deleteSopDocument(id,isFS){
   const{error:_de}=await sb.from('sop_documents').delete().eq('id',id);
   if(_de){toast('Could not delete: '+_de.message);return;}
   loadSopDocuments(curId,isFS);loadUniversityLinks(curId,isFS);try{loadSopUploadedLeadIds();}catch(e){}
+  toast('Deleted.');
+}
+
+// ── Offer letters — one or more files per lead, each tagged to a university ──
+// Stored in the existing 'sop-documents' bucket under offer/<lead>/…, table offer_letters (SQL 0027).
+async function loadOfferLetters(leadId,isFS){
+  const listEl=document.getElementById(isFS?'ld-offer-list':'d-offer-list');
+  const uniSelectEl=document.getElementById(isFS?'ld-offer-university':'d-offer-university');
+  if(!listEl)return;
+  const[{data:uniApps},{data:uniLinkRows},{data:sops},offRes]=await Promise.all([
+    sb.from('university_applications').select('university').eq('lead_id',leadId),
+    sb.from('university_links').select('university_name').eq('lead_id',leadId),
+    sb.from('sop_documents').select('*').eq('lead_id',leadId).order('created_at',{ascending:false}),
+    sb.from('offer_letters').select('*').eq('lead_id',leadId).order('created_at',{ascending:false})]);
+  const _seen=new Set();
+  const uniNames=[...(uniApps||[]).map(u=>u.university),...(uniLinkRows||[]).map(u=>u.university_name)].filter(Boolean).map(n=>String(n).trim()).filter(n=>{const k=n.toLowerCase();if(_seen.has(k))return false;_seen.add(k);return true;});
+  if(uniSelectEl){
+    const keep=uniSelectEl.value;
+    uniSelectEl.innerHTML=uniNames.map(n=>`<option>${esc(n)}</option>`).join('')+'<option value="__other__">Other / type below…</option>';
+    if(keep&&[...uniSelectEl.options].some(o=>o.value===keep))uniSelectEl.value=keep;
+  }
+  if(offRes.error){
+    listEl.innerHTML='<div style="font-size:13px;color:var(--ink3);font-style:italic">Could not load — run SQL 0027 (offer_letters) in Supabase first.</div>';
+    renderUniOverview(leadId,isFS,uniNames,sops||[],[]);return;
+  }
+  const offers=offRes.data||[];
+  listEl.innerHTML=offers.length?offers.map(o=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)">
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;font-weight:600">${esc(o.university||'General')}</div>
+      <a href="${esc(o.attachment_url)}" target="_blank" style="font-size:11px;color:var(--pine);text-decoration:underline;display:flex;align-items:center;gap:4px"><i class="ti ti-file-text" style="font-size:12px"></i>${esc(o.attachment_filename||'File')}</a>
+    </div>
+    <button onclick="deleteOfferLetter('${o.id}',${isFS})" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:15px;padding:0 4px">×</button>
+  </div>`).join(''):emptyState('📨','No offer letters uploaded yet.');
+  renderUniOverview(leadId,isFS,uniNames,sops||[],offers);
+}
+// One block per university: where it stands (SOP + offer letter) at a glance.
+function renderUniOverview(leadId,isFS,uniNames,sops,offers){
+  const el=document.getElementById(isFS?'ld-uni-overview':'d-uni-overview');
+  if(!el)return;
+  const norm=x=>String(x||'').trim().toLowerCase();
+  const names=[];const seen=new Set();
+  [...uniNames,...sops.map(x=>x.university),...offers.map(x=>x.university)].forEach(n=>{
+    if(!n)return;const k=norm(n);if(seen.has(k))return;seen.add(k);names.push(n);});
+  if(!names.length){el.innerHTML=emptyState('🏛️','No universities yet.');return;}
+  const links=(arr)=>arr.map(f=>`<a href="${esc(f.attachment_url)}" target="_blank" style="color:var(--pine);text-decoration:underline;margin-right:8px;white-space:nowrap">${esc(f.attachment_filename||'file')}</a>`).join('');
+  el.innerHTML=names.map(n=>{
+    const ss=sops.filter(x=>norm(x.university)===norm(n)), oo=offers.filter(x=>norm(x.university)===norm(n));
+    const pill=(ok,label)=>`<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:9px;background:${ok?'#e4f3ea':'#fbe9e7'};color:${ok?'#1b6b3a':'#a33'}">${label}</span>`;
+    return `<div style="padding:8px 0;border-bottom:1px solid var(--line)">
+      <div style="font-size:12px;font-weight:700;margin-bottom:4px">${esc(n)}</div>
+      <div style="display:flex;gap:6px;align-items:baseline;font-size:11px;margin-bottom:2px"><span style="width:78px;color:var(--ink3);font-weight:600">SOP</span>${ss.length?pill(true,'Done')+' '+links(ss):pill(false,'Pending')}</div>
+      <div style="display:flex;gap:6px;align-items:baseline;font-size:11px"><span style="width:78px;color:var(--ink3);font-weight:600">Offer letter</span>${oo.length?pill(true,'Received')+' '+links(oo):pill(false,'Not yet')}</div>
+    </div>`;}).join('');
+}
+async function uploadOfferLetters(isFS){
+  if(!curId){toast('Open a lead first.');return;}
+  const uniSelect=document.getElementById(isFS?'ld-offer-university':'d-offer-university');
+  const fileInput=document.getElementById(isFS?'ld-offer-files':'d-offer-files');
+  const files=fileInput.files;
+  if(!files||!files.length){toast('Choose at least one file first.');return;}
+  let university=uniSelect.value;
+  if(university==='__other__'||!university){
+    university=(prompt('Which university is this offer letter for?','')||'').trim()||'General';
+  }
+  toast(`Uploading ${files.length} offer letter file(s)…`);
+  const results=[];
+  for(const file of files){
+    const path=`offer/${curId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const r=await uploadFileAndRecord('sop-documents',path,file,'offer_letters',{lead_id:curId,university,uploaded_by:myName});
+    results.push({...r,name:file.name});
+  }
+  fileInput.value='';
+  loadOfferLetters(curId,isFS);
+  reportUploadBatch(results,'offer letter(s)');
+}
+async function deleteOfferLetter(id,isFS){
+  if(!confirm('Delete this offer letter?'))return;
+  const{error}=await sb.from('offer_letters').delete().eq('id',id);
+  if(error){toast('Could not delete: '+error.message);return;}
+  loadOfferLetters(curId,isFS);
   toast('Deleted.');
 }
 
@@ -10982,8 +11131,25 @@ function transferSelectedLeads(){
   if(!ids.length){toast('First tick the leads, or type a number and press "Select random" — then press Transfer selected.');return;}
   openTransferLead(ids);
 }
+// Selection lives in this Set (not only in the checkboxes), so a live refresh
+// that rebuilds the table — e.g. when another admin edits a lead — can no
+// longer wipe a selection in progress. Rows are re-ticked from the Set on render.
+var bulkSel=new Set();
 function getSelectedLeadIds(){
   return Array.from(document.querySelectorAll('.bulk-lead-checkbox:checked')).map(cb=>cb.dataset.id);
+}
+function syncBulkSelFromDom(){
+  const boxes=document.querySelectorAll('.bulk-lead-checkbox');
+  if(!boxes.length)return;
+  bulkSel=new Set(Array.from(boxes).filter(cb=>cb.checked).map(cb=>cb.dataset.id));
+}
+// Called after every table re-render: drop ids no longer shown, refresh the bar.
+function restoreBulkAfterRender(){
+  const boxes=document.querySelectorAll('.bulk-lead-checkbox');
+  if(!document.getElementById('bulk-actions-bar'))return;
+  const shown=new Set(Array.from(boxes).map(cb=>cb.dataset.id));
+  bulkSel=new Set([...bulkSel].filter(id=>shown.has(id)));
+  onBulkCheckboxChange();
 }
 // Randomly selects N leads from whatever's currently visible in the
 // table — i.e. respects any filters already applied (status, country,
@@ -11024,6 +11190,7 @@ function toggleSelectAllLeads(checked){
   onBulkCheckboxChange();
 }
 function onBulkCheckboxChange(){
+  syncBulkSelFromDom();
   const ids=getSelectedLeadIds();
   const bar=document.getElementById('bulk-actions-bar');
   const label=document.getElementById('bulk-count-label');
@@ -11065,6 +11232,7 @@ function getScopedCounsellorNames(){
   return[...new Set(pool.map(t=>t.full_name))];
 }
 function clearBulkSelection(){
+  bulkSel=new Set();
   document.querySelectorAll('.bulk-lead-checkbox').forEach(cb=>cb.checked=false);
   document.getElementById('bulk-select-all').checked=false;
   document.getElementById('bulk-actions-bar').style.display='none';
@@ -12349,7 +12517,7 @@ async function checkUnreadDmCount(){
   if(!badge||error)return;
   unreadDmSenders=new Set((data||[]).map(m=>m.sender_id));
   const count=data?.length||0;
-  if(count>lastUnreadDmCount)playChatChime(); // only on genuinely new messages, not every poll — personal per-user toggle, not the org-wide one
+  if(count>lastUnreadDmCount&&popupAllowed('messages'))playChatChime(); // only on genuinely new messages, not every poll — personal per-user toggle, not the org-wide one
   lastUnreadDmCount=count;
   if(count>0){badge.textContent=count>9?'9+':count;badge.style.display='flex';}
   else{badge.style.display='none';}
@@ -13433,6 +13601,7 @@ function stopNotificationEngine(){
 const eventReminderShown=new Set();
 function checkEventReminders(){
   if(!currentUser||!notificationsEnabled||!myName)return;
+  if(!popupAllowed('events'))return;
   const now=Date.now();
   (events||[]).forEach(ev=>{
     if(!ev.event_time||!ev.participants)return;
@@ -13505,7 +13674,7 @@ let sharedAudioCtx=null;
 });
 
 function playNotificationChime(){
-  if(!notificationsEnabled)return;
+  if(!notificationsEnabled||notifMuted())return;
   playChimeTone();
 }
 // Per-user sound preference — separate from the org-wide switch above on
@@ -13514,7 +13683,7 @@ function playNotificationChime(){
 // own, defaulting on, saved to their own team row.
 let mySoundEnabled=true;
 function playChatChime(){
-  if(!mySoundEnabled)return;
+  if(!mySoundEnabled||notifMuted())return;
   // Distinct, softer "pop" message tone — different from the alert chime.
   try{
     if(!sharedAudioCtx){ sharedAudioCtx=new(window.AudioContext||window.webkitAudioContext)(); }
@@ -13559,7 +13728,7 @@ function playChimeTone(){
 // — deliberately distinct from the general two-note chime above, so
 // staff can tell "new lead" apart from everything else by ear alone.
 function playNewLeadChime(){
-  if(!notificationsEnabled)return;
+  if(!notificationsEnabled||notifMuted()||notifPrefs.sound===false)return;
   try{
     if(!sharedAudioCtx){ sharedAudioCtx=new(window.AudioContext||window.webkitAudioContext)(); }
     if(sharedAudioCtx.state==='suspended'){ sharedAudioCtx.resume(); }
@@ -13582,7 +13751,7 @@ function playNewLeadChime(){
 // new-lead chime, since this one should read as "needs attention", not
 // "good news".
 function playDuplicateLeadChime(){
-  if(!notificationsEnabled)return;
+  if(!notificationsEnabled||notifMuted()||notifPrefs.sound===false)return;
   try{
     if(!sharedAudioCtx){ sharedAudioCtx=new(window.AudioContext||window.webkitAudioContext)(); }
     if(sharedAudioCtx.state==='suspended'){ sharedAudioCtx.resume(); }
@@ -13654,6 +13823,7 @@ function showUrgentPopup(lead,level){
 
 function checkEscalations(){
   if(!currentUser||!notificationsEnabled)return;
+  if(notifMuted())return;
   const now=Date.now();
   leads.forEach(l=>{
     if(l.status!=='New Enquiry')return; // status changed = attended = stop nagging entirely
@@ -13765,6 +13935,7 @@ async function placeRecordedCall(leadId,leadName){
 }
 function checkDailyFollowupPopup(){
   if(!currentUser)return;
+  if(!popupAllowed('followup'))return; // personal setting; not marked as shown so it can appear later
   const todayStr=localDateStr();
   const shownKey='s4p_daily_shown_'+(currentUser.id||'')+'_'+todayStr;
   if(localStorage.getItem(shownKey))return; // already shown today

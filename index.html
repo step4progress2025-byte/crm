@@ -15407,7 +15407,8 @@ let currentOnlineUsers = [];
 function renderOnlineUsers(state) {
   const avContainer = document.getElementById('presence-avatars');
   const countEl = document.getElementById('online-num');
-  const users = Object.values(state).flat();
+  // one avatar per person, even if the same login is open in several tabs or devices
+  const users = Object.values(state).map(metas=>Array.isArray(metas)?metas[0]:metas).filter(Boolean);
   currentOnlineUsers = users;
   countEl.textContent = users.length;
 

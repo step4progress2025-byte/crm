@@ -1293,7 +1293,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
                 <label style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Status</label>
                 <select id="exp-st" style="width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:var(--font-b)">
                   <option value="">All statuses</option>
-                  <option>New Enquiry</option><option>Contacted</option><option>Not Interested</option><option>Follow Up</option><option>Interested</option><option>University Shortlist</option><option>Documents Pending</option><option>Application Submitted</option><option>Received Conditional</option><option>Received Unconditional</option><option>Deposit Paid</option><option>Interview Passed</option><option>Interview Failed</option><option>CAS Applied</option><option>CAS Received</option><option>Visa Application Submitted</option><option>Visa Interview</option><option>Visa Received</option><option>Visa Rejected</option><option>Defer</option><option>Enrolled</option><option>Pending</option><option>Ongoing</option><option>Callback Later</option><option>Counselling Done</option><option>Fees Paid</option><option>Conditional Cleared</option><option>Onboarded Student</option><option>Commission Received</option><option>Process Completed</option><option>Dropped</option>
+                  <option>New Enquiry</option><option>Contacted</option><option>Not Interested</option><option>Follow Up</option><option>1st Follow Up</option><option>2nd Follow Up</option><option>3rd Follow Up</option><option>Future Student</option><option>Will Share Documents</option><option>No Response</option><option>File Received</option><option>Interested</option><option>University Shortlist</option><option>Documents Pending</option><option>Application Submitted</option><option>Received Conditional</option><option>Received Unconditional</option><option>Deposit Paid</option><option>Interview Passed</option><option>Interview Failed</option><option>CAS Applied</option><option>CAS Received</option><option>Visa Application Submitted</option><option>Visa Interview</option><option>Visa Received</option><option>Visa Rejected</option><option>Defer</option><option>Enrolled</option><option>Pending</option><option>Ongoing</option><option>Callback Later</option><option>Counselling Done</option><option>Fees Paid</option><option>Conditional Cleared</option><option>Onboarded Student</option><option>Commission Received</option><option>Process Completed</option><option>Dropped</option>
                 </select>
               </div>
               <div>
@@ -1977,7 +1977,7 @@ What would you like help with today?</div>
       </div>
       <div class="ff"><label>Status</label>
         <select id="f-status">
-          <option>New Enquiry</option><option>Contacted</option><option>Not Interested</option><option>Follow Up</option><option>Interested</option><option>University Shortlist</option><option>Documents Pending</option><option>Application Submitted</option><option>Received Conditional</option><option>Received Unconditional</option><option>Deposit Paid</option><option>Interview Passed</option><option>Interview Failed</option><option>CAS Applied</option><option>CAS Received</option><option>Visa Application Submitted</option><option>Visa Interview</option><option>Visa Received</option><option>Visa Rejected</option><option>Defer</option><option>Enrolled</option>
+          <option>New Enquiry</option><option>Contacted</option><option>Not Interested</option><option>Follow Up</option><option>1st Follow Up</option><option>2nd Follow Up</option><option>3rd Follow Up</option><option>Future Student</option><option>Will Share Documents</option><option>No Response</option><option>File Received</option><option>Interested</option><option>University Shortlist</option><option>Documents Pending</option><option>Application Submitted</option><option>Received Conditional</option><option>Received Unconditional</option><option>Deposit Paid</option><option>Interview Passed</option><option>Interview Failed</option><option>CAS Applied</option><option>CAS Received</option><option>Visa Application Submitted</option><option>Visa Interview</option><option>Visa Received</option><option>Visa Rejected</option><option>Defer</option><option>Enrolled</option>
           <option>Pending</option><option>Ongoing</option><option>Callback Later</option><option>Counselling Done</option><option>Fees Paid</option><option>Conditional Cleared</option><option>Onboarded Student</option><option>Commission Received</option><option>Process Completed</option><option>Dropped</option>
         </select>
       </div>
@@ -3112,6 +3112,7 @@ What would you like help with today?</div>
       <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="np-k-update" onchange="saveNotifPrefs()"> Edits to a lead</label>
       <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="np-k-sop" onchange="saveNotifPrefs()"> SOP uploads</label>
       <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="np-k-documents" onchange="saveNotifPrefs()"> Document uploads</label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="np-k-doc_change" onchange="saveNotifPrefs()"> Document edits and removals</label>
     </div>
   </div>
   <div style="padding:7px 12px;border-top:1px solid var(--line);font-size:11px;color:var(--ink3)">
@@ -3365,6 +3366,13 @@ const SS={
   "Ongoing":         {bg:"#F0FDF4",tx:"#166534"},
   "Contacted":       {bg:"#FEF9C3",tx:"#854D0E"},
   "Follow Up":       {bg:"#FEF3C7",tx:"#92400E"},
+  "1st Follow Up":   {bg:"#FEF3C7",tx:"#92400E"},
+  "2nd Follow Up":   {bg:"#FDE68A",tx:"#78350F"},
+  "3rd Follow Up":   {bg:"#FCD34D",tx:"#78350F"},
+  "Future Student":  {bg:"#E0E7FF",tx:"#3730A3"},
+  "Will Share Documents":{bg:"#CFFAFE",tx:"#155E75"},
+  "No Response":     {bg:"#F1F5F9",tx:"#475569"},
+  "File Received":   {bg:"#D1FAE5",tx:"#065F46"},
   "Callback Later":  {bg:"#FFF7ED",tx:"#C2410C"},
   "Interested":      {bg:"#F0FDF4",tx:"#15803D"},
   "Counselling Done":{bg:"#DCFCE7",tx:"#166534"},
@@ -3402,7 +3410,7 @@ function formatExpiryDisplay(dateStr,warnDays){
   if(days<=warnDays)return `<span style="color:var(--gold);font-weight:600">${dateLabel} — ${days}d left</span>`;
   return dateLabel;
 }
-const STATUSES=["New Enquiry","Contacted","Not Interested","Call by Mistake","Follow Up","Interested","University Shortlist","Documents Pending","Application Submitted","Received Conditional","Received Unconditional","Deposit Paid","Interview Passed","Interview Failed","CAS Applied","CAS Received","Visa Application Submitted","Visa Interview","Visa Received","Visa Rejected","Defer","Enrolled","Pending","Ongoing","Callback Later","Counselling Done","Fees Paid","Conditional Cleared","Onboarded Student","Commission Received","Process Completed","Dropped"];
+const STATUSES=["New Enquiry","Contacted","Not Interested","Call by Mistake","Follow Up","1st Follow Up","2nd Follow Up","3rd Follow Up","Future Student","Will Share Documents","No Response","File Received","Interested","University Shortlist","Documents Pending","Application Submitted","Received Conditional","Received Unconditional","Deposit Paid","Interview Passed","Interview Failed","CAS Applied","CAS Received","Visa Application Submitted","Visa Interview","Visa Received","Visa Rejected","Defer","Enrolled","Pending","Ongoing","Callback Later","Counselling Done","Fees Paid","Conditional Cleared","Onboarded Student","Commission Received","Process Completed","Dropped"];
 // Chronological forward-journey order, used only for "reached this stage or later"
 // calculations (Applications Submitted, Conversion Funnel). This is deliberately
 // separate from STATUSES above, which is just the dropdown's display order.
@@ -3413,7 +3421,7 @@ const STATUSES=["New Enquiry","Contacted","Not Interested","Call by Mistake","Fo
 // as having reached that stage — its current status no longer reflects that
 // historical fact. This is an honest limitation, not a bug: a true lifetime
 // cumulative count needs a status-history log, which doesn't exist yet.
-const PIPELINE_ORDER=["New Enquiry","Pending","Ongoing","Contacted","Follow Up","Callback Later","Interested","Counselling Done","University Shortlist","Documents Pending","Application Submitted","Received Conditional","Received Unconditional","Conditional Cleared","Deposit Paid","Interview Passed","CAS Applied","CAS Received","Visa Application Submitted","Visa Interview","Visa Received","Enrolled","Fees Paid","Onboarded Student","Commission Received","Process Completed"];
+const PIPELINE_ORDER=["New Enquiry","Pending","Ongoing","Contacted","Follow Up","1st Follow Up","2nd Follow Up","3rd Follow Up","Callback Later","Interested","Counselling Done","University Shortlist","Will Share Documents","Documents Pending","File Received","Application Submitted","Received Conditional","Received Unconditional","Conditional Cleared","Deposit Paid","Interview Passed","CAS Applied","CAS Received","Visa Application Submitted","Visa Interview","Visa Received","Enrolled","Fees Paid","Onboarded Student","Commission Received","Process Completed"];
 function reachedStage(status,stageName){
   const li=PIPELINE_ORDER.indexOf(status);
   const si=PIPELINE_ORDER.indexOf(stageName);
@@ -6362,7 +6370,7 @@ async function processLeadRefresh(){
 // ── Notification bell (unread count, list, sound) ────────────────────
 let notifItems=[],_notifCursor=null,_notifChannel=null;
 let notifPrefs={enabled:true,sound:true,kinds:{}};
-const NOTIF_KINDS=['assigned','new','update','sop','documents'];
+const NOTIF_KINDS=['assigned','new','update','sop','documents','doc_change'];
 // ── Personal mute / quiet hours / per-type pop-ups (stored inside lead_notif_prefs.kinds, no new table) ──
 const NOTIF_POPUPS=['followup','events','tasks','messages'];
 function notifQuiet(){
@@ -6435,7 +6443,7 @@ function updateNotifBadge(){
 function renderNotifPanel(){
   const el=document.getElementById('notif-list');if(!el)return;
   if(!notifItems.length){el.innerHTML='<div style="padding:26px 14px;text-align:center;font-size:12px;color:var(--ink3)">No notifications yet.</div>';return;}
-  const icon={assigned:'📌',new:'📥',sop:'✍️',documents:'📎',update:'✏️'};
+  const icon={assigned:'📌',new:'📥',sop:'✍️',documents:'📎',doc_change:'🗂️',update:'✏️'};
   el.innerHTML=notifItems.map(n=>`<div onclick="openNotif(${n.id})" style="display:flex;gap:9px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;background:${n.read_at?'transparent':'rgba(224,36,94,.07)'}">
     <div style="font-size:16px;line-height:1.3">${icon[n.kind]||'🔔'}</div>
     <div style="flex:1;min-width:0">
@@ -6482,7 +6490,7 @@ function addNotifRows(rows,announce){
   const p=document.getElementById('notif-panel');if(p&&p.style.display==='flex')renderNotifPanel();
   if(announce&&fresh.length&&notifPrefs.enabled&&!notifMuted()){
     if(notifPrefs.sound)playNewLeadChime();
-    toast(fresh.length===1?(({assigned:'📌 ',new:'📥 ',sop:'✍️ ',documents:'📎 '})[fresh[0].kind]||'🔔 ')+fresh[0].title:'🔔 '+fresh.length+' new notifications');
+    toast(fresh.length===1?(({assigned:'📌 ',new:'📥 ',sop:'✍️ ',documents:'📎 ',doc_change:'🗂️ '})[fresh[0].kind]||'🔔 ')+fresh[0].title:'🔔 '+fresh.length+' new notifications');
   }
 }
 async function startNotifications(){
@@ -7299,7 +7307,7 @@ function renderSubTeamDetail(){
 // (e.g. terminal/negative statuses like Dropped, Not Interested) still
 // shows up, just grouped into a single "Other" column at the end, so no
 // lead silently disappears from the board.
-const KANBAN_COLUMNS=['New Enquiry','Contacted','Interested','Counselling Done','Documents Pending','Application Submitted','Received Conditional','Received Unconditional','Deposit Paid','CAS Received','Visa Application Submitted','Visa Received','Enrolled'];
+const KANBAN_COLUMNS=['New Enquiry','Contacted','1st Follow Up','2nd Follow Up','3rd Follow Up','No Response','Interested','Counselling Done','Future Student','Will Share Documents','Documents Pending','File Received','Application Submitted','Received Conditional','Received Unconditional','Deposit Paid','CAS Received','Visa Application Submitted','Visa Received','Enrolled'];
 let leadsViewMode='table';
 let currentFilteredLeads=[];
 function setLeadsView(mode){
@@ -10277,7 +10285,7 @@ function renderFU(){
   const pf=document.getElementById('fp-pr').value;
   const cf=document.getElementById('fp-co').value;
   const countryF=document.getElementById('fp-country').value;
-  const act=['New Enquiry','Pending','Ongoing','Contacted','Follow Up','Callback Later','Interested','Counselling Done','Defer'];
+  const act=['New Enquiry','Pending','Ongoing','Contacted','Follow Up','1st Follow Up','2nd Follow Up','3rd Follow Up','Will Share Documents','No Response','Callback Later','Interested','Counselling Done','Defer'];
   const fuBase=opsViewScopedLeads(leads).filter(l=>act.includes(l.status));
   fillSelectKeep(document.getElementById('fp-co'),'All counsellors',fuBase.map(l=>l.counsellor));
   document.getElementById('fp-co').value=cf||'';
@@ -13193,7 +13201,7 @@ function renderHomeDestinationCards(){
 async function loadHomeFollowups(){
   const el=document.getElementById('home-followups-list');
   if(!el)return;
-  const act=['New Enquiry','Pending','Ongoing','Contacted','Follow Up','Callback Later','Interested','Counselling Done','Defer'];
+  const act=['New Enquiry','Pending','Ongoing','Contacted','Follow Up','1st Follow Up','2nd Follow Up','3rd Follow Up','Will Share Documents','No Response','Callback Later','Interested','Counselling Done','Defer'];
   const mine=opsViewScopedLeads(leads).filter(l=>act.includes(l.status)&&(!isRestrictedStaffRole()||l.counsellor===myName))
     .sort((a,b)=>(a.priority==='High'?0:a.priority==='Medium'?1:2)-(b.priority==='High'?0:b.priority==='Medium'?1:2))
     .slice(0,5);

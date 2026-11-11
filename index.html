@@ -4035,6 +4035,10 @@ function isMarketingStaff(){return myRole==='Digital Marketing'&&!isSuperAdmin;}
 function isJisanOrSimun(){const e=String(currentUser?.email||'').trim().toLowerCase();return e==='jisan@step4progress.co.uk'||e==='simun@step4progress.co.uk';}
 // Jisan and Simun now have near-owner lead access: they can edit and delete leads of any office/country.
 function canDeleteLeads(){return isJisanOrSimun()||(isSuperAdmin||['Admin','Manager','Director','Digital Marketing'].includes(myRole));}
+// Agents (external partners) see only: Home, Dashboard, Task Dashboard, Leads (their own),
+// Team Chat, Events, Import Data, Scholarship Finder and AI Counsellor.
+const AGENT_ALLOWED_NAV=['home','dashboard','taskdashboard','leads','teamchat','events','import','scholarships','ai'];
+function isAgentUser(){return !isSuperAdmin&&(myRole==='Agent'||myTeamCategory==='Agent');}
 function isRestrictedStaffRole(){
   if(isSuperAdmin)return false;
   if(['Counsellor','Application Team','Visa Team','SOP Team','Digital Marketing','HR'].includes(myRole))return true;
@@ -6765,6 +6769,7 @@ function nav(id,btn){
     toast('Digital Marketing accounts can use the Digital Marketing dashboard, Dashboard, Leads and Follow-ups.');
     return;
   }
+  if(isAgentUser()&&!AGENT_ALLOWED_NAV.includes(id)){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Not available for agent accounts.');return;}
   const roleIsCounsellor=isRestrictedStaffRole();
   if(id==='finance'&&!canSeeFinance){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Finance is restricted to Owner and Super Admin only.');return;}
   if(id==='studentportal'&&isRestrictedStaffRole()&&myRole!=='Counsellor'){nav('home',document.querySelector('.ni[data-nav="home"]'));toast('Access restricted.');return;}
@@ -11735,9 +11740,17 @@ async function sendAI(){
   document.getElementById('ai-think').style.display='block';
   try{
     const r=await fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/ai-proxy',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:ctxStr(),messages:aiH})});
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:ctxStr(),messages:aiH})});
     const d=await r.json();
-    const reply=d.content?.[0]?.text||'Could not get a response right now.';
+    let reply=d.content?.[0]?.text;
+    if(!reply){
+      // Show the real reason (wrong key, no credit, retired model, proxy error) instead of a vague message
+      const why=(d.error&&(d.error.message||d.error))||d.message||(r.ok?'empty reply':('HTTP '+r.status));
+      console.error('AI proxy error',r.status,d);
+      aiH.pop();
+      addMsg('assistant','AI is not available right now. Reason: '+(typeof why==='string'?why:JSON.stringify(why)));
+      document.getElementById('ai-think').style.display='none';return;
+    }
     aiH.push({role:'assistant',content:reply});addMsg('assistant',reply);
   }catch(e){addMsg('assistant','Connection issue. Please try again.');}
   document.getElementById('ai-think').style.display='none';
@@ -12216,7 +12229,7 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
     const finNav=document.getElementById('ni-finance');
     if(finNav) finNav.style.display=canSeeFinance?'flex':'none';
     const atNav=document.getElementById('ni-apptracker');
-    if(atNav) atNav.style.display=(isOwner&&TRACKER_EMAILS.includes(String((currentUser&&currentUser.email)||'').toLowerCase()))?'flex':'none';
+    if(atNav) atNav.style.display=(TRACKER_EMAILS.includes(String((currentUser&&currentUser.email)||'').toLowerCase()))?'flex':'none';
 
     if(isAdminLike){
       ['ls-src','ls-from','ls-to'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='block';el.style.minWidth='140px';}});
@@ -12245,6 +12258,13 @@ function openAddUniApp(){openUniversityModal();}async function deleteUniApp(id){
       document.querySelectorAll('.ni').forEach(btn=>{
         const onclick=btn.getAttribute('onclick')||'';
         restricted.forEach(r=>{if(onclick.includes("nav('"+r+"'")&&!(role==='HR'&&r==='team'))btn.style.display='none';});
+      });
+    }
+
+    if(isAgentUser()){
+      document.querySelectorAll('.sb-nav .ni').forEach(btn=>{
+        const k=btn.getAttribute('data-nav');
+        if(!AGENT_ALLOWED_NAV.includes(k))btn.style.display='none';
       });
     }
 
@@ -13040,7 +13060,7 @@ async function loadDailyBriefing(force){
     const r=await fetch('https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/ai-proxy',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:220,
+        model:'claude-sonnet-4-6',max_tokens:220,
         system:`You write a short, warm, genuinely useful morning briefing for a study-abroad consultancy staff member named ${myName}. Use their real data below. 3-5 sentences, plain conversational prose (no bullet points, no headers), name specific people/leads where it matters, prioritise the single most urgent thing first. If everything below says "none", just tell them their day looks clear and to check in on anything long-running.`,
         messages:[{role:'user',content:summary}]
       })

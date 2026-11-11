@@ -10047,6 +10047,12 @@ async function saveLead(){
     // no counsellor assigned (Unassigned), and whatever the country or office.
     if(canSwitchOpsViewUser()&&superAdminOpsView){data.workstream=superAdminOpsView;}
     else if(myTeamCategory==='Domestic'||myTeamCategory==='International'){data.workstream=myTeamCategory;}
+    // Agents: the lead is always recorded under the agent's own name and on the agent's own side
+    if(isAgentUser()){
+      data.agent=myName;
+      const _me=(teamList||[]).find(t=>String(t.email||'').toLowerCase()===String(currentUser?.email||'').toLowerCase());
+      data.workstream=agentSideOf(_me);
+    }
     if(data.counsellor)data.assigned_at=new Date().toISOString();
     let res=await sb.from('leads').insert([data]).select();
     if(res.error&&/place_of_birth/i.test(res.error.message||'')){delete data.place_of_birth;res=await sb.from('leads').insert([data]).select();if(!res.error)toast('Saved, but run crm_domestic_uk_form.sql so Place of birth is stored.');}
@@ -10059,7 +10065,7 @@ async function saveLead(){
     error=res.error;
     let newLeadId=null;
     if(!error&&res.data){allLeads.unshift(res.data[0]);syncLeadsView();newLeadId=res.data[0].id;newlyCreatedLeadId=newLeadId;logEvents.push(['created',`Lead created, assigned to ${data.counsellor||'Unassigned'}`]);if(pendingQueryConversionId)await markPendingQueryConverted(newLeadId);}
-    toast('Lead added: '+name);
+    if(!error)toast('Lead added: '+name);
     if(!error&&data.next_followup)warnIfHoliday(data.next_followup,data.office);
     if(!error&&newLeadId)logEvents.forEach(([type,detail])=>logActivity(newLeadId,type,detail));
     logEvents=[]; // already logged above for the new-lead case; prevent double-logging below

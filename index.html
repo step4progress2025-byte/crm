@@ -5898,7 +5898,7 @@ pruneIndiaFromCrmDropdowns();
     if(payload.new&&payload.new.sender_id!==currentUser.id){checkUnreadDmCount();} // plays the tone itself when the unread count rises
   }).subscribe();
   // Fallback fast poll (every 10s) in case realtime isn't enabled for this table.
-  if(!window._dmFastPoll){window._dmFastPoll=setInterval(()=>{if(currentUser)checkUnreadDmCount();},10000);}
+  if(!window._dmFastPoll){window._dmFastPoll=setInterval(()=>{if(currentUser&&!document.hidden)checkUnreadDmCount();},30000);}
 
   // New password reset requests — alert Admin/Manager (own country
   // only), Super Admin (all except India), and Owner (everything),
@@ -6525,7 +6525,7 @@ let _liveSyncTimer=null,_leadCursor=null,_taskCursor=null,_liveBusy=false;
 function startLiveSync(){
   if(_liveSyncTimer)clearInterval(_liveSyncTimer);
   _leadCursor=new Date(Date.now()-120000).toISOString();_taskCursor=_leadCursor;
-  _liveSyncTimer=setInterval(liveSyncTick,5000);
+  _liveSyncTimer=setInterval(()=>{if(!document.hidden)liveSyncTick();},20000); // 20s, and not while the tab is hidden (keeps database load low)
   if(!window._liveSyncHooked){
     window._liveSyncHooked=true;
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)liveSyncTick();});

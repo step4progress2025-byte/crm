@@ -81,6 +81,7 @@ td textarea{min-height:34px;resize:vertical}
     <select id="f-status" onchange="render()"><option value="">All statuses</option></select>
     <span class="spacer"></span>
     <button onclick="openStudentModal()" class="p">+ Add student</button>
+    <button onclick="openLeadDialog()" id="b-addall" title="Create a CRM lead for every student that is not a lead yet">→ Add all to leads</button>
     <button onclick="exportXlsx()">⬇ Export</button>
     <button onclick="document.getElementById('imp').click()">⬆ Import</button>
     <button onclick="downloadTemplate()" title="Blank Excel template with the right columns">Template</button>
@@ -96,10 +97,21 @@ td textarea{min-height:34px;resize:vertical}
     <label>Student name <span style="text-transform:none;letter-spacing:0">(type to find a CRM lead, or type any name)</span></label>
     <input id="ms-name" autocomplete="off" oninput="searchLeads()" placeholder="Student name">
     <div class="res" id="ms-res" style="display:none"></div>
-    <div class="g3"><div><label>Phone number</label><input id="ms-phone" placeholder="Phone number" inputmode="tel"></div><div><label>Email ID</label><input id="ms-email" type="email" placeholder="student@email.com"></div><div><label>Google Drive folder link</label><input id="ms-drive" placeholder="https://drive.google.com/…"></div></div>
+    <div class="g3"><div><label>Phone number</label><input id="ms-phone" placeholder="Phone number" inputmode="tel"></div><div><label>Email ID</label><input id="ms-email" type="email" placeholder="student@email.com"></div><div><label>Counsellor <span style="text-transform:none;letter-spacing:0">(CRM lead)</span></label><select id="ms-counsel"></select></div></div>
+    <div id="ms-leadrow" style="margin:6px 0 2px;font-size:13px"></div>
     <div class="arow"><div><div class="ahead"><span>Portal</span><span>University name</span><span>University link</span><span>Course name</span><span>Course link</span><span>Status</span><span></span></div><div id="ms-apps"></div></div></div>
     <div id="ms-addwrap" style="margin-top:10px;display:flex;gap:8px"><button onclick="addBlock()">+ Add another application</button><button onclick="window.open('https://app.coursefinder.ai/search-program','_blank')">Find course ↗</button></div>
     <div class="mf"><button onclick="closeModal()">Cancel</button><button class="p" onclick="saveStudent()">Save</button></div>
+  </div>
+</div>
+<div class="mover" id="m-lead">
+  <div class="modal" style="max-width:460px">
+    <h2>Add to CRM leads</h2>
+    <p id="ml-sum" style="font-size:13px;line-height:1.6;margin:4px 0 10px"></p>
+    <label>Assign to counsellor</label>
+    <select id="ml-counsel"></select>
+    <p style="font-size:12px;color:var(--ink3);margin-top:8px">A student who already exists as a lead (same phone number or email) is linked to that lead and is not added twice. You can change the counsellor later from here or from the CRM.</p>
+    <div class="mf"><button onclick="closeLeadDialog()">Cancel</button><button class="p" id="ml-go" onclick="runAddLeads()">Add as leads</button></div>
   </div>
 </div>
 <div id="toast"></div>
@@ -185,7 +197,10 @@ async function load(){
   students=await pageAll('tracker_students','created_at');
   apps=await pageAll('tracker_applications','created_at');
   fillSuggestions();
+  await loadTeam();
+  await loadLinkedLeads();
   render();
+  deepLink();
 }
 function fillSuggestions(){
   function uniq(k){var m={};apps.forEach(function(a){var v=(a[k]||'').trim();if(v)m[v]=1;});return Object.keys(m).sort();}
@@ -217,15 +232,17 @@ function view(){
 }
 function render(){
   var v=view();
+  var _n=toAdd().length,_b=document.getElementById('b-addall');if(_b){_b.textContent='→ Add all to leads ('+_n+')';_b.style.display=_n?'':'none';}
   document.getElementById('count').textContent=v.length+' student'+(v.length===1?'':'s')+' · '+v.reduce(function(n,x){return n+x.shown.length;},0)+' application(s) shown';
   var el=document.getElementById('list');
   if(!v.length){el.innerHTML='<div class="empty">'+(students.length?'No matches.':'No students yet. Click “+ Add student” to start.')+'</div>';return;}
   el.innerHTML=v.map(function(x){
-    var s=x.s,open=!!openIds[s.id],link=safeUrl(s.drive_url);
+    var s=x.s,open=!!openIds[s.id],ld=leadOf(s);
     var counts=PORTALS.map(function(p){var n=x.all.filter(function(a){return a.portal===p;}).length;return n?'<span class="chip '+p.toLowerCase()+'">'+p+' '+n+'</span>':'';}).join('');
-    var nm=link?'<a href="'+esc(link)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Open documents folder">'+esc(s.name)+' ↗</a>':'<span class="nolink" title="No folder link yet">'+esc(s.name)+'</span>';
+    var nm=ld?'<a href="'+esc(CRM_URL+'?lead='+ld.id)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Open this student in the CRM">'+esc(s.name)+' ↗</a>':'<span class="nolink" title="Not a CRM lead yet">'+esc(s.name)+'</span>';
+    var lchip=ld?'<span class="chip" style="background:#E6F4EA;color:#1E6B34" title="CRM lead">Lead '+esc(ld.lead_id||'')+(ld.counsellor?' · '+esc(ld.counsellor):' · Unassigned')+'</span>':'<button onclick="event.stopPropagation();openLeadDialog([\''+s.id+'\'])" style="font-size:11px;padding:3px 8px">+ Add as lead</button>';
     return '<div class="stu'+(open?' open':'')+'" id="stu-'+s.id+'">'
-      +'<div class="sh" onclick="toggle(\''+s.id+'\')"><span class="caret">▶</span><span class="sname">'+nm+'</span><span class="chips">'+(counts||'<span class="chip" style="background:#eee;color:#888">No applications</span>')+'</span><span class="spacer"></span>'+contact(s)
+      +'<div class="sh" onclick="toggle(\''+s.id+'\')"><span class="caret">▶</span><span class="sname">'+nm+'</span><span class="chips">'+lchip+(counts||'<span class="chip" style="background:#eee;color:#888">No applications</span>')+'</span><span class="spacer"></span>'+contact(s)
       +'<button onclick="event.stopPropagation();openStudentModal(\''+s.id+'\')">Edit</button><button class="x" onclick="event.stopPropagation();delStudent(\''+s.id+'\')" title="Delete student">×</button></div>'
       +'<div class="sb">'+(open?body(x):'')+'</div></div>';
   }).join('');
@@ -297,7 +314,10 @@ function openStudentModal(id){
   var s=id?students.find(function(x){return x.id===id;}):null;
   document.getElementById('ms-title').textContent=s?'Edit student':'Add student';
   document.getElementById('ms-name').value=s?s.name:'';
-  document.getElementById('ms-drive').value=s?(s.drive_url||''):'';
+  fillCounsel(document.getElementById('ms-counsel'),true);
+  var _ld=s?leadOf(s):null;
+  document.getElementById('ms-counsel').value=_ld&&_ld.counsellor?_ld.counsellor:(s?'':'__rr');
+  document.getElementById('ms-leadrow').innerHTML=_ld?'Linked CRM lead: <a href="'+esc(CRM_URL+'?lead='+_ld.id)+'" target="_blank" rel="noopener">'+esc(_ld.lead_id||'open')+' ↗</a> · changes to name, phone, email and counsellor here also update the lead.':(s?'<span style="color:var(--ink3)">Not a CRM lead yet. Use “+ Add as lead” on the student row.</span>':'<label style="display:flex;gap:6px;align-items:center;text-transform:none;letter-spacing:0;font-size:13px"><input type="checkbox" id="ms-aslead" checked style="width:auto"> Also add this student to the CRM as a lead (uses the counsellor chosen above)</label>');
   document.getElementById('ms-phone').value=s?(s.phone||''):'';
   document.getElementById('ms-email').value=s?(s.email||''):'';
   document.getElementById('ms-res').style.display='none';
@@ -325,7 +345,6 @@ function searchLeads(){
       document.getElementById('ms-name').value=l.name;
       if(l.mobile)document.getElementById('ms-phone').value=l.mobile;
       if(l.email)document.getElementById('ms-email').value=l.email;
-      if(l.doc_folder_link&&!document.getElementById('ms-drive').value)document.getElementById('ms-drive').value=l.doc_folder_link;
       box.style.display='none';};});
   },250);
 }
@@ -359,20 +378,25 @@ function readBlocks(){
 }
 async function saveStudent(){
   var name=document.getElementById('ms-name').value.trim();
-  var drive=document.getElementById('ms-drive').value.trim();
   if(!name){toast('Please enter the student name.');return;}
-  if(drive&&!safeUrl(drive)){toast('The folder link must start with https://');return;}
   var phone=document.getElementById('ms-phone').value.trim(),email=document.getElementById('ms-email').value.trim();
   if(email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast('Please check the email address.');return;}
-  var row={name:name,drive_url:drive||null,phone:phone||null,email:email||null};
+  var row={name:name,phone:phone||null,email:email||null};
   if(editingId){
     var r=await sb.from('tracker_students').update(row).eq('id',editingId).select().single();
     if(r.error){toast('Could not save: '+r.error.message);return;}
     Object.assign(students.find(function(x){return x.id===editingId;}),r.data);
+    var ld=leadOf(r.data);
+    if(ld){
+      var co=document.getElementById('ms-counsel').value;var lp={name:name,mobile:phone||'',email:email||''};
+      if(co&&co!=='__rr'&&co!==(ld.counsellor||'')){lp.counsellor=co;lp.assigned_at=new Date().toISOString();}
+      var ul=await sb.from('leads').update(lp).eq('id',ld.id).select('id,lead_id,name,mobile,email,counsellor,status');
+      if(ul.error)toast('Student saved, but the CRM lead could not be updated: '+ul.error.message);else if(ul.data&&ul.data[0])leadById[ld.id]=ul.data[0];
+    }
   }else{
     var rb=readBlocks();
     if(rb.bad){toast(rb.bad);return;}
-    if(pickLead)row.lead_id=pickLead.id;
+    if(pickLead){row.lead_id=pickLead.id;leadById[pickLead.id]=pickLead;}
     row.created_by=myName;
     var r2=await sb.from('tracker_students').insert(row).select().single();
     if(r2.error){toast('Could not add: '+r2.error.message+' — has crm_app_tracker.sql been run?');return;}
@@ -383,17 +407,135 @@ async function saveStudent(){
       else apps=apps.concat(ins.data);
     }
     fillSuggestions();
+    var _al=document.getElementById('ms-aslead');
+    if(_al&&_al.checked){var _co=document.getElementById('ms-counsel').value||'__rr';closeModal();await addLeadsFor([r2.data.id],_co);return;}
   }
   closeModal();render();
 }
 
+
+/* ---- CRM leads: one-click add, counsellor, two-way links ---- */
+var CRM_URL='./';            // the CRM page sits next to this page; ?lead=<id> opens that lead
+var team=[],unav=[],leadById={};
+var CRM_ORDER=['New Enquiry','Contacted','Interested','University Shortlist','Documents Pending','Application Submitted','Received Conditional','Received Unconditional','Deposit Paid','Interview Passed','Interview Failed','CAS Applied','CAS Received','Visa Application Submitted','Visa Interview','Visa Received','Visa Rejected','Defer','Enrolled'];
+function todayStr(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+async function loadTeam(){
+  var r=await sb.from('team').select('id,full_name,email,role,office,country,team_category');team=r.data||[];
+  var u=await sb.from('staff_unavailability').select('team_id,from_date,to_date');unav=u.data||[];
+}
+function isDomestic(t){var e=String(t.email||'').toLowerCase();return String(t.team_category||'').toLowerCase()==='domestic'||String(t.full_name||'').trim().toLowerCase()==='anushree jena';}
+function away(t){var d=todayStr();return unav.some(function(u){return u.team_id===t.id&&u.from_date<=d&&d<=u.to_date;});}
+function poolFor(office){return team.filter(function(t){return t.office===office&&(t.role||'Counsellor')==='Counsellor'&&!isDomestic(t)&&!away(t);}).sort(function(a,b){return String(a.full_name).localeCompare(String(b.full_name));});}
+function fillCounsel(sel,forEdit){
+  var staff=team.filter(function(t){return ['Counsellor','Admin','Manager','Director'].indexOf(t.role||'Counsellor')>=0&&!isDomestic(t)&&!away(t);}).sort(function(a,b){return String(a.office).localeCompare(String(b.office))||String(a.full_name).localeCompare(String(b.full_name));});
+  sel.innerHTML=(forEdit?'<option value="">(keep as is)</option>':'')+'<option value="__rr">Round-robin (counsellors of the student’s office)</option><option value="__none">Leave unassigned</option>'+staff.map(function(t){return '<option value="'+esc(t.full_name)+'">'+esc(t.full_name)+' · '+esc(t.office||'')+'</option>';}).join('');
+}
+async function loadLinkedLeads(){
+  leadById={};
+  var ids=students.map(function(s){return s.lead_id;}).filter(Boolean);
+  for(var i=0;i<ids.length;i+=80){
+    var r=await sb.from('leads').select('id,lead_id,name,mobile,email,counsellor,status').in('id',ids.slice(i,i+80));
+    (r.data||[]).forEach(function(l){leadById[l.id]=l;});
+  }
+}
+function leadOf(s){return s&&s.lead_id?leadById[s.lead_id]||null:null;}
+function toAdd(){return students.filter(function(s){return !leadOf(s);});}
+function digits(x){return String(x||'').replace(/\D/g,'');}
+function guessCountry(phone){
+  var d=digits(phone);
+  if(/^(\+?44|0044)/.test(String(phone||'').trim())||d.indexOf('44')===0&&d.length>=11)return 'UK';
+  if(d.indexOf('880')===0)return 'Bangladesh';
+  if(d.indexOf('92')===0&&d.length>=11)return 'Pakistan';
+  return 'India';
+}
+function officeOf(c){return c==='India'?'India HQ':c==='UK'?'UK HQ':c;}
+function crmStatusFor(s){
+  var best=-1;apps.filter(function(a){return a.student_id===s.id;}).forEach(function(a){var i=CRM_ORDER.indexOf(a.status);if(i>best)best=i;});
+  return best>=0?CRM_ORDER[best]:'University Shortlist';
+}
+var dlgIds=null;
+function openLeadDialog(ids){
+  dlgIds=ids&&ids.length?ids:toAdd().map(function(s){return s.id;});
+  if(!dlgIds.length){toast('Every student here is already a CRM lead.');return;}
+  fillCounsel(document.getElementById('ml-counsel'),false);
+  document.getElementById('ml-counsel').value='__rr';
+  document.getElementById('ml-sum').innerHTML='<b>'+dlgIds.length+'</b> student'+(dlgIds.length===1?'':'s')+' will be added to the CRM Leads list'+(dlgIds.length===1?' ('+esc((students.find(function(s){return s.id===dlgIds[0];})||{}).name||'')+')':'')+' with source “Application Tracker”.';
+  document.getElementById('ml-go').disabled=false;
+  document.getElementById('m-lead').classList.add('open');
+}
+function closeLeadDialog(){document.getElementById('m-lead').classList.remove('open');}
+async function runAddLeads(){
+  var co=document.getElementById('ml-counsel').value;
+  document.getElementById('ml-go').disabled=true;document.getElementById('ml-go').textContent='Adding…';
+  closeLeadDialog();
+  await addLeadsFor(dlgIds,co);
+  document.getElementById('ml-go').textContent='Add as leads';
+}
+async function allLeadsMin(){
+  var all=[],from=0,size=1000;
+  for(;;){var r=await sb.from('leads').select('id,lead_id,mobile,email').order('lead_id',{ascending:true}).range(from,from+size-1);
+    if(r.error)throw r.error;all=all.concat(r.data||[]);if(!r.data||r.data.length<size)break;from+=size;}
+  return all;
+}
+async function addLeadsFor(ids,co){
+  var made=0,linked=0,failed=[];
+  try{
+    toast('Adding '+ids.length+' student(s) to leads…');
+    var existing=await allLeadsMin();
+    var byPhone={},byEmail={},maxN=0;
+    existing.forEach(function(l){var p=digits(l.mobile).slice(-10);if(p.length>=8)byPhone[p]=l;var e=String(l.email||'').trim().toLowerCase();if(e)byEmail[e]=l;var n=parseInt(String(l.lead_id||'').split('-')[1]);if(!isNaN(n)&&n>maxN)maxN=n;});
+    var rr={};
+    var rs=await sb.from('round_robin_state').select('*');(rs.data||[]).forEach(function(r){rr[r.office]=r.last_index||0;});
+    var touched={};
+    var rows=[],meta=[];
+    ids.forEach(function(id){
+      var s=students.find(function(x){return x.id===id;});if(!s)return;
+      var hit=byPhone[digits(s.phone).slice(-10)]||byEmail[String(s.email||'').trim().toLowerCase()];
+      if(hit&&(digits(s.phone).length>=8||s.email)){meta.push({s:s,link:hit});return;}
+      var country=guessCountry(s.phone),office=officeOf(country),counsellor='';
+      if(co==='__rr'){var pool=poolFor(office);if(pool.length){var i=(rr[office]||0)%pool.length;counsellor=pool[i].full_name;rr[office]=i+1;touched[office]=1;}}
+      else if(co&&co!=='__none')counsellor=co;
+      maxN++;
+      var row={lead_id:'S4P-'+String(maxN).padStart(4,'0'),name:s.name,mobile:s.phone||'',email:s.email||'',country:country,office:office,source:'Other',status:crmStatusFor(s),priority:'Medium',counsellor:counsellor,notes:'Added from the Applications Tracker.',added_by:me&&me.id};
+      if(counsellor)row.assigned_at=new Date().toISOString();
+      rows.push(row);meta.push({s:s,row:row});
+    });
+    for(var i=0;i<rows.length;i+=40){
+      var chunk=rows.slice(i,i+40);
+      var ins=await sb.from('leads').insert(chunk).select('id,lead_id,name,mobile,email,counsellor,status');
+      if(ins.error){failed.push(chunk.length+' lead(s): '+ins.error.message);continue;}
+      (ins.data||[]).forEach(function(l){var m=meta.find(function(x){return x.row&&x.row.lead_id===l.lead_id;});if(m){m.link=l;made++;}
+        sb.from('activity_log').insert({lead_id:l.id,event_type:'imported',detail:'Added from the Applications Tracker'+(l.counsellor?', assigned to '+l.counsellor:''),actor_name:myName}).then(function(){});});
+    }
+    for(var k=0;k<meta.length;k++){
+      var m=meta[k];if(!m.link)continue;
+      if(m.row)leadById[m.link.id]=m.link;else{leadById[m.link.id]=m.link;linked++;}
+      var u=await sb.from('tracker_students').update({lead_id:m.link.id}).eq('id',m.s.id);
+      if(!u.error)m.s.lead_id=m.link.id;
+    }
+    for(var off in touched){await sb.from('round_robin_state').upsert({office:off,last_index:rr[off]},{onConflict:'office'});}
+  }catch(e){failed.push(String(e.message||e));}
+  render();
+  var msg='Done: '+made+' new lead(s)'+(linked?', '+linked+' linked to an existing lead':'')+'.';
+  if(failed.length)msg+=' Problems: '+failed.join('; ');
+  toast(msg);
+}
+function deepLink(){
+  var q=new URLSearchParams(location.search).get('lead');if(!q)return;
+  var s=students.find(function(x){return x.lead_id===q;});
+  if(s){openIds[s.id]=true;render();var el=document.getElementById('stu-'+s.id);if(el){el.scrollIntoView({block:'center'});el.style.outline='2px solid var(--gold,#C9A84C)';}return;}
+  sb.from('leads').select('id,lead_id,name,mobile,email').eq('id',q).single().then(function(r){
+    if(r.data){openStudentModal();pickLead=r.data;document.getElementById('ms-name').value=r.data.name||'';document.getElementById('ms-phone').value=r.data.mobile||'';document.getElementById('ms-email').value=r.data.email||'';toast('This lead is not in the tracker yet. Add the applications and save.');}
+  });
+}
+
 /* ---- export / import ---- */
-var COLS=['Student','Phone','Email','Drive Link','Portal','University','University Link','Course','Course Link','Status','Education Officer','Officer Phone','Officer Email','Notes','Remarks','Updated'];
+var COLS=['Student','Phone','Email','Portal','University','University Link','Course','Course Link','Status','Education Officer','Officer Phone','Officer Email','Notes','Remarks','Updated'];
 function exportXlsx(){
   var rows=[];
   view().forEach(function(x){
     var list=x.shown.length?x.shown:[null];
-    list.forEach(function(a){rows.push([x.s.name,x.s.phone||'',x.s.email||'',x.s.drive_url||'',a?a.portal:'',a?a.university||'':'',a?a.university_url||'':'',a?a.course||'':'',a?a.course_url||'':'',a?a.status:'',a?a.officer_name||'':'',a?a.officer_phone||'':'',a?a.officer_email||'':'',a?a.notes||'':'',a?a.remarks||'':'',a?(a.updated_at||'').slice(0,10):'']);});
+    list.forEach(function(a){rows.push([x.s.name,x.s.phone||'',x.s.email||'',a?a.portal:'',a?a.university||'':'',a?a.university_url||'':'',a?a.course||'':'',a?a.course_url||'':'',a?a.status:'',a?a.officer_name||'':'',a?a.officer_phone||'':'',a?a.officer_email||'':'',a?a.notes||'':'',a?a.remarks||'':'',a?(a.updated_at||'').slice(0,10):'']);});
   });
   var ws=XLSX.utils.aoa_to_sheet([COLS].concat(rows));
   ws['!cols']=[{wch:26},{wch:16},{wch:28},{wch:40},{wch:8},{wch:30},{wch:30},{wch:36},{wch:30},{wch:26},{wch:16},{wch:28},{wch:36},{wch:36},{wch:12}];
@@ -401,7 +543,7 @@ function exportXlsx(){
   XLSX.writeFile(wb,'applications-tracker-'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 function downloadTemplate(){
-  var ws=XLSX.utils.aoa_to_sheet([COLS.slice(0,15),['Example Student','9876543210','student@email.com','https://drive.google.com/…','KC','University of Leeds','https://…','MSc Data Science','https://…','University Shortlist','Jane Smith','+44 7000 000000','jane@uni.ac.uk','','']]);
+  var ws=XLSX.utils.aoa_to_sheet([COLS.slice(0,15),['Example Student','9876543210','student@email.com','KC','University of Leeds','https://…','MSc Data Science','https://…','University Shortlist','Jane Smith','+44 7000 000000','jane@uni.ac.uk','','']]);
   var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Applications');
   XLSX.writeFile(wb,'applications-tracker-template.xlsx');
 }
@@ -420,7 +562,7 @@ async function importFile(input){
     for(var i=0;i<rows.length;i++){
       var o=rows[i],key=o.name.toLowerCase(),line=i+2;
       var s=byName[key];
-      var drive=o.drive&&safeUrl(o.drive)?o.drive:'';
+      var drive='';
       if(!s){
         var r=await sb.from('tracker_students').insert({name:o.name,phone:o.phone||null,email:o.email||null,drive_url:drive||null,created_by:myName}).select().single();
         if(r.error){skipped.push('Row '+line+' ('+o.name+'): '+r.error.message);continue;}

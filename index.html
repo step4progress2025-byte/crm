@@ -252,6 +252,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
 /* Home page sections: closed by default, click the header to open */
 #sc-home .card.hc-closed>:not(.card-h){display:none !important}
 #sc-home .card>.card-h{cursor:pointer;user-select:none}
+.india-ro,.india-ro *{-webkit-user-select:none!important;user-select:none!important}
 #sc-home .card>.card-h .hc-caret{margin-left:auto;font-size:12px;color:var(--ink3);transition:transform .15s;display:inline-block}
 #sc-home .card:not(.hc-closed)>.card-h .hc-caret{transform:rotate(90deg)}
 .tbl th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--cream);white-space:nowrap}
@@ -646,6 +647,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <div class="sng">Workspace</div>
       <button class="ni" id="ni-team" data-nav="team" onclick="nav('team',this)"><i class="ti ti-id-badge" style="color:var(--violet)"></i>Team</button>
       <button class="ni" data-nav="teamchat" onclick="nav('teamchat',this)"><i class="ti ti-brand-slack" style="color:var(--sky)"></i>Team Chat<span class="nbadge" id="nb-teamchat" style="display:none">0</span></button>
+      <button class="ni" data-nav="uksponsors" id="ni-uksponsors" onclick="nav('uksponsors',this)"><i class="ti ti-building-community" style="color:var(--pine)"></i>UK Sponsors</button>
       <button class="ni" data-nav="events" onclick="nav('events',this)"><i class="ti ti-calendar-event" style="color:var(--gold)"></i>Events</button><button class="ni" data-nav="studentportal" id="ni-studentportal" onclick="nav('studentportal',this)" style="display:none"><i class="ti ti-school" style="color:var(--gold)"></i>Student Portal</button><button class="ni" data-nav="import" onclick="nav('import',this)"><i class="ti ti-file-import" style="color:var(--teal)"></i>Import data</button>
       <button class="ni" data-nav="finance" id="ni-finance" style="display:none" onclick="nav('finance',this)"><i class="ti ti-cash" style="color:var(--sage)"></i>Finance</button>       <button class="ni" data-nav="digitalmarketing" id="ni-digitalmarketing" style="display:none" onclick="nav('digitalmarketing',this)"><i class="ti ti-speakerphone" style="color:var(--rose)"></i>Digital Marketing</button>       <button class="ni" data-nav="reports" id="ni-reports" onclick="nav('reports',this)"><i class="ti ti-chart-infographic" style="color:var(--sky)"></i>Reports</button>       <button class="ni" data-nav="subteam-detail" id="ni-subteam" onclick="nav('subteam-detail',this)"><i class="ti ti-layout-dashboard" style="color:var(--violet)"></i>Team Dashboards</button>       <button class="ni" data-nav="productivity" onclick="nav('productivity',this)"><i class="ti ti-headset" style="color:var(--pine3)"></i>Productivity</button>       <button class="ni" data-nav="coursefinder" onclick="nav('coursefinder',this)"><i class="ti ti-search" style="color:var(--teal)"></i>Course Finder</button>      <button class="ni" data-nav="scholarships" onclick="nav('scholarships',this)"><i class="ti ti-award" style="color:var(--gold)"></i>Scholarship Finder</button>       <button class="ni" data-nav="resources" onclick="nav('resources',this)"><i class="ti ti-books" style="color:var(--gold)"></i>Resource Library</button>       <button class="ni" data-nav="apptracker" id="ni-apptracker" style="display:none" onclick="nav('apptracker',this)"><i class="ti ti-list-check" style="color:var(--pine3)"></i>Applications Tracker</button>       <button class="ni" data-nav="resumes" onclick="nav('resumes',this)"><i class="ti ti-file-cv" style="color:var(--sky)"></i>Resumes<span class="nbadge" id="nb-resumes">0</span></button>       <button class="ni" data-nav="ai" onclick="nav('ai',this)"><i class="ti ti-robot" style="color:var(--violet)"></i>AI Counsellor</button>
     </div>
@@ -1633,6 +1635,9 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
       <section id="sc-apptracker" class="screen">
         <div class="card" style="margin-bottom:10px"><div class="card-h"><span class="card-t">📋 Applications Tracker — KC · GB · S4P</span><a href="tracker.html" target="_blank" rel="noopener" class="btn btn-sm" style="text-decoration:none">Open in new tab ↗</a></div></div>
         <iframe id="apptracker-frame" title="Applications tracker" style="width:100%;height:calc(100vh - 170px);min-height:520px;border:1px solid var(--line);border-radius:8px;background:#fff" data-src="tracker.html?embed=1"></iframe>
+      </section>
+      <section id="sc-uksponsors" class="screen">
+        <iframe id="uksponsors-frame" title="UK sponsors" style="width:100%;height:calc(100vh - 110px);min-height:560px;border:1px solid var(--line);border-radius:8px;background:#fff" data-src="uk-sponsors.html?embed=1"></iframe>
       </section>
       <section id="sc-resources" class="screen">
         <div class="card" style="margin-bottom:16px">
@@ -2829,6 +2834,7 @@ What would you like help with today?</div>
         <button class="btn" title="Sponsor/parent view link" onclick="generateSponsorLink()"><i class="ti ti-link"></i></button>
         <button class="btn" title="Schedule a meeting" onclick="openScheduleMeetingModal()"><i class="ti ti-calendar-plus"></i></button>
         <button class="btn" id="btn-edit-lead-fs" onclick="editLeadFS()"><i class="ti ti-edit"></i>Edit</button>
+        <a class="btn" id="btn-tracker-link" href="tracker.html" target="_blank" rel="noopener" style="display:none;text-decoration:none"><i class="ti ti-clipboard-list"></i>Open in Tracker ↗</a>
         <button class="btn" id="btn-transfer-lead-fs" onclick="openTransferLead([curId])"><i class="ti ti-arrows-exchange"></i>Transfer</button>
         <button class="btn btn-del" id="btn-delete-lead-fs" onclick="deleteLeadFS()"><i class="ti ti-trash"></i>Delete</button>
       </div>
@@ -3895,6 +3901,7 @@ function waDigits(mobile){
   return (mobile||'').replace(/[^\d]/g,'');
 }
 function contactIcons(mobile,email,opts){
+  try{ const _l=opts&&opts.leadId&&(allLeads||[]).find(x=>x.id===opts.leadId); if(_l&&isIndiaLeadReadOnly(_l))return '<span style="color:var(--ink3);font-size:11px">view only</span>'; }catch(e){}
   opts=opts||{};
   const size=opts.size||24;
   const gap=opts.gap||6;
@@ -5724,7 +5731,7 @@ function opsViewScopedLeads(sourceLeads){
   } else if(isSuperAdmin){
     scoped=sourceLeads;
   } else if(myRole==='Admin'||myRole==='Manager'||myRole==='Director'){
-    scoped=sourceLeads.filter(l=>l.country===myCountry);
+    scoped=sourceLeads.filter(l=>l.country===myCountry||(myRole==='Director'&&isIndiaViewer()&&l.country==='India')); // Directors also see India, view-only
   } else if(myRole==='Counsellor'){
     scoped=sourceLeads.filter(l=>l.counsellor===myName);
   } else {
@@ -6279,8 +6286,9 @@ async function scopedLeadsQuery(){
     // view; that is the intended behaviour under this rule.
     q=nameMatch(q,'counsellor',myName);
   } else {
-    // Admin/Manager/Director: exactly their own country.
-    if(myCountry) q=q.eq('country',myCountry);
+    // Admin/Manager/Director: exactly their own country. Directors of other countries also SEE India (view-only).
+    if(myCountry&&myRole==='Director'&&isIndiaViewer()) q=q.in('country',[myCountry,'India']);
+    else if(myCountry) q=q.eq('country',myCountry);
     else if(myOffice) q=q.eq('office',myOffice);
   }
 
@@ -6584,6 +6592,7 @@ async function loadLeads(){
     from+=PAGE_SIZE;
   }
   allLeads=canonMine(allRows);syncLeadsView();
+  if(_deepLeadId&&!window._deepLeadDone){window._deepLeadDone=true;setTimeout(()=>{try{const l=(allLeads||[]).find(x=>x.id===_deepLeadId);if(l)openLeadDetail(l.id);else toast('That lead is not visible to your account.');}catch(e){}},400);}
   return true;
 }
 async function loadCoaching(){
@@ -6729,7 +6738,7 @@ function nav(id,btn){
     sbEl.classList.remove('mobile-open');
     document.getElementById('mobile-sidebar-overlay')?.classList.remove('open');
   }
-  const T={home:'Home',dashboard:'Dashboard',taskdashboard:'Task Dashboard',queries:'Queries',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digitalmarketing:'Digital Marketing',reports:'Reports',coursefinder:'Course & University Finder',scholarships:'Scholarship Finder',resources:'Resource Library',apptracker:'Applications Tracker',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail',studentportal:'Student Portal',teamchat:'Team Chat'};
+  const T={uksponsors:'UK Sponsors',home:'Home',dashboard:'Dashboard',taskdashboard:'Task Dashboard',queries:'Queries',leads:'Lead database',toolleads:'Tool Leads',coaching:'Coaching tracker',followup:'Follow-up planner',team:'Team',events:'Events',import:'Import data',finance:'Finance & Commission',digitalmarketing:'Digital Marketing',reports:'Reports',coursefinder:'Course & University Finder',scholarships:'Scholarship Finder',resources:'Resource Library',apptracker:'Applications Tracker',resumes:'Resumes',productivity:'Productivity',ai:'AI Counsellor','subteam-detail':'Sub-team Detail',studentportal:'Student Portal',teamchat:'Team Chat'};
   document.getElementById('topbar-title').textContent=T[id]||id;
   { const _c=document.querySelector('.content'); if(_c){ _c.scrollTop=0; _c.focus({preventScroll:true}); } }
   // Persistent Home button — visible on every screen except the
@@ -6794,6 +6803,7 @@ function nav(id,btn){
   if(id==='scholarships')initScholarships();
   if(id==='resources')loadResourcesAdmin();
   if(id==='apptracker'&&!TRACKER_EMAILS.includes(String((currentUser&&currentUser.email)||'').toLowerCase())){nav('home',document.querySelector('.ni[data-nav="home"]'));return;}
+  if(id==='uksponsors'){const f=document.getElementById('uksponsors-frame');if(f&&!f.getAttribute('src'))f.setAttribute('src',f.getAttribute('data-src')+'&v='+Date.now());}
   if(id==='apptracker'){const f=document.getElementById('apptracker-frame');if(f&&!f.getAttribute('src'))f.setAttribute('src',f.getAttribute('data-src')+'&v='+Date.now());}
   if(id==='resumes'){loadResumes().then(renderResumesAdmin);}
   if(id==='finance')renderFinance();
@@ -7360,7 +7370,7 @@ function renderLeadsBoard(){
     const cards=colLeads.map(l=>{
       const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
       const statusOptions=KANBAN_COLUMNS.map(s=>`<option value="${esc(s)}" ${s===l.status?'selected':''}>${esc(s)}</option>`).join('');
-      return `<div class="kb-card" draggable="true" data-lead-id="${l.id}" ondragstart="onKbCardDragStart(event,'${l.id}')" onclick="openLeadDetail('${l.id}')" style="background:#fff;border:1px solid var(--line2);border-radius:var(--r);padding:10px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.04)">
+      return `<div class="kb-card${isIndiaLeadReadOnly(l)?' india-ro':''}" draggable="${isIndiaLeadReadOnly(l)?'false':'true'}" data-lead-id="${l.id}" ondragstart="onKbCardDragStart(event,'${l.id}')" onclick="openLeadDetail('${l.id}')" style="background:#fff;border:1px solid var(--line2);border-radius:var(--r);padding:10px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.04)">
         <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px">${esc(l.name)}${leadIntelligenceBadge(l)}</div>
         <div style="font-size:11px;color:var(--ink3);margin-bottom:6px">${esc(l.program||'—')} → ${esc(l.destination||'—')}</div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
@@ -7459,6 +7469,7 @@ function fillSelectKeep(sel,placeholder,values,isCount){
   sel.value=cur||'';
 }
 const TRACKER_EMAILS=['india@step4progress.com','pavitra@step4progress.com'];
+const _deepLeadId=new URLSearchParams(location.search).get('lead'); // link from the Applications Tracker: opens this lead
 function stSelected(){const el=document.getElementById('ls-st');return el&&el.value?el.value.split('|').filter(Boolean):[];}
 function syncStFilter(){
   const panel=document.getElementById('ls-st-panel'),btn=document.getElementById('ls-st-btn');
@@ -7575,7 +7586,7 @@ function _renderLeadsCore(){
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
     const ps=PS[l.priority]||{bg:'#eee',tx:'#555'};
     const capturedStr=l.created_at?new Date(l.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
-    return `<tr data-lead-id="${l.id}" onclick="openLeadDetail('${l.id}')">
+    return `<tr data-lead-id="${l.id}"${isIndiaLeadReadOnly(l)?' class="india-ro"':''} onclick="openLeadDetail('${l.id}')">
       ${canBulkAct?`<td onclick="event.stopPropagation()"><input type="checkbox" class="bulk-lead-checkbox" data-id="${l.id}" ${bulkSel.has(String(l.id))?'checked':''} onchange="onBulkCheckboxChange()" style="cursor:pointer"></td>`:''}
       <td style="font-size:12px;color:var(--ink3);font-weight:600">${i+1}</td>
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
@@ -7672,7 +7683,7 @@ function renderToolLeads(){
   tb.innerHTML=f.map((l,i)=>{
     const[abg,atx]=AVC[i%AVC.length];
     const ss=SS[l.status]||{bg:'#eee',tx:'#555'};
-    return `<tr data-lead-id="${l.id}" onclick="openLeadDetail('${l.id}')">
+    return `<tr data-lead-id="${l.id}"${isIndiaLeadReadOnly(l)?' class="india-ro"':''} onclick="openLeadDetail('${l.id}')">
       <td style="font-size:11px;font-weight:600;color:var(--pine);font-style:italic">${esc(l.lead_id||l.id.substring(0,8))}</td>
       <td><div class="nc"><div class="av" style="background:${abg};color:${atx}">${ini(l.name)}</div><div><div class="ln">${esc(l.name)}</div></div></div></td>
       <td style="font-size:12px;color:var(--ink3)">${esc(l.mobile||'—')}</td>
@@ -7748,6 +7759,7 @@ function openLeadDetail(id){
   const l=leads.find(x=>x.id===id);if(!l)return;
   if(!canViewLead(l)){toast('This lead is outside what your account can access.');return;}
   curId=id;
+  try{const _tl=document.getElementById('btn-tracker-link');if(_tl){const _ok=TRACKER_EMAILS.includes(String((currentUser&&currentUser.email)||'').toLowerCase());_tl.style.display=_ok?'':'none';_tl.href='tracker.html?lead='+encodeURIComponent(id);}}catch(e){}
   logViewIfNeeded(id);
   loadActivityTimeline(id,'ld-response-stat-banner');
   document.getElementById('ld-id').textContent=l.lead_id||id.substring(0,8);
@@ -7797,11 +7809,12 @@ function openLeadDetail(id){
   // too, and RLS enforces it server-side).
   {
     const ro=isIndiaLeadReadOnly(l);
+    try{ document.getElementById('modal-lead-detail').classList.toggle('india-ro',!!ro); }catch(e){}
     ['btn-delete-lead','btn-delete-lead-fs','btn-edit-lead-fs','btn-transfer-lead','btn-transfer-lead-fs'].forEach(bid=>{const b=document.getElementById(bid);if(!b)return;const isDel=bid.startsWith('btn-delete');const isTr=bid.startsWith('btn-transfer');b.style.display=(ro||(isDel&&!canDeleteLeads())||(isTr&&!canTransferLead(l)))?'none':'';});
     const ss=document.getElementById('ld-ssel'); if(ss)ss.disabled=ro;
     if(ro){
       const banner=document.getElementById('ld-viewonly-banner');
-      if(banner){banner.style.display='none';}
+      if(banner){banner.style.display='block';banner.textContent='India lead: view only. You can read it but not change, copy or export it.';}
     } else {
       const banner=document.getElementById('ld-viewonly-banner');
       if(banner)banner.style.display='none';
@@ -10608,18 +10621,56 @@ function canResetPasswordFor(t){
 // (hides/blocks controls for clean UX); the real enforcement is the
 // matching Supabase RLS policies in the accompanying migration, since a
 // browser console can bypass front-end checks alone.
+// ── India view-only: block copying India lead / team details (Jisan, Simun, Super Admins, Directors) ──
+(function(){
+  function norm(t){return String(t||'').toLowerCase().replace(/\s+/g,' ').trim();}
+  function digits(t){return String(t||'').replace(/\D/g,'');}
+  function touchesIndia(sel){
+    if(!isIndiaViewer())return false;
+    const raw=norm(sel); if(!raw)return false; const dg=digits(sel);
+    const hit=(v)=>{ v=norm(v); return v.length>=5&&raw.includes(v); };
+    for(const l of (allLeads||[])){
+      if(l.country!=='India')continue;
+      const m=digits(l.mobile); if(m.length>=8&&dg.includes(m.slice(-8)))return true;
+      if(hit(l.email)||hit(l.name))return true;
+    }
+    for(const t of (teamList||[])){
+      if(t.country!=='India')continue; if(hit(t.email)||hit(t.full_name))return true;
+    }
+    return false;
+  }
+  function block(e){
+    try{
+      const g=window.getSelection(); const sel=String(g||''); const el=document.activeElement;
+      let txt=sel; if(!txt&&el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA'))txt=String(el.value||'').substring(el.selectionStart||0,el.selectionEnd||0);
+      const par=g&&g.anchorNode&&(g.anchorNode.nodeType===1?g.anchorNode:g.anchorNode.parentElement);
+      const inRo=!!(sel&&par&&par.closest&&par.closest('.india-ro'));
+      if(isIndiaViewer()&&(inRo||touchesIndia(txt))){ e.preventDefault(); if(e.clipboardData)e.clipboardData.setData('text/plain',''); toast('India leads and accounts are view-only: copying is switched off.'); }
+    }catch(err){}
+  }
+  document.addEventListener('copy',block,true);
+  document.addEventListener('cut',block,true);
+  document.addEventListener('dragstart',e=>{ if(isIndiaViewer()&&e.target&&e.target.closest&&e.target.closest('.india-ro'))e.preventDefault(); },true);
+})();
 function isIndiaLocked(){
   return isSuperAdmin && !isOwner;
 }
 // Leads: Jisan and Simun now SEE India's leads (view-only for anything outside their own country), so the old lead-level India lock is off.
-function isIndiaLeadLock(){return false;}
+// India is VIEW-ONLY for everyone except the owners (India, Pavitra) and the India office's own staff:
+// Jisan, Simun, any Super Admin, and Directors of other countries can SEE India's leads and team accounts,
+// but cannot edit, delete, transfer, assign, add, export or copy them. The database enforces the same rule
+// (crm_india_view_only.sql), so this front-end half is only for clean screens.
+function isIndiaViewer(){
+  if(isOwner)return false;
+  if(isSuperAdmin||isJisanOrSimun())return true;
+  return myRole==='Director'&&String(myCountry||'').toLowerCase()!=='india'&&!/^india/i.test(String(myOffice||''));
+}
+function isIndiaLeadLock(){return isIndiaViewer();}
 function isIndiaLeadReadOnly(lead){
-  // Jisan and Simun can edit/delete/transfer leads of ANY office or country.
-  if(isJisanOrSimun())return false;
-  return isIndiaLocked() && (lead?.country==='India');
+  return isIndiaViewer() && (lead?.country==='India');
 }
 function isIndiaTeamReadOnly(t){
-  return isIndiaLocked() && (t?.country==='India');
+  return (isIndiaLocked()||isIndiaViewer()) && (t?.country==='India');
 }
 // ── Admin password reset ──
 // Passwords are one-way hashed by Supabase Auth and can never be viewed —
@@ -11141,6 +11192,7 @@ async function doImport(){
 }
 
 function buildCSV(rows){
+  if(isIndiaViewer())rows=(rows||[]).filter(l=>l.country!=='India'); // India is view-only: never exported
   const H=['Lead ID','Name','Mobile','Email','City','DOB','Qualification','Program','Destination','Status','Source','Priority','Country','Office','Counsellor','Follow-up','Notes','Intake Month','IELTS Status','IELTS Score','Budget','English','Created'];
   const lines=rows.map(l=>[l.lead_id,l.name,l.mobile,l.email,l.city,l.dob,l.qualification,l.program,l.destination,l.status,l.source,l.priority,l.country,l.office,l.counsellor,l.next_followup,l.notes,l.intake_month,l.ielts_status,l.ielts_score,l.budget_range,l.english_status,l.created_at].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(','));
   return[H.join(','),...lines].join('\n');
@@ -11167,6 +11219,7 @@ async function logExport(filename,csv){
 }
 function exportCSV(){
   if(!leads.length){toast('No leads to export.');return;}
+  if(isIndiaViewer()&&!leads.some(l=>l.country!=='India')){toast('India leads are view-only and cannot be exported.');return;}
   downloadCSV(buildCSV(leads),'step4progress_all_leads.csv');
   toast('Exported '+leads.length+' leads.');
 }

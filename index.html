@@ -7862,8 +7862,45 @@ async function loadPortalLinkFS(id){
     box.innerHTML=`<div><b>${esc(d.student_name||'Student')}</b> <span style="font-size:11px">· linked ${fmt(d.linked_at)} by ${esc(d.method)}</span></div>
       <div style="font-size:12px;margin:2px 0 8px">${esc(d.student_phone||'')} ${esc(d.student_email||'')}</div>
       <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px">Documents the student uploaded</div>${docs}
-      ${ro?'':`<div style="margin-top:10px"><button class="btn btn-del" onclick="portalUnlink('${id}')">Unlink</button></div>`}`;
+      <div style="margin-top:10px"><button class="btn" style="background:var(--pine);color:#fff" onclick="portalOpenProgress('${id}')"><i class="ti ti-chart-bar"></i> View progress &amp; scores</button>
+      ${ro?'':`<button class="btn btn-del" style="margin-left:6px" onclick="portalUnlink('${id}')">Unlink</button>`}</div>`;
   }catch(e){ box.innerHTML='<span style="color:var(--rose)">'+esc(String(e.message||e))+'</span>'; }
+}
+async function portalOpenProgress(id){
+  let ov=document.getElementById('portal-progress-ov'); if(ov)ov.remove();
+  ov=document.createElement('div'); ov.id='portal-progress-ov';
+  ov.style.cssText='position:fixed;inset:0;z-index:400;background:rgba(28,25,23,.6);overflow:auto;padding:24px';
+  ov.innerHTML='<div style="max-width:980px;margin:0 auto;background:var(--cream);border-radius:14px;padding:20px 24px" id="portal-progress-body">Loading…</div>';
+  ov.addEventListener('click',e=>{ if(e.target===ov)ov.remove(); });
+  document.body.appendChild(ov);
+  const box=document.getElementById('portal-progress-body');
+  try{
+    const d=await leadPortalCall({action:'progress',lead_id:id});
+    if(!d.linked){ box.innerHTML='Not connected to a student portal account.'; return; }
+    const fmt=t=>{try{return t?new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';}catch(e){return '—';}};
+    const s=d.student||{}, g=d.goal;
+    const tile=(k,v)=>`<div style="background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px"><div style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">${esc(k)}</div><div style="font-size:20px;font-weight:600;color:var(--pine)">${esc(v==null?'—':String(v))}</div></div>`;
+    const sec=(t,b)=>`<div style="margin-top:18px"><div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">${t}</div>${b}</div>`;
+    const tbl=(heads,rows)=>rows.length?`<div class="tw"><table class="tbl"><thead><tr>${heads.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td style="font-size:12.5px">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'<div style="font-size:13px;color:var(--ink3);font-style:italic">Nothing yet.</div>';
+    const band=v=>v==null?'—':Number(v).toFixed(1);
+    const mocks=(d.mocks||[]);
+    const trend=mocks.filter(m=>m.overall!=null).slice(0,8).reverse();
+    const spark=trend.length>1?`<div style="display:flex;gap:4px;align-items:flex-end;height:44px;margin-bottom:8px">${trend.map(m=>`<div title="${esc(fmt(m.created_at))}: ${band(m.overall)}" style="width:22px;background:var(--pine);border-radius:3px 3px 0 0;height:${Math.max(6,Math.round(Number(m.overall)/9*44))}px"></div>`).join('')}</div>`:'';
+    const sims=(d.simulations||[]).map(x=>{const o=x.overall||{};return [esc(String(x.mock_id||'').replace('prem_','').replace('_',' ')),o.overall!=null?esc(String(o.overall)):'not scored',fmt(x.updated_at)];});
+    const attRows=Object.entries(d.attempts_by_test||{}).map(([k,v])=>[esc(k),String(v.n),v.t?Math.round(100*v.c/v.t)+'%':'—',fmt(v.last)]);
+    const lessonRows=Object.entries((d.lessons&&d.lessons.by_track)||{}).sort((a,b)=>b[1]-a[1]).map(([k,n])=>[esc(k),String(n)]);
+    const a=d.asha||{};
+    const plans=(d.plans||[]).map(p=>[esc(p.plan_code),`${p.mocks_used}/${p.mocks_total} mocks used`,'until '+fmt(p.expires_at)]).concat((d.sim_passes||[]).map(p=>['Simulation pass '+esc(p.exam),p.used_at?'used '+fmt(p.used_at):'not used yet','until '+fmt(p.expires_at)]));
+    box.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><div style="font-size:11px;color:var(--ink3)">STUDENT PORTAL · READ ONLY</div><div style="font-family:var(--font-h);font-size:24px;color:var(--pine)">${esc(s.full_name||'Student')}</div><div style="font-size:12px;color:var(--ink3)">Joined ${fmt(s.created_at)} · last active ${fmt(s.last_activity_date)}</div></div><button class="btn" onclick="document.getElementById('portal-progress-ov').remove()">Close</button></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">${tile('Day streak',s.current_streak)}${tile('Best streak',s.longest_streak)}${tile('XP',s.total_xp)}${tile('Lessons done',d.lessons&&d.lessons.total)}${tile('Words mastered',d.vocab?d.vocab.mastered+' / '+d.vocab.total:null)}${g?tile('Goal',(g.exam||'')+' '+(g.target_band||'')):''}${g&&g.exam_date?tile('Exam date',fmt(g.exam_date)):''}</div>
+      ${sec('Full mock results (bands)',spark+tbl(['Date','Exam','Overall','Listening','Reading','Writing','Speaking'],mocks.map(m=>[fmt(m.created_at),esc(m.test_key),`<b>${band(m.overall)}</b>`,band(m.listening),band(m.reading),band(m.writing),band(m.speaking)])))}
+      ${sec('Exam simulations',tbl(['Simulation','Overall','Date'],sims))}
+      ${sec('Practice tests (section scores)',tbl(['Test','Attempts','Average','Last attempt'],attRows))}
+      ${sec('Lessons completed by track',tbl(['Track','Lessons'],lessonRows))}
+      ${sec('Asha speaking practice',a.sessions?`<div style="font-size:13px">${a.sessions} sessions · last ${fmt(a.last)} · average pace ${a.avg_wpm==null?'—':a.avg_wpm+' words/min'} · fillers per session ${a.avg_fillers==null?'—':a.avg_fillers} · eye contact ${a.avg_eye==null?'—':a.avg_eye+'%'}</div>`:'<div style="font-size:13px;color:var(--ink3);font-style:italic">No practice sessions yet.</div>')}
+      ${sec('Plans and passes',tbl(['Plan','Use','Valid'],plans))}
+      <div style="margin-top:16px;font-size:11.5px;color:var(--ink3)">Scores are practice estimates. Recordings and the student's written answers are private to the student and are not shown here.</div>`;
+  }catch(e){ box.innerHTML='<span style="color:var(--rose)">'+esc(String(e.message||e))+'</span> <button class="btn" onclick="document.getElementById(\'portal-progress-ov\').remove()">Close</button>'; }
 }
 async function portalSendInvite(id){
   const ex=document.getElementById('ld-portal-extra'); if(ex)ex.innerHTML='Creating link…';

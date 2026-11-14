@@ -2865,6 +2865,10 @@ What would you like help with today?</div>
             <div class="dfield"><div class="dlabel">Date of birth</div><div class="dvalue" id="ld-dob"></div></div>
             <div class="dfield"><div class="dlabel">Qualification</div><div class="dvalue" id="ld-qual"></div></div>
           </div>
+          <div class="card" id="ld-portal-card">
+            <div class="card-h"><span class="card-t">🎓 Student portal</span></div>
+            <div id="ld-portal-body" style="font-size:13px;color:var(--ink3)">Loading…</div>
+          </div>
           <div class="card" style="margin-top:0">
             <div class="card-h"><span class="card-t">Program</span></div>
             <div class="dfield"><div class="dlabel">Program interest</div><div class="dvalue" id="ld-prog"></div></div>
@@ -7821,12 +7825,82 @@ function openLeadDetail(id){
     }
   }
   loadDocsFS(id);
+  try{ loadPortalLinkFS(id); }catch(e){}
   loadUniversityLinks(id,true);
   loadActivityLogFS(id);
   loadRemindersFS(id);
   loadUniAppsFS(id);
   loadSopDocuments(id,true);
   broadcastStartEditing(id);
+}
+// ── Student portal link on the lead page (invite, link by hand, unlink, the student's own uploads) ──
+const LEAD_PORTAL_FN='https://jvreglqrrdnwttjasvwg.supabase.co/functions/v1/lead-portal';
+async function leadPortalCall(body){
+  const{data:sd}=await sb.auth.getSession(); const token=sd&&sd.session&&sd.session.access_token;
+  if(!token)throw new Error('Not logged in');
+  const r=await fetch(LEAD_PORTAL_FN,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token,apikey:SUPABASE_KEY},body:JSON.stringify(body)});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.error||('Request failed ('+r.status+')'));
+  return d;
+}
+async function loadPortalLinkFS(id){
+  const box=document.getElementById('ld-portal-body'); if(!box)return;
+  box.innerHTML='Loading…';
+  const l=leads.find(x=>x.id===id); const ro=l&&isIndiaLeadReadOnly(l);
+  try{
+    const d=await leadPortalCall({action:'status',lead_id:id});
+    if(curId!==id)return;
+    const fmt=t=>{try{return new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}catch(e){return '';}};
+    if(!d.linked){
+      box.innerHTML=`<div style="margin-bottom:8px">Not connected to a student portal account yet.${d.invite_open?' An invite is open and waiting.':''}</div>
+        ${ro?'':`<button class="btn" onclick="portalSendInvite('${id}')"><i class="ti ti-send"></i> Send portal invite</button>
+        <button class="btn" onclick="portalFindStudent('${id}')" style="margin-left:6px"><i class="ti ti-link"></i> Link by hand</button>`}
+        <div id="ld-portal-extra" style="margin-top:10px"></div>`;
+      return;
+    }
+    const docs=(d.documents||[]).map(x=>`<div style="padding:3px 0;border-top:1px solid var(--line)">${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener" style="color:var(--pine)">${esc(x.doc_name)}</a>`:esc(x.doc_name)} <span style="font-size:11px;color:var(--ink3)">${esc(x.file_name||'')} · ${fmt(x.created_at)}${x.synced?' · in checklist':' · not in checklist yet'}</span></div>`).join('')||'<div style="font-style:italic">No uploads yet.</div>';
+    box.innerHTML=`<div><b>${esc(d.student_name||'Student')}</b> <span style="font-size:11px">· linked ${fmt(d.linked_at)} by ${esc(d.method)}</span></div>
+      <div style="font-size:12px;margin:2px 0 8px">${esc(d.student_phone||'')} ${esc(d.student_email||'')}</div>
+      <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px">Documents the student uploaded</div>${docs}
+      ${ro?'':`<div style="margin-top:10px"><button class="btn btn-del" onclick="portalUnlink('${id}')">Unlink</button></div>`}`;
+  }catch(e){ box.innerHTML='<span style="color:var(--rose)">'+esc(String(e.message||e))+'</span>'; }
+}
+async function portalSendInvite(id){
+  const ex=document.getElementById('ld-portal-extra'); if(ex)ex.innerHTML='Creating link…';
+  try{
+    const d=await leadPortalCall({action:'invite',lead_id:id});
+    if(d.status==='linked'){ toast('Already connected.'); loadPortalLinkFS(id); return; }
+    const l=leads.find(x=>x.id===id)||{}; const digits=String(l.mobile||'').replace(/\D/g,'');
+    const msg='Hi '+(l.name||'')+', please open this link to set up your Step4Progress student portal. It connects your account to your counsellor: '+d.link;
+    ex.innerHTML=`<div style="font-size:12px;margin-bottom:4px">One-time link, valid 14 days:</div>
+      <input id="ld-portal-link" readonly value="${esc(d.link)}" style="width:100%;font-size:12px;padding:6px;border:1px solid var(--line);border-radius:6px" onclick="this.select()">
+      <div style="margin-top:6px"><button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('ld-portal-link').value);toast('Link copied')">Copy</button>
+      ${digits?`<a class="btn" style="background:#25D366;color:#fff;border-color:#25D366;text-decoration:none;margin-left:6px" target="_blank" rel="noopener" href="https://wa.me/${digits}?text=${encodeURIComponent(msg)}">Send on WhatsApp</a>`:''}</div>`;
+  }catch(e){ if(ex)ex.innerHTML='<span style="color:var(--rose)">'+esc(String(e.message||e))+'</span>'; }
+}
+function portalFindStudent(id){
+  const ex=document.getElementById('ld-portal-extra'); if(!ex)return;
+  ex.innerHTML=`<input id="ld-portal-q" placeholder="Student name or phone (3+ characters)" style="width:100%;font-size:12px;padding:6px;border:1px solid var(--line);border-radius:6px" onkeydown="if(event.key==='Enter')portalSearch('${id}')">
+    <div style="margin-top:6px"><button class="btn" onclick="portalSearch('${id}')">Search</button></div><div id="ld-portal-res" style="margin-top:6px"></div>`;
+}
+async function portalSearch(id){
+  const q=(document.getElementById('ld-portal-q')||{}).value||''; const out=document.getElementById('ld-portal-res'); if(!out)return;
+  out.textContent='Searching…';
+  try{
+    const d=await leadPortalCall({action:'find',lead_id:id,query:q});
+    out.innerHTML=(d.students||[]).map(s=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-top:1px solid var(--line)"><span>${esc(s.name||'(no name)')} <span style="font-size:11px;color:var(--ink3)">${esc(s.phone||'')}${s.linked_elsewhere?' · linked to another lead':''}</span></span>
+      <button class="btn" onclick="portalLinkStudent('${id}','${s.id}',${s.linked_elsewhere?'true':'false'})">Link</button></div>`).join('')||'<i>No students found.</i>';
+  }catch(e){ out.innerHTML='<span style="color:var(--rose)">'+esc(String(e.message||e))+'</span>'; }
+}
+async function portalLinkStudent(id,sid,elsewhere){
+  if(!confirm(elsewhere?'This student is linked to another lead. Moving the link to this lead removes the old one. Continue?':'Link this student to this lead?'))return;
+  try{ await leadPortalCall({action:'link',lead_id:id,student_id:sid}); toast('Linked.'); loadPortalLinkFS(id); }
+  catch(e){ toast(String(e.message||e)); }
+}
+async function portalUnlink(id){
+  if(!confirm('Unlink this student from the lead? The student keeps their portal account.'))return;
+  try{ await leadPortalCall({action:'unlink',lead_id:id}); toast('Unlinked.'); loadPortalLinkFS(id); }
+  catch(e){ toast(String(e.message||e)); }
 }
 function closeLeadDetail(){
   if(curId) broadcastStopEditing(curId);
@@ -10393,7 +10467,7 @@ function renderStudentPortalTable(allStudents){
         <td style="font-size:12px">${s.created_at?new Date(s.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—'}</td>
         <td style="font-size:12px" title="${docList.replace(/<br>/g,', ').replace(/"/g,'')}">${docCount} uploaded (${syncedCount} synced)</td>
         <td style="font-size:12px">${recCount?`<span onclick="viewStudentRecordings('${s.id}')" style="color:var(--pine);cursor:pointer;text-decoration:underline">${recCount} recording${recCount===1?'':'s'}</span>`:'<span style="color:var(--ink3);font-style:italic">None yet</span>'}</td>
-        <td style="font-size:12px">${s.crm_lead_id?`<span onclick="openLeadDetail('${s.crm_lead_id}')" style="color:var(--pine);cursor:pointer;text-decoration:underline">View lead</span>`:'<span style="color:var(--ink3);font-style:italic">Not linked yet</span>'}</td>
+        <td style="font-size:12px">${s.crm_lead_id?`<span onclick="openLeadDetail('${s.crm_lead_id}')" style="color:var(--pine);cursor:pointer;text-decoration:underline">View lead</span>${s.link_method?` <span style="font-size:11px;color:var(--ink3)">(${esc(s.link_method)})</span>`:''}`:'<span style="color:var(--ink3);font-style:italic">Not linked yet</span>'}</td>
       </tr>`;
     }).join('')+
     `</tbody></table></div>`;

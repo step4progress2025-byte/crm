@@ -2834,6 +2834,7 @@ What would you like help with today?</div>
         <button class="btn" title="Sponsor/parent view link" onclick="generateSponsorLink()"><i class="ti ti-link"></i></button>
         <button class="btn" title="Schedule a meeting" onclick="openScheduleMeetingModal()"><i class="ti ti-calendar-plus"></i></button>
         <button class="btn" id="btn-edit-lead-fs" onclick="editLeadFS()"><i class="ti ti-edit"></i>Edit</button>
+        <button class="btn" id="btn-portal-top" onclick="portalTop()" title="Student portal: progress, scores, interview details"><i class="ti ti-school"></i> Student portal</button>
         <a class="btn" id="btn-tracker-link" href="tracker.html" target="_blank" rel="noopener" style="display:none;text-decoration:none"><i class="ti ti-clipboard-list"></i>Open in Tracker ↗</a>
         <button class="btn" id="btn-transfer-lead-fs" onclick="openTransferLead([curId])"><i class="ti ti-arrows-exchange"></i>Transfer</button>
         <button class="btn btn-del" id="btn-delete-lead-fs" onclick="deleteLeadFS()"><i class="ti ti-trash"></i>Delete</button>
@@ -7865,6 +7866,28 @@ async function loadPortalLinkFS(id){
       <div style="margin-top:10px"><button class="btn" style="background:var(--pine);color:#fff" onclick="portalOpenProgress('${id}')"><i class="ti ti-chart-bar"></i> View progress &amp; scores</button>
       <button class="btn" style="margin-left:6px" onclick="portalOpenProfile('${id}')"><i class="ti ti-user-question"></i> Interview details</button>
       ${ro?'':`<button class="btn btn-del" style="margin-left:6px" onclick="portalUnlink('${id}')">Unlink</button>`}</div>`;
+  }catch(e){ box.innerHTML='<span style="color:var(--rose)">'+esc(String(e.message||e))+'</span>'; }
+}
+async function portalTop(){
+  const id=curId; if(!id)return;
+  let ov=document.getElementById('portal-top-ov'); if(ov)ov.remove();
+  ov=document.createElement('div'); ov.id='portal-top-ov'; ov.style.cssText='position:fixed;inset:0;z-index:400;background:rgba(28,25,23,.6);overflow:auto;padding:40px 24px';
+  ov.innerHTML='<div style="max-width:460px;margin:0 auto;background:var(--cream);border-radius:14px;padding:20px 24px" id="portal-top-body">Loading…</div>';
+  ov.addEventListener('click',e=>{ if(e.target===ov)ov.remove(); }); document.body.appendChild(ov);
+  const box=document.getElementById('portal-top-body'); const close="document.getElementById('portal-top-ov').remove();";
+  try{
+    const d=await leadPortalCall({action:'status',lead_id:id});
+    const head='<div style="font-size:11px;color:var(--ink3);letter-spacing:.05em">STUDENT PORTAL</div><div style="font-family:var(--font-h);font-size:21px;color:var(--pine);margin-bottom:10px">'+esc(d.linked?(d.student_name||'Student'):'Not connected yet')+'</div>';
+    if(d.linked){
+      box.innerHTML=head+`<div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn" style="background:var(--pine);color:#fff" onclick="${close}portalOpenProgress('${id}')"><i class="ti ti-chart-bar"></i> View progress &amp; scores</button>
+        <button class="btn" onclick="${close}portalOpenProfile('${id}')"><i class="ti ti-user-question"></i> Interview details</button>
+        <button class="btn" onclick="${close}document.getElementById('ld-portal-body')&&document.getElementById('ld-portal-body').scrollIntoView({behavior:'smooth',block:'center'})">Documents and link settings</button></div>`;
+    } else {
+      box.innerHTML=head+`<p style="font-size:13px;line-height:1.6">This lead is not linked to a student portal account${d.invite_open?' (an invite is open and waiting)':''}. Progress, scores and interview details appear here once the student joins and is linked.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="${close}portalSendInvite('${id}');document.getElementById('ld-portal-body')&&document.getElementById('ld-portal-body').scrollIntoView({behavior:'smooth',block:'center'})"><i class="ti ti-send"></i> Send portal invite</button>
+        <button class="btn" onclick="${close}portalFindStudent('${id}');document.getElementById('ld-portal-body')&&document.getElementById('ld-portal-body').scrollIntoView({behavior:'smooth',block:'center'})"><i class="ti ti-link"></i> Link by hand</button></div>`;
+    }
   }catch(e){ box.innerHTML='<span style="color:var(--rose)">'+esc(String(e.message||e))+'</span>'; }
 }
 async function portalOpenProfile(id){

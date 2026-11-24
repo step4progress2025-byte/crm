@@ -6660,6 +6660,7 @@ async function resetOrphanPassword(id,email){
     try{prompt('Temporary password for '+email+' (copy it now):',np.trim());}catch(_e){}
   }catch(e){toast('Error: '+String(e));}
 }
+let chatContacts=[];
 async function loadTeam(){
   const tl=document.querySelector('#sc-team .loading');
   let q=sb.from('team').select('*');
@@ -6683,6 +6684,8 @@ async function loadTeam(){
       sm.data.forEach(m=>{if(!teamList.some(x=>x.id===m.id))teamList.push(m);});
     }
   }catch(e){}
+  // Team Chat contacts: names only, so people can message colleagues that row security hides from the Team page (crm_0037).
+  try{ const cc=await sb.rpc('chat_contacts'); if(!cc.error&&Array.isArray(cc.data))chatContacts=cc.data; }catch(e){}
   syncLeadsView(); // classification depends on each counsellor's team
   if(tl) tl.style.display='none';
   renderTeam(data||[]);
@@ -10626,7 +10629,7 @@ function renderTcDmList(){
   if(!el)return;
   const q=(document.getElementById('tc-dm-search').value||'').trim().toLowerCase();
   const onlineIds=new Set(currentOnlineUsers.map(u=>u.userId));
-  const contacts=(teamList||[])
+  const contacts=[...(teamList||[]),...(chatContacts||[]).filter(c=>!(teamList||[]).some(t=>t.id===c.id))]
     .filter(t=>t.id!==currentUser?.id)
     .filter(t=>!q||(t.full_name||'').toLowerCase().includes(q))
     .sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||''));
@@ -12792,7 +12795,7 @@ function renderDmInbox(){
   if(!el)return;
   const q=(document.getElementById('dm-inbox-search').value||'').trim().toLowerCase();
   const onlineIds=new Set(currentOnlineUsers.map(u=>u.userId));
-  const contacts=(teamList||[])
+  const contacts=[...(teamList||[]),...(chatContacts||[]).filter(c=>!(teamList||[]).some(t=>t.id===c.id))]
     .filter(t=>t.id!==currentUser?.id)
     .filter(t=>!q||(t.full_name||'').toLowerCase().includes(q)||(t.role||'').toLowerCase().includes(q))
     .sort((a,b)=>{

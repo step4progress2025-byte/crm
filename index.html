@@ -6259,7 +6259,8 @@ async function scopedLeadsQuery(){
   } else if(myTeamCategory==='Agent'){
     // Agent: only leads explicitly, individually assigned to them by
     // Management — never country-scoped, never round-robin.
-    q=nameMatch(q,'counsellor',myName);
+    // Also leads the agent added themselves: those are recorded under agent=<name> with no counsellor yet.
+    { const _n=String(myName||'__none__').trim().replace(/[\\%_"(),]/g,m=>m==='\\'?'\\\\':'\\'+m); q=q.or('counsellor.ilike."'+_n+'",agent.ilike."'+_n+'"'); }
   } else if(myTeamCategory==='Domestic'){
     if(['Admin','Manager','Director','Digital Marketing'].includes(myRole)){
       // Domestic Admin / Digital Marketing sees their whole Domestic team's assigned leads,
@@ -6686,6 +6687,8 @@ async function loadTeam(){
   }catch(e){}
   // Team Chat contacts: names only, so people can message colleagues that row security hides from the Team page (crm_0037).
   try{ const cc=await sb.rpc('chat_contacts'); if(!cc.error&&Array.isArray(cc.data))chatContacts=cc.data; }catch(e){}
+  // Domestic managers: the Domestic team may have another country on record, so row security hides it from them (crm_0038).
+  try{ const dm=await sb.rpc('domestic_team_members'); if(!dm.error&&Array.isArray(dm.data))dm.data.forEach(m=>{ if(!teamList.some(x=>x.id===m.id))teamList.push(m); }); }catch(e){}
   syncLeadsView(); // classification depends on each counsellor's team
   if(tl) tl.style.display='none';
   renderTeam(data||[]);

@@ -1980,6 +1980,9 @@ What would you like help with today?</div>
       <div class="ff"><label>Referring Agent</label>
         <select id="f-agent" onchange="onAgentSelectChange(this)"><option value="">No agent</option><option value="__manual__">Agent (type name)…</option></select>
       </div>
+      <div class="ff"><label>Sub-agent (optional)</label>
+        <input id="f-sub-agent" maxlength="120" placeholder="Name of the sub-agent who brought this student">
+      </div>
       <div class="ff"><label>Status</label>
         <select id="f-status">
           <option>New Enquiry</option><option>Contacted</option><option>Not Interested</option><option>Follow Up</option><option>1st Follow Up</option><option>2nd Follow Up</option><option>3rd Follow Up</option><option>Future Student</option><option>Will Share Documents</option><option>No Response</option><option>File Received</option><option>Interested</option><option>University Shortlist</option><option>Documents Pending</option><option>Application Submitted</option><option>Received Conditional</option><option>Received Unconditional</option><option>Deposit Paid</option><option>Interview Passed</option><option>Interview Failed</option><option>CAS Applied</option><option>CAS Received</option><option>Visa Application Submitted</option><option>Visa Interview</option><option>Visa Received</option><option>Visa Rejected</option><option>Defer</option><option>Enrolled</option>
@@ -2875,6 +2878,8 @@ What would you like help with today?</div>
             <div class="dfield"><div class="dlabel">Program interest</div><div class="dvalue" id="ld-prog"></div></div>
             <div class="dfield"><div class="dlabel">Destination</div><div class="dvalue" id="ld-dest"></div></div>
             <div class="dfield"><div class="dlabel">Source</div><div class="dvalue" id="ld-src"></div></div>
+            <div class="dfield"><div class="dlabel">Agent</div><div class="dvalue" id="ld-agent"></div></div>
+            <div class="dfield"><div class="dlabel">Sub-agent</div><div class="dvalue" id="ld-subagent"></div></div>
             <div class="dfield" id="ld-campaign-wrap" style="display:none"><div class="dlabel">📣 Meta Campaign</div><div class="dvalue" id="ld-campaign"></div></div>
             <div class="dfield" id="ld-adset-wrap" style="display:none"><div class="dlabel">📣 Ad Set</div><div class="dvalue" id="ld-adset"></div></div>
             <div class="dfield" id="ld-ad-wrap" style="display:none"><div class="dlabel">📣 Ad</div><div class="dvalue" id="ld-ad"></div></div>
@@ -3001,6 +3006,8 @@ What would you like help with today?</div>
       <div class="dfield"><div class="dlabel">Program</div><div class="dvalue" id="d-prog"></div></div>
       <div class="dfield"><div class="dlabel">Destination</div><div class="dvalue" id="d-dest"></div></div>
       <div class="dfield"><div class="dlabel">Source</div><div class="dvalue" id="d-src"></div></div>
+      <div class="dfield"><div class="dlabel">Agent</div><div class="dvalue" id="d-agent"></div></div>
+      <div class="dfield"><div class="dlabel">Sub-agent</div><div class="dvalue" id="d-subagent"></div></div>
       <div class="dfield" id="d-campaign-wrap" style="display:none"><div class="dlabel">📣 Meta Campaign</div><div class="dvalue" id="d-campaign"></div></div>
       <div class="dfield" id="d-adset-wrap" style="display:none"><div class="dlabel">📣 Ad Set</div><div class="dvalue" id="d-adset"></div></div>
       <div class="dfield" id="d-ad-wrap" style="display:none"><div class="dlabel">📣 Ad</div><div class="dvalue" id="d-ad"></div></div>
@@ -4007,7 +4014,10 @@ function memberOnMySide(t){
   }
   return true;
 }
-function getOfficeCounsellors(office){return(teamList||[]).filter(t=>t.office===office&&(t.role||'Counsellor')==='Counsellor'&&!isUnavailableToday(t.id)&&memberOnMySide(t));}
+function domOpsSide(){return myTeamCategory==='Domestic'||(canSwitchOpsViewUser()&&superAdminOpsView==='Domestic');}
+// Domestic staff are one team: list them whatever office is on their record (e.g. Domestic counsellors recorded under India HQ).
+function officeOrDomestic(t,office){return t.office===office||(domOpsSide()&&effectiveTeamCategory(t)==='Domestic');}
+function getOfficeCounsellors(office){return(teamList||[]).filter(t=>officeOrDomestic(t,office)&&(t.role||'Counsellor')==='Counsellor'&&!isUnavailableToday(t.id)&&memberOnMySide(t));}
 // Round-robin specifically must never pick a Domestic-category counsellor
 // — Domestic leads are hand-assigned by Management only. This is a
 // separate, narrower pool from getOfficeCounsellors(), which Management
@@ -4022,7 +4032,7 @@ function getRoundRobinCounsellorPool(office){return getOfficeCounsellors(office)
 // like that is exactly the point.
 function getOfficeAssignableStaff(office){
   const managementRoles=['Admin','Manager','Director'];
-  return(teamList||[]).filter(t=>t.office===office&&(t.role==='Counsellor'||managementRoles.includes(t.role))&&!isUnavailableToday(t.id)&&memberOnMySide(t));
+  return(teamList||[]).filter(t=>officeOrDomestic(t,office)&&(t.role==='Counsellor'||managementRoles.includes(t.role))&&!isUnavailableToday(t.id)&&memberOnMySide(t));
 }
 // Application/Visa/SOP Team are operational staff, same restricted access
 // tier as Counsellor — not management. Used everywhere access is scoped.
@@ -5005,7 +5015,7 @@ async function quickReassignSubTeam(leadId,field,newValue){
   const l=leads.find(x=>x.id===leadId);
   if(!l)return;
   if(isIndiaLeadReadOnly(l)){toast("This lead is view-only for your account (India, or outside your own country).");renderLeads();return;}
-  const labels={application_team:'Application Team',visa_team:'Visa Team',sop_team:'SOP Team'};
+  const labels={application_team:'Application Team',visa_team:'Visa Team',sop_team:'SOP Team',sub_agent:'Sub-agent'};
   const roleName=labels[field];
   const old=l[field];
   if(old===newValue){renderLeads();return;}
@@ -5126,7 +5136,7 @@ async function tlRefreshCounsellors(){
   const keep=sel.value||(tlLead()?.counsellor||'');
   // Some accounts (Jisan, Simun) never load India's team list, but may still transfer a lead to India:
   // fetch just the names of that office's people on demand, for this dropdown only.
-  let people=(teamList||[]).filter(t=>t.office===office);
+  let people=(teamList||[]).filter(t=>t.office===office||(side==='Domestic'&&effectiveTeamCategory(t)==='Domestic'));
   if(!people.length&&office){
     if(!tlExtraTeam[office]){
       try{const{data}=await sb.from('team').select('id,full_name,role,office,country,team_category,email').eq('office',office);tlExtraTeam[office]=data||[];}catch(e){tlExtraTeam[office]=[];}
@@ -7724,6 +7734,7 @@ function openDetail(id){
   document.getElementById('d-dob').textContent=l.dob||'—';
   document.getElementById('d-qual').textContent=l.qualification||'—';
   document.getElementById('d-prog').textContent=l.program||'—';
+  {const _a=document.getElementById('d-agent'),_b=document.getElementById('d-subagent');if(_a)_a.textContent=l.agent||'—';if(_b)_b.textContent=l.sub_agent||'—';}
   document.getElementById('d-dest').textContent=l.destination||'—';
   document.getElementById('d-src').textContent=l.source||'—';
   ['campaign','adset','ad'].forEach(f=>{
@@ -7784,6 +7795,7 @@ function openLeadDetail(id){
   document.getElementById('ld-dob').textContent=l.dob||'—';
   document.getElementById('ld-qual').textContent=l.qualification||'—';
   document.getElementById('ld-prog').textContent=l.program||'—';
+  {const _a=document.getElementById('ld-agent'),_b=document.getElementById('ld-subagent');if(_a)_a.textContent=l.agent||'—';if(_b)_b.textContent=l.sub_agent||'—';}
   document.getElementById('ld-dest').textContent=l.destination||'—';
   document.getElementById('ld-src').textContent=l.source||'—';
   ['campaign','adset','ad'].forEach(f=>{
@@ -8035,7 +8047,7 @@ async function updateStatusFS(){
   loadTasksFS(curId);
   loadActivityLogFS(curId);
 }
-function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("This lead is view-only for your account (India, or outside your own country).");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';populateAgentDropdown();ensureAgentOption(l.agent);document.getElementById('f-agent').value=l.agent||'';_agentPrevValue=l.agent||'';window._agentManualNote=null;document.getElementById('f-pob').value=l.place_of_birth||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-type').value=l.ielts_type||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-finance-years').value=l.finance_years||'';document.getElementById('f-class-timing').value=l.class_timing||'';document.getElementById('f-student-id').value=l.student_id||'';document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range,l.budget_currency);syncBudgetRangeOptions(l.budget_range||'');document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';curId=l.id;applyDomesticLeadForm();document.getElementById('modal-lead').classList.add('open');refreshModalDocsVisibility();},100);}
+function editLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;if(isIndiaLeadReadOnly(l)){toast("This lead is view-only for your account (India, or outside your own country).");return;}editedFromView='fullscreen';closeLeadDetail();setTimeout(()=>{editMode=true;document.getElementById('modal-title').textContent='Edit lead';document.getElementById('f-name').value=l.name||'';{const m=splitMobile(l.mobile,l.country);document.getElementById('f-mobile-code').value=m.code;refreshCountryCombo('f-mobile-code');document.getElementById('f-mobile').value=m.number;}document.getElementById('f-email').value=l.email||'';document.getElementById('f-city').value=l.city||'';document.getElementById('f-dob').value=l.dob||'';document.getElementById('f-qual').value=l.qualification||'';document.getElementById('f-prog').value=l.program||'';document.getElementById('f-dest').value=l.destination||'';document.getElementById('f-src').value=l.source||'';document.getElementById('f-status').value=l.status||'New Enquiry';document.getElementById('f-prio').value=l.priority||'Medium';document.getElementById('f-country').value=l.country||'';syncLeadOffice();document.getElementById('f-nationality').value=l.nationality||'';document.getElementById('f-office').value=l.office||'India HQ';populateSubTeamDropdowns();document.getElementById('f-application-team').value=l.application_team||'';document.getElementById('f-visa-team').value=l.visa_team||'';document.getElementById('f-sop-team').value=l.sop_team||'';populateCounsellorDropdown();const cf=document.getElementById('f-counsel');if(l.counsellor&&![...cf.options].some(o=>o.value===l.counsellor)){cf.innerHTML+=`<option value="${esc(l.counsellor)}">${esc(l.counsellor)} (not in this office's team)</option>`;}cf.disabled=(myRole==='Counsellor'&&!isSuperAdmin);cf.value=l.counsellor||'';populateAgentDropdown();ensureAgentOption(l.agent);document.getElementById('f-agent').value=l.agent||'';_agentPrevValue=l.agent||'';window._agentManualNote=null;{const _sa=document.getElementById('f-sub-agent');if(_sa)_sa.value=l.sub_agent||'';}document.getElementById('f-pob').value=l.place_of_birth||'';setupAssignModeUI();if(!(myRole==='Counsellor'&&!isSuperAdmin)){const mr=document.querySelector('input[name="f-assign-mode"][value="manual"]');if(mr){mr.checked=true;toggleAssignMode();}}document.getElementById('f-fu').value=l.next_followup||'';document.getElementById('f-visa-deadline').value=l.visa_deadline||'';document.getElementById('f-notes').value=l.notes||'';document.getElementById('f-intake').value=l.intake_month||'';document.getElementById('f-ielts-type').value=l.ielts_type||'';document.getElementById('f-ielts-status').value=l.ielts_status||'';document.getElementById('f-ielts-score').value=l.ielts_score||'';document.getElementById('f-finance-years').value=l.finance_years||'';document.getElementById('f-class-timing').value=l.class_timing||'';document.getElementById('f-student-id').value=l.student_id||'';document.getElementById('f-budget-currency').value=detectBudgetCurrency(l.budget_range,l.budget_currency);syncBudgetRangeOptions(l.budget_range||'');document.getElementById('f-english').value=l.english_status||'';document.getElementById('f-walink').value=l.whatsapp_group_link||'';document.getElementById('f-doclink').value=l.doc_folder_link||'';curId=l.id;applyDomesticLeadForm();document.getElementById('modal-lead').classList.add('open');refreshModalDocsVisibility();},100);}
 async function deleteLeadFS(){if(!curId)return;const _l=leads.find(x=>x.id===curId);if(isIndiaLeadReadOnly(_l)){toast("This lead is view-only for your account (India, or outside your own country).");return;}if(!canDeleteLeads()){toast('Only Admins, Managers, Directors and Digital Marketing can delete leads.');return;}if(!confirm('Delete this lead? This cannot be undone.'))return;await logActivity(curId,'deleted',`Lead deleted: ${_l?.name||_l?.lead_id||curId}`);setSyncing();const{error,data}=await sb.from('leads').delete().eq('id',curId).select();if(error){setSyncErr();toast('Error deleting lead: '+error.message);return;}if(!data||!data.length){setSyncErr();toast('Delete was blocked — likely a Supabase RLS permission issue on the leads table.');return;}leads=leads.filter(x=>x.id!==curId);setSynced();closeLeadDetail();renderLeads();renderDash();badges();toast('Lead deleted.');}
 function aiAboutLeadFS(){if(!curId)return;const l=leads.find(x=>x.id===curId);if(!l)return;closeLeadDetail();nav('ai',document.querySelector('.ni[data-nav="ai"]'));const q=`Help me with lead ${l.lead_id||l.id.substring(0,8)}: ${l.name} from ${l.city||'—'}, ${l.program} → ${l.destination}. Status: ${l.status}. Notes: ${l.notes||'none'}. What is the recommended next action?`;document.getElementById('ai-in').value=q;sendAI();}
 // Generates a message genuinely suited to WHERE this lead actually is
@@ -9884,7 +9896,7 @@ function editLead(){
     cf.value=l.counsellor||'';
     populateAgentDropdown();
     ensureAgentOption(l.agent);
-    document.getElementById('f-agent').value=l.agent||'';_agentPrevValue=l.agent||'';window._agentManualNote=null;
+    document.getElementById('f-agent').value=l.agent||'';_agentPrevValue=l.agent||'';window._agentManualNote=null;{const _sa=document.getElementById('f-sub-agent');if(_sa)_sa.value=l.sub_agent||'';}
     document.getElementById('f-pob').value=l.place_of_birth||'';
     setupAssignModeUI();
     // Editing an existing lead always starts in Manual mode with its current
@@ -9966,7 +9978,7 @@ function openAddLead(){
   if(canSwitchOpsViewUser()&&superAdminOpsView==='Domestic'){try{syncMobileCode();syncBudgetCurrency();}catch(e){}}
   document.getElementById('f-status').value='New Enquiry';
   document.getElementById('f-prio').value='Medium';
-  document.getElementById('f-agent').value='';_agentPrevValue='';window._agentManualNote=null;
+  document.getElementById('f-agent').value='';_agentPrevValue='';window._agentManualNote=null;{const _sa=document.getElementById('f-sub-agent');if(_sa)_sa.value='';}
   document.getElementById('f-pob').value='';
   populateCounsellorDropdown();
   populateAgentDropdown();
@@ -10153,6 +10165,7 @@ async function saveLead(){
     priority:document.getElementById('f-prio').value,
     counsellor:document.getElementById('f-counsel').value,
     agent:document.getElementById('f-agent').value||null,
+    sub_agent:(document.getElementById('f-sub-agent').value||'').trim()||null,
     application_team:document.getElementById('f-application-team').value||null,
     visa_team:document.getElementById('f-visa-team').value||null,
     sop_team:document.getElementById('f-sop-team').value||null,
@@ -10197,7 +10210,7 @@ async function saveLead(){
         next_followup:'Next follow-up',visa_deadline:'Visa deadline',
         budget_range:'Budget',ielts_type:'English test type',ielts_status:'IELTS status',qualification:'Qualification',
         intake_month:'Intake month',country:'Country',
-        application_team:'Application Team',visa_team:'Visa Team',sop_team:'SOP Team'};
+        application_team:'Application Team',visa_team:'Visa Team',sop_team:'SOP Team',sub_agent:'Sub-agent'};
       Object.entries(trackedFields).forEach(([key,label])=>{
         if((existing[key]||'')!==(data[key]||'')){
           logEvents.push(['field_edit',`${label}: ${existing[key]||'—'} → ${data[key]||'—'}`]);
@@ -10210,7 +10223,10 @@ async function saveLead(){
     ['application_team','visa_team','sop_team'].forEach(f=>{
       if(existing&&(existing[f]||'')!==(data[f]||'')){_subChanges.push([f,data[f]||'']);delete data[f];}
     });
+    // Agents may correct their own leads, but never reassign them, change status or move them (also enforced in the database, crm_0040).
+    if(isAgentUser()){['counsellor','status','priority','application_team','visa_team','sop_team','office','country','agent','added_by','assigned_at','workstream'].forEach(k=>delete data[k]);}
     let _upRows;({data:_upRows,error}=await sb.from('leads').update(data).eq('id',curId).select('id'));
+    if(error&&/sub_agent/i.test(error.message||'')){delete data.sub_agent;({data:_upRows,error}=await sb.from('leads').update(data).eq('id',curId).select('id'));if(!error)toast('Saved, but run crm_0040_agent_edit_and_subagent.sql so the sub-agent name is stored.');}
     if(error&&/place_of_birth/i.test(error.message||'')){delete data.place_of_birth;({data:_upRows,error}=await sb.from('leads').update(data).eq('id',curId).select('id'));if(!error)toast('Saved, but run crm_domestic_uk_form.sql so Place of birth is stored.');}
     if(!error&&!(_upRows&&_upRows.length))error={message:'the change was not saved. Please refresh and try again.'};
     if(!error){const l=leads.find(x=>x.id===curId);if(l)Object.assign(l,data);}
@@ -10253,6 +10269,7 @@ async function saveLead(){
     }
     if(data.counsellor)data.assigned_at=new Date().toISOString();
     let res=await sb.from('leads').insert([data]).select();
+    if(res.error&&/sub_agent/i.test(res.error.message||'')){delete data.sub_agent;res=await sb.from('leads').insert([data]).select();if(!res.error)toast('Saved, but run crm_0040_agent_edit_and_subagent.sql so the sub-agent name is stored.');}
     if(res.error&&/place_of_birth/i.test(res.error.message||'')){delete data.place_of_birth;res=await sb.from('leads').insert([data]).select();if(!res.error)toast('Saved, but run crm_domestic_uk_form.sql so Place of birth is stored.');}
     if(res.error&&/workstream/i.test(res.error.message||'')){
       // The workstream column hasn't been added yet (run crm_leads_workstream.sql) — save without it.

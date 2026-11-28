@@ -1098,7 +1098,7 @@ body{font-family:var(--font-b);color:var(--ink);font-size:14px}
               <thead><tr>
                 <th style="width:36px"><input type="checkbox" id="bulk-select-all" onchange="toggleSelectAllLeads(this.checked)" style="cursor:pointer"></th>
                 <th>#</th><th>ID</th><th>Name</th><th>Mobile</th><th>Contact</th><th>Program</th>
-                <th>Destination</th><th>Captured</th><th>Status</th><th>Priority</th><th>Follow-up</th><th>Counsellor</th><th>Application</th><th>Visa</th><th>SOP</th>
+                <th>Destination</th><th>Captured</th><th>Status</th><th>Priority</th><th>Follow-up</th><th>Counsellor</th><th>Application</th><th>Visa</th><th>SOP</th><th>Agent</th>
               </tr></thead>
               <tbody id="lead-tbody"></tbody>
             </table>
@@ -4054,7 +4054,9 @@ function isDomesticAdmin(){return myTeamCategory==='Domestic'&&(myRole==='Admin'
 // others' work or performance."
 // Digital Marketing (non-super-admin): restricted like a counsellor for screens, but may select and edit leads in their own country/team.
 function isMarketingStaff(){return myRole==='Digital Marketing'&&!isSuperAdmin;}
-function isJisanOrSimun(){const e=String(currentUser?.email||'').trim().toLowerCase();return e==='jisan@step4progress.co.uk'||e==='simun@step4progress.co.uk';}
+// Jisan, Simun and the MD (Nazmul Hossain, info@) share the same near-owner Super Admin access.
+const JISAN_TIER_EMAILS=['jisan@step4progress.co.uk','simun@step4progress.co.uk','info@step4progress.co.uk'];
+function isJisanOrSimun(){const e=String(currentUser?.email||'').trim().toLowerCase();return JISAN_TIER_EMAILS.includes(e);}
 // Jisan and Simun now have near-owner lead access: they can edit and delete leads of any office/country.
 function canDeleteLeads(){return isJisanOrSimun()||(isSuperAdmin||['Admin','Manager','Director','Digital Marketing'].includes(myRole));}
 // Agents (external partners) see only: Home, Dashboard, Task Dashboard, Leads (their own),
@@ -5475,7 +5477,7 @@ function isLimitedInviter(){return !isSuperAdmin&&!isDirectorInviter()&&(USER_IN
 // into their OWN country only (the database enforces the same rules).
 function canInviteUsers(){return (isSuperAdmin&&!isViewOnly)||USER_INVITER_EMAILS.includes(String(currentUser?.email||'').toLowerCase())||isDirectorInviter()||isLimitedInviter();}
 const LIMITED_INVITE_ROLES=['Counsellor','Application Team','Visa Team','SOP Team','Digital Marketing','HR','Agent'];
-const SUPER_ADMIN_EMAILS=['india@step4progress.com','jisan@step4progress.co.uk','simun@step4progress.co.uk','pavitra@step4progress.com'];
+const SUPER_ADMIN_EMAILS=['india@step4progress.com','jisan@step4progress.co.uk','simun@step4progress.co.uk','info@step4progress.co.uk','pavitra@step4progress.com'];
 // VIEW-ONLY viewers: see everything a Super Admin (Jisan) sees — all teams/offices except India — but cannot change anything.
 const VIEW_ONLY_EMAILS=[]; // Simun now has Jisan-level (near-owner) access, so nobody is view-only any more
 let isViewOnly=false;
@@ -5538,7 +5540,7 @@ function effectiveTeamCategory(member){
 }
 function canSwitchOpsViewUser(){
   const email=String(currentUser?.email||'').trim().toLowerCase();
-  return !!(isSuperAdmin||isOwner||email==='india@step4progress.com'||email==='pavitra@step4progress.com'||email==='jisan@step4progress.co.uk');
+  return !!(isSuperAdmin||isOwner||email==='india@step4progress.com'||email==='pavitra@step4progress.com'||email==='jisan@step4progress.co.uk'||email==='info@step4progress.co.uk');
 }
 const OWNER_EMAIL='india@step4progress.com';
 // OWNERS is a set of untouchable-root accounts — each with their own
@@ -7590,7 +7592,7 @@ function _renderLeadsCore(){
   if(empty)return;
   document.getElementById('lcount').textContent=`Showing ${f.length} of ${scopedLeads.length} leads`;
   const tb=document.getElementById('lead-tbody');tb.innerHTML='';
-  if(!f.length){tb.innerHTML=`<tr><td colspan="16">${emptyState('🔍','No leads match your filters.')}</td></tr>`;return;}
+  if(!f.length){tb.innerHTML=`<tr><td colspan="17">${emptyState('🔍','No leads match your filters.')}</td></tr>`;return;}
   // Single-assignment .map().join() instead of accumulating with += in
   // the loop — the += pattern re-parses the ENTIRE growing HTML string
   // on every single iteration (O(n²) work), which is a real, measurable
@@ -7624,12 +7626,13 @@ function _renderLeadsCore(){
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'application_team','Application Team')}</td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'visa_team','Visa Team')}</td>
       <td style="font-size:12px;color:var(--ink3)" onclick="event.stopPropagation()">${renderSubTeamCell(l,'sop_team','SOP Team')}</td>
+      <td style="font-size:12px;color:var(--ink3)">${esc(l.agent||'—')}${l.sub_agent?'<div style="font-size:11px;opacity:.8">via '+esc(l.sub_agent)+'</div>':''}</td>
     </tr>`;
   };
   const _lim=Math.max(window._leadRenderLimit||LEAD_CHUNK,LEAD_CHUNK);
   let _shown=Math.min(_lim,f.length);
   tb.innerHTML=f.slice(0,_shown).map(rowHtml).join('');
-  const _moreRow=()=>`<tr id="lead-more-row"><td colspan="16" style="text-align:center;padding:14px;font-size:12px;color:var(--ink3);cursor:default">Showing ${_shown} of ${f.length} — scroll down for more, or <a href="#" onclick="event.preventDefault();window._leadLoadMore&&window._leadLoadMore()" style="color:var(--pine)">load more now</a></td></tr>`;
+  const _moreRow=()=>`<tr id="lead-more-row"><td colspan="17" style="text-align:center;padding:14px;font-size:12px;color:var(--ink3);cursor:default">Showing ${_shown} of ${f.length} — scroll down for more, or <a href="#" onclick="event.preventDefault();window._leadLoadMore&&window._leadLoadMore()" style="color:var(--pine)">load more now</a></td></tr>`;
   if(window._leadMoreObs){try{window._leadMoreObs.disconnect();}catch(e){}window._leadMoreObs=null;}
   function watchMore(){
     const el=document.getElementById('lead-more-row');
@@ -9013,7 +9016,7 @@ function canDeleteTaskClient(t){
   // delete tasks in the data they can see; country Management can delete
   // only inside its own visible workstream.
   const email=String(currentUser?.email||'').trim().toLowerCase();
-  if(isOwner||isSuperAdmin||email==='india@step4progress.com'||email==='pavitra@step4progress.com'||email==='jisan@step4progress.co.uk') return true;
+  if(isOwner||isSuperAdmin||email==='india@step4progress.com'||email==='pavitra@step4progress.com'||email==='jisan@step4progress.co.uk'||email==='info@step4progress.co.uk') return true;
   if(['Manager','Admin','Director'].includes(myRole)) return canManageTaskClient(t);
   return false;
 }
@@ -9444,7 +9447,7 @@ async function renderTaskDashboard(){
     return 'International';
   };
   const isElevatedGlobal=isOwner || ((currentUser?.email||'').toLowerCase()==='pavitra@step4progress.com');
-  const isJisan=(currentUser?.email||'').toLowerCase()==='jisan@step4progress.co.uk'||(currentUser?.email||'').toLowerCase()==='simun@step4progress.co.uk'; // Jisan/Simun: own-country tasks only
+  const isJisan=JISAN_TIER_EMAILS.includes((currentUser?.email||'').toLowerCase()); // Jisan/Simun: own-country tasks only
   const isOwnCountryStaff=staff=>staff && myCountry && staff.country===myCountry;
   if(isElevatedGlobal && !superAdminOpsView){
     // Global view: Owner / Platform Administrator can see both operational poles.
@@ -10800,6 +10803,7 @@ function canResetPasswordFor(t){
   const em=String(currentUser?.email||'').toLowerCase();
   const tEm=String(t.email||'').toLowerCase();
   if(isProtectedOwnerRow(t))return false;       // only India/Pavitra touch these
+  if(tEm==='info@step4progress.co.uk')return false; // the MD: only the owners may reset his password
   if(isSuperAdmin||isJisanOrSimun())return true; // Jisan and Simun: anyone except India/Pavitra (owner accounts stay protected)
   // Managers and Admins (incl. Anushree): people in their OWN office and team
   // only, never another Manager/Admin/Director/Super Admin.
